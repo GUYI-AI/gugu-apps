@@ -249,6 +249,9 @@ function renderWords() {
   $('mode-all').textContent = W.all
   $('depth-label').textContent = W.depth
   $('recent').textContent = W.recent
+  $('empty').textContent = W.emptyLocal
+  $('empty-all-title').textContent = W.emptyAll
+  $('empty-all-how').textContent = W.emptyAllHow
   for (const [id, key] of [['l-working', 'legendWorking'], ['l-waiting', 'legendWaiting'], ['l-idle', 'legendIdle'], ['l-trouble', 'legendTrouble'], ['l-path', 'legendPath']]) {
     $(id).textContent = W[key]
   }
@@ -263,14 +266,9 @@ function render() {
   if (state) lastPulseAt = state.log.at(-1)?.at ?? ''
   graph.update({ ...m, deliveries: fresh.map((e) => ({ edgeId: `p:${e.target}>${e.to}`, ok: e.ok })) })
   const center = centerId()
-  const empty = $('empty')
-  if (center && m.edges.length === 0 && m.nodes.length <= 1) {
-    empty.textContent = W.emptyLocal
-    empty.hidden = false
-  } else if (!center && m.nodes.length === 0) {
-    empty.textContent = W.emptyAll
-    empty.hidden = false
-  } else empty.hidden = true
+  // alone in its task: a line under its own dot; nobody at all: gugu's empty note, in the middle of the graph
+  $('empty').hidden = !(center && m.edges.length === 0 && m.nodes.length <= 1)
+  $('empty-all').hidden = !(!center && m.nodes.length === 0)
   renderSide()
 }
 

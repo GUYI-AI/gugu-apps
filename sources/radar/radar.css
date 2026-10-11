@@ -15,8 +15,10 @@ body {
 #bar, #alert { grid-column: 1 / -1; }
 
 /* the graph is the page; the reminders are a column beside it, or under it when the page is narrow */
-#stage { grid-area: 3 / 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-#graph { flex: 1; min-height: 0; width: 100%; display: block; cursor: grab; touch-action: none; }
+#stage { grid-area: 3 / 1; position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; }
+/* the empty note shares the graph's cell, so it sits in the middle of the graph (the legend is the row under it) */
+#graph, #empty-all { grid-area: 1 / 1; }
+#graph { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
 #graph:active { cursor: grabbing; }
 #graph, #legend { user-select: none; -webkit-user-select: none; }
 #side { grid-area: 3 / 2; overflow-y: auto; padding: var(--em-spacing-md) var(--em-spacing-lg); border-left: 1px solid var(--em-border); display: flex; flex-direction: column; gap: var(--em-spacing-lg); }
