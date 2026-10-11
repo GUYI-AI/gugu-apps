@@ -8,9 +8,10 @@ export const WORDS = {
     checked: '后台上次查看', notYet: '后台还没查看过',
     late: (m) => `后台已经 ${m} 分钟没查看了，可能没在运行。`, notRunning: '后台还没运行起来。', lastLookFailed: (m) => `后台上一次查看没成功：${m}`,
     legendWorking: '在干活', legendWaiting: '等你批准', legendIdle: '闲着', legendTrouble: '出问题了', legendPath: '提醒的方向，数字是已提醒的次数',
-    recent: '最近的提醒', noneYet: '还没提醒过', arrived: '送到了', notArrived: (why) => `没送到：${why}`,
-    emptyLocal: '还没有谁在关注它，它也没在关注谁。', emptyAll: '还没有谁在关注谁。agent 用雷达的 watch 工具关注别的 agent。',
+    recent: '最近的提醒', noneYet: '还没提醒过', notArrived: (why) => `没送到：${why}`,
+    emptyLocal: '还没有谁在关注它，它也没在关注谁。', emptyAll: '还没有谁在关注谁', emptyAllHow: 'agent 用雷达的 watch 工具关注别的 agent。',
     remind: (target, to) => `${target} 的事 → 提醒 ${to}`,
+    logLine: (target, what, to) => `${target} ${what} → ${to}`,
     stop: '不再关注', open: '打开这个任务', none: '没有和它有关的关注。',
     couldNot: (what, m) => `${what}没成功：${m}`,
     // node sentences
@@ -28,7 +29,7 @@ export const WORDS = {
     includes: '具体包括：', listSep: '、', end: '。',
     events: { failed: '停下来报错', gone: '不在了（引擎退出、任务被归档或删除）', stuck: (m) => `很久没动静（${m} 分钟没有新动作）`, waiting: '在等人批准或回答', done: '做完一轮' },
     eventDone: { failed: '停下来报错了', gone: '不在了', stuck: '好像卡住了', waiting: '在等人', done: '做完了' },
-    notHere: '收提醒的那个任务已经不在这台电脑上了',
+    notHere: '收提醒的那个任务已经不在这台电脑上了', noPermission: '雷达没有给 agent 发消息的权限',
     // reminders (what the told agent reads)
     reminder: (body, sessionId, id) => `雷达提醒：${body}\n（${sessionId ? `它的任务 session:${sessionId}，` : ''}这条不用回复。不想再收到：用 radar 的 unwatch，编号 ${id}。）`,
     told: {
@@ -46,9 +47,10 @@ export const WORDS = {
     checked: 'Last looked', notYet: 'Not looked yet',
     late: (m) => `It has not looked for ${m} minutes; it may not be running.`, notRunning: 'It is not running yet.', lastLookFailed: (m) => `Its last look did not work: ${m}`,
     legendWorking: 'Working', legendWaiting: 'Waiting for you', legendIdle: 'Idle', legendTrouble: 'In trouble', legendPath: 'Where reminders go; the number is how many went',
-    recent: 'Recent reminders', noneYet: 'No reminders yet', arrived: 'Arrived', notArrived: (why) => `Did not arrive: ${why}`,
-    emptyLocal: 'Nobody keeps an eye on it, and it keeps an eye on nobody.', emptyAll: 'Nobody keeps an eye on anyone yet. Agents use Radar\'s watch tool for that.',
+    recent: 'Recent reminders', noneYet: 'No reminders yet', notArrived: (why) => `Did not arrive: ${why}`,
+    emptyLocal: 'Nobody keeps an eye on it, and it keeps an eye on nobody.', emptyAll: 'Nobody keeps an eye on anyone yet', emptyAllHow: 'Agents use Radar\'s watch tool for that.',
     remind: (target, to) => `${target} → tell ${to}`,
+    logLine: (target, what, to) => `${target} ${what} → ${to}`,
     stop: 'Stop', open: 'Open this task', none: 'Nothing involves it.',
     couldNot: (what, m) => `${what} did not work: ${m}`,
     working: (n, ago) => (ago ? `${n} is working; it last did something ${ago}.` : `${n} is working.`),
@@ -64,7 +66,7 @@ export const WORDS = {
     includes: 'That covers: ', listSep: ', ', end: '.',
     events: { failed: 'stopping with an error', gone: 'being gone (its engine quit, or its task was archived or deleted)', stuck: (m) => `going quiet (nothing new for ${m} minutes)`, waiting: 'waiting for someone to approve or answer', done: 'finishing a round' },
     eventDone: { failed: 'stopped with an error', gone: 'is gone', stuck: 'seems stuck', waiting: 'is waiting', done: 'finished' },
-    notHere: 'the task to tell is no longer on this computer',
+    notHere: 'the task to tell is no longer on this computer', noPermission: 'Radar is not allowed to message agents',
     reminder: (body, sessionId, id) => `Radar: ${body}\n(${sessionId ? `Its task is session:${sessionId}. ` : ''}No need to reply. To stop these: radar's unwatch, id ${id}.)`,
     told: {
       failed: (who) => `${who} stopped with an error.`, gone: (who, why) => `${who} is gone: ${why}.`,

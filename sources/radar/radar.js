@@ -13,8 +13,8 @@ const $ = (id) => document.getElementById(id)
 
 let W = WORDS.zh
 const agoOf = (iso) => (iso ? W.ago(Math.max(0, (Date.now() - Date.parse(iso)) / 1000)) : null)
-/** A failed delivery's reason, for a person. */
-const whyNot = (error) => (/not an agent this App reaches/.test(error ?? '') ? W.notHere : error)
+/** A failed delivery's reason, for a person: by gugu's code; one kept without a code, as it was kept. */
+const whyNot = (error, code) => (code === 'denied' ? W.noPermission : code === 'not-found' ? W.notHere : error)
 
 let ctx = null
 let mode = 'local'
@@ -106,7 +106,7 @@ function pathSentences(path) {
       : W.watchFor(titleOf(sub.by), titleOf(sub.to), titleOf(sub.target), when)
   })
   lines.push(path.sent > 0 ? W.sentTimes(path.sent, agoOf(path.lastAt)) : W.sentNever)
-  if (path.failed) lines.push(W.lastFailed(whyNot(path.failed.error)))
+  if (path.failed) lines.push(W.lastFailed(whyNot(path.failed.error, path.failed.code)))
   return lines
 }
 
@@ -146,16 +146,6 @@ function model() {
   return { nodes, edges }
 }
 
-/** What the floating cards leave of the stage for the graph: they sit at the right and bottom, or (narrow) at the bottom and top. */
-function freeArea() {
-  const stage = $('stage').getBoundingClientRect(), side = $('side').getBoundingClientRect(), legend = $('legend').getBoundingClientRect()
-  const gap = 8
-  if (window.matchMedia('(max-width: 640px)').matches) {
-    return { top: legend.bottom - stage.top + gap, right: 0, bottom: stage.bottom - side.top + gap, left: 0 }
-  }
-  return { top: 0, right: stage.right - side.left + gap, bottom: stage.bottom - legend.top + gap, left: 0 }
-}
-
 function showTip(lines, ev) {
   const tip = $('tip')
   if (!lines) { tip.hidden = true; return }
@@ -190,8 +180,8 @@ function logList(entries) {
   return h('ul', { class: 'list' }, entries.map((e) =>
     h('li', {},
       h('div', {},
-        h('strong', {}, W.remind(`${e.targetTitle} ${W.eventDone[e.event] ?? ''}`.trim(), titleOf(e.to))),
-        e.ok ? h('span', {}, W.arrived) : h('span', { class: 'failed' }, W.notArrived(whyNot(e.error)))),
+        h('strong', {}, W.logLine(e.targetTitle, W.eventDone[e.event] ?? '', titleOf(e.to))),
+        e.ok ? null : h('small', { class: 'failed' }, W.notArrived(whyNot(e.error, e.code)))),
       h('gugu-time', { datetime: e.at }))))
 }
 
@@ -246,7 +236,7 @@ function renderBar() {
   if (age > 2 * 60_000) problems.push(state?.checkedAt ? W.late(Math.floor(age / 60_000)) : W.notRunning)
   $('alert').hidden = problems.length === 0
   $('alert').textContent = problems.join(' ')
-  $('mode-local').disabled = !ctx?.session?.agentId
+  $('bar').hidden = !ctx?.session?.agentId
   $('mode-local').setAttribute('aria-selected', String(mode === 'local'))
   $('mode-all').setAttribute('aria-selected', String(mode === 'all'))
   $('depth-box').hidden = mode !== 'local'
@@ -254,12 +244,14 @@ function renderBar() {
 
 function renderWords() {
   document.documentElement.lang = W === WORDS.zh ? 'zh-CN' : 'en'
-  $('title').textContent = W.title
   $('graph').setAttribute('aria-label', W.title)
   $('mode-local').textContent = W.thisTask
   $('mode-all').textContent = W.all
   $('depth-label').textContent = W.depth
   $('recent').textContent = W.recent
+  $('empty').textContent = W.emptyLocal
+  $('empty-all-title').textContent = W.emptyAll
+  $('empty-all-how').textContent = W.emptyAllHow
   for (const [id, key] of [['l-working', 'legendWorking'], ['l-waiting', 'legendWaiting'], ['l-idle', 'legendIdle'], ['l-trouble', 'legendTrouble'], ['l-path', 'legendPath']]) {
     $(id).textContent = W[key]
   }
@@ -274,14 +266,9 @@ function render() {
   if (state) lastPulseAt = state.log.at(-1)?.at ?? ''
   graph.update({ ...m, deliveries: fresh.map((e) => ({ edgeId: `p:${e.target}>${e.to}`, ok: e.ok })) })
   const center = centerId()
-  const empty = $('empty')
-  if (center && m.edges.length === 0 && m.nodes.length <= 1) {
-    empty.textContent = W.emptyLocal
-    empty.hidden = false
-  } else if (!center && m.nodes.length === 0) {
-    empty.textContent = W.emptyAll
-    empty.hidden = false
-  } else empty.hidden = true
+  // alone in its task: a line under its own dot; nobody at all: gugu's empty note, in the middle of the graph
+  $('empty').hidden = !(center && m.edges.length === 0 && m.nodes.length <= 1)
+  $('empty-all').hidden = !(!center && m.nodes.length === 0)
   renderSide()
 }
 
@@ -308,7 +295,9 @@ g.onBackgroundMessage((message) => {
 })
 g.onAgentsChanged(() => void refresh())
 g.onContextChanged((next) => {
-  ctx = { ...ctx, ...next }
+  const moved = next?.session?.agentId !== ctx?.session?.agentId
+  ctx = next
+  if (moved) { mode = ctx?.session?.agentId ? 'local' : 'all'; selected = null; graph.fit() }
   W = wordsFor(ctx?.locale)
   renderWords()
   render()
@@ -320,9 +309,6 @@ g.onContextChanged((next) => {
   renderWords()
   mode = ctx?.session?.agentId ? 'local' : 'all'
   renderBar()
-  graph.setFree(freeArea()) // before the first picture, so it opens in the space the cards leave
   await refresh()
-  const resized = new ResizeObserver(() => graph.setFree(freeArea()))
-  for (const id of ['graph', 'side', 'legend']) resized.observe($(id))
   setInterval(renderBar, 30_000)
 })()
