@@ -39,7 +39,8 @@ export const WORDS = {
     },
     goneArchived: '这个任务被归档或删除了', goneUnknown: '原因没读到',
     said: (text) => `它最后说：\n${text}`, saidNothing: '它这一轮没有说话。', cut: '…（太长截断了，全文在它的任务里）',
-    cannotRead: (m) => `（读不到它最后说的话：${m}）`,
+    cannotRead: (m) => `（读不到它最后说的话：${m}）`, inTerminal: '（它跑在终端里，读不到它最后说的话。）',
+    noHistoryPermission: '雷达没有读 agent 对话的权限',
     ago: (s) => (s < 60 ? '刚刚' : s < 3600 ? `${Math.floor(s / 60)} 分钟前` : s < 86400 ? `${Math.floor(s / 3600)} 小时前` : `${Math.floor(s / 86400)} 天前`),
   },
   en: {
@@ -75,7 +76,8 @@ export const WORDS = {
     },
     goneArchived: 'its task was archived or deleted', goneUnknown: 'the reason could not be read',
     said: (text) => `Its last words:\n${text}`, saidNothing: 'It said nothing this round.', cut: '… (too long, cut here; the whole text is in its task)',
-    cannotRead: (m) => `(its last words could not be read: ${m})`,
+    cannotRead: (m) => `(its last words could not be read: ${m})`, inTerminal: '(It runs in a terminal, so its last words cannot be read.)',
+    noHistoryPermission: 'Radar is not allowed to read agents\' conversations',
     ago: (s) => (s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : `${Math.floor(s / 86400)} d ago`),
   },
 }

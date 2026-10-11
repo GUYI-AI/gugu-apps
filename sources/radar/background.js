@@ -65,15 +65,18 @@ function goneWhy(W, row) {
 }
 
 /** What the agent said last, for 「做完了」: an MCP that went deaf still leaves its conclusion here. */
-async function lastWords(W, agentId) {
+async function lastWords(W, row) {
+  // a terminal agent keeps no readable conversation: gugu refuses the read on this same fact, so it is not asked
+  if (row.transport === 'pty') return W.inTerminal
   try {
-    const page = await g.readAgentHistory(agentId)
+    const page = await g.readAgentHistory(row.agentId)
     const said = [...page.messages].reverse().find((m) => m.sender !== 'user' && m.text?.trim())
     if (!said) return W.saidNothing
     const text = said.text.trim()
     return W.said(text.length > 1500 ? `${text.slice(0, 1500)}${W.cut}` : text)
   } catch (error) {
-    return W.cannotRead(error?.message ?? error)
+    // gugu's message is for the App's author (English); its code is what the reminder says in the person's language
+    return W.cannotRead(error?.code === 'denied' ? W.noHistoryPermission : error?.message ?? error)
   }
 }
 
@@ -84,7 +87,7 @@ async function describe(W, event, row, extra) {
   if (event === 'gone') return W.told.gone(who, goneWhy(W, row))
   if (event === 'stuck') return W.told.stuck(who, extra)
   if (event === 'waiting') return W.told.waiting(who, (row.detail && W.waits[row.detail]) || W.waitAny)
-  return W.told.done(who, await lastWords(W, row.agentId))
+  return W.told.done(who, await lastWords(W, row))
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
