@@ -31,7 +31,8 @@ export const WORDS = {
     eventDone: { failed: '停下来报错了', gone: '不在了', stuck: '好像卡住了', waiting: '在等人', done: '做完了' },
     notHere: '收提醒的那个任务已经不在这台电脑上了', noPermission: '雷达没有给 agent 发消息的权限',
     // reminders (what the told agent reads)
-    reminder: (body, sessionId, id) => `雷达提醒：${body}\n（${sessionId ? `它的任务 session:${sessionId}，` : ''}这条不用回复。不想再收到：用 radar 的 unwatch，编号 ${id}。）`,
+    // ended: the one it is about is gone, and this watch ended with it — nothing left to unwatch
+    reminder: (body, sessionId, id, ended) => `雷达提醒：${body}\n（${sessionId ? `它的任务 session:${sessionId}，` : ''}这条不用回复。${ended ? '它不在了，这条关注也到此结束。' : `不想再收到：用 radar 的 unwatch，编号 ${id}。`}）`,
     told: {
       failed: (who) => `${who} 停下来报错了。`, gone: (who, why) => `${who} 不在了：${why}。`,
       stuck: (who, m) => `${who} 好像卡住了：${m} 分钟没有新动作。`, waiting: (who, what) => `${who} 在等人${what}。`,
@@ -40,6 +41,7 @@ export const WORDS = {
     goneArchived: '这个任务被归档或删除了', goneUnknown: '原因没读到',
     said: (text) => `它最后说：\n${text}`, saidNothing: '它这一轮没有说话。', cut: '…（太长截断了，全文在它的任务里）',
     cannotRead: (m) => `（读不到它最后说的话：${m}）`, inTerminal: '（它跑在终端里，读不到它最后说的话。）',
+    unreadable: '（读不到它最后说的话：咕咕现在读不到它的对话。）', cannotSee: '（读不到它最后说的话：雷达看不到它了。）',
     noHistoryPermission: '雷达没有读 agent 对话的权限',
     ago: (s) => (s < 60 ? '刚刚' : s < 3600 ? `${Math.floor(s / 60)} 分钟前` : s < 86400 ? `${Math.floor(s / 3600)} 小时前` : `${Math.floor(s / 86400)} 天前`),
   },
@@ -68,7 +70,7 @@ export const WORDS = {
     events: { failed: 'stopping with an error', gone: 'being gone (its engine quit, or its task was archived or deleted)', stuck: (m) => `going quiet (nothing new for ${m} minutes)`, waiting: 'waiting for someone to approve or answer', done: 'finishing a round' },
     eventDone: { failed: 'stopped with an error', gone: 'is gone', stuck: 'seems stuck', waiting: 'is waiting', done: 'finished' },
     notHere: 'the task to tell is no longer on this computer', noPermission: 'Radar is not allowed to message agents',
-    reminder: (body, sessionId, id) => `Radar: ${body}\n(${sessionId ? `Its task is session:${sessionId}. ` : ''}No need to reply. To stop these: radar's unwatch, id ${id}.)`,
+    reminder: (body, sessionId, id, ended) => `Radar: ${body}\n(${sessionId ? `Its task is session:${sessionId}. ` : ''}No need to reply. ${ended ? 'It is gone, so this watch has ended.' : `To stop these: radar's unwatch, id ${id}.`})`,
     told: {
       failed: (who) => `${who} stopped with an error.`, gone: (who, why) => `${who} is gone: ${why}.`,
       stuck: (who, m) => `${who} seems stuck: nothing new for ${m} minutes.`, waiting: (who, what) => `${who} is waiting for someone to ${what}.`,
@@ -77,6 +79,7 @@ export const WORDS = {
     goneArchived: 'its task was archived or deleted', goneUnknown: 'the reason could not be read',
     said: (text) => `Its last words:\n${text}`, saidNothing: 'It said nothing this round.', cut: '… (too long, cut here; the whole text is in its task)',
     cannotRead: (m) => `(its last words could not be read: ${m})`, inTerminal: '(It runs in a terminal, so its last words cannot be read.)',
+    unreadable: '(Its last words cannot be read: gugu cannot read its conversation now.)', cannotSee: '(Its last words cannot be read: Radar no longer sees it.)',
     noHistoryPermission: 'Radar is not allowed to read agents\' conversations',
     ago: (s) => (s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : `${Math.floor(s / 86400)} d ago`),
   },
