@@ -69,7 +69,9 @@ async function lastWords(W, row) {
   // gugu reads a terminal agent's conversation too now (from its engine's record, #7126): every agent is asked
   try {
     const page = await g.readAgentHistory(row.agentId)
-    const said = [...page.messages].reverse().find((m) => m.sender !== 'user' && m.text?.trim())
+    // only what it said after its newest prompt: words from before that are an earlier round's, never this one's (#7126)
+    const prompt = page.messages.findLastIndex((m) => m.sender === 'user')
+    const said = page.messages.slice(prompt + 1).reverse().find((m) => m.text?.trim())
     if (!said) return W.saidNothing
     const text = said.text.trim()
     return W.said(text.length > 1500 ? `${text.slice(0, 1500)}${W.cut}` : text)
