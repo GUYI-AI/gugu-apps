@@ -33,6 +33,7 @@
       weekdays: ['一', '二', '三', '四', '五', '六', '日'],
       week: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
       month: (y, m) => `${y}年${m + 1}月`,
+      prev: '上个月', next: '下个月',
       day: (d) => `${d.getMonth() + 1}月${d.getDate()}日 ${W.zh.week[d.getDay()]}`,
       rel: { '-1': '昨天', '0': '今天', '1': '明天' },
       todo: '待办', memory: '记事',
@@ -48,6 +49,7 @@
       weekdays: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
       week: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       month: (y, m) => new Date(y, m, 1).toLocaleDateString('en', { year: 'numeric', month: 'long' }),
+      prev: 'Previous month', next: 'Next month',
       day: (d) => d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' }),
       rel: { '-1': 'Yesterday', '0': 'Today', '1': 'Tomorrow' },
       todo: 'TO DO', memory: 'MEMORY',
@@ -138,6 +140,8 @@
   // ---- render ---------------------------------------------------------------
   function renderMonth() {
     $('month').textContent = t().month(view.y, view.m)
+    $('prev').setAttribute('aria-label', t().prev)
+    $('next').setAttribute('aria-label', t().next)
     $('weekdays').replaceChildren(...t().weekdays.map((w) => el('span', { text: w })))
     const lead = (new Date(view.y, view.m, 1).getDay() + 6) % 7
     const length = new Date(view.y, view.m + 1, 0).getDate()
