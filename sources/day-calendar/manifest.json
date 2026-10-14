@@ -1,0 +1,29 @@
+{
+  "id": "day-calendar",
+  "name": "Calendar",
+  "description": "The person's calendar: record writes a to-do or a memory on a day. It shows in the task page's side panel as a month with the chosen day's to-dos and memories.",
+  "author": "咕咕",
+  "version": "0.4.2",
+  "apiVersion": 3,
+  "engines": { "gugu": ">=0.2.53" },
+  "localized": {
+    "zh-CN": {
+      "name": "日历",
+      "description": "任务页右侧栏里的日历：上面一个月，下面是选中那天的待办和记事。你自己记，或者让 agent 帮你记。"
+    },
+    "en": {
+      "name": "Calendar",
+      "description": "A calendar in the task page's side panel: a month on top, the chosen day's to-dos and memories below, written by you or by an agent."
+    }
+  },
+  "entry": "main.html",
+  "icon": "icon.png",
+  "permissions": {
+    "capabilities": ["agents:tools"]
+  },
+  "contributes": {
+    "tabs": [{ "name": "main", "title": "日历", "entry": "main.html" }],
+    "mcpServers": [{ "tools": "tools.js" }]
+  },
+  "license": "MIT"
+}
