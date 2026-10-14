@@ -1,0 +1,16 @@
+{
+  "id": "day-calendar",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.4.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "132085f0ec7708df86e0283f1e49b854e8dc399b",
+      "sha256": "3dbad18790ad79b4e9e729fae8d4844eb5378f819b7171d800d3f44156ef73bd",
+      "bytes": 21128,
+      "yanked": null
+    }
+  ]
+}
