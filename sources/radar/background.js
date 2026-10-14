@@ -66,17 +66,23 @@ function goneWhy(W, row) {
 
 /** What the agent said last, for 「做完了」: an MCP that went deaf still leaves its conclusion here. */
 async function lastWords(W, row) {
-  // a terminal agent keeps no readable conversation: gugu refuses the read on this same fact, so it is not asked
-  if (row.transport === 'pty') return W.inTerminal
+  // gugu reads a terminal agent's conversation too now (from its engine's record, #7126): every agent is asked
   try {
     const page = await g.readAgentHistory(row.agentId)
-    const said = [...page.messages].reverse().find((m) => m.sender !== 'user' && m.text?.trim())
+    // only what it said after its newest prompt: words from before that are an earlier round's, never this one's (#7126)
+    const prompt = page.messages.findLastIndex((m) => m.sender === 'user')
+    const said = page.messages.slice(prompt + 1).reverse().find((m) => m.text?.trim())
     if (!said) return W.saidNothing
     const text = said.text.trim()
     return W.said(text.length > 1500 ? `${text.slice(0, 1500)}${W.cut}` : text)
   } catch (error) {
     // gugu's message is for the App's author (English); its code is what the reminder says in the person's language
-    return W.cannotRead(error?.code === 'denied' ? W.noHistoryPermission : error?.message ?? error)
+    if (error?.code === 'unavailable') return W.unreadable
+    if (error?.code === 'not-found') return W.cannotSee
+    if (error?.code === 'denied') return W.cannotRead(W.noHistoryPermission)
+    // a gugu from before #7126 refuses a terminal agent with no code: say what 0.1.2 said for it
+    if (row.transport === 'pty') return W.inTerminal
+    return W.cannotRead(error?.message ?? error)
   }
 }
 
@@ -98,12 +104,13 @@ async function failureSoon(agentId) {
   return (await g.listAgents()).find((row) => row.agentId === agentId)?.failure ?? null
 }
 
-async function fire(sub, event, row, extra) {
+/** `ended`: this is the last one, the watch ends with it (the one it is about is gone) — said so, not 「unwatch」. */
+async function fire(sub, event, row, extra, { ended = false } = {}) {
   const fired = (state.fired[sub.id] ??= {})
   if (fired[event]) return
   fired[event] = true
   const W = wordsFor((await g.getContext())?.locale)
-  const text = W.reminder(await describe(W, event, row, extra), row.sessionId, sub.id)
+  const text = W.reminder(await describe(W, event, row, extra), row.sessionId, sub.id, ended)
   const entry = { at: nowIso(), sub: sub.id, target: sub.target, targetTitle: row.title, event, to: sub.to, ok: false, error: null }
   // A path is where reminders travel: from the agent they are about to the one they go to. Its count is kept (only the
   // ones that arrived), all subscriptions on it together; its last failure stays until one arrives again.
@@ -167,7 +174,7 @@ async function check() {
     if (!row) {
       // 不在清单里了:会话被归档或删除。这条订阅到此为止。
       const title = before?.title ?? sub.titles?.target ?? sub.target
-      if (wants(sub, 'gone')) await fire(sub, 'gone', { title, agentId: sub.target, sessionId: null })
+      if (wants(sub, 'gone')) await fire(sub, 'gone', { title, agentId: sub.target, sessionId: null }, undefined, { ended: true })
       await endSub(sub, '被盯的会话不在了')
       continue
     }
