@@ -70,8 +70,14 @@
   let selected = keyOf(now)
   let days = {}
   let raw
+  let rawOk = true
+  // Whether this page is on screen (gugu's layout.visible: a hidden App page still reads its document as visible).
+  let shown = true
+  // What the bar says: a read error goes once a read succeeds, a save error once a change does.
+  let errKind = null
 
-  function showErr(msg) {
+  function showErr(msg, kind) {
+    errKind = msg ? kind : null
     $('err').hidden = !msg
     $('err').textContent = msg || ''
   }
@@ -81,23 +87,25 @@
     try {
       next = await api.readData(FILE)
     } catch (e) {
-      showErr(t().readFail((e && e.message) || String(e)))
+      showErr(t().readFail((e && e.message) || String(e)), 'read')
       return false
     }
-    if (next === raw) return false
+    if (errKind === 'jump') showErr('')
+    if (next === raw) {
+      if (errKind === 'read' && rawOk) showErr('')
+      return false
+    }
     raw = next
-    if (!next) {
-      days = {}
-      return true
-    }
     try {
-      const v = JSON.parse(next)
+      const v = next ? JSON.parse(next) : null
       days = (v && v.days) || {}
-      showErr('')
     } catch (e) {
-      showErr(t().readFail(`${FILE}: ${e.message}`))
+      rawOk = false
+      showErr(t().readFail(`${FILE}: ${e.message}`), 'read')
       return false
     }
+    rawOk = true
+    if (errKind === 'read') showErr('')
     return true
   }
 
@@ -110,8 +118,11 @@
         const text = (res.content || []).map((c) => c.text || '').join(' ').trim()
         throw new Error(text || tool)
       }
+      if (errKind === 'save') showErr('')
     } catch (e) {
-      showErr(t().saveFail((e && e.message) || String(e)))
+      showErr(t().saveFail((e && e.message) || String(e)), 'save')
+      // The page already showed the change; draw the file as it is instead.
+      raw = undefined
     }
     if (await load()) render()
   }
@@ -119,8 +130,8 @@
   // An agent's entry knows its session: a click takes the person there, as a click on it in the task list would.
   const canJump = (e) => !!e.session && typeof api.showSession === 'function'
   function jump(e) {
-    api.showSession(e.session).then(() => showErr(''), (err) => {
-      showErr(err && err.code === 'not-found' ? t().jumpGone : t().jumpFail((err && err.message) || String(err)))
+    api.showSession(e.session).then(() => { if (errKind === 'jump') showErr('') }, (err) => {
+      showErr(err && err.code === 'not-found' ? t().jumpGone : t().jumpFail((err && err.message) || String(err)), 'jump')
     })
   }
   function jumpButton(e) {
@@ -265,15 +276,25 @@
     change('record', { kind: 'todo', title, date: selected })
   })
 
+  // Coming back on screen reads at once: what an agent recorded meanwhile shows without waiting for the next tick.
+  function noteLayout(ctx) {
+    const was = shown
+    shown = !(ctx && ctx.layout && ctx.layout.visible === false)
+    if (shown && !was) load().then((changed) => { if (changed) render() })
+  }
+
   async function start() {
     try {
       const ctx = await api.getContext()
       en = !!(ctx && ctx.locale && /^en/i.test(ctx.locale))
+      noteLayout(ctx)
     } catch (e) {
-      showErr(`getContext: ${(e && e.message) || e}`)
+      showErr(`getContext: ${(e && e.message) || e}`, 'context')
     }
     if (typeof api.onContextChanged === 'function') {
       api.onContextChanged((next) => {
+        if (next && errKind === 'context') showErr('')
+        noteLayout(next)
         if (!next || !next.locale) return
         const was = en
         en = /^en/i.test(next.locale)
@@ -284,7 +305,7 @@
     render()
     // Agents write through the `record` tool at any time; pick it up while the panel is on screen.
     setInterval(async () => {
-      if (document.visibilityState === 'hidden') return
+      if (!shown || document.visibilityState === 'hidden') return
       if (await load()) render()
     }, 3000)
     // A new day moves "today" along.

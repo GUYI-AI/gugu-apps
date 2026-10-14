@@ -1,6 +1,6 @@
 // The calendar's program: the only writer of journal.json. Agents call `record`; the page calls
 // all three through callProgram, so agents and the person never overwrite each other's entries.
-import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, renameSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
@@ -8,9 +8,27 @@ const pad = (n) => String(n).padStart(2, '0')
 const dayOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const PAGE_ONLY = { ui: { visibility: ['app'] } }
 
+// A day that is on the calendar: 2026-02-31 parses, but no month shows it.
 function checkDay(date) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date)) || Number.isNaN(Date.parse(date))) throw new Error(`date must be YYYY-MM-DD, got ${JSON.stringify(date)}`)
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date))
+  if (!m || dayOf(new Date(+m[1], +m[2] - 1, +m[3])) !== date) throw new Error(`date must be a real day as YYYY-MM-DD, got ${JSON.stringify(date)}`)
   return date
+}
+
+const pause = new Int32Array(new SharedArrayBuffer(4))
+// Windows refuses a rename over a file being read at that instant (the page's readData): try again shortly.
+function replace(tmp, file) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return renameSync(tmp, file)
+    } catch (e) {
+      if (attempt >= 9 || !['EPERM', 'EACCES', 'EBUSY'].includes(e.code)) {
+        try { unlinkSync(tmp) } catch {}
+        throw e
+      }
+      Atomics.wait(pause, 0, 0, 20)
+    }
+  }
 }
 
 // Read, change, write in one synchronous step: calls from several agents run one after another.
@@ -28,8 +46,13 @@ function change(fn) {
   }
   const out = fn(journal)
   const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, JSON.stringify(journal))
-  renameSync(tmp, file)
+  try {
+    writeFileSync(tmp, JSON.stringify(journal))
+  } catch (e) {
+    try { unlinkSync(tmp) } catch {}
+    throw e
+  }
+  replace(tmp, file)
   return out
 }
 
