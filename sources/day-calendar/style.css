@@ -1,0 +1,182 @@
+body { margin: 0; }
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--em-spacing-sm);
+  padding: var(--em-spacing-md) var(--em-spacing-md) var(--em-spacing-xl);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+button.nav, button.month, button.cell, button.todo-main, button.del, button.jump, button.memory-body {
+  appearance: none;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  height: auto;
+  min-height: 0;
+  cursor: pointer;
+}
+
+/* ---- month header ---- */
+.head { display: flex; align-items: center; gap: var(--em-spacing-xs); }
+button.nav {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: var(--em-foreground-muted);
+  border-radius: var(--em-radius-control);
+}
+button.month {
+  flex: 1;
+  padding: var(--em-spacing-xs) 0;
+  font-weight: 600;
+  text-align: center;
+  border-radius: var(--em-radius-control);
+}
+button.nav:hover, button.month:hover { background: var(--em-hover); color: var(--em-foreground); }
+
+/* ---- grid ---- */
+.weekdays, .grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.weekdays span {
+  text-align: center;
+  font-size: var(--em-font-caption);
+  color: var(--em-foreground-passive);
+}
+button.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--em-spacing-xs) 0;
+  border-radius: var(--em-radius-control);
+  font-variant-numeric: tabular-nums;
+}
+button.cell:hover { background: var(--em-hover); }
+button.cell.today .num { font-weight: 700; color: var(--em-foreground-info); }
+/* Selected: a quiet fill and a ring, never a filled ink block (it would swallow the number in dark). */
+button.cell.selected {
+  background: var(--em-selected);
+  box-shadow: inset 0 0 0 1px var(--em-accent-9);
+}
+.marker { display: flex; align-items: center; justify-content: center; height: 6px; }
+.dot { display: block; width: 5px; height: 5px; border-radius: 50%; box-sizing: border-box; }
+.dot.pending { border: 1.5px solid var(--em-foreground-muted); }
+.dot.done { background: var(--em-foreground-success); }
+.dot.memory { background: var(--em-foreground-info); }
+
+/* ---- the day ---- */
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--em-spacing-xs);
+  margin-top: var(--em-spacing-xs);
+  padding-top: var(--em-spacing-md);
+  border-top: 1px solid var(--em-border);
+}
+.day-title { display: flex; align-items: baseline; gap: var(--em-spacing-sm); }
+.day h5 {
+  margin: var(--em-spacing-sm) 0 var(--em-spacing-xs);
+  letter-spacing: 0.08em;
+}
+
+.todo, .memory {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--em-spacing-xs);
+  border-radius: var(--em-radius-control);
+}
+.todo:hover, .memory:hover { background: var(--em-hover); }
+button.todo-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--em-spacing-sm);
+  padding: var(--em-spacing-xs);
+  text-align: start;
+  border-radius: var(--em-radius-control);
+}
+.mark {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--em-foreground-muted);
+  display: grid;
+  place-items: center;
+}
+.todo.done .mark {
+  border-color: var(--em-foreground-success);
+  background: var(--em-foreground-success);
+  color: var(--em-background);
+}
+.mark gugu-icon { width: 10px; height: 10px; }
+.title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.todo.done .title { text-decoration: line-through; color: var(--em-foreground-muted); }
+.time {
+  flex: 0 0 auto;
+  color: var(--em-foreground-passive);
+  font-variant-numeric: tabular-nums;
+}
+
+.memory-body { flex: 1; min-width: 0; padding: var(--em-spacing-xs); }
+button.memory-body { display: block; text-align: start; border-radius: var(--em-radius-control); }
+.memory-line { display: flex; align-items: baseline; gap: var(--em-spacing-sm); }
+.go { flex: 0 0 auto; align-self: center; width: 14px; height: 14px; color: var(--em-foreground-passive); }
+button.memory-body:hover .go, button.memory-body:focus-visible .go { color: var(--em-foreground); }
+.bullet { flex: 0 0 14px; align-self: center; display: grid; place-items: center; }
+.bullet i { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--em-foreground-info); }
+.memory-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px var(--em-spacing-xs);
+  margin: 2px 0 0 calc(14px + var(--em-spacing-sm));
+}
+.tag {
+  font-style: normal;
+  font-size: var(--em-font-caption);
+  padding: 0 6px;
+  border-radius: var(--em-radius-xl);
+  background: var(--em-background-info);
+  color: var(--em-foreground-info);
+}
+.detail { display: block; color: var(--em-foreground-muted); }
+
+button.del, button.jump {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: var(--em-foreground-passive);
+  border-radius: var(--em-radius-control);
+  opacity: 0;
+}
+.todo:hover button.del, .memory:hover button.del, button.del:focus-visible { opacity: 1; }
+button.jump { opacity: 1; }
+button.jump:hover { color: var(--em-foreground); background: var(--em-press); }
+button.del:hover { color: var(--em-foreground-destructive); background: var(--em-press); }
+
+.empty { margin: var(--em-spacing-xs) 0; color: var(--em-foreground-passive); font-size: var(--em-font-caption); }
+.add { margin-top: var(--em-spacing-sm); }
+.add input { width: 100%; box-sizing: border-box; }
+
+@media (hover: none) {
+  button.del { opacity: 1; }
+}
