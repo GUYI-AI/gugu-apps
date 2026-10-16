@@ -1,0 +1,19 @@
+{
+  "name": "gugu-app-office",
+  "private": true,
+  "type": "module",
+  "description": "咕咕办公. app/ is the App, what the market packs; vendor/ rebuilds the libraries in app/skills/office/vendor/; test/ is its tests.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node vendor/build.mjs --check && vitest run"
+  },
+  "devDependencies": {
+    "@vitest/browser": "4.1.10",
+    "@vitest/browser-playwright": "4.1.10",
+    "esbuild": "0.25.12",
+    "jsdom": "29.0.2",
+    "playwright": "1.59.1",
+    "vite": "6.4.1",
+    "vitest": "4.1.10"
+  }
+}

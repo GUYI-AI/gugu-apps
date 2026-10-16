@@ -7,7 +7,8 @@
     "add-version": "node scripts/add-version.mjs",
     "verify": "node scripts/verify.mjs",
     "sync": "node scripts/sync.mjs",
-    "test": "node --test scripts/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "app-tests": "node scripts/app-tests.mjs"
   },
   "dependencies": {
     "ali-oss": "6.23.0",

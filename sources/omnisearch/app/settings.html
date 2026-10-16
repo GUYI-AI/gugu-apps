@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>全能搜索</title>
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<div class="win">
+  <header class="bar">
+    <img class="ic" src="icon.png" alt="">
+    <h1 data-t="title">全能搜索</h1>
+    <span class="st" id="summary" role="status"></span>
+  </header>
+  <p class="notice" id="notice" role="status" hidden></p>
+  <main class="col" id="caps" aria-live="polite"></main>
+  <details class="adv" id="adv">
+    <summary data-t="advanced">高级设置</summary>
+    <div class="adv-body">
+      <label class="fl">
+        <span class="lab" data-t="firecrawlHost">自建 Firecrawl 地址</span>
+        <span class="inrow">
+          <input class="in" id="fcHost" type="text" spellcheck="false" placeholder="https://api.firecrawl.dev">
+          <button class="btn" id="fcHostSave" type="button" data-t="save">保存</button>
+        </span>
+        <span class="sub" data-t="firecrawlHostHelp">留空就用 Firecrawl 官方的服务。</span>
+      </label>
+      <p class="sub" id="where"></p>
+    </div>
+  </details>
+  <p class="error" id="error" role="alert" hidden></p>
+</div>
+<script type="module" src="settings.js"></script>
+</body>
+</html>

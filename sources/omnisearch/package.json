@@ -1,0 +1,15 @@
+{
+  "name": "gugu-app-omnisearch",
+  "private": true,
+  "type": "module",
+  "description": "全能搜索. app/ is the App, what the market packs; server-build/ rebuilds app/server/server.mjs from upstream (by hand: git, pnpm, network); test/ is its tests.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "vite": "6.4.1",
+    "vitest": "4.1.10"
+  }
+}

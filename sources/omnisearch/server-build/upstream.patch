@@ -1,0 +1,841 @@
+diff --git a/src/common/types.ts b/src/common/types.ts
+index 683989c..c9a40e5 100644
+--- a/src/common/types.ts
++++ b/src/common/types.ts
+@@ -65,6 +65,36 @@ export interface ProcessingOptions {
+ 	format?: 'markdown' | 'text';
+ }
+ 
++export interface LibraryMatch {
++	id: string;
++	title: string;
++	description?: string;
++	trust_score?: number;
++	benchmark_score?: number;
++	total_snippets?: number;
++	versions?: string[];
++}
++
++export interface LibraryDocsParams {
++	query: string;
++	library?: string;
++	library_id?: string;
++}
++
++export interface LibraryDocsResult {
++	library_id: string;
++	library?: LibraryMatch;
++	alternatives: LibraryMatch[];
++	content: string;
++	source_provider: string;
++}
++
++export interface LibraryDocsProvider {
++	get_docs(params: LibraryDocsParams): Promise<LibraryDocsResult>;
++	name: string;
++	description: string;
++}
++
+ export interface ProcessingProvider {
+ 	process_content(
+ 		url: string | string[],
+diff --git a/src/config/env.ts b/src/config/env.ts
+index a89f664..cc08be1 100644
+--- a/src/config/env.ts
++++ b/src/config/env.ts
+@@ -12,6 +12,9 @@ export const LINKUP_API_KEY = process.env.LINKUP_API_KEY;
+ export const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
+ export const FIRECRAWL_BASE_URL = process.env.FIRECRAWL_BASE_URL;
+ 
++// Library documentation API keys
++export const CONTEXT7_API_KEY = process.env.CONTEXT7_API_KEY;
++
+ // Provider configuration
+ export const config = {
+ 	search: {
+@@ -40,6 +43,20 @@ export const config = {
+ 			base_url: 'https://api.exa.ai',
+ 			timeout: 30000, // 30 seconds
+ 		},
++		firecrawl: {
++			api_key: FIRECRAWL_API_KEY,
++			base_url: FIRECRAWL_BASE_URL
++				? `${FIRECRAWL_BASE_URL}/v2/search`
++				: 'https://api.firecrawl.dev/v2/search',
++			timeout: 60000, // 60 seconds
++		},
++	},
++	docs: {
++		context7: {
++			api_key: CONTEXT7_API_KEY,
++			base_url: 'https://context7.com/api/v2',
++			timeout: 30000, // 30 seconds
++		},
+ 	},
+ 	ai_response: {
+ 		kagi_fastgpt: {
+@@ -193,6 +210,9 @@ export const validate_config = () => {
+ 	if (!LINKUP_API_KEY) missing_keys.push('LINKUP_API_KEY');
+ 	else available_keys.push('LINKUP_API_KEY');
+ 
++	if (!CONTEXT7_API_KEY) missing_keys.push('CONTEXT7_API_KEY');
++	else available_keys.push('CONTEXT7_API_KEY');
++
+ 	// Log available keys
+ 	if (available_keys.length > 0) {
+ 		console.error(`Found API keys for: ${available_keys.join(', ')}`);
+diff --git a/src/providers/docs/context7/index.test.ts b/src/providers/docs/context7/index.test.ts
+new file mode 100644
+index 0000000..5c605f7
+--- /dev/null
++++ b/src/providers/docs/context7/index.test.ts
+@@ -0,0 +1,125 @@
++import {
++	afterEach,
++	beforeEach,
++	describe,
++	expect,
++	it,
++	vi,
++} from 'vitest';
++
++const json_response = (body: unknown) =>
++	new Response(JSON.stringify(body), {
++		status: 200,
++		headers: { 'content-type': 'application/json' },
++	});
++
++const text_response = (body: string) =>
++	new Response(body, {
++		status: 200,
++		headers: { 'content-type': 'text/plain' },
++	});
++
++const search_body = {
++	results: [
++		{
++			id: '/reactjs/react.dev',
++			title: 'React',
++			description: 'Official React docs',
++			totalSnippets: 4305,
++			trustScore: 10,
++			benchmarkScore: 90.78,
++			versions: [],
++		},
++		{ id: '/react/react', title: 'React', versions: ['v19.2.7'] },
++	],
++};
++
++describe('Context7Provider', () => {
++	beforeEach(() => {
++		vi.resetModules();
++		vi.stubEnv('CONTEXT7_API_KEY', 'test-context7-key');
++	});
++
++	afterEach(() => {
++		vi.unstubAllEnvs();
++		vi.restoreAllMocks();
++	});
++
++	it('resolves a library name, then returns its docs with alternatives', async () => {
++		const fetch_mock = vi.fn(async (url: string) =>
++			url.includes('/libs/search')
++				? json_response(search_body)
++				: text_response('### useEffect cleanup\n\nreturn () => {}'),
++		);
++		vi.stubGlobal('fetch', fetch_mock);
++		const { Context7Provider } = await import('./index.js');
++
++		const result = await new Context7Provider().get_docs({
++			library: 'react',
++			query: 'useEffect cleanup',
++		});
++
++		expect(result.library_id).toBe('/reactjs/react.dev');
++		expect(result.library?.trust_score).toBe(10);
++		expect(result.alternatives.map((a) => a.id)).toEqual([
++			'/react/react',
++		]);
++		expect(result.alternatives[0].versions).toEqual(['v19.2.7']);
++		expect(result.content).toContain('useEffect cleanup');
++
++		const urls = fetch_mock.mock.calls.map(([url]) => String(url));
++		expect(urls[0]).toContain('libraryName=react');
++		expect(urls[1]).toContain('libraryId=%2Freactjs%2Freact.dev');
++		expect(urls[1]).toContain('type=txt');
++		const [, init] = fetch_mock.mock.calls[1] as unknown as [
++			string,
++			RequestInit,
++		];
++		expect(
++			(init.headers as Record<string, string>).Authorization,
++		).toBe('Bearer test-context7-key');
++	});
++
++	it('skips the search when library_id is given', async () => {
++		const fetch_mock = vi.fn(async () => text_response('docs'));
++		vi.stubGlobal('fetch', fetch_mock);
++		const { Context7Provider } = await import('./index.js');
++
++		const result = await new Context7Provider().get_docs({
++			library_id: '/vercel/next.js',
++			query: 'app router',
++		});
++
++		expect(fetch_mock).toHaveBeenCalledTimes(1);
++		expect(result).toMatchObject({
++			library_id: '/vercel/next.js',
++			alternatives: [],
++			content: 'docs',
++			source_provider: 'context7',
++		});
++	});
++
++	it('asks for a library when neither name nor id is given', async () => {
++		vi.stubGlobal('fetch', vi.fn());
++		const { Context7Provider } = await import('./index.js');
++
++		await expect(
++			new Context7Provider().get_docs({ query: 'anything' }),
++		).rejects.toThrow(/library/);
++	});
++
++	it('says so when no library matches', async () => {
++		vi.stubGlobal(
++			'fetch',
++			vi.fn(async () => json_response({ results: [] })),
++		);
++		const { Context7Provider } = await import('./index.js');
++
++		await expect(
++			new Context7Provider().get_docs({
++				library: 'no-such-lib',
++				query: 'x',
++			}),
++		).rejects.toThrow(/no library matching/);
++	});
++});
+diff --git a/src/providers/docs/context7/index.ts b/src/providers/docs/context7/index.ts
+new file mode 100644
+index 0000000..14140d7
+--- /dev/null
++++ b/src/providers/docs/context7/index.ts
+@@ -0,0 +1,164 @@
++import * as v from 'valibot';
++import { handle_provider_error } from '../../../common/errors.js';
++import { http_json } from '../../../common/http.js';
++import { parse_provider_response } from '../../../common/provider-response.js';
++import { retry_with_backoff } from '../../../common/retry.js';
++import {
++	ErrorType,
++	LibraryDocsParams,
++	LibraryDocsProvider,
++	LibraryDocsResult,
++	LibraryMatch,
++	ProviderError,
++} from '../../../common/types.js';
++import { validate_api_key } from '../../../common/validation.js';
++import { config } from '../../../config/env.js';
++
++const context7_search_response_schema = v.object({
++	results: v.array(
++		v.object({
++			id: v.string(),
++			title: v.string(),
++			description: v.optional(v.string()),
++			totalSnippets: v.optional(v.number()),
++			trustScore: v.optional(v.number()),
++			benchmarkScore: v.optional(v.number()),
++			versions: v.optional(v.array(v.string())),
++		}),
++	),
++});
++
++const MAX_ALTERNATIVES = 4;
++
++const to_match = (
++	result: v.InferOutput<
++		typeof context7_search_response_schema
++	>['results'][number],
++): LibraryMatch => ({
++	id: result.id,
++	title: result.title,
++	description: result.description,
++	trust_score: result.trustScore,
++	benchmark_score: result.benchmarkScore,
++	total_snippets: result.totalSnippets,
++	versions: result.versions?.length ? result.versions : undefined,
++});
++
++export class Context7Provider implements LibraryDocsProvider {
++	name = 'context7';
++	description =
++		'Up-to-date documentation and code examples for programming libraries and frameworks, from Context7.';
++
++	private headers(api_key: string) {
++		return {
++			Accept: 'application/json, text/plain',
++			Authorization: `Bearer ${api_key}`,
++		};
++	}
++
++	async search_libraries(
++		library: string,
++		query: string,
++	): Promise<LibraryMatch[]> {
++		const api_key = validate_api_key(
++			config.docs.context7.api_key,
++			this.name,
++		);
++		const params = new URLSearchParams({
++			libraryName: library,
++			query,
++		});
++
++		return retry_with_backoff(async () => {
++			try {
++				const raw = await http_json(
++					this.name,
++					`${config.docs.context7.base_url}/libs/search?${params}`,
++					{
++						method: 'GET',
++						headers: this.headers(api_key),
++						signal: AbortSignal.timeout(config.docs.context7.timeout),
++					},
++				);
++				const data = parse_provider_response(
++					this.name,
++					context7_search_response_schema,
++					raw,
++				);
++				return data.results.map(to_match);
++			} catch (error) {
++				handle_provider_error(error, this.name, 'search libraries');
++			}
++		});
++	}
++
++	async get_docs(
++		params: LibraryDocsParams,
++	): Promise<LibraryDocsResult> {
++		const api_key = validate_api_key(
++			config.docs.context7.api_key,
++			this.name,
++		);
++
++		let library_id = params.library_id?.trim();
++		let library: LibraryMatch | undefined;
++		let alternatives: LibraryMatch[] = [];
++
++		if (!library_id) {
++			const name = params.library?.trim();
++			if (!name) {
++				throw new ProviderError(
++					ErrorType.INVALID_INPUT,
++					'Give library (a name such as "next.js") or library_id (such as "/vercel/next.js")',
++					this.name,
++				);
++			}
++			const matches = await this.search_libraries(name, params.query);
++			if (matches.length === 0) {
++				throw new ProviderError(
++					ErrorType.INVALID_INPUT,
++					`Context7 has no library matching "${name}"`,
++					this.name,
++				);
++			}
++			[library, ...alternatives] = matches;
++			alternatives = alternatives.slice(0, MAX_ALTERNATIVES);
++			library_id = library.id;
++		}
++
++		const query_params = new URLSearchParams({
++			libraryId: library_id,
++			query: params.query,
++			type: 'txt',
++		});
++
++		const content = await retry_with_backoff(async () => {
++			try {
++				const raw = await http_json<unknown>(
++					this.name,
++					`${config.docs.context7.base_url}/context?${query_params}`,
++					{
++						method: 'GET',
++						headers: this.headers(api_key),
++						signal: AbortSignal.timeout(config.docs.context7.timeout),
++					},
++				);
++				return typeof raw === 'string' ? raw : JSON.stringify(raw);
++			} catch (error) {
++				handle_provider_error(
++					error,
++					this.name,
++					'fetch documentation',
++				);
++			}
++		});
++
++		return {
++			library_id,
++			library,
++			alternatives,
++			content,
++			source_provider: this.name,
++		};
++	}
++}
+diff --git a/src/providers/search/firecrawl/index.test.ts b/src/providers/search/firecrawl/index.test.ts
+new file mode 100644
+index 0000000..89a022f
+--- /dev/null
++++ b/src/providers/search/firecrawl/index.test.ts
+@@ -0,0 +1,98 @@
++import {
++	afterEach,
++	beforeEach,
++	describe,
++	expect,
++	it,
++	vi,
++} from 'vitest';
++
++const json_response = (body: unknown) =>
++	new Response(JSON.stringify(body), {
++		status: 200,
++		headers: { 'content-type': 'application/json' },
++	});
++
++describe('FirecrawlSearchProvider', () => {
++	beforeEach(() => {
++		vi.resetModules();
++		vi.stubEnv('FIRECRAWL_API_KEY', 'test-firecrawl-key');
++	});
++
++	afterEach(() => {
++		vi.unstubAllEnvs();
++		vi.restoreAllMocks();
++	});
++
++	it('maps web results and sends domains and time range', async () => {
++		const fetch_mock = vi.fn(async () =>
++			json_response({
++				success: true,
++				data: {
++					web: [
++						{
++							url: 'https://example.com/a',
++							title: 'Result',
++							description: 'Summary',
++							position: 1,
++						},
++					],
++				},
++			}),
++		);
++		vi.stubGlobal('fetch', fetch_mock);
++		const { FirecrawlSearchProvider } = await import('./index.js');
++
++		await expect(
++			new FirecrawlSearchProvider().search({
++				query: 'result',
++				limit: 1,
++				include_domains: ['example.com'],
++				time_range: 'week',
++			}),
++		).resolves.toEqual([
++			{
++				title: 'Result',
++				url: 'https://example.com/a',
++				snippet: 'Summary',
++				source_provider: 'firecrawl',
++			},
++		]);
++
++		const [url, init] = fetch_mock.mock.calls[0] as unknown as [
++			string,
++			RequestInit,
++		];
++		expect(url).toBe('https://api.firecrawl.dev/v2/search');
++		const body = JSON.parse(init.body as string);
++		expect(body.query).toContain('site:example.com');
++		expect(body.limit).toBe(1);
++		expect(body.tbs).toBe('qdr:w');
++	});
++
++	it('returns no results when the web block is omitted', async () => {
++		vi.stubGlobal(
++			'fetch',
++			vi.fn(async () => json_response({ success: true, data: {} })),
++		);
++		const { FirecrawlSearchProvider } = await import('./index.js');
++
++		await expect(
++			new FirecrawlSearchProvider().search({ query: 'nothing' }),
++		).resolves.toEqual([]);
++	});
++
++	it('fails when Firecrawl reports an error', async () => {
++		vi.stubGlobal(
++			'fetch',
++			vi.fn(async () =>
++				json_response({ success: false, error: 'quota exceeded' }),
++			),
++		);
++		const { FirecrawlSearchProvider } = await import('./index.js');
++
++		await expect(
++			new FirecrawlSearchProvider().search({ query: 'x' }),
++		).rejects.toThrow(/quota exceeded/);
++	});
++});
+diff --git a/src/providers/search/firecrawl/index.ts b/src/providers/search/firecrawl/index.ts
+new file mode 100644
+index 0000000..28e1fee
+--- /dev/null
++++ b/src/providers/search/firecrawl/index.ts
+@@ -0,0 +1,110 @@
++import * as v from 'valibot';
++import { handle_provider_error } from '../../../common/errors.js';
++import {
++	make_firecrawl_request,
++	validate_firecrawl_response,
++} from '../../../common/firecrawl-utils.js';
++import { retry_with_backoff } from '../../../common/retry.js';
++import {
++	apply_search_operators,
++	build_query_with_operators,
++	parse_search_operators,
++} from '../../../common/search-operators.js';
++import {
++	BaseSearchParams,
++	SearchProvider,
++	SearchResult,
++	SearchTimeRange,
++} from '../../../common/types.js';
++import { validate_api_key } from '../../../common/validation.js';
++import { config } from '../../../config/env.js';
++
++const firecrawl_search_response_schema = v.object({
++	success: v.boolean(),
++	error: v.optional(v.string()),
++	data: v.optional(
++		v.object({
++			web: v.optional(
++				v.array(
++					v.object({
++						url: v.string(),
++						title: v.optional(v.string()),
++						description: v.optional(v.string()),
++						position: v.optional(v.number()),
++					}),
++				),
++			),
++		}),
++	),
++});
++
++const time_range_tbs: Record<SearchTimeRange, string> = {
++	day: 'qdr:d',
++	week: 'qdr:w',
++	month: 'qdr:m',
++	year: 'qdr:y',
++};
++
++export class FirecrawlSearchProvider implements SearchProvider {
++	name = 'firecrawl';
++	description =
++		'Web search through Firecrawl: Google-like results with titles, URLs and page descriptions. Supports site:/-site: via include/exclude domains and time range. Pairs with web_extract firecrawl modes to read the pages it finds.';
++
++	async search(params: BaseSearchParams): Promise<SearchResult[]> {
++		const api_key = validate_api_key(
++			config.search.firecrawl.api_key,
++			this.name,
++		);
++
++		const parsed_query = parse_search_operators(params.query);
++		const search_params = apply_search_operators(parsed_query);
++
++		const search_request = async () => {
++			try {
++				const query = build_query_with_operators(
++					search_params,
++					params.include_domains,
++					params.exclude_domains,
++				);
++
++				const body: Record<string, unknown> = {
++					query,
++					limit: params.limit ?? 10,
++					sources: ['web'],
++				};
++				if (params.time_range) {
++					body.tbs = time_range_tbs[params.time_range];
++				}
++
++				const data = await make_firecrawl_request(
++					this.name,
++					config.search.firecrawl.base_url,
++					api_key,
++					body,
++					config.search.firecrawl.timeout,
++					firecrawl_search_response_schema,
++				);
++				validate_firecrawl_response(
++					data,
++					this.name,
++					'Firecrawl search failed',
++				);
++
++				return (data.data?.web ?? []).map((result) => ({
++					title: result.title ?? result.url,
++					url: result.url,
++					snippet: result.description ?? '',
++					source_provider: this.name,
++				}));
++			} catch (error) {
++				handle_provider_error(
++					error,
++					this.name,
++					'fetch search results',
++				);
++			}
++		};
++
++		return retry_with_backoff(search_request);
++	}
++}
+diff --git a/src/server/provider-definitions.test.ts b/src/server/provider-definitions.test.ts
+index fc9f362..5e84491 100644
+--- a/src/server/provider-definitions.test.ts
++++ b/src/server/provider-definitions.test.ts
+@@ -4,6 +4,7 @@ import {
+ 	get_default_web_extract_mode,
+ 	get_valid_web_extract_modes,
+ 	github_provider_definitions,
++	library_docs_provider_definitions,
+ 	make_processing_provider_key,
+ 	web_extract_provider_definitions,
+ 	web_search_provider_definitions,
+@@ -22,6 +23,7 @@ describe('provider definitions', () => {
+ 			{ id: 'brave', category: 'search', tools: ['web_search'] },
+ 			{ id: 'kagi', category: 'search', tools: ['web_search'] },
+ 			{ id: 'exa', category: 'search', tools: ['web_search'] },
++			{ id: 'firecrawl', category: 'search', tools: ['web_search'] },
+ 			{
+ 				id: 'kagi_enrichment',
+ 				category: 'search',
+@@ -66,6 +68,20 @@ describe('provider definitions', () => {
+ 				modes: ['code', 'repositories', 'users'],
+ 			}),
+ 		);
++
++		expect(
++			library_docs_provider_definitions.map((definition) => ({
++				id: definition.id,
++				api_key_name: definition.api_key_name,
++				tools: definition.tools,
++			})),
++		).toEqual([
++			{
++				id: 'context7',
++				api_key_name: 'CONTEXT7_API_KEY',
++				tools: ['library_docs'],
++			},
++		]);
+ 	});
+ 
+ 	it('uses provider/mode definitions as web_extract routing source of truth', () => {
+diff --git a/src/server/provider-definitions.ts b/src/server/provider-definitions.ts
+index 489fe90..044daa6 100644
+--- a/src/server/provider-definitions.ts
++++ b/src/server/provider-definitions.ts
+@@ -22,6 +22,8 @@ import { TavilyMapProvider } from '../providers/processing/tavily-map/index.js';
+ import { BraveSearchProvider } from '../providers/search/brave/index.js';
+ import { ExaSearchProvider } from '../providers/search/exa/index.js';
+ import { GitHubSearchProvider } from '../providers/search/github/index.js';
++import { Context7Provider } from '../providers/docs/context7/index.js';
++import { FirecrawlSearchProvider } from '../providers/search/firecrawl/index.js';
+ import { KagiSearchProvider } from '../providers/search/kagi/index.js';
+ import { TavilySearchProvider } from '../providers/search/tavily/index.js';
+ import type { ProviderDefinition } from './provider-registry.js';
+@@ -31,6 +33,7 @@ export type WebSearchProviderName =
+ 	| 'brave'
+ 	| 'kagi'
+ 	| 'exa'
++	| 'firecrawl'
+ 	| 'kagi_enrichment';
+ 
+ export type AISearchProviderName =
+@@ -119,6 +122,16 @@ export const web_search_provider_definitions = [
+ 		api_key: config.search.exa.api_key,
+ 		create: () => new ExaSearchProvider(),
+ 	},
++	{
++		id: 'firecrawl',
++		name: 'firecrawl',
++		category: 'search',
++		api_key_name: 'FIRECRAWL_API_KEY',
++		tools: ['web_search'],
++		capabilities: ['web_search', 'domain_filters', 'time_range'],
++		api_key: config.search.firecrawl.api_key,
++		create: () => new FirecrawlSearchProvider(),
++	},
+ 	{
+ 		id: 'kagi_enrichment',
+ 		name: 'kagi_enrichment',
+@@ -188,6 +201,19 @@ export const github_provider_definitions = [
+ 	},
+ ] satisfies readonly ProviderDefinition<GitHubSearchProvider>[];
+ 
++export const library_docs_provider_definitions = [
++	{
++		id: 'context7',
++		name: 'context7',
++		category: 'search',
++		api_key_name: 'CONTEXT7_API_KEY',
++		tools: ['library_docs'],
++		capabilities: ['library_resolution', 'library_docs'],
++		api_key: config.docs.context7.api_key,
++		create: () => new Context7Provider(),
++	},
++] satisfies readonly ProviderDefinition<Context7Provider>[];
++
+ export const web_extract_provider_definitions = [
+ 	{
+ 		id: make_processing_provider_key('tavily', 'extract'),
+diff --git a/src/server/tools/index.ts b/src/server/tools/index.ts
+index 7a53a4e..8c8ff26 100644
+--- a/src/server/tools/index.ts
++++ b/src/server/tools/index.ts
+@@ -13,6 +13,12 @@ import {
+ 	initialize_github_search,
+ 	register_github_search,
+ } from './github-search.js';
++import {
++	get_provider_status_entries as get_docs_provider_status_entries,
++	get_available as get_docs_providers,
++	initialize_library_docs,
++	register_library_docs,
++} from './library-docs.js';
+ import {
+ 	get_provider_status_entries as get_extract_provider_status_entries,
+ 	get_available_providers as get_extract_providers,
+@@ -61,6 +67,12 @@ export const initialize_providers = () => {
+ 		...get_github_provider_status_entries(),
+ 	);
+ 
++	if (initialize_library_docs()) {
++		for (const p of get_docs_providers())
++			available_providers.search.add(p);
++	}
++	provider_status_entries.push(...get_docs_provider_status_entries());
++
+ 	if (initialize_ai_search()) {
+ 		for (const p of get_ai_providers())
+ 			available_providers.ai_response.add(p);
+@@ -105,6 +117,7 @@ export const initialize_providers = () => {
+ export const register_tools = (server: McpServer<GenericSchema>) => {
+ 	register_web_search(server);
+ 	register_github_search(server);
++	register_library_docs(server);
+ 	register_ai_search(server);
+ 	register_web_extract(server);
+ };
+diff --git a/src/server/tools/library-docs.ts b/src/server/tools/library-docs.ts
+new file mode 100644
+index 0000000..5c31a78
+--- /dev/null
++++ b/src/server/tools/library-docs.ts
+@@ -0,0 +1,78 @@
++import { McpServer } from 'tmcp';
++import type { GenericSchema } from 'valibot';
++import * as v from 'valibot';
++import { Context7Provider } from '../../providers/docs/context7/index.js';
++import { library_docs_provider_definitions } from '../provider-definitions.js';
++import { ProviderRegistry } from '../provider-registry.js';
++import { handle_tool_result } from './responses.js';
++import { large_result_mode_schema } from './schemas.js';
++
++const providers = new ProviderRegistry<Context7Provider>();
++
++export const initialize_library_docs = (): boolean => {
++	providers.clear();
++	providers.register_all(library_docs_provider_definitions);
++
++	return providers.size > 0;
++};
++
++export const get_available = () => providers.names();
++
++export const get_provider_status_entries = () =>
++	providers.status_entries();
++
++export const register_library_docs = (
++	server: McpServer<GenericSchema>,
++) => {
++	if (providers.size === 0) return;
++
++	server.tool(
++		{
++			name: 'library_docs',
++			description:
++				'Up-to-date documentation and code examples for a programming library, framework or SDK (Context7). Use before writing code against an API you are not sure of. Give the library name and what you want to know; the best-matching library is picked and its most relevant snippets returned, with other candidates listed. Pass library_id (e.g. "/vercel/next.js", or a version such as "/vercel/next.js/v15.1.8") from a previous answer to pin an exact library or version.',
++			annotations: {
++				readOnlyHint: true,
++				destructiveHint: false,
++				idempotentHint: true,
++				openWorldHint: true,
++			},
++			schema: v.object({
++				query: v.pipe(
++					v.string(),
++					v.minLength(1, 'Query cannot be empty'),
++					v.regex(/\S/, 'Query cannot be empty'),
++					v.description(
++						'What you want to know, e.g. "useEffect cleanup" or "configure middleware"',
++					),
++				),
++				library: v.optional(
++					v.pipe(
++						v.string(),
++						v.description(
++							'Library name, e.g. "react", "next.js", "valibot" (when library_id is not given)',
++						),
++					),
++				),
++				library_id: v.optional(
++					v.pipe(
++						v.string(),
++						v.description(
++							'Exact Context7 library id from a previous answer, e.g. "/vercel/next.js"',
++						),
++					),
++				),
++				large_result_mode: large_result_mode_schema,
++			}),
++		},
++		async ({ query, library, library_id, large_result_mode }) =>
++			handle_tool_result(
++				'library_docs',
++				async () =>
++					providers
++						.require('context7', 'library_docs')
++						.get_docs({ query, library, library_id }),
++				{ large_result_mode },
++			),
++	);
++};
+diff --git a/src/server/tools/web-search.ts b/src/server/tools/web-search.ts
+index 94011d5..b63664c 100644
+--- a/src/server/tools/web-search.ts
++++ b/src/server/tools/web-search.ts
+@@ -47,7 +47,7 @@ export const register_web_search = (
+ 		{
+ 			name: 'web_search',
+ 			description:
+-				'Search the web for information. Use when you need to find web pages, articles, or data. Providers: tavily (factual/citations and search controls), brave (privacy/operators), kagi (quality/operators), exa (AI-semantic), kagi_enrichment (specialized indexes). Search depth, topic, time range, safe search, raw content, and automatic parameters apply when supported by the provider.',
++				'Search the web for information. Use when you need to find web pages, articles, or data. Providers: tavily (factual/citations and search controls), brave (privacy/operators), kagi (quality/operators), exa (AI-semantic), firecrawl (Google-like results; read pages with web_extract firecrawl), kagi_enrichment (specialized indexes). Search depth, topic, time range, safe search, raw content, and automatic parameters apply when supported by the provider.',
+ 			annotations: {
+ 				readOnlyHint: true,
+ 				destructiveHint: false,

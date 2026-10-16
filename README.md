@@ -36,9 +36,20 @@
 
 **测试用的 App 测完一律 `unlisted`**:`main` 上 listed 的只能是准备给用户看的 App。
 
+## 本仓自己的 App(`sources/`)
+
+- 一个目录就是整个 App 的(`radar`、`day-calendar`):`path` 写 `sources/<id>`。
+- 带打包脚本、带测试的(`office`、`omnisearch`):`sources/<id>/` 是这个 App 的工程，市场打的包只是其中的 `app/`
+  (`path` 写 `sources/<id>/app`)。测试、打包脚本、它们的 `package.json` 都在 `app/` 外面，不进用户装的包。
+  - `sources/<id>/package.json` 写了 `scripts.test`,CI 就在那个目录里 `npm ci && npm test`(`node scripts/app-tests.mjs [<id>…]`,本地同样能跑)。
+  - devDependencies 里有 `playwright` 的(有真浏览器用例),先装 Chromium。
+  - 咕咕办公打包进去的库(`app/skills/office/vendor/`)由 `vendor/build.mjs` 照钉住的 lockfile 打出来,它的 `npm test` 先跑
+    `node vendor/build.mjs --check`:重打一遍，逐字节和仓里的比。
+  - 全能搜索的 `app/server/server.mjs` 由 `server-build/build.mjs` 从上游打出来(要 git、pnpm、网络，手动跑)。
+
 ## CI
 
-- `verify`(PR):照每个新版本的 `repo@commit` 把 `path` 重新打包,sha256 与字节数逐字节对上;
+- `verify`(PR):先跑 `npm test` 和每个自带测试的 App 的测试(见上一节);再照每个新版本的 `repo@commit` 把 `path` 重新打包,sha256 与字节数逐字节对上;
   `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;`CHANGELOG.md` 有 `## <版本>` 这一节;图标是 PNG(≤ 32 KiB、≤ 512px)。
   源码仓要是公开仓,或者本仓自己;提交必须在源码仓默认分支的历史里(GitHub 按 sha 也给 fork 里的提交,不核就会把 fork 的代码记成「代码在 owner/repo」)。
 - `sync`(合并到 `main`,environment `mirror`):写 `market/bundles|meta|media/…`,每个文件只写一次

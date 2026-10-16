@@ -16,6 +16,9 @@ jobs:
           node-version: 24
       - run: npm ci --no-audit --no-fund
       - run: npm test
+      # 自带测试的 App(sources/<id>/package.json 写了 scripts.test)各跑各的;咕咕办公的 vendor --check 就在它的 npm test 里。
+      - name: Each App's own tests
+        run: node scripts/app-tests.mjs
       - name: Rebuild and check every new version
         env:
           GITHUB_TOKEN: ${{ github.token }}

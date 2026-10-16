@@ -1,0 +1,10 @@
+{
+  "name": "gugu-office-vendor",
+  "private": true,
+  "description": "What vendor/build.mjs bundles into app/skills/office/vendor/: pinned with this lockfile, installed with npm ci into a throwaway folder.",
+  "dependencies": {
+    "@ironcalc/wasm": "0.8.4",
+    "numfmt": "3.2.6",
+    "pptx-glimpse": "5.3.1"
+  }
+}
