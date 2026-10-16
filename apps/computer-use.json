@@ -1,0 +1,16 @@
+{
+  "id": "computer-use",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "e583bb0898bb6301f78ac05d22bc61d5358bf312",
+      "sha256": "b818ab1f5dbd89a133f513e0c8f6c423b910c4300a0b482436b6f38e44c94abf",
+      "bytes": 3594,
+      "yanked": null
+    }
+  ]
+}
