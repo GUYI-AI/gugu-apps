@@ -1,0 +1,16 @@
+{
+  "id": "browser-use",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "e583bb0898bb6301f78ac05d22bc61d5358bf312",
+      "sha256": "6aea0e3172a5a6e617a2b17bab66d1e581f0ccf8590019a0d39cfa9e00fe61c9",
+      "bytes": 1661,
+      "yanked": null
+    }
+  ]
+}
