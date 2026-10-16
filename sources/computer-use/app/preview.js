@@ -22,7 +22,8 @@ const TEXT = {
     failed: '没能',
     verbs: { click: '点击', double_click: '双击', right_click: '右键点击', drag: '拖动', scroll: '滚动', type_text: '输入',
       press_key: '按键', hotkey: '按键', set_value: '填写', invoke_menu: '选择菜单', launch_app: '打开', set_window_frame: '调整窗口',
-      get_window_state: '查看窗口', get_accessibility_tree: '查看窗口', list_apps: '查看打开的 App', list_windows: '查看窗口', zoom: '放大查看' },
+      get_window_state: '查看窗口', get_accessibility_tree: '查看窗口', list_apps: '查看打开的 App', list_windows: '查看窗口', zoom: '放大查看',
+      run_steps: '连续操作' },
     other: '操作',
   },
   'en-US': {
@@ -33,7 +34,8 @@ const TEXT = {
     failed: 'Could not',
     verbs: { click: 'Click', double_click: 'Double-click', right_click: 'Right-click', drag: 'Drag', scroll: 'Scroll', type_text: 'Type',
       press_key: 'Press', hotkey: 'Press', set_value: 'Fill in', invoke_menu: 'Choose menu', launch_app: 'Open', set_window_frame: 'Move window',
-      get_window_state: 'Look at window', get_accessibility_tree: 'Look at window', list_apps: 'See open apps', list_windows: 'Look at windows', zoom: 'Zoom in' },
+      get_window_state: 'Look at window', get_accessibility_tree: 'Look at window', list_apps: 'See open apps', list_windows: 'Look at windows', zoom: 'Zoom in',
+      run_steps: 'Do steps' },
     other: 'Act',
   },
 };
@@ -87,11 +89,12 @@ function onCanvas(point, space) {
   return { x: box.left - origin.left + (point.x * box.width) / width, y: box.top - origin.top + (point.y * box.height) / height };
 }
 
-/** The agent's cursor goes where the latest action pointed, on the frame the agent was looking at: flies there when the
- *  action happens while someone watches, simply sits there when the page opens on it. No point, no cursor. */
+/** The agent's cursor goes where the latest action pointed, on the frame the agent was looking at: flies there as the
+ *  action starts while someone watches (as cua's own cursor on the screen does), simply sits there when the page opens
+ *  on it. No point, no cursor. */
 async function animate(action) {
   const key = `${action.at}|${action.tool}`;
-  if (key === animated || !action.point || action.status === 'running') return;
+  if (key === animated || !action.point) return;
   await ui.frame.decode().catch(() => {});
   if (!onCanvas(action.point, action.space) || key === animated) return;
   animated = key;
@@ -102,14 +105,16 @@ async function animate(action) {
     player.place(onCanvas(action.point, action.space));
     return;
   }
-  // A drag starts where it grabbed: go there first, then carry it to where it let go.
-  const from = action.from && onCanvas(action.from, action.space);
-  if (from) await player.moveTo(from, { reducedMotion: reduced });
-  // Projected again after each leg: the pane may have been resized while the cursor was on its way.
-  const at = pointed === action && onCanvas(action.point, action.space);
-  if (!at) return;
-  await player.moveTo(at, { reducedMotion: reduced });
-  if (pointed === action && /click/.test(action.tool)) player?.click();
+  // Each place in turn: a batch of steps (`path`, a click shown where it clicked), else a drag from where it grabbed to
+  // where it let go, else the one point. Projected again before each leg: the pane may be resized meanwhile, and a
+  // newer step takes over.
+  const legs = action.path ?? [...(action.from ? [action.from] : []), { ...action.point, click: /click/.test(action.tool) }];
+  for (const leg of legs) {
+    const at = pointed === action && onCanvas(leg, action.space);
+    if (!at) return;
+    await player.moveTo(at, { reducedMotion: reduced });
+    if (pointed === action && leg.click) player?.click();
+  }
 }
 
 /** The frame changed size (pane resized, a picture of another size): the cursor stays on the same window pixel, ❌ on the
@@ -137,8 +142,8 @@ function apply(state) {
   ui.empty.hidden = true;
   ui.stage.hidden = false;
   ui.what.textContent = said;
-  const pointed = state.actions.findLast((action) => action.point && action.status !== 'running');
-  if (pointed) void animate(pointed);
+  const latestPointed = state.actions.findLast((action) => action.point);
+  if (latestPointed) void animate(latestPointed);
 }
 
 /** One read at a time; a change that arrives during a read asks for one more afterwards. */
