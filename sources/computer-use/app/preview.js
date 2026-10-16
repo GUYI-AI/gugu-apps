@@ -39,6 +39,7 @@ const TEXT = {
 };
 
 let context = null;
+const textFor = (locale) => TEXT[locale] ?? (String(locale).startsWith('zh') ? TEXT['zh-CN'] : TEXT['en-US']);
 let text = TEXT['zh-CN'];
 let shown = 0;
 let animated = '';
@@ -174,10 +175,12 @@ async function start() {
     showError(error);
     return;
   }
-  text = TEXT[context.locale] ?? (String(context.locale).startsWith('zh') ? TEXT['zh-CN'] : TEXT['en-US']);
+  text = textFor(context.locale);
+  // Each change brings the whole context: moved to another task, or to a place with none, it is that place's now.
   gugu.onContextChanged((next) => {
-    const moved = next.session?.id !== undefined && next.session.id !== sessionId();
-    context = { ...context, ...next };
+    const moved = (next.session?.id ?? null) !== sessionId();
+    context = next;
+    text = textFor(context.locale);
     if (moved) reset();
     void refresh();
   });
