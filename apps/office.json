@@ -1,0 +1,17 @@
+{
+  "id": "office",
+  "unlisted": false,
+  "firstRun": true,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "5a4a8c6a18c134f08c0576e297617545f525d252",
+      "sha256": "cc56277d277c67c2a102dec64a6a0779ead126d4cd3054f5560353d36be5f222",
+      "bytes": 1091709,
+      "yanked": null
+    }
+  ]
+}
