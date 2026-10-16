@@ -100,6 +100,7 @@ export function buildIndex(apps, metas) {
       .map((app) => ({
         id: app.id,
         ...(app.featured ? { featured: true } : {}),
+        ...(app.firstRun ? { firstRun: true } : {}),
         deprecated: app.deprecated,
         versions: app.versions.map((version) => {
           const meta = metas.get(`${app.id}@${version.version}`);

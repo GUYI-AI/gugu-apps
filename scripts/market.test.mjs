@@ -195,6 +195,25 @@ test('sync:写齐包 / 图标 / README 与图 / meta / index;重跑除 index 外
   writeIndex(app);
 });
 
+test('sync:标了 firstRun 的在 index 里带 firstRun: true;没标 / 标 false 的不写这一键;写成别的值报红', async () => {
+  const appsDir = join(index, 'apps');
+  const oss = new FakeOss();
+  const quiet = () => {};
+  const app = JSON.parse(readFileSync(join(appsDir, 'probe.json'), 'utf8'));
+  try {
+    writeIndex({ ...app, firstRun: true });
+    assert.equal((await sync({ client: oss, dir: appsDir, log: quiet })).apps[0].firstRun, true);
+    writeIndex({ ...app, firstRun: false });
+    assert.equal('firstRun' in (await sync({ client: oss, dir: appsDir, log: quiet })).apps[0], false);
+    writeIndex(app);
+    assert.equal('firstRun' in (await sync({ client: oss, dir: appsDir, log: quiet })).apps[0], false);
+    writeIndex({ ...app, firstRun: 'yes' });
+    await assert.rejects(sync({ client: oss, dir: appsDir, log: quiet }), /firstRun 是 true \/ false/);
+  } finally {
+    writeIndex(app);
+  }
+});
+
 test('sync:标了 featured 的在 index 里带 featured: true;没标 / 标 false 的不写这一键;写成别的值报红', async () => {
   const appsDir = join(index, 'apps');
   const oss = new FakeOss();
