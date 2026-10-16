@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -32,7 +32,8 @@ test('both first-party tool App sources are inspectable and contain no business 
   const root = new URL('../sources/', import.meta.url);
   for (const id of ['browser-use', 'computer-use']) {
     const dir = new URL(`${id}/app/`, root).pathname;
-    const read = inspectAppDir(dir, id, '0.1.0', '');
+    const { version } = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
+    const read = inspectAppDir(dir, id, version, '');
     assert.equal(read.manifest.entry, undefined);
     assert.equal(read.manifest.contributes.tabs, undefined);
     assert.deepEqual(read.manifest.permissions.capabilities, ['agents:tools']);
