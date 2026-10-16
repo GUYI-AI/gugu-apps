@@ -19,6 +19,7 @@ const TEXT = {
     idle: 'agent 操作电脑时，画面会显示在这里',
     loading: '正在获取画面…',
     unseen: '暂时看不到画面',
+    stale: '没有新画面：',
     failed: '没能',
     verbs: { click: '点击', double_click: '双击', right_click: '右键点击', drag: '拖动', scroll: '滚动', type_text: '输入',
       press_key: '按键', hotkey: '按键', set_value: '填写', invoke_menu: '选择菜单', launch_app: '打开', set_window_frame: '调整窗口',
@@ -31,6 +32,7 @@ const TEXT = {
     idle: 'When the agent uses the computer, it shows here',
     loading: 'Getting the picture…',
     unseen: 'Cannot see the screen right now',
+    stale: 'No fresh picture: ',
     failed: 'Could not',
     verbs: { click: 'Click', double_click: 'Double-click', right_click: 'Right-click', drag: 'Drag', scroll: 'Scroll', type_text: 'Type',
       press_key: 'Press', hotkey: 'Press', set_value: 'Fill in', invoke_menu: 'Choose menu', launch_app: 'Open', set_window_frame: 'Move window',
@@ -129,7 +131,9 @@ function apply(state) {
   live = state.live && state.target?.pid !== undefined && state.target?.window_id !== undefined;
   const latest = state.actions.at(-1);
   const app = typeof state.target?.app === 'string' ? state.target.app : null;
-  const said = [app, latest && describe(latest)].filter(Boolean).join(' · ');
+  // The last picture stays up when a fresh one cannot be taken, but it says so: ❌ an old picture passing for a live one.
+  const stale = live && typeof state.liveProblem === 'string' ? `${text.stale}${state.liveProblem}` : null;
+  const said = [app, latest && describe(latest), stale].filter(Boolean).join(' · ');
   if (state.frame) {
     shown = state.frame.seq;
     ui.frame.src = `data:${state.frame.mimeType};base64,${state.frame.data}`;
