@@ -150,13 +150,14 @@ async function refresh(options = {}) {
   }
 }
 
-/** Fresh frames only while someone is looking at this session's preview, and only when the program can take them. */
-async function schedule() {
+/**
+ * Fresh frames only while this page is on screen, and only when the program can take them. This page is its task's own
+ * (one per task): two tasks side by side are two pages, each on screen, each kept fresh — ❌ only the focused one.
+ */
+function schedule() {
   clearTimeout(liveTimer);
   liveTimer = null;
   if (!live || !visible()) return;
-  const app = await gugu.getAppState().catch(() => null);
-  if (app && app.activeSessionId !== sessionId()) return;
   liveTimer = setTimeout(() => void refresh({ live: true }), LIVE_EVERY_MS);
 }
 
