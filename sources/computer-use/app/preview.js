@@ -17,6 +17,7 @@ const TEXT = {
     outside: ['放到一条会话旁边', '预览只显示它旁边那条会话的 agent 在操作什么。'],
     idle: ['还没有操作', '这条会话的 agent 用 Computer Use 时，它操作的窗口会出现在这里。'],
     noFrame: '还没有画面',
+    failedHint: '刚才那一步没成功，原因在对话里这一步的工具结果。',
     failed: '没能',
     verbs: { click: '点击', double_click: '双击', right_click: '右键点击', drag: '拖动', scroll: '滚动', type_text: '输入',
       press_key: '按键', hotkey: '按键', set_value: '填写', invoke_menu: '选择菜单', launch_app: '打开', set_window_frame: '调整窗口',
@@ -27,6 +28,7 @@ const TEXT = {
     outside: ['Put it beside a session', 'The preview shows what the agent of the session next to it is operating.'],
     idle: ['Nothing yet', 'When this session\'s agent uses Computer Use, the window it works in shows here.'],
     noFrame: 'No picture yet',
+    failedHint: 'The last step did not work; the tool result in the conversation says why.',
     failed: 'Could not',
     verbs: { click: 'Click', double_click: 'Double-click', right_click: 'Right-click', drag: 'Drag', scroll: 'Scroll', type_text: 'Type',
       press_key: 'Press', hotkey: 'Press', set_value: 'Fill in', invoke_menu: 'Choose menu', launch_app: 'Open', set_window_frame: 'Move window',
@@ -52,15 +54,15 @@ function describe(action) {
   const detail = action.args.text ?? action.args.key ?? (Array.isArray(action.args.keys) ? action.args.keys.join('+') : null)
     ?? action.args.value ?? action.args.direction ?? (action.tool === 'launch_app' ? action.args.app ?? action.args.bundle_id : null);
   const said = detail === null || detail === undefined ? verb : `${verb}「${detail}」`;
-  return action.status === 'failed' ? `${text.failed}${said}：${action.error}` : said;
+  // 失败的原话在对话里那一步的工具结果和 App 页(owner 10-16:统一页不再播报失败),这里只说没做成。
+  return action.status === 'failed' ? `${text.failed}${said}` : said;
 }
 
-function showEmpty(title, hint, failed = false) {
+function showEmpty(title, hint) {
   ui.stage.hidden = true;
   ui.empty.hidden = false;
   ui.emptyTitle.textContent = title;
   ui.emptyHint.textContent = hint;
-  ui.emptyHint.classList.toggle('failed', failed);
 }
 
 function showError(error) {
@@ -68,16 +70,18 @@ function showError(error) {
   ui.alert.textContent = error instanceof Error ? error.message : String(error);
 }
 
-/** Where a point of the frame (its own pixels) is on the cursor canvas, or null when the frame is not drawn yet. */
-function onCanvas(point) {
+/**
+ * Where a point is on the cursor canvas, or null when the frame is not drawn yet. A point is in the pixels of the
+ * screenshot the agent acted on (`space`); the frame on screen may be a smaller live picture of the same window.
+ * No space, no cursor: drawn on another picture it would point somewhere else.
+ */
+function onCanvas(point, space) {
   const { frame, canvas } = ui;
-  if (!frame.naturalWidth || !frame.clientWidth) return null;
+  if (!space || !frame.naturalWidth || !frame.clientWidth) return null;
+  const { width, height } = space;
   const box = frame.getBoundingClientRect();
   const origin = canvas.getBoundingClientRect();
-  return {
-    x: box.left - origin.left + (point.x * box.width) / frame.naturalWidth,
-    y: box.top - origin.top + (point.y * box.height) / frame.naturalHeight,
-  };
+  return { x: box.left - origin.left + (point.x * box.width) / width, y: box.top - origin.top + (point.y * box.height) / height };
 }
 
 /** The agent's cursor goes where the latest action pointed, on the frame the agent was looking at: flies there when the
@@ -86,15 +90,18 @@ async function animate(action) {
   const key = `${action.at}|${action.tool}`;
   if (key === animated || !action.point || action.status === 'running') return;
   await ui.frame.decode().catch(() => {});
-  const at = onCanvas(action.point);
+  const at = onCanvas(action.point, action.space);
+  const from = action.from && onCanvas(action.from, action.space);
   if (!at || key === animated) return;
   animated = key;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!player) {
     player = new MotionPlayer(ui.canvas);
     player.place(at);
     return;
   }
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // A drag starts where it grabbed: go there first, then carry it to where it let go.
+  if (from) await player.moveTo(from, { reducedMotion: reduced });
   await player.moveTo(at, { reducedMotion: reduced });
   if (/click/.test(action.tool)) player?.click();
 }
@@ -111,14 +118,14 @@ function apply(state) {
     ui.when.setAttribute('datetime', state.frame.at);
   }
   if (shown === 0) {
-    if (latest) showEmpty(text.noFrame, said, latest.status === 'failed');
+    if (latest?.status === 'failed') showEmpty(text.noFrame, text.failedHint);
+    else if (latest) showEmpty(text.noFrame, said);
     else showEmpty(...text.idle);
     return;
   }
   ui.empty.hidden = true;
   ui.stage.hidden = false;
   ui.what.textContent = said;
-  ui.what.classList.toggle('failed', latest?.status === 'failed');
   const pointed = state.actions.findLast((action) => action.point && action.status !== 'running');
   if (pointed) void animate(pointed);
 }

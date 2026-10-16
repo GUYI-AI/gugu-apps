@@ -8,7 +8,6 @@ body { margin: 0; height: 100vh; display: flex; flex-direction: column; overflow
 #cursor { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #caption { width: 0; min-width: 100%; display: flex; align-items: baseline; gap: var(--em-spacing-sm); }
 #what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#what.failed, #empty-hint.failed { color: var(--em-foreground-destructive); }
 #when { flex: none; }
 gugu-empty { flex: 1; }
 #alert { margin: var(--em-spacing-lg); color: var(--em-foreground-destructive); }
