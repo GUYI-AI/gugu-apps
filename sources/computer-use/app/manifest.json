@@ -1,7 +1,7 @@
 {
   "id": "computer-use",
   "name": "Computer Use",
-  "description": "Let agents see and operate native apps on this computer. Each task shows its agent's screen in its own Computer tab.",
+  "description": "See what agents do in this computer's apps. Each task's Computer tab shows the window its agent works in, its cursor and its steps.",
   "version": "0.2.0",
   "icon": "icon.png",
   "apiVersion": 5,
@@ -10,7 +10,7 @@
   "categories": ["productivity"],
   "repository": "https://github.com/shuxueshuxue/gugu-apps",
   "license": "MIT",
-  "localized": { "zh-CN": { "description": "让 Agent 查看和操作这台电脑上的原生应用；每个任务的操作画面在它自己的「电脑」页签里。" } },
+  "localized": { "zh-CN": { "description": "看 Agent 在这台电脑的应用里做什么：每个任务的「电脑」页签显示它正在操作的窗口、它的光标和每一步。" } },
   "permissions": { "capabilities": ["agents:tools"] },
   "contributes": {
     "tabs": [
