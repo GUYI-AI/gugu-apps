@@ -30,7 +30,9 @@
 - **停维**:`"deprecated": { "note": "…", "replacedBy": "<id>" | null }`。
 - **下架**:`"unlisted": true`,目录里就没有它了(文件留在下载站,已装的人收不到更新)。
 - **官方精选**:`"featured": true`(可不写),市场页顶上那一张;同时标了几个,客户端取排在最前的那个。
-- **首启默认**:`"firstRun": true`(可不写),新用户第一次启动咕咕时装上的那一组(合在一页里问一次)。名单就写在这里,客户端代码里不点名;已经有 App 的老用户不受影响,装过、卸了的也不会再装回来。
+- **首启默认**:`"firstRun": true`(可不写),新用户第一次启动咕咕时,在后台静默装上的那一组 —— 不问人,和预装时一样。
+  名单就写在这里,客户端代码里不点名;已经有 App 的老用户不受影响,装过、卸了的也不会再装回来。
+  **只能标在本仓自己的 App 上**(代码在 `sources/` 里,每一版的 `repo` 都是本仓):不问人就装的只能是 gugu 自己的。verify 拦,咕咕客户端也照这一条判。
 - 已经上线的版本行,除了加 `yanked`,一个字段都不许改、不许删。
 - json 里不写能从包里推出来的东西(manifest、更新说明、README、图标),CI 从包里取。
 
@@ -50,7 +52,8 @@
 ## CI
 
 - `verify`(PR):先跑 `npm test` 和每个自带测试的 App 的测试(见上一节);再照每个新版本的 `repo@commit` 把 `path` 重新打包,sha256 与字节数逐字节对上;
-  `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;`CHANGELOG.md` 有 `## <版本>` 这一节;图标是 PNG(≤ 32 KiB、≤ 512px)。
+  `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;`CHANGELOG.md` 有 `## <版本>` 这一节;图标是 PNG(≤ 32 KiB、≤ 512px);
+  `description` 的第一句在 agent 读到的 `<gugu_apps>` 里那一行(`- 名字 (id): 第一句`)不超过 120 字 —— 超过就被截成半句。
   源码仓要是公开仓,或者本仓自己;提交必须在源码仓默认分支的历史里(GitHub 按 sha 也给 fork 里的提交,不核就会把 fork 的代码记成「代码在 owner/repo」)。
 - `sync`(合并到 `main`,environment `mirror`):写 `market/bundles|meta|media/…`,每个文件只写一次
   (同名同字节跳过,不同字节报红),最后覆盖 `market/index.json`。只写 `market/` 下面,由 `scripts/sync.mjs` 的 `putObject` 硬守。

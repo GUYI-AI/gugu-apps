@@ -1,6 +1,6 @@
 // A .xlsx in a chat's folder, opened in 咕咕办公: the sheet drawn, cells and ranges picked the way a spreadsheet picks
-// them, and the picks put in the chat's composer as pills for the person to @ an agent with (方案 gugu-base
-// notes/2026-10-10-ppt-office/表格-设计说明.html §2, §3; App 引用 pill, notes/2026-10-14-app-reference-pill).
+// them, and the picks put in the chat's composer as pills for the person to @ an agent with (the sheet
+// design note §2, §3; App reference pills).
 //
 // - Drawn by this page, no table library: only the sheet on screen is inflated, its rows found by where they lie
 //   (xlsx-read.js), and only the rows and columns on screen are read and made into elements — a 100k-row sheet opens in

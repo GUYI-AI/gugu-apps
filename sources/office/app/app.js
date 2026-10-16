@@ -6,12 +6,13 @@
 // (skills/office); what is on screen follows the file to its new version. A pill clicked opens the file here at its
 // place (onLink).
 //
-// Built only on the public App API: getContext / onContextChanged, files.open / list / onChanged, compose, onLink,
+// Built only on the public App API: getContext / onContextChanged, files.open / onChanged, compose, onLink,
 // setTabTitle.
 // - Each kind of file is its own view module (KINDS, by the suffix the host handed it for): the page around it is the
 //   same — the file opened, followed to its new versions, the picks put in the composer.
-// - Following: the file's chat is heard (files.onChanged, its chat named by the file); the list read again, a version
-//   above the one drawn is drawn again — or, with picks waiting, said, and drawn when the person says so.
+// - Following: the file's chat is heard (files.onChanged, its chat named by the file) from before the file is read; what
+//   it says of this file (#7257: its entry as it is now) is the truth for it — a version above the one drawn is drawn
+//   again, or, with picks waiting, said, and drawn when the person says so.
 
 const $ = (id) => document.getElementById(id)
 
@@ -112,13 +113,13 @@ const state = {
   t: STRINGS.zh,
   /** The file on screen: { entry, file, kind, view, drawn, latest, held, redrawing, failure }. */
   current: null,
-  /** The open in progress ({ id }: the file's): a newer one makes an older one's answer moot. */
+  /** The open in progress ({ id }: the file's; `heard`: what its chat said of it meanwhile): a newer one makes an older
+   *  one's answer moot. */
   opening: null,
   /** The chat whose files are heard, and how to stop hearing them. */
   watching: null,
   unwatch: null,
-  /** Where a pill pointed (`query`, its `at`) and in which file (`file`, null when it came before any): shown once
-   *  that file is drawn. */
+  /** Where a pill pointed (`query`, its `at`) and in which file (`file`, the link's): shown once that file is drawn. */
   place: null,
 }
 
@@ -171,14 +172,14 @@ function titleTab(entry) {
 // ─── the file ───────────────────────────────────────────────────────────────
 
 async function openHanded() {
-  const token = { id: state.ctx.file.id }
+  const token = { id: state.ctx.file.id, heard: null }
   state.opening = token
-  // A place is the file's it came for: another file opening drops it. One that came before any file is the first's —
-  // claimed as that file starts opening, so a second file opened before the first is drawn drops it too.
-  if (state.place?.file && state.place.file !== token.id) state.place = null
-  else if (state.place && !state.place.file) state.place.file = token.id
+  // A place is the file's its link names (#7257): another file opening drops it.
+  if (state.place && state.place.file !== token.id) state.place = null
   closeCurrent()
   showMessage(state.t.loading)
+  // Heard from before it is read: a version saved while it is opened is not missed.
+  follow(state.ctx.file.chat ?? state.ctx.chat?.id)
   try {
     const file = await gugu.files.open(state.ctx.file)
     if (state.opening !== token) {
@@ -188,11 +189,13 @@ async function openHanded() {
     const load = KINDS[suffixOf(file.entry)]
     if (file.type !== 'binary' || !load) {
       file.close()
+      // Not one of its files: its chat is not heard (nor said to be unheard).
+      follow(null)
+      hideBanner()
       showMessage(fmt(state.t.notMine, { name: file.entry.name }))
       return
     }
     titleTab(file.entry)
-    follow(file.entry)
     await mountFile(file, await load(), token)
   } catch (error) {
     if (state.opening === token) showMessage(fmt(state.t.failed, { e: error.message }))
@@ -201,9 +204,8 @@ async function openHanded() {
   }
 }
 
-/** Hear the file's chat (its list changing is how a new version shows), once per chat. */
-function follow(entry) {
-  const chat = entry.chat ?? state.ctx.chat?.id
+/** Hear the file's chat (its files as they change: #7257), once per chat; null: none. */
+function follow(chat) {
   if (state.watching === chat) return
   state.unwatch?.()
   state.unwatch = null
@@ -214,26 +216,22 @@ function follow(entry) {
     return
   }
   state.watching = chat
-  state.unwatch = gugu.files.onChanged({ chat }, () => refreshEntry())
+  state.unwatch = gugu.files.onChanged({ chat }, heard)
 }
 
-/** The list is the truth for the file's entry: its name, and its version (an agent saved one: workspace_changed). */
-async function refreshEntry() {
-  const current = state.current
-  if (!current || !state.watching) return
-  let entries
-  try {
-    entries = await gugu.files.list({ chat: state.watching })
-  } catch (error) {
-    if (state.current === current) showBanner(fmt(state.t.failed, { e: error.message }), 'error')
-    return
-  }
-  if (state.current !== current) return
-  const fresh = entries.find((e) => e.id === current.entry.id)
-  if (!fresh) {
-    showBanner(state.t.gone, 'error', true)
-    return
-  }
+/** What the chat says of this file: its entry as it is now, or gone — held for it while it is still being opened. */
+function heard(change) {
+  if (change.kind !== 'entries') return
+  const id = state.current?.entry.id ?? state.opening?.id
+  const fresh = change.entries.find((e) => e.id === id) ?? (change.gone.includes(id) ? 'gone' : null)
+  if (!fresh) return
+  if (state.current) seen(state.current, fresh)
+  else if (state.opening) state.opening.heard = fresh
+}
+
+/** The open file as its chat says it now: gone, or its name and version (an agent saved a newer one: drawn, `moved`). */
+function seen(current, fresh) {
+  if (fresh === 'gone') return showBanner(state.t.gone, 'error', true)
   current.entry = fresh
   titleTab(fresh)
   if (typeof fresh.version === 'number' && fresh.version > current.latest) {
@@ -261,6 +259,8 @@ async function mountFile(file, kind, token) {
   const version = typeof file.entry.version === 'number' ? file.entry.version : 0
   const current = { entry: file.entry, file, kind, view: null, drawn: version, latest: version, held: false, redrawing: null, failure: null }
   state.current = current
+  // Heard while it was opened: on it now, before what is heard while its bytes are read (which goes on it at once).
+  if (token.heard) seen(current, token.heard)
   try {
     const bytes = new Uint8Array(await (await file.blob()).arrayBuffer())
     if (state.opening !== token) return
@@ -274,8 +274,8 @@ async function mountFile(file, kind, token) {
     document.body.dataset.state = 'doc'
     renderPicks([])
     showPlace()
-    // Saved again while this one loaded: the list says so.
-    await refreshEntry()
+    // Saved again while this one was opened or read: its chat said so (heard), and it is drawn now.
+    moved(current)
   } catch (error) {
     if (state.current === current) showMessage(fmt(t[kind.failed], { e: error.message }))
   }
@@ -431,21 +431,22 @@ async function sendPicks() {
 
 // A pill opened this file (App 引用 pill: the `link` event a gugu link brings, `query` the pill's `at`) — one entry
 // for every kind of file: held until the file is drawn, then the view finds the place; one this version lacks is said.
-// The host hands a place only to the page on its file (#7232): it is that file's — the one opening, or open — or, come
-// before any file, the first one's. The newest place wins.
-function goTo(query) {
-  state.place = { query, file: state.opening?.id ?? state.current?.entry.id ?? null }
+// The link names its file (#7257: `link.file`); the newest place wins.
+function goTo(link) {
+  state.place = { query: link.query, file: link.file }
   showPlace()
 }
 
 function showPlace() {
   const view = state.current?.view
-  if (!state.place || !view?.reveal) return
+  if (!state.place || !view?.reveal || state.place.file !== state.current.entry.id) return
   const { query } = state.place
   state.place = null
   // What the view says of it: at once (a deck), or once it has read what it needs (a sheet).
   const said = (shown) => {
     if (shown === true || state.current?.view !== view) return
+    // Not over an error said already (the file gone): that one stays, it is not said again.
+    if (!$('banner').hidden && $('banner').dataset.tone === 'error') return
     showBanner(shown === 'hidden' ? state.t.placeHidden : state.t.placeGone, 'info')
   }
   const failed = (error) => {
@@ -513,7 +514,7 @@ function start() {
   // in the event itself: scroll and resize already come once a frame, so the bar moves in the same frame as the mark.
   $('preview').addEventListener('scroll', placeBar, { capture: true })
   window.addEventListener('resize', placeBar)
-  gugu.onLink((link) => goTo(link.query))
+  gugu.onLink(goTo)
   gugu.onContextChanged((ctx) => applyContext(ctx).catch((error) => showMessage(fmt(state.t.failed, { e: error.message }))))
   gugu.getContext().then(applyContext).catch((error) => showMessage(fmt(state.t.failed, { e: error.message })))
 }

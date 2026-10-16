@@ -1,5 +1,5 @@
-// 咕咕办公的 skill 改 .pptx(A2,方案 gugu-base notes/2026-10-10-ppt-office/演示稿-设计说明.html §3;10-13 起是 skill + 脚本,
-// gugu-base notes/2026-10-10-ppt-office/演示稿-脚本方案.md):按页和 cNvPr id 读,整段换掉一个形状的 XML —— 没动的 zip 条目
+// 咕咕办公的 skill 改 .pptx(A2,演示稿设计说明 §3;10-13 起是 skill + 脚本,
+// 见演示稿的脚本方案):按页和 cNvPr id 读,整段换掉一个形状的 XML —— 没动的 zip 条目
 // 逐字节拷回,改的那一页只换那一段。上半是模块(skills/office/lib/pptx-ooxml.mjs),下半是 agent 在自己 shell 里跑的脚本
 // (skills/office/scripts/pptx.mjs)。用的是两页样例(fixtures/two-slides.pptx,PptxGenJS 生成:每页的表格和一个文本框 cNvPr id 相同)。
 // 写之前还要让 pptx-glimpse(咕咕办公画幻灯片用的同一个库)把改过的页画一遍:多出关于这几页的警告就拒。

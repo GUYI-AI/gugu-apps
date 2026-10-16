@@ -147,6 +147,32 @@ test('verify:提交不在源码仓默认分支的历史里(只在 fork / 别的�
   assert.equal(verify(base).ok, true);
 });
 
+test('verify:description 的第一句在 <gugu_apps> 里会被截成半句就红(说出那一行和字数);写短了绿', async () => {
+  const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
+  const base = git(index, 'rev-parse', 'HEAD');
+  // 「- Probe (probe): 」17 字 + 第一句 104 字 = 121:多一字。第二句再长也不算(只有第一句进那一行)。
+  const long = await recordFor(commitProbe('0.4.0', { description: `${'a'.repeat(103)}. ${'b'.repeat(300)}.` }), '0.4.0');
+  writeIndex({ ...app, versions: [...app.versions, long] });
+  const red = verify(base);
+  assert.equal(red.ok, false);
+  assert.match(red.out, /description 的第一句太长:agent 在 <gugu_apps> 里读到的那一行有 121 字,超过 120/);
+  const fits = await recordFor(commitProbe('0.4.1', { description: `${'a'.repeat(102)}. ${'b'.repeat(300)}.` }), '0.4.1');
+  writeIndex({ ...app, versions: [...app.versions, fits] });
+  assert.equal(verify(base).ok, true, '对照:120 字整,不截');
+  writeIndex(app);
+});
+
+test('verify:firstRun 标在代码不在本仓里的 App 上就红;不标绿', () => {
+  const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
+  const base = git(index, 'rev-parse', 'HEAD');
+  writeIndex({ ...app, firstRun: true });
+  const red = verify(base);
+  assert.equal(red.ok, false);
+  assert.match(red.out, /probe: firstRun 只能标在代码就在本仓\(shuxueshuxue\/gugu-apps\)里的 App 上;0\.1\.0 在 owner\/probe/);
+  writeIndex(app);
+  assert.equal(verify(base).ok, true);
+});
+
 test('putObject:market/ 以外一律拒绝,一个字节都不写', async () => {
   const oss = new FakeOss();
   for (const key of ['releases/desktop/latest/latest-mac.yml', 'market/../releases/x', 'marketing/x']) {

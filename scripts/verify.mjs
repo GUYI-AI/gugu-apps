@@ -1,11 +1,13 @@
 // PR 上的核对:node scripts/verify.mjs [--base <git ref>]
 // 1. 每个 apps/*.json 形状对。
 // 2. 和 base 比:已经上过线的版本行,除了加 yanked,一个字段都不许动、也不许删。
-// 3. 新加的每一版:照 repo@commit 把 path 重新打包,sha256 与字节数逐字节对上;manifest / CHANGELOG / 图标 / README 合规。
+// 3. 新加的每一版:照 repo@commit 把 path 重新打包,sha256 与字节数逐字节对上;manifest / CHANGELOG / 图标 / README 合规,
+//    description 的第一句在 agent 的 <gugu_apps> 里不被截成半句。
+// 4. firstRun 只标在代码就在本仓里的 App 上(gugu 自己的):新用户一启动,咕咕不问人就装上它们。
 // 不碰下载站,不需要任何密钥。
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { fail, MARKET_BASE_URL, readApps, rebuildVersion, validateApp } from './lib.mjs';
+import { fail, INDEX_REPO, MARKET_BASE_URL, readApps, rebuildVersion, validateApp } from './lib.mjs';
 
 const { values } = parseArgs({ options: { base: { type: 'string' }, dir: { type: 'string', default: 'apps' } } });
 
@@ -23,6 +25,11 @@ const apps = readApps(values.dir);
 let checked = 0;
 const problems = [];
 for (const app of apps) {
+  // 首启默认组咕咕不问人就装:只能是 gugu 自己的 App —— 每一版的代码都在本仓里。客户端自己也照这个判,这里先拦住。
+  const elsewhere = app.firstRun ? app.versions.filter((version) => version.repo !== INDEX_REPO) : [];
+  if (elsewhere.length) {
+    problems.push(`${app.id}: firstRun 只能标在代码就在本仓(${INDEX_REPO})里的 App 上;${elsewhere.map((version) => `${version.version} 在 ${version.repo}`).join('、')}`);
+  }
   const before = values.base ? baseApp(values.base, app.id) : null;
   for (const old of before?.versions ?? []) {
     const now = app.versions.find((version) => version.version === old.version);

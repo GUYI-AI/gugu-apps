@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-// 咕咕办公 · 页面刚起时到的位置，是第一份文件的(app.js openHanded:第一份开始读时就认领它)。增量复核 c6f346c134(gugu-base
-// c98cb935d)的场景：页面刚起、位置先到，第一份 A 还在读(这里它的字节永远不来),人在 A 画出来之前换到 B —— B 上不框
-// A 的位置，也不说找不到。真 app.js,运行时是假的(同 officeXlsxPlace);表是 fixtures/xlsx-sales.xlsx。一页一个文件:
+// 咕咕办公 · 页面刚起时到的位置，是它的 link 点名的那份文件的(#7257 link.file;以前是第一份开始读时认领)。增量复核
+// c6f346c134 的场景：页面刚起、A 的位置先到，A 还在读(这里它的字节永远不来),人在 A 画出来之前换到
+// B —— B 上不框 A 的位置，也不说找不到。真 app.js,运行时是假的(同 officeXlsxPlace);表是 fixtures/xlsx-sales.xlsx。一页一个文件:
 // app.js 的状态是整页的，这一格要从页面刚起开始。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -20,14 +20,14 @@ const ctxOf = (id: Id) => ({ chat: { id: 'group-1', name: 'G', kind: 'group', gr
 let giveContext: (ctx: unknown) => void = () => {}
 const firstContext = new Promise((resolve) => { giveContext = resolve })
 const never = new Promise<never>(() => {})
-let linked: (link: { query: Record<string, string> }) => void = () => {}
+let linked: (link: { query: Record<string, string>; file: string | null }) => void = () => {}
 let contextChanged: (ctx: unknown) => void = () => {}
 const gugu = {
   setTabTitle: vi.fn(async (_title: string) => {}),
   getContext: vi.fn(() => firstContext),
   onContextChanged: vi.fn((handler: (ctx: unknown) => void) => { contextChanged = handler; return () => {} }),
   compose: vi.fn(async () => {}),
-  onLink: vi.fn((handler: (link: { query: Record<string, string> }) => void) => { linked = handler }),
+  onLink: vi.fn((handler: (link: { query: Record<string, string>; file: string | null }) => void) => { linked = handler }),
   files: {
     list: vi.fn(async () => Object.values(files)),
     onChanged: vi.fn(() => () => {}),
@@ -59,7 +59,7 @@ beforeAll(async () => {
 
 describe('咕咕办公 · 页面刚起时到的位置是第一份文件的', () => {
   test('第一份 A 还在读，人换到 B:B 上不框 A 的位置，也不说找不到', async () => {
-    linked({ query: { range: '销售!C3' } })
+    linked({ query: { range: '销售!C3' }, file: 'file-a' })
     giveContext(ctxOf('file-a'))
     await until('A is being opened', () => gugu.files.open.mock.calls.some(([ref]) => ref.id === 'file-a'))
     contextChanged(ctxOf('file-b'))

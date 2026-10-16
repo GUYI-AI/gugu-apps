@@ -1,5 +1,5 @@
-// Excel formulas (A1 style) as a .xlsx stores them and as people and agents write them (方案 gugu-base
-// notes/2026-10-10-ppt-office/表格-设计说明.html §4): tokens by their place in the text. Plain JS: the page and the
+// Excel formulas (A1 style) as a .xlsx stores them and as people and agents write them (the sheet
+// design note §4): tokens by their place in the text. Plain JS: the page and the
 // skill's script (xlsx-ooxml.mjs) both read formulas with this.
 // - shift(formula, dr, dc): its relative references moved, as Excel moves them filling a formula down or across — and as
 //   a shared formula's followers are their master moved. $-anchored parts stay; a reference moved off the sheet is #REF!.

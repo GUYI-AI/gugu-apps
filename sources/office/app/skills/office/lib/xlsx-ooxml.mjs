@@ -1,4 +1,4 @@
-// A .xlsx as an agent reads and changes it (方案 gugu-base notes/2026-10-10-ppt-office/表格-设计说明.html §4–§7):
+// A .xlsx as an agent reads and changes it (the sheet design note §4–§7):
 // by sheet and range; the cells written in place — nothing else in the file touched.
 //
 // - The package: every zip entry not changed is copied as it was (ooxml-zip.mjs). Changed: the sheets written to — and

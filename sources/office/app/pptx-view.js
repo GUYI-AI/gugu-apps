@@ -1,6 +1,6 @@
 // A .pptx in a chat's folder, opened in 咕咕办公: every slide drawn, every shape pickable, and the picks put in the
-// chat's composer as pills for the person to @ an agent with (方案 gugu-base notes/2026-10-10-ppt-office/
-// 演示稿-设计说明.html §3, §7; App 引用 pill, notes/2026-10-14-app-reference-pill).
+// chat's composer as pills for the person to @ an agent with (the deck design note §3, §7; App
+// reference pills).
 //
 // - Drawn by pptx-glimpse (MIT, skills/office/vendor/, built by sources/office/vendor/build.mjs): each slide an SVG, shown as an
 //   <img> — a file's own text never becomes markup in this page. Its shapes, and where each sits, are read from the
@@ -8,7 +8,7 @@
 //   and their boxes laid over the slide to pick by. pptx-glimpse only draws.
 // - A shape is named by its slide, its cNvPr id and, when one slide gives the same id twice (PptxGenJS does), which of
 //   them in document order (refOf: `{ slide: 3, shape: 12, k: 2 }`); the pill says its first words or its name.
-// - No modes (选区交互设计 gugu-base notes/2026-10-10-ppt-office/演示稿选区交互-设计.html §1): a click picks, a drag anywhere
+// - No modes (the selection design note §1): a click picks, a drag anywhere
 //   on a slide draws a box — the deck is read-only, so a drag means nothing else. On a desktop a plain click or drag
 //   replaces what is picked and Shift / ⌘ / Ctrl adds (a picked one clicked so takes it back); a click on nothing clears.
 //   With a finger a tap adds or takes back, one finger dragging scrolls, and holding still ~0.35 s then dragging draws.

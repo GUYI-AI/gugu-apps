@@ -1,5 +1,5 @@
-// A .xlsx as the page draws it and as the skill's script reads and writes it (方案 gugu-base
-// notes/2026-10-10-ppt-office/表格-设计说明.html §2, §4): the workbook's sheets, styles and strings, and a sheet's rows
+// A .xlsx as the page draws it and as the skill's script reads and writes it (the sheet
+// design note §2, §4): the workbook's sheets, styles and strings, and a sheet's rows
 // found by where they lie in its XML — a row's cells are read only when someone asks for that row (the page: the rows
 // on screen; the script: the range it was given). Plain JS, the page and the script import it alike; numbers are
 // shown with numfmt (MIT, vendor/, built by sources/office/vendor/build.mjs) — the only library 咕咕办公 bundles for a

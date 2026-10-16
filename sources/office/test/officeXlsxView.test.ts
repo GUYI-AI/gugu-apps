@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 咕咕办公打开群文件夹里的 .xlsx(方案 gugu-base notes/2026-10-10-ppt-office/表格-设计说明.html §2、§3):只画屏上的行列,
+// 咕咕办公打开群文件夹里的 .xlsx(表格设计说明 §2、§3):只画屏上的行列,
 // 照电子表格的习惯选 —— 点一格、拖一片、Shift 扩选、⌘/Ctrl 加一处、点行号列标选整行整列、方向键(Esc、Enter 和浮条是页面的,
 // officeXlsxPickBar);手机上点一下加一格、
 // 长按再拖加一片;攒着的每一处带编号,点编号撤;每一处交成一个 pill(refOf:at 是 Excel 写法的整段地址),点 pill 回到那一处

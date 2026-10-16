@@ -19,6 +19,19 @@ export const MAX_MEDIA_BYTES = 1024 * 1024;
 export const BUNDLE_SKIP_NAMES = new Set(['.DS_Store', '.git', 'node_modules', '.gugu-market.json']);
 export const MEDIA_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' };
 
+// 本仓自己:代码就在这里(sources/)的 App 是 gugu 自己的。首启默认组(firstRun)只对它们生效 —— 咕咕客户端照这一个名字判,
+// 这里的 verify 也照它判(客户端 apps/desktop/src/session/shared/extensions/first-run.ts 的 GUGU_APPS_REPO)。
+export const INDEX_REPO = 'shuxueshuxue/gugu-apps';
+
+// 与咕咕客户端同值(apps/desktop/electron/capability-bundle.ts 的 GUGU_APPS_LINE_MAX_CHARS,apps/desktop/electron/mcp/first-sentence.ts):
+// agent 读到的 <gugu_apps> 里,一个 App 一行「- 名字 (id): description 的第一句」,超过这么多字就被截掉、接一个「…」——
+// agent 只看到半句(10-13 实测:转录里都是「(id, n…」)。description 是写给 agent 的;写给人的在 localized 里。
+export const GUGU_APPS_LINE_MAX_CHARS = 120;
+/** 第一句:拉丁文到「.」后面跟空白或结尾为止(「v1.2」不算),中文到「。」。 */
+export const firstSentence = (description) => /^[\s\S]*?(?:\.(?=\s|$)|。)/.exec(description)?.[0] ?? description;
+/** 这一版在 agent 的 <gugu_apps> 里那一行(没截之前)。 */
+export const guguAppsLine = (manifest) => `- ${manifest.name} (${manifest.id})${manifest.description ? `: ${firstSentence(manifest.description)}` : ''}`;
+
 const APP_ID = /^[a-z0-9][a-z0-9-]*$/;
 const SEMVER = /^\d+\.\d+\.\d+$/;
 const REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
@@ -242,6 +255,13 @@ export function inspectAppDir(dir, id, version, mediaBase) {
   if (!Number.isInteger(manifest.apiVersion)) fail('manifest.apiVersion 要是整数');
   const minAppVersion = ENGINES_RANGE.exec(manifest.engines?.gugu ?? '')?.[2];
   if (!minAppVersion) fail('manifest 缺 engines.gugu(例如 ">=0.2.40"):市场靠它替每台机器挑能装的版本');
+  const line = guguAppsLine(manifest);
+  if ([...line].length > GUGU_APPS_LINE_MAX_CHARS) {
+    fail(
+      `description 的第一句太长:agent 在 <gugu_apps> 里读到的那一行有 ${[...line].length} 字,超过 ${GUGU_APPS_LINE_MAX_CHARS} 会被截成半句 —— ` +
+        `把第一句写短(它说给 agent 听这个 App 做什么;写给人的放 localized):${line}`
+    );
+  }
   bundleFile(dir, manifest.entry ?? 'index.html');
   const changelog = join(dir, 'CHANGELOG.md');
   if (!existsSync(changelog)) fail('包里没有 CHANGELOG.md —— 每一版都要写「这版改了什么」(首版写「首次发布」也行)');

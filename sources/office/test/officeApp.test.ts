@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // 咕咕办公的页面外壳(app.js):从 App 列表打开、没交给它文件时说它是干什么的;交给它一份它不开的文件说打不开;
-// 交给它 .pptx 时标签页标题是文件名,听的是文件所在那个群的文件变化(onChanged 认文件的 chat,不认页面开在哪);
+// 交给它 .pptx 时标签页标题是文件名,听的是文件所在那个群的文件变化(onChanged 认文件的 chat,不认页面开在哪;#7257 起
+// 读文件之前就听，不再重拉列表);
 // 读不了群文件夹(没有 files:read)时明说「新版本看不到」,不悄悄停在旧版上。
 // 运行时是假的(getContext / onContextChanged / files.open / list / onChanged);稿子是真的 fixtures/two-slides.pptx。
 import { readFileSync } from 'node:fs'
@@ -17,6 +18,8 @@ const entryOf = (id: string, name: string, chat: string) => ({
 const files = { deck: entryOf('deck', '季度.pptx', 'group-2'), doc: entryOf('doc', '合同.docx', 'group-1'), pill: entryOf('pill', '季度三.pptx', 'group-2') }
 const panel = { chat: { id: 'group-1', name: 'G', kind: 'group', groupId: 'group-1' }, locale: 'zh-CN', capabilities: ['files:read'] }
 let handTo: (ctx: unknown) => void = () => {}
+/** What stops hearing a chat (onChanged's return). */
+const unwatch = vi.fn()
 const gugu = {
   setTabTitle: vi.fn(async (_title: string) => {}),
   getContext: vi.fn(async () => panel),
@@ -28,7 +31,7 @@ const gugu = {
   compose: vi.fn(async () => {}),
   files: {
     list: vi.fn(async () => [files.deck]),
-    onChanged: vi.fn((_place: unknown, _handler: () => void) => () => {}),
+    onChanged: vi.fn((_place: unknown, _handler: () => void) => unwatch),
     open: vi.fn(async (ref: { id: keyof typeof files }) => ({
       entry: files[ref.id],
       type: 'binary',
@@ -65,10 +68,12 @@ describe('咕咕办公 · 页面外壳', () => {
     expect(gugu.files.open).not.toHaveBeenCalled()
   })
 
-  test('交给它一份它不开的文件:说打不开哪一份,不听那个群', async () => {
+  test('交给它一份它不开的文件:说打不开哪一份,那个群听了又放下', async () => {
     handTo({ ...panel, file: { id: 'doc', chat: 'group-1' } })
     await until(() => expect($('doc-message').textContent).toBe('咕咕办公打不开这种文件：合同.docx'))
-    expect(gugu.files.onChanged).not.toHaveBeenCalled()
+    // Heard from before the file was read (#7257: a version saved meanwhile is not missed), let go once it is not one of its.
+    expect(gugu.files.onChanged.mock.calls.map(([place]) => place)).toEqual([{ chat: 'group-1' }])
+    expect(unwatch).toHaveBeenCalledTimes(1)
     expect($('pick-bar').classList.contains('on')).toBe(false)
   })
 
@@ -77,9 +82,10 @@ describe('咕咕办公 · 页面外壳', () => {
     await until(() => expect($('preview').querySelectorAll('.pptx-slide')).toHaveLength(2))
     expect(document.body.dataset.state).toBe('doc')
     expect(gugu.setTabTitle).toHaveBeenLastCalledWith('季度.pptx')
-    expect(gugu.files.onChanged).toHaveBeenCalledTimes(1)
-    expect(gugu.files.onChanged.mock.calls[0]![0]).toEqual({ chat: 'group-2' })
-    await until(() => expect(gugu.files.list).toHaveBeenCalledWith({ chat: 'group-2' }))
+    expect(gugu.files.onChanged).toHaveBeenCalledTimes(2)
+    expect(gugu.files.onChanged.mock.calls.at(-1)![0]).toEqual({ chat: 'group-2' })
+    // Its chat says what changed (#7257): the list is not read.
+    expect(gugu.files.list).not.toHaveBeenCalled()
     // Nothing picked: no bar, nothing over the deck but the deck.
     expect($('pick-bar').classList.contains('on')).toBe(false)
     expect($('banner').hidden).toBe(true)
@@ -103,21 +109,22 @@ describe('咕咕办公 · 页面外壳', () => {
     await until(() => expect($('preview').querySelectorAll('.pptx-slide')).toHaveLength(2))
     expect($('banner').hidden).toBe(false)
     expect($('banner').textContent).toBe('读不了群文件夹（没有 files:read），这份文件有了新版本也看不到。')
-    expect(gugu.files.onChanged).toHaveBeenCalledTimes(1)
+    // Not heard: no capability for it.
+    expect(gugu.files.onChanged).toHaveBeenCalledTimes(2)
   })
 
   // App 引用 pill: a pill clicked opens its file here and the page hears where (the `link` event, query = its `at`) —
   // on the desktop before the page has drawn anything, so the place waits for the deck.
   test('pill 打开它:那一处等稿子画好再找,翻到那一页框出来;这一版没有的那一处明说', async () => {
-    const [[onLink]] = gugu.onLink.mock.calls as unknown as [[(link: { tab: string; path: string; query: Record<string, string> }) => void]]
+    const [[onLink]] = gugu.onLink.mock.calls as unknown as [[(link: { tab: string; path: string; query: Record<string, string>; file: string | null }) => void]]
     const found = () => [...$('preview').querySelectorAll<HTMLElement>('.pptx-found')]
     // Handed the file: the deck there goes at once, the new one is read — and the place arrives meanwhile.
     handTo({ ...panel, file: { id: 'pill', chat: 'group-2' } })
-    onLink({ tab: 'main', path: '', query: { slide: '2', shape: '2' } })
+    onLink({ tab: 'main', path: '', query: { slide: '2', shape: '2' }, file: 'pill' })
     expect(found()).toHaveLength(0)
     await until(() => expect(found()).toHaveLength(1))
     expect(found()[0]!.closest<HTMLElement>('.pptx-slide')!.dataset.n).toBe('2')
-    onLink({ tab: 'main', path: '', query: { slide: '7' } })
+    onLink({ tab: 'main', path: '', query: { slide: '7' }, file: 'pill' })
     expect(found()).toHaveLength(0)
     expect($('banner').hidden).toBe(false)
     expect($('banner').textContent).toBe('这一处在现在这一版里找不到了。')

@@ -30,7 +30,7 @@ const entry = {
 }
 const versions = new Map<number, Uint8Array>([[1, v1]])
 let stored = 1 // the version files.open hands out
-let listed = 1 // the version files.list says
+let listed = 1 // the version the chat says the file is at (files.onChanged, #7257)
 let failOpen = false
 let changed: () => void = () => {}
 const gugu = {
@@ -41,8 +41,9 @@ const gugu = {
   compose: vi.fn(async (_text: string) => {}),
   files: {
     list: vi.fn(async () => [{ ...entry, version: listed }]),
-    onChanged: vi.fn((_place: unknown, handler: () => void) => {
-      changed = handler
+    onChanged: vi.fn((_place: unknown, handler: (change: unknown) => void) => {
+      // The chat says how its files are now (#7257): the App reads no list.
+      changed = () => handler({ kind: 'entries', entries: [{ ...entry, version: listed }], gone: [] })
       return () => {}
     }),
     open: vi.fn(async () => {
@@ -59,22 +60,19 @@ const banner = () => $('banner')
 /** The first slide's picture: a new one once the deck is drawn again. */
 const firstSlide = () => $('preview').querySelector('.pptx-slide img')?.getAttribute('src') ?? null
 const redrawn = (before: string | null) => vi.waitFor(() => expect(firstSlide()).not.toBe(before), { timeout: 5000 })
-let listCalls = 0
-/** A new version saved (an agent's): what the list and open say from now, then the workspace_changed the App hears. */
+/** A new version saved (an agent's): what the chat and open say from now, heard by the App at once (#7257: no list). */
 async function save(version: number, bytes?: Uint8Array) {
   if (bytes) versions.set(version, bytes)
   stored = version
   listed = version
   changed()
-  await vi.waitFor(() => expect(gugu.files.list).toHaveBeenCalledTimes(listCalls + 1))
-  listCalls++
+  expect(gugu.files.list).not.toHaveBeenCalled()
 }
-/** Only the list says `version` (open hands out what it did): a rename, or an older answer arriving late. */
+/** Only the chat says `version` (open hands out what it did): a rename, or an older answer arriving late. */
 async function listSays(version: number) {
   listed = version
   changed()
-  await vi.waitFor(() => expect(gugu.files.list).toHaveBeenCalledTimes(listCalls + 1))
-  listCalls++
+  expect(gugu.files.list).not.toHaveBeenCalled()
   await new Promise((r) => setTimeout(r, 20))
 }
 /** Pick slide `n`'s first shape and put the picks in the composer: the pills the App made (App 引用 pill). */
@@ -101,7 +99,6 @@ beforeAll(async () => {
   await import('../app/app.js')
   // The first open reads the vendored pptx-glimpse cold: slow on a loaded machine (every test file at once).
   await vi.waitFor(() => expect($('preview').querySelectorAll('.pptx-slide')).toHaveLength(2), { timeout: 15000 })
-  listCalls = gugu.files.list.mock.calls.length
 }, 30000)
 
 describe('咕咕办公 · 开着的 .pptx 有了新版本', () => {

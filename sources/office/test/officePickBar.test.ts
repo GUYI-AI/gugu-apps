@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 咕咕办公 · 选区旁边浮出的那一条(app.js;选区交互设计 gugu-base notes/2026-10-10-ppt-office/演示稿选区交互-设计.html §2):
+// 咕咕办公 · 选区旁边浮出的那一条(app.js;选区交互设计 §2):
 // 「n 处 · 放进输入框 ⏎ · ✕」只在有选中的时候出现;桌面上跟着最后一处,在它右上方 10 px、右对齐,上方没地方放下方,
 // 那一处滚出视野就停在面板底部正中;手机上一直在底部正中。Enter 放进输入框,Esc 全部取消(桌面)。顶上那一排没有了。
 // 运行时是假的(getContext / files.open / list / onChanged / compose);稿子是真的 fixtures/two-slides.pptx。

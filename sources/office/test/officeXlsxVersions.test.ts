@@ -33,8 +33,9 @@ const gugu = {
   compose: vi.fn(async () => {}),
   files: {
     list: vi.fn(async () => [{ ...entry, version: listed }]),
-    onChanged: vi.fn((_place: unknown, handler: () => void) => {
-      changed = handler
+    onChanged: vi.fn((_place: unknown, handler: (change: unknown) => void) => {
+      // The chat says how its files are now (#7257): the App reads no list.
+      changed = () => handler({ kind: 'entries', entries: [{ ...entry, version: listed }], gone: [] })
       return () => {}
     }),
     open: vi.fn(async () => {

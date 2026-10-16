@@ -13,9 +13,9 @@
     }
   },
   "author": "咕咕",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "apiVersion": 3,
-  "engines": { "gugu": ">=0.2.55" },
+  "engines": { "gugu": ">=0.2.56" },
   "entry": "index.html",
   "icon": "icon.png",
   "permissions": {

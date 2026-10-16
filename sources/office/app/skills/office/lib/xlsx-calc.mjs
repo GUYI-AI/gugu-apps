@@ -36,8 +36,8 @@ const NOT_IN_IRONCALC = new Set(['#NAME?', '#ERROR!', '#N/IMPL!'])
 const ERRORS = new Set([...ERROR_CODES, ...NOT_IN_IRONCALC, '#CIRC!'])
 /**
  * What IronCalc gets differently from Excel too often to take its word with nothing to check it against — a formula with
- * no stored result (written so by some programs, or the agent's own). By cause, not by function: the corpus (gugu-base
- * evidence/2026-10-13-xlsx-ab: 1,296 workbooks, 78,389 formulas with a stored result IronCalc can calculate) took apart
+ * no stored result (written so by some programs, or the agent's own). By cause, not by function: the corpus (an A/B of
+ * 1,296 workbooks, 78,389 formulas with a stored result IronCalc can calculate) took apart
  * mismatch by mismatch, a cause at a time — the worst first, while what it takes still differs 0.5% of the time or more,
  * twice or more:
  *   · ways of writing (shapesOf): @lift, @array, @arrayconst, @approx-lookup, TEXT with a date, time or worked-out format,
