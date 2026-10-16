@@ -40,6 +40,8 @@
 
 ## 本仓自己的 App(`sources/`)
 
+- 工具类 App 可以没有业务 HTML（App API 5）：`browser-use` 使用咕咕宿主的会话浏览器桥；`computer-use` 托管配置的本机 MCP 程序。点击 App 打开宿主的配置与状态页。两者默认按需安装，不标 `firstRun`。
+
 - 一个目录就是整个 App 的(`radar`、`day-calendar`):`path` 写 `sources/<id>`。
 - 带打包脚本、带测试的(`office`、`omnisearch`):`sources/<id>/` 是这个 App 的工程，市场打的包只是其中的 `app/`
   (`path` 写 `sources/<id>/app`)。测试、打包脚本、它们的 `package.json` 都在 `app/` 外面，不进用户装的包。

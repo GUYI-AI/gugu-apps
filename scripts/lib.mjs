@@ -262,7 +262,18 @@ export function inspectAppDir(dir, id, version, mediaBase) {
         `把第一句写短(它说给 agent 听这个 App 做什么;写给人的放 localized):${line}`
     );
   }
-  bundleFile(dir, manifest.entry ?? 'index.html');
+  if (manifest.entry) bundleFile(dir, manifest.entry);
+  const tabs = manifest.contributes?.tabs ?? [];
+  for (const tab of tabs) {
+    if (tab.hostPage === 'settings') {
+      if (manifest.apiVersion < 5) fail('宿主配置页需要 App API 5');
+    } else bundleFile(dir, tab.entry ?? manifest.entry ?? 'index.html');
+  }
+  if (!manifest.entry && tabs.every((tab) => tab.hostPage === 'settings')) {
+    const toolsOnly = manifest.apiVersion >= 5 && manifest.permissions?.capabilities?.includes('agents:tools') &&
+      ((manifest.contributes?.mcpServers?.length ?? 0) > 0 || manifest.contributes?.skills);
+    if (!toolsOnly) bundleFile(dir, 'index.html');
+  }
   const changelog = join(dir, 'CHANGELOG.md');
   if (!existsSync(changelog)) fail('包里没有 CHANGELOG.md —— 每一版都要写「这版改了什么」(首版写「首次发布」也行)');
   const releaseNotes = changelogSectionFor(readFileSync(changelog, 'utf8'), version);
