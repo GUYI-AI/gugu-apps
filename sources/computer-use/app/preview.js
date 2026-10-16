@@ -47,6 +47,8 @@ let live = false;
 let liveTimer = null;
 let player = null;
 let pending = null;
+/** The action the cursor points at now: its point stays on the same window pixel when the frame changes size. */
+let pointed = null;
 
 const visible = () => context?.layout?.visible !== false;
 const sessionId = () => context?.session?.id ?? null;
@@ -91,20 +93,30 @@ async function animate(action) {
   const key = `${action.at}|${action.tool}`;
   if (key === animated || !action.point || action.status === 'running') return;
   await ui.frame.decode().catch(() => {});
-  const at = onCanvas(action.point, action.space);
-  const from = action.from && onCanvas(action.from, action.space);
-  if (!at || key === animated) return;
+  if (!onCanvas(action.point, action.space) || key === animated) return;
   animated = key;
+  pointed = action;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!player) {
     player = new MotionPlayer(ui.canvas);
-    player.place(at);
+    player.place(onCanvas(action.point, action.space));
     return;
   }
   // A drag starts where it grabbed: go there first, then carry it to where it let go.
+  const from = action.from && onCanvas(action.from, action.space);
   if (from) await player.moveTo(from, { reducedMotion: reduced });
+  // Projected again after each leg: the pane may have been resized while the cursor was on its way.
+  const at = pointed === action && onCanvas(action.point, action.space);
+  if (!at) return;
   await player.moveTo(at, { reducedMotion: reduced });
-  if (/click/.test(action.tool)) player?.click();
+  if (pointed === action && /click/.test(action.tool)) player?.click();
+}
+
+/** The frame changed size (pane resized, a picture of another size): the cursor stays on the same window pixel, ❌ on the
+ *  same canvas pixel. A move under way ends where it was going. */
+function reproject() {
+  const at = player && pointed && onCanvas(pointed.point, pointed.space);
+  if (at) player.place(at);
 }
 
 function apply(state) {
@@ -164,6 +176,7 @@ function schedule() {
 function reset() {
   shown = 0;
   animated = '';
+  pointed = null;
   ui.frame.removeAttribute('src');
   player?.destroy();
   player = null;
@@ -177,6 +190,9 @@ async function start() {
     return;
   }
   text = textFor(context.locale);
+  const resized = new ResizeObserver(reproject);
+  resized.observe(ui.frame);
+  resized.observe(ui.canvas);
   // Each change brings the whole context: moved to another task, or to a place with none, it is that place's now.
   gugu.onContextChanged((next) => {
     const moved = (next.session?.id ?? null) !== sessionId();
