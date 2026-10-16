@@ -1,0 +1,35 @@
+{
+  "id": "office",
+  "name": "咕咕办公",
+  "description": "Its skill office reads and changes a chat folder's .pptx and .xlsx: the same file, its next version. In the App a person picks what should change and puts it in the composer as pills, slide and shape or a sheet's cells; a pill clicked opens the file there.",
+  "localized": {
+    "zh": {
+      "name": "咕咕办公",
+      "description": "打开群文件夹里的演示稿和表格，点选或框选要改的地方，一起交给 agent 去改；改好的是同一个文件的下一版。"
+    },
+    "en": {
+      "name": "Gugu Office",
+      "description": "Open the decks and spreadsheets in a chat's folder, pick or box what should change, and hand it to an agent; what it changes is the same file's next version."
+    }
+  },
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 3,
+  "engines": { "gugu": ">=0.2.55" },
+  "entry": "index.html",
+  "icon": "icon.png",
+  "permissions": {
+    "capabilities": ["files:read", "agents:tools"]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "main",
+        "title": "咕咕办公",
+        "icon": "icon.png",
+        "opensFiles": { "chat": [".pptx", ".xlsx", ".xlsm"] }
+      }
+    ],
+    "skills": "skills"
+  }
+}

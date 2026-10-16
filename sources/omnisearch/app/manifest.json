@@ -1,0 +1,35 @@
+{
+  "id": "omnisearch",
+  "name": "全能搜索",
+  "description": "给 agent 的搜索工具：网页搜索、读网页、查编程库文档。填上 key 就能用。",
+  "author": "咕咕",
+  "version": "0.2.6",
+  "apiVersion": 3,
+  "engines": { "gugu": ">=0.2.55" },
+  "entry": "settings.html",
+  "icon": "icon.png",
+  "permissions": {
+    "capabilities": [
+      "agents:tools"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "settings",
+        "title": "全能搜索",
+        "entry": "settings.html",
+        "icon": "icon.png"
+      }
+    ],
+    "mcpServers": [
+      {
+        "name": "omnisearch",
+        "command": "node",
+        "args": [
+          "launch.mjs"
+        ]
+      }
+    ]
+  }
+}
