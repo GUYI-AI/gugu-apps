@@ -2,7 +2,7 @@
 // 咕咕办公 · 一个 pill 的位置是哪份文件的(app.js goTo / showPlace,#7232 起两种文件共用):宿主只把位置交给开着那份文件的页,
 // 所以位置记下当时在开、或开着的那份;另一份文件打开就丢掉;页面刚起、还没有文件时到的，留给第一份打开的。同一份文件里
 // 连到两个位置，后到的算数。真 app.js,运行时是假的(同 officeXlsxPickBar);表是 fixtures/xlsx-sales.xlsx。
-// 复核 156f72cb0e(gugu-base notes/reviews/2026-10-15-office-xlsx-pill-156f72cb.md 要改 2)的场景：A 还在读时 A 的位置到了，
+// 复核 156f72cb0e(要改 2)的场景：A 还在读时 A 的位置到了，
 // 人换到 B,B 上框的是 A 的 销售!C3。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -22,14 +22,14 @@ const ctxOf = (id: Id) => ({ chat: { id: 'group-1', name: 'G', kind: 'group', gr
 let giveContext: (ctx: unknown) => void = () => {}
 const firstContext = new Promise((resolve) => { giveContext = resolve })
 const never = new Promise<never>(() => {})
-let linked: (link: { query: Record<string, string> }) => void = () => {}
+let linked: (link: { query: Record<string, string>; file: string | null }) => void = () => {}
 let contextChanged: (ctx: unknown) => void = () => {}
 const gugu = {
   setTabTitle: vi.fn(async (_title: string) => {}),
   getContext: vi.fn(() => firstContext),
   onContextChanged: vi.fn((handler: (ctx: unknown) => void) => { contextChanged = handler; return () => {} }),
   compose: vi.fn(async () => {}),
-  onLink: vi.fn((handler: (link: { query: Record<string, string> }) => void) => { linked = handler }),
+  onLink: vi.fn((handler: (link: { query: Record<string, string>; file: string | null }) => void) => { linked = handler }),
   files: {
     list: vi.fn(async () => Object.values(files)),
     onChanged: vi.fn(() => () => {}),
@@ -71,24 +71,36 @@ beforeAll(async () => {
 describe('咕咕办公 · 一个 pill 的位置是哪份文件的', () => {
   test('页面刚起时到的位置给第一份文件;同一份里后到的算数;C 还在读时到的位置，换到 B 就丢了(B 上不框、也不说找不到)', async () => {
     // Before any file: the place a pill opened this page with comes first (the host holds it until onLink).
-    linked({ query: { range: '销售!C3' } })
+    linked({ query: { range: '销售!C3' }, file: 'file-a' })
     giveContext(ctxOf('file-a'))
     await until('A is drawn', () => shownFile() === 'A.xlsx' && $('preview').querySelector('.xlsx-scroll') !== null)
     await until('the place is framed on A', () => frame() !== null)
     expect(frame()).toBe(cellAt('1,010'))
     // Two places in a row on the file shown: the second wins.
-    linked({ query: { range: '销售!D4' } })
-    linked({ query: { range: '销售!B5' } })
+    linked({ query: { range: '销售!D4' }, file: 'file-a' })
+    linked({ query: { range: '销售!B5' }, file: 'file-a' })
     await untilStable('A settles', frame)
     expect(frame()).toBe(cellAt('410'))
     expect($('banner').hidden).toBe(true)
     // C is being read when its place comes; the person opens B before C is drawn.
     contextChanged(ctxOf('file-c'))
     await until('C is being opened', () => gugu.files.open.mock.calls.some(([ref]) => ref.id === 'file-c'))
-    linked({ query: { range: '销售!C3' } })
+    linked({ query: { range: '销售!C3' }, file: 'file-c' })
     contextChanged(ctxOf('file-b'))
     await until('B is drawn', () => shownFile() === 'B.xlsx' && $('preview').querySelector('.xlsx-scroll') !== null)
     await untilStable('B settles', () => [frame(), $('banner').hidden])
+    expect(frame()).toBeNull()
+    expect($('banner').hidden).toBe(true)
+    // #7257: a place names its file — not shown on the file on screen (A's, with B shown) …
+    linked({ query: { range: '销售!C3' }, file: 'file-a' })
+    await untilStable('B stays as it is', () => [frame(), $('banner').hidden])
+    expect(frame()).toBeNull()
+    // … and dropped once another file starts opening (C): A, opened after that, is drawn with no frame.
+    contextChanged(ctxOf('file-c'))
+    await until('C is being opened again', () => gugu.files.open.mock.calls.filter(([ref]) => ref.id === 'file-c').length === 2)
+    contextChanged(ctxOf('file-a'))
+    await until('A is drawn again', () => shownFile() === 'A.xlsx' && $('preview').querySelector('.xlsx-scroll') !== null)
+    await untilStable('A settles', () => [frame(), $('banner').hidden])
     expect(frame()).toBeNull()
     expect($('banner').hidden).toBe(true)
   })

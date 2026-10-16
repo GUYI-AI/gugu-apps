@@ -1,4 +1,4 @@
-// 咕咕办公的 skill 改 .xlsx(方案 gugu-base notes/2026-10-10-ppt-office/表格-设计说明.html §4–§7;10-13 起是 skill + 脚本,
+// 咕咕办公的 skill 改 .xlsx(表格设计说明 §4–§7;10-13 起是 skill + 脚本,
 // 表格-脚本方案.md):按表和区域读,按区域写格子,改的就是那个文件 —— 没动的 zip 条目逐字节拷回,写到的那张表只换被写的
 // 那几格(所在的行),其余字节不动;字写成 inlineStr,不碰 sharedStrings;calcPr 加 fullCalcOnLoad;不再是公式的格从
 // calcChain 里删掉。改动牵连的公式写回时用 IronCalc 重算、把新结果存进去(xlsx-calc.mjs,owner 10-13 定的 ①);算不了的

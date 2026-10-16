@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// 咕咕办公打开群文件夹里的 .pptx(A1,方案 gugu-base notes/2026-10-10-ppt-office/演示稿-设计说明.html §3、§7):每页画出来,
+// 咕咕办公打开群文件夹里的 .pptx(A1,演示稿设计说明 §3、§7):每页画出来,
 // 每个形状能点选、能框选,攒着的几处一起变成一段引用。用的是打进包里的 pptx-glimpse(skills/office/vendor/)和一份 PptxGenJS 生成的
 // 两页稿(fixtures/two-slides.pptx:每页 4 个形状,表格的 cNvPr id 与一个文本框相同(第 1 页都是 2,第 2 页都是 3)—— 同页重复的 id)。
 import { readFileSync } from 'node:fs'

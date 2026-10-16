@@ -51,7 +51,7 @@ const entryOf = (id: string, version: number) => ({
 const rt = {
   versions: new Map<number, Uint8Array>([[1, v1]]),
   stored: 1, // the version files.open hands out for deck
-  listed: 1, // the version files.list says for deck
+  listed: 1, // the version deck's chat says it is at (files.onChanged, #7257)
   armOpen: false,
   openGate: null as null | (() => void),
   openDelayMs: 0,
@@ -73,8 +73,9 @@ const gugu = {
   compose: vi.fn(async (_text: string) => {}),
   files: {
     list: vi.fn(async () => [entryOf('deck', rt.listed), entryOf('deck2', 1)]),
-    onChanged: vi.fn((_place: unknown, handler: () => void) => {
-      rt.changed = handler
+    onChanged: vi.fn((_place: unknown, handler: (change: unknown) => void) => {
+      // The chat says how its files are now (#7257): the App reads no list.
+      rt.changed = () => handler({ kind: 'entries', entries: [entryOf('deck', rt.listed), entryOf('deck2', 1)], gone: [] })
       return () => {}
     }),
     open: vi.fn(async (ref: { id: string }) => {
@@ -103,17 +104,16 @@ const until = (check: () => void, timeout = 5000) => vi.waitFor(check, { timeout
 /** The slides' pictures: new ones once a deck is drawn (each picture its own object URL). */
 const srcs = () => [...$('preview').querySelectorAll('.pptx-slide img')].map((img) => img.getAttribute('src'))
 const deckOpens = () => gugu.files.open.mock.calls.filter(([ref]) => (ref as { id: string }).id === 'deck').length
-let listCalls = 0
-/** What the list says of deck from now (and open hands out, unless `openToo` is false), then the workspace_changed heard. */
+/** What deck's chat says of it from now (and open hands out, unless `openToo` is false), heard by the App at once. */
 async function listed(version: number, { openToo = true, bytes }: { openToo?: boolean; bytes?: Uint8Array } = {}) {
   if (bytes) rt.versions.set(version, bytes)
   if (openToo) rt.stored = version
   rt.listed = version
   rt.changed()
-  await until(() => expect(gugu.files.list).toHaveBeenCalledTimes(listCalls + 1))
-  listCalls++
+  // Taken in as it is said: the list is never read (#7257).
+  expect(gugu.files.list).not.toHaveBeenCalled()
 }
-/** The host hands the page another file (the person opened it), and it is drawn; the page reads the list once then. */
+/** The host hands the page another file (the person opened it), and it is drawn. */
 async function show(id: string) {
   const before = srcs()
   rt.handTo(ctxFor(id))
@@ -122,7 +122,6 @@ async function show(id: string) {
     expect(srcs()).toHaveLength(2)
     expect(srcs()[0]).not.toBe(before[0])
   })
-  listCalls = gugu.files.list.mock.calls.length
 }
 
 beforeAll(async () => {
@@ -142,7 +141,6 @@ beforeAll(async () => {
   await import('../app/app.js')
   // The first open reads the vendored pptx-glimpse cold.
   await until(() => expect($('preview').querySelectorAll('.pptx-slide')).toHaveLength(2), 15000)
-  listCalls = gugu.files.list.mock.calls.length
 }, 30000)
 
 describe('咕咕办公 · 重画的时候人还在用屏上的那份', () => {

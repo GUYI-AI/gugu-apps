@@ -20,7 +20,7 @@ const gugu = {
   getContext: vi.fn(async () => ctx),
   onContextChanged: vi.fn(() => () => {}),
   compose: vi.fn(async (_text: string, _where: unknown) => {}),
-  onLink: vi.fn((handler: (link: { query: Record<string, string> }) => void) => { linked = handler }),
+  onLink: vi.fn((handler: (link: { query: Record<string, string>; file: string | null }) => void) => { linked = handler }),
   files: {
     list: vi.fn(async () => [entry]),
     onChanged: vi.fn(() => () => {}),
@@ -28,7 +28,7 @@ const gugu = {
   },
 }
 
-let linked: (link: { query: Record<string, string> }) => void = () => {}
+let linked: (link: { query: Record<string, string>; file: string | null }) => void = () => {}
 const $ = (id: string) => document.getElementById(id) as HTMLElement
 const rect = (left: number, top: number, width: number, height: number) =>
   ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) }) as DOMRect
@@ -122,10 +122,10 @@ describe('咕咕办公 · 表格接那条浮条', () => {
   })
 
   test('点 pill(onLink):切到那张表、框住那一格;这一版没有的地址说一句', async () => {
-    linked({ query: { range: "'2024 预算'!A2" } })
+    linked({ query: { range: "'2024 预算'!A2" }, file: 'book' })
     await until(`the sheet shown is ${'2024 预算'}`, () => $('preview').querySelector('.xlsx-tab.current')!.textContent === '2024 预算')
     await until('the place is framed', () => $('preview').querySelector('.xlsx-found') !== null)
-    linked({ query: { range: '没有这张表!A1' } })
+    linked({ query: { range: '没有这张表!A1' }, file: 'book' })
     await until('the page says the place is gone', () => !$('banner').hidden && $('banner').textContent === '这一处在现在这一版里找不到了。')
     $('preview').querySelectorAll<HTMLButtonElement>('.xlsx-tab')[0]!.click()
     await until(`the sheet shown is ${'销售'}`, () => $('preview').querySelector('.xlsx-tab.current')!.textContent === '销售')

@@ -1,4 +1,4 @@
-// A .pptx as an agent reads and changes it (A2, 方案 gugu-base notes/2026-10-10-ppt-office/演示稿-设计说明.html §3):
+// A .pptx as an agent reads and changes it (A2, the deck design note §3):
 // the slides' shapes by slide and cNvPr id, and one shape's XML replaced — nothing else in the file touched.
 //
 // - A part: the shape's element is found by its byte range in the part's text and only that range is replaced.
