@@ -7,32 +7,33 @@ const gugu = window.gugu;
 const $ = (id) => document.getElementById(id);
 const ui = {
   stage: $('stage'), shot: $('shot'), frame: $('frame'), canvas: $('cursor'), what: $('what'), when: $('when'),
-  empty: $('empty'), emptyTitle: $('empty-title'), emptyHint: $('empty-hint'), alert: $('alert'),
+  empty: $('empty'), emptyTitle: $('empty-title'), alert: $('alert'),
 };
 const LIVE_EVERY_MS = 700;
 const CHANGED = 'notifications/computer-use/changed';
 
+// 人话:这一页只在 agent 操作电脑时才有意义,所以不解释 Computer Use、不指路去别处看原因,每种状态一句话。
 const TEXT = {
   'zh-CN': {
-    outside: ['放到一条会话旁边', '预览只显示它旁边那条会话的 agent 在操作什么。'],
-    idle: ['还没有操作', '这条会话的 agent 用 Computer Use 时，它操作的窗口会出现在这里。'],
-    noFrame: '还没有画面',
-    failedHint: '刚才那一步没成功，原因在对话里这一步的工具结果。',
+    outside: '在任务里打开，才能看到 agent 的操作',
+    idle: 'agent 操作电脑时，画面会显示在这里',
+    loading: '正在获取画面…',
+    unseen: '暂时看不到画面',
     failed: '没能',
     verbs: { click: '点击', double_click: '双击', right_click: '右键点击', drag: '拖动', scroll: '滚动', type_text: '输入',
       press_key: '按键', hotkey: '按键', set_value: '填写', invoke_menu: '选择菜单', launch_app: '打开', set_window_frame: '调整窗口',
-      get_window_state: '查看窗口', get_accessibility_tree: '查看窗口', list_apps: '查看 App', list_windows: '查看窗口', zoom: '放大查看' },
+      get_window_state: '查看窗口', get_accessibility_tree: '查看窗口', list_apps: '查看打开的 App', list_windows: '查看窗口', zoom: '放大查看' },
     other: '操作',
   },
   'en-US': {
-    outside: ['Put it beside a session', 'The preview shows what the agent of the session next to it is operating.'],
-    idle: ['Nothing yet', 'When this session\'s agent uses Computer Use, the window it works in shows here.'],
-    noFrame: 'No picture yet',
-    failedHint: 'The last step did not work; the tool result in the conversation says why.',
+    outside: 'Open it in a task to see what the agent does',
+    idle: 'When the agent uses the computer, it shows here',
+    loading: 'Getting the picture…',
+    unseen: 'Cannot see the screen right now',
     failed: 'Could not',
     verbs: { click: 'Click', double_click: 'Double-click', right_click: 'Right-click', drag: 'Drag', scroll: 'Scroll', type_text: 'Type',
       press_key: 'Press', hotkey: 'Press', set_value: 'Fill in', invoke_menu: 'Choose menu', launch_app: 'Open', set_window_frame: 'Move window',
-      get_window_state: 'Look at window', get_accessibility_tree: 'Look at window', list_apps: 'List apps', list_windows: 'List windows', zoom: 'Zoom in' },
+      get_window_state: 'Look at window', get_accessibility_tree: 'Look at window', list_apps: 'See open apps', list_windows: 'Look at windows', zoom: 'Zoom in' },
     other: 'Act',
   },
 };
@@ -58,11 +59,10 @@ function describe(action) {
   return action.status === 'failed' ? `${text.failed}${said}` : said;
 }
 
-function showEmpty(title, hint) {
+function showEmpty(title) {
   ui.stage.hidden = true;
   ui.empty.hidden = false;
   ui.emptyTitle.textContent = title;
-  ui.emptyHint.textContent = hint;
 }
 
 function showError(error) {
@@ -107,7 +107,7 @@ async function animate(action) {
 }
 
 function apply(state) {
-  if (!state.session) { showEmpty(...text.outside); return; }
+  if (!state.session) { showEmpty(text.outside); return; }
   live = state.live && state.target?.pid !== undefined && state.target?.window_id !== undefined;
   const latest = state.actions.at(-1);
   const app = typeof state.target?.app === 'string' ? state.target.app : null;
@@ -118,9 +118,7 @@ function apply(state) {
     ui.when.setAttribute('datetime', state.frame.at);
   }
   if (shown === 0) {
-    if (latest?.status === 'failed') showEmpty(text.noFrame, text.failedHint);
-    else if (latest) showEmpty(text.noFrame, said);
-    else showEmpty(...text.idle);
+    showEmpty(!latest ? text.idle : latest.status === 'running' ? text.loading : text.unseen);
     return;
   }
   ui.empty.hidden = true;
@@ -135,7 +133,7 @@ async function refresh(options = {}) {
   if (pending) { pending.again = true; return; }
   pending = { again: false };
   try {
-    if (!sessionId()) { showEmpty(...text.outside); return; }
+    if (!sessionId()) { showEmpty(text.outside); return; }
     const result = await gugu.callProgram('preview_state', { since: shown, live: Boolean(options.live) });
     if (result.isError) throw new Error(result.content?.find((block) => block.type === 'text')?.text ?? 'preview_state failed');
     ui.alert.hidden = true;
