@@ -1,5 +1,6 @@
 {
   "id": "browser-use",
+  "firstRun": true,
   "unlisted": false,
   "deprecated": null,
   "versions": [
