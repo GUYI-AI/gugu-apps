@@ -57,7 +57,8 @@ const KINDS = {
 }
 const ICONS = { '.pptx': 'pptx.png', '.xlsx': 'xlsx.png', '.xlsm': 'xlsx.png' }
 
-const state = { t: STRINGS.zh, kind: 'office', query: '', group: null, asked: 0, recent: [] }
+/** `able`: this gugu and this App's grant can list the chats' files — until then nothing is asked, only said why. */
+const state = { t: STRINGS.zh, kind: 'office', query: '', group: null, asked: 0, recent: [], able: false }
 
 const fmt = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
 const suffixOf = (entry) => (entry.suffix || entry.name.match(/\.[^.]+$/)?.[0] || '').toLowerCase()
@@ -84,9 +85,11 @@ async function applyContext(ctx) {
   $('back').setAttribute('aria-label', state.t.back)
   $('groups-title').textContent = state.t.groups
   drawKinds()
+  state.able = false
   if (!ctx.capabilities?.includes('files:read')) return say(state.t.noRead)
   // An older gugu has no files.search / files.recent: said, not an empty list.
   if (typeof gugu.files.search !== 'function' || typeof gugu.files.recent !== 'function') return say(state.t.oldGugu)
+  state.able = true
   say(null)
   await refresh()
 }
@@ -116,6 +119,7 @@ function drawKinds() {
 
 /** What the page shows now: a search, a chat's files, or what was opened last. The answer to the latest ask wins. */
 async function refresh() {
+  if (!state.able) return
   const asked = ++state.asked
   show('error', false)
   try {
