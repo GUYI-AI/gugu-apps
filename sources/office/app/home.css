@@ -8,3 +8,4 @@ main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) v
 #group-list { gap: var(--em-spacing-xs); }
 .list img.kind { width: 20px; height: 20px; flex: none; }
 .list .where { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#groups { margin-bottom: var(--em-spacing-lg); }
