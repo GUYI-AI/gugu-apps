@@ -13,9 +13,9 @@
     }
   },
   "author": "咕咕",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "apiVersion": 3,
-  "engines": { "gugu": ">=0.2.56" },
+  "engines": { "gugu": ">=0.2.57" },
   "entry": "index.html",
   "icon": "icon.png",
   "permissions": {
@@ -27,7 +27,8 @@
         "name": "main",
         "title": "咕咕办公",
         "icon": "icon.png",
-        "opensFiles": { "chat": [".pptx", ".xlsx", ".xlsm"] }
+        "opensFiles": { "chat": [".pptx", ".xlsx", ".xlsm"] },
+        "fileIcons": { ".pptx": "pptx.png", ".xlsx": "xlsx.png", ".xlsm": "xlsx.png" }
       }
     ],
     "skills": "skills"
