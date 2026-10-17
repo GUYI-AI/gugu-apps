@@ -5,15 +5,15 @@
   "localized": {
     "zh": {
       "name": "咕咕办公",
-      "description": "打开群文件夹里的演示稿和表格，点选或框选要改的地方，一起交给 agent 去改；改好的是同一个文件的下一版。"
+      "description": "打开群文件夹里的演示稿和表格，点选或框选要改的地方，一起交给 agent 去改；改好的是同一个文件的下一版。它自己的一页列出最近打开的文件，还能搜索所有群的文件。"
     },
     "en": {
       "name": "Gugu Office",
-      "description": "Open the decks and spreadsheets in a chat's folder, pick or box what should change, and hand it to an agent; what it changes is the same file's next version."
+      "description": "Open the decks and spreadsheets in a chat's folder, pick or box what should change, and hand it to an agent; what it changes is the same file's next version. Its own page lists the files opened lately and searches every chat's files."
     }
   },
   "author": "咕咕",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "apiVersion": 3,
   "engines": { "gugu": ">=0.2.57" },
   "entry": "index.html",
@@ -29,6 +29,12 @@
         "icon": "icon.png",
         "opensFiles": { "chat": [".pptx", ".xlsx", ".xlsm"] },
         "fileIcons": { ".pptx": "pptx.png", ".xlsx": "xlsx.png", ".xlsm": "xlsx.png" }
+      },
+      {
+        "name": "home",
+        "title": "咕咕办公",
+        "icon": "icon.png",
+        "entry": "home.html"
       }
     ],
     "skills": "skills"
