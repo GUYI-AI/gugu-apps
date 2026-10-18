@@ -10,14 +10,18 @@ import {
 const $ = (sel) => document.querySelector(sel)
 const status = $('#status')
 
+/** Children as the DOM takes them: arrays flattened, null / undefined / false left out. */
+const kids = (children) => children.flat(Infinity).filter((c) => c !== null && c !== undefined && c !== false)
 /** An element with text (never markup: others wrote it) and children. */
 function h(tag, props = {}, ...children) {
   const { dataset, ...rest } = props
   const el = Object.assign(document.createElement(tag), rest)
   if (dataset) Object.assign(el.dataset, dataset)
-  for (const c of children.flat()) if (c !== null && c !== undefined && c !== false) el.append(c)
+  el.append(...kids(children))
   return el
 }
+/** Replace what `el` holds; never `el.replaceChildren(null)` — that draws the word "null". */
+const put = (el, ...children) => el.replaceChildren(...kids(children))
 
 function say(message, kind = 'status') {
   status.setAttribute('role', kind)
@@ -38,7 +42,8 @@ window.gugu.onContextChanged((next) => {
 
 const members = () => ctx.chat?.members ?? []
 const nameOf = (id) => members().find((m) => m.id === id)?.name ?? '已离开的成员'
-const lang = () => (String(ctx.locale ?? '').startsWith('en') ? 'en' : 'zh')
+const LANGS = { zh: '中文题', en: 'English' }
+const defaultLang = () => (String(ctx.locale ?? '').startsWith('en') ? 'en' : 'zh')
 
 // ── the lobby ────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -57,10 +62,10 @@ async function showLobby() {
   lobby.hidden = false
   window.gugu.setTabTitle('海龟汤').catch((e) => console.warn('setTabTitle', e)) // only the tab's name
   if (!ctx.chat) {
-    lobby.replaceChildren(h('gugu-empty', { icon: 'users' }, h('strong', { textContent: '海龟汤在聊天里玩' }), h('small', { textContent: '在群里，或在和你的 agent 的私聊里，从右栏打开它' })))
+    put(lobby, h('gugu-empty', { icon: 'users' }, h('strong', { textContent: '海龟汤在聊天里玩' }), h('small', { textContent: '在群里，或在和你的 agent 的私聊里，从右栏打开它' })))
     return
   }
-  lobby.replaceChildren(h('p', { className: 'muted', textContent: '正在读这个群的牌局…' }))
+  put(lobby, h('p', { className: 'muted', textContent: '正在读这个群的牌局…' }))
   let rounds = []
   try {
     const entries = await window.gugu.files.list({ chat: ctx.chat.id })
@@ -70,13 +75,11 @@ async function showLobby() {
   }
   let puzzles = []
   try {
-    const all = (await loadBank()).puzzles
-    puzzles = all.filter((p) => p.lang === lang())
-    if (!puzzles.length) puzzles = all.filter((p) => p.lang === 'zh')
+    puzzles = (await loadBank()).puzzles
   } catch (e) {
     fail('题库读不到', e)
   }
-  lobby.replaceChildren(
+  put(lobby, 
     h('h2', { textContent: '海龟汤' }),
     h('p', { className: 'muted', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。问出关键，还原整个故事。' }),
     newRoundForm(puzzles),
@@ -98,21 +101,25 @@ function newRoundForm(puzzles) {
     form.append(h('p', { className: 'muted', textContent: '需要一个 agent 当主持人：把装了海龟汤的 agent 拉进群，或者在和你自己的 agent 的私聊里玩。' }))
     return form
   }
+  const language = h('select', { name: 'lang' }, Object.entries(LANGS).map(([value, label]) => h('option', { value, textContent: label, selected: value === defaultLang() })))
   const level = h('select', { name: 'difficulty' },
     h('option', { value: '', textContent: '全部难度' }),
     Object.entries(DIFFICULTY_LABEL).map(([value, label]) => h('option', { value, textContent: label })))
   const pick = h('select', { name: 'puzzle' })
+  const shownNow = () => puzzles.filter((p) => p.lang === language.value && (!level.value || p.difficulty === level.value))
   const fill = () => {
-    const shown = puzzles.filter((p) => !level.value || p.difficulty === level.value)
-    pick.replaceChildren(h('option', { value: '', textContent: `随机一题（${shown.length} 道）` }),
+    const shown = shownNow()
+    put(pick, h('option', { value: '', textContent: `随机一题（${shown.length} 道）` }),
       shown.map((p) => h('option', { value: p.id, textContent: `${p.title} · ${DIFFICULTY_LABEL[p.difficulty] ?? ''}` })))
   }
   level.onchange = fill
+  language.onchange = fill
   fill()
   const hostPick = h('select', { name: 'host' }, agents.map((a) => h('option', { value: a.id, textContent: a.name })))
   const go = h('button', { type: 'submit', className: 'primary', textContent: '开汤' })
   form.append(
-    h('div', { className: 'row' }, h('label', {}, '难度', level), h('label', {}, '题目', pick)),
+    h('div', { className: 'row' }, h('label', {}, '语言', language), h('label', {}, '难度', level)),
+    h('label', {}, '题目', pick),
     h('label', {}, '主持人', hostPick),
     h('p', { className: 'muted', textContent: '主持人的主人看得到汤底：别让要一起猜的人的 agent 主持。' }),
     h('div', { className: 'row' }, go),
@@ -121,7 +128,7 @@ function newRoundForm(puzzles) {
     ev.preventDefault()
     go.disabled = true
     try {
-      const shown = puzzles.filter((p) => !level.value || p.difficulty === level.value)
+      const shown = shownNow()
       const puzzle = pick.value ? puzzles.find((p) => p.id === pick.value) : shown[Math.floor(Math.random() * shown.length)]
       if (!puzzle) throw new Error('没有这个难度的题')
       await startRound(puzzle, hostPick.value)
@@ -203,10 +210,9 @@ function drawRound() {
     solved: `还原成功${round.solvedBy && round.questions[round.solvedBy] ? ` · ${nameOf(round.questions[round.solvedBy].by)}` : ''} · 共问 ${asked} 次`,
     revealed: `大家放弃了，汤底揭晓 · 共问 ${asked} 次`,
   }[round.status] ?? round.status
-  $('#board').replaceChildren(
-    h('div', { className: 'row' },
-      ctx.file ? null : h('button', { type: 'button', ariaLabel: '回到大厅', onclick: () => { closeRound(); showLobby() } }, h('gugu-icon', { name: 'chevron-left' })),
-      h('h2', { textContent: p.title })),
+  put($('#board'), 
+    // The title is the panel's or the tab's own (setTabTitle above); from the lobby, a way back to it.
+    ctx.file ? null : h('div', { className: 'row' }, h('button', { type: 'button', textContent: '回到大厅', onclick: () => { closeRound(); showLobby() } })),
     h('article', { className: 'card stack', ariaLabel: '汤面' }, h('h5', { textContent: '汤面' }), h('p', { className: 'surface', textContent: p.surface })),
     h('p', { className: 'muted', textContent: line }),
     round.bottom ? h('article', { className: 'card stack bottom', ariaLabel: '汤底' }, h('h5', { textContent: '汤底' }), h('p', { className: 'surface', textContent: round.bottom }), credit(p)) : null,
@@ -230,7 +236,8 @@ function credit(p) {
   const s = p.source
   if (!s || s.kind === 'host') return h('small', { className: 'muted', textContent: s?.author ? `题目：${s.author}` : '题目：主持人出的' })
   const link = s.url ? h('a', { href: s.url, textContent: '原作', onclick: (ev) => { ev.preventDefault(); window.gugu.openBrowserTab(s.url).catch((e) => fail('打不开链接', e)) } }) : null
-  return h('small', { className: 'muted' }, `题目：${s.author ?? ''} · ${s.license}${s.collection ? ` · 收自 ${s.collection}` : ''} · `, link)
+  const from = s.collection && s.collection !== s.author ? ` · 收自 ${s.collection}` : ''
+  return h('small', { className: 'muted' }, `题目：${s.author ?? ''} · ${s.license}${from}${link ? ' · ' : ''}`, link)
 }
 
 let input, askBtn, guessBtn, actions
@@ -244,7 +251,7 @@ function drawControls() {
     if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); submit('ask') }
   }
   actions = h('div', { className: 'row' })
-  $('#controls').replaceChildren(form, actions)
+  put($('#controls'), form, actions)
 }
 
 function drawActions() {
@@ -253,13 +260,13 @@ function drawActions() {
   const over = ended(round) || f.status === 'gone'
   for (const el of [input, askBtn, guessBtn]) el.disabled = over
   if (ended(round)) {
-    actions.replaceChildren(ctx.file ? h('span') : h('button', { type: 'button', className: 'primary', textContent: '再来一局', onclick: () => { closeRound(); showLobby() } }))
+    put(actions, ctx.file ? h('span') : h('button', { type: 'button', className: 'primary', textContent: '再来一局', onclick: () => { closeRound(); showLobby() } }))
     return
   }
   const given = hintsGiven(round)
   const votes = Object.keys(round.giveUp ?? {}).length
   const mine = myId && round.giveUp?.[myId]
-  actions.replaceChildren(
+  put(actions, 
     h('button', {
       type: 'button',
       disabled: over || given >= round.puzzle.hintCount || hintWaiting(round),
