@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "puzzles": [
+    {
+      "id": "gugu-late-call",
+      "title": "深夜的电话",
+      "surface": "他每天深夜拨同一个号码，从不开口，听完就挂。某天电话那头有人说了一声「喂？」，他当场哭了。",
+      "difficulty": 2,
+      "tags": [
+        "亲情",
+        "清汤"
+      ],
+      "source": {
+        "name": "咕咕原创",
+        "author": "咕咕",
+        "license": "MIT"
+      },
+      "keyCount": 4
+    },
+    {
+      "id": "gugu-sunny-umbrella",
+      "title": "晴天的伞",
+      "surface": "大晴天，一个男人撑着伞慢慢走出一栋楼，一路上有人站在两边为他鼓掌。",
+      "difficulty": 1,
+      "tags": [
+        "温情",
+        "清汤"
+      ],
+      "source": {
+        "name": "咕咕原创",
+        "author": "咕咕",
+        "license": "MIT"
+      },
+      "keyCount": 4
+    },
+    {
+      "id": "gugu-crash-success",
+      "title": "成功了",
+      "surface": "一辆车直直撞上了路边的大树。司机下车看了看车头，高兴地掏出对讲机：「成功了！」",
+      "difficulty": 1,
+      "tags": [
+        "入门",
+        "清汤"
+      ],
+      "source": {
+        "name": "咕咕原创",
+        "author": "咕咕",
+        "license": "MIT"
+      },
+      "keyCount": 3
+    },
+    {
+      "id": "gugu-empty-seat",
+      "title": "靠窗的座位",
+      "surface": "一家小餐馆里，靠窗的那个座位从不让客人坐。老板说，那个座位的客人每天都来。",
+      "difficulty": 2,
+      "tags": [
+        "温情",
+        "清汤"
+      ],
+      "source": {
+        "name": "咕咕原创",
+        "author": "咕咕",
+        "license": "MIT"
+      },
+      "keyCount": 3
+    }
+  ]
+}
