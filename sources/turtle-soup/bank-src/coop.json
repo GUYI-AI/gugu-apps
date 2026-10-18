@@ -1,0 +1,235 @@
+{
+  "from": "AZHi-xinxin/haiguitang-coop@72dc96b107d63bfcebedc503e3d57bbd416b8ffd",
+  "puzzles": [
+    {
+      "id": "coop-soup-sample-001",
+      "lang": "zh",
+      "title": "闹钟",
+      "surface": "我定了早上7点的闹钟。早上它响了，我按掉，继续睡。10点我自然醒过来，一看手机，闹钟设置明明还是7点，可它再也没有响过第二次。",
+      "solution": "我设的是'单次闹钟'，响过这一次就结束了。我以为闹钟每天早上都会响，按掉之后安心继续睡，结果再也不会响第二遍——迟到是我自己的认知问题。",
+      "facts": [
+        {
+          "text": "我设的是单次闹钟，不是重复闹钟",
+          "required": true
+        },
+        {
+          "text": "按掉之后就彻底结束了",
+          "required": true
+        },
+        {
+          "text": "我以为闹钟会天天响",
+          "required": true
+        },
+        {
+          "text": "迟到是因为我自己的错误认知",
+          "required": true
+        }
+      ],
+      "unknowns": [],
+      "character_claims": [],
+      "hints": [
+        "注意闹钟的种类：单次和重复有什么区别？",
+        "按掉之后，这个闹钟还会存在吗？",
+        "问题出在闹钟身上还是我身上？"
+      ],
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "逻辑"
+      ],
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-002",
+      "lang": "zh",
+      "title": "鱼缸",
+      "surface": "我养了一缸热带鱼。昨天我给鱼缸换了水，用的是刚买的矿泉水。今天早上，鱼全死了。",
+      "solution": "我把鱼缸里的水一次性全换成了矿泉水。新水没有困过、没有调温，水温跟鱼缸差很多，水质也突变，鱼承受不住直接应激死了。问题不在矿泉水干不干净，在于换水方式太粗暴。",
+      "facts": [
+        {
+          "text": "一次性全换水而不是换一部分",
+          "required": true
+        },
+        {
+          "text": "矿泉水没困水、没调温",
+          "required": true
+        },
+        {
+          "text": "水温水质骤变",
+          "required": true
+        },
+        {
+          "text": "鱼死于应激",
+          "required": true
+        }
+      ],
+      "unknowns": [],
+      "character_claims": [],
+      "hints": [
+        "换水的方式有问题吗？全换和换一部分有什么区别？",
+        "新水直接倒进去之前，一般要做什么？",
+        "鱼是突然死的，最可能是什么原因？"
+      ],
+      "difficulty": "easy",
+      "tags": [
+        "宠物",
+        "日常"
+      ],
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-003",
+      "lang": "zh",
+      "title": "备用钥匙",
+      "surface": "我把钥匙忘在家里，想起家门口的脚垫下有一把备用钥匙，于是我用它开了门。第二天我发现备用钥匙也不见了，但我还是进了门。",
+      "solution": "其实我出门时门根本没锁——只是随手带上了，我推门就进去了。备用钥匙我压根没碰过。第二天它不见了是因为被我记错了位置，或者被家里人收走了，但门依旧没锁，所以我照样进得去。",
+      "facts": [
+        {
+          "text": "出门时门没锁，只是带上了",
+          "required": true
+        },
+        {
+          "text": "我根本没用到备用钥匙",
+          "required": true
+        },
+        {
+          "text": "备用钥匙不见跟进门无关",
+          "required": true
+        },
+        {
+          "text": "我是推门进去的",
+          "required": true
+        }
+      ],
+      "unknowns": [],
+      "character_claims": [],
+      "hints": [
+        "我真的是用备用钥匙开的门吗？",
+        "有没有可能门根本就没锁？",
+        "备用钥匙的消失和进门这件事有关吗？"
+      ],
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "逻辑"
+      ],
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-004",
+      "lang": "zh",
+      "title": "雨伞",
+      "surface": "下雨天，我撑着一把伞出门。回来的时候伞不见了，可我却浑身干爽。",
+      "solution": "我出门时没下雨，没带伞。半路下雨了，我躲进便利店买了一把新伞。回来时我把伞落在了便利店。而我浑身干爽，是因为我回来的路上雨已经停了。",
+      "facts": [
+        {
+          "text": "出门时没下雨，没带伞",
+          "required": true
+        },
+        {
+          "text": "伞是半路在便利店买的",
+          "required": true
+        },
+        {
+          "text": "伞落在便利店没带回来",
+          "required": true
+        },
+        {
+          "text": "回来时雨已经停了",
+          "required": true
+        }
+      ],
+      "unknowns": [],
+      "character_claims": [],
+      "hints": [
+        "我是从家里带伞出门的吗？",
+        "伞是哪里来的？",
+        "我回来时还下着雨吗？"
+      ],
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "逻辑"
+      ],
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-005",
+      "lang": "zh",
+      "title": "送信",
+      "surface": "邮递员以前每天都会往我家门缝里塞一封信。有一天起，他不再塞信了，我反而特别高兴。",
+      "solution": "那些信是银行寄来的催款单。我欠的钱终于还清了，催款单自然就停了。所以邮递员不再塞信，对我而言是债务清空的好消息。",
+      "facts": [
+        {
+          "text": "信是催款单",
+          "required": true
+        },
+        {
+          "text": "我欠了钱",
+          "required": true
+        },
+        {
+          "text": "不再塞信是因为我还清了",
+          "required": true
+        },
+        {
+          "text": "高兴是因为债务清空",
+          "required": true
+        }
+      ],
+      "unknowns": [],
+      "character_claims": [],
+      "hints": [
+        "每天寄来的信是什么信？",
+        "为什么会有信，后来又为什么停了？",
+        "信停了为什么反而高兴？"
+      ],
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "反转"
+      ],
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    }
+  ]
+}

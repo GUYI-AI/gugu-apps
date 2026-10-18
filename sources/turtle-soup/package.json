@@ -1,0 +1,8 @@
+{
+  "name": "turtle-soup-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/bank.mjs --check && node --test test/*.test.mjs"
+  }
+}

@@ -1,0 +1,14 @@
+/* gugu's look is in the page already (guide apps-ui); only what a round needs on top of it. */
+body { margin: 0; padding: var(--em-spacing-lg); }
+body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
+.surface { white-space: pre-wrap; }
+.qa li { align-items: flex-start; }
+.verdict { white-space: nowrap; padding: 0 var(--em-spacing-sm); border-radius: var(--em-radius-control); background: var(--em-background-3); color: var(--em-foreground); }
+.v-yes, .v-solved { background: var(--em-background-success); color: var(--em-foreground-success); }
+.v-no, .v-wrong { background: var(--em-background-destructive); color: var(--em-foreground-destructive); }
+.v-partly, .v-close { background: var(--em-background-warning); color: var(--em-foreground-warning); }
+.v-unclear { background: var(--em-background-info); color: var(--em-foreground-info); }
+.v-irrelevant { color: var(--em-foreground-muted); }
+.v-pending { color: var(--em-foreground-passive); }
+.bottom { border: 1px solid var(--em-border-1); }
+textarea { width: 100%; }
