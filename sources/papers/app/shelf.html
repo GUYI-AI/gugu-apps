@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>读论文</title>
+<link rel="stylesheet" href="shelf.css" />
+</head>
+<body>
+  <main class="stack">
+    <form id="import" class="row importer">
+      <input id="ref" type="search" autocomplete="off" />
+      <select id="target" hidden></select>
+      <button id="import-go" class="primary" type="submit"></button>
+      <button id="upload" type="button"></button>
+    </form>
+    <p id="banner" role="status" class="banner" hidden></p>
+    <h5 id="list-title" hidden></h5>
+    <ul id="papers" class="list"></ul>
+    <div id="empty"></div>
+  </main>
+  <script type="module" src="shelf.js"></script>
+</body>
+</html>
