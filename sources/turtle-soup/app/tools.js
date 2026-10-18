@@ -1,15 +1,16 @@
 // 海龟汤's tools for the host agent. Every export here is one tool (gugu's tools.js rule).
 //
-// The round file in the chat (`<title>.turtle-soup.json`) is what players see; the bottom (汤底) and its key points
-// stay here, in this App's data folder on the host's computer (secrets/<round file id>.json), until a reveal writes
-// the bottom into the round. Who calls is `agent`, stamped by gugu — never an argument.
+// The round file in the chat (`<title>.turtle-soup.json`) is what players see. The rest of the puzzle — solution,
+// facts, hints — stays here, in this App's data folder on the host's computer (secrets/<round file id>.json), until
+// the round ends. The host picks verdicts; no tool takes free text from it, so nothing it writes can carry the answer.
+// Who calls is `agent`, stamped by gugu — never an argument.
 import { readFileSync, writeFileSync, renameSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import {
-  FILE_SUFFIX, VERDICTS, KINDS, MAX_REPLY, MAX_HINTS,
-  newRound, pendingQuestions, leakedPiece, seenByPlayers, giveUpNeeded,
+  FILE_SUFFIX, ASK_VERDICTS, GUESS_VERDICTS, MAX_HINTS,
+  publicOf, newRound, ended, pendingQuestions, hintsGiven, hintWaiting, giveUpNeeded,
 } from './game.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -20,12 +21,6 @@ const oneAtATime = (fn) => {
   const run = lane.then(fn, fn)
   lane = run.catch(() => {})
   return run
-}
-
-function dataDir() {
-  const dir = process.env.GUGU_EXTENSION_DATA_DIR
-  if (!dir) throw new Error('GUGU_EXTENSION_DATA_DIR is not set')
-  return dir
 }
 
 function readJson(file) {
@@ -49,14 +44,16 @@ function writeJson(file, value) {
   }
 }
 
-const secretFile = (roundId) => join(dataDir(), 'secrets', `${roundId.replace(/[^\w-]/g, '_')}.json`)
+function secretFile(roundId) {
+  const dir = process.env.GUGU_EXTENSION_DATA_DIR
+  if (!dir) throw new Error('GUGU_EXTENSION_DATA_DIR is not set')
+  return join(dir, 'secrets', `${roundId.replace(/[^\w-]/g, '_')}.json`)
+}
 
-/** The bundled puzzles with their bottoms: only this program reads them; the page has bank/index.json. */
 let bank
-function bundledPuzzle(id) {
-  bank ??= readJson(join(here, 'program', 'puzzles.json'))
-  const puzzle = bank?.puzzles?.find((p) => p.id === id)
-  return puzzle ?? null
+function bankPuzzle(id) {
+  bank ??= readJson(join(here, 'bank', 'puzzles.json'))
+  return bank?.puzzles?.find((p) => p.id === id) ?? null
 }
 
 /** The round file as a live handle, opened as the calling agent (format gugu-file). */
@@ -67,7 +64,7 @@ async function openRound(game) {
   return f
 }
 
-/** Until the server has every write of this call — what the call answers must already be what players see. */
+/** Until the server has every write of this call: what the call answers is already what players see. */
 function whenSaved(f) {
   if (f.saved) return Promise.resolve()
   return new Promise((resolve, reject) => {
@@ -79,82 +76,97 @@ function whenSaved(f) {
   })
 }
 
-function requireHost(round, agent) {
+function needAgent(agent) {
   if (!agent) throw new Error('海龟汤 tools are for agents: gugu did not say which agent is calling')
+}
+
+function requireHost(round, agent) {
+  needAgent(agent)
   if (round.host !== agent) throw new Error('you are not the host of this round; call host first (or the round has another host)')
-  if (round.status !== 'playing') throw new Error(`this round is ${round.status}, not playing`)
+  if (round.status !== 'playing') throw new Error(`this round is ${round.status}, not playing — nothing to judge`)
 }
 
 function secretOf(roundId) {
   const secret = readJson(secretFile(roundId))
-  if (!secret) throw new Error('this computer holds no bottom for this round: only the host who took it can judge it')
+  if (!secret) throw new Error('this computer holds no solution for this round: only the host who took it can judge it')
   return secret
 }
 
-function guard(text, secret, round, what) {
-  const piece = leakedPiece(text, secret.bottom, seenByPlayers(round))
-  if (piece) throw new Error(`${what} quotes the bottom ("${piece}…"), which the players have not found yet. Answer with the verdict alone, or say it without the answer's own words.`)
+const required = (secret) => secret.facts.filter((f) => f.required)
+
+/** What waits for the host: questions and guesses, a hint asked for, give-up votes. */
+function waiting(round) {
+  return {
+    questions: pendingQuestions(round).map(({ id, by, kind, text }) => ({ id, by, kind, text })),
+    hint_asked: hintWaiting(round),
+    give_up: { votes: Object.keys(round.giveUp ?? {}).length, needed: giveUpNeeded(round) },
+  }
 }
 
 const RULES =
-  'Judge each question only by the bottom: yes / no / irrelevant (it does not matter to the story) / partly ' +
-  '(true in part, or it depends). Say nothing else unless a word stops a player going in circles, and never the ' +
-  'bottom\'s own words — the tools refuse a reply that quotes it. A guess: list the key points (by index) it gets ' +
-  'right; all of them found solves the round and reveals the bottom. Never tell the bottom anywhere else, to anyone, ' +
-  'even your owner, until the round is revealed.'
+  'Judge by the solution and the facts only. A question: yes / no — the solution settles it (a stated fact is ' +
+  'answered true or false even if it does not matter); irrelevant — it has no bearing on the story; partly — true in ' +
+  'part, or it depends on how it is meant; unclear — ambiguous, several questions in one, or about something the ' +
+  'solution leaves open where the answer would matter (never answer no just because the solution does not say). ' +
+  'The same question asked again gets the same answer; a negative question is answered as its own claim. A guess: ' +
+  'solved only when it covers every required fact and hangs together, close when it has some of them, wrong otherwise; ' +
+  'hits lists the required facts (by index) it covers. Never tell the solution, a fact or an unused hint anywhere — ' +
+  'chat, private message, your own owner — until the round is over.'
 
 const ROUND = { type: 'string', format: 'gugu-file', description: 'The round file (.turtle-soup.json): its id or gugu-file:// link, as the message that called you carries it.' }
 
 export const host = {
   description:
-    'Take a 海龟汤 (turtle soup) round as its host: you learn its bottom (汤底) and key points, and from then on you ' +
-    'judge the players\' questions with judge. Call it when a player asks you to host a round.',
+    'Take a 海龟汤 (turtle soup) round as its host: you learn its solution (汤底) and facts, and from then on you judge ' +
+    'the players\' questions and guesses with judge. Call it when a player asks you to host a round.',
   inputSchema: { type: 'object', required: ['game'], properties: { game: ROUND } },
   run: (args, call) => oneAtATime(() => hostOnce(args, call)),
 }
 
 async function hostOnce({ game }, { agent }) {
-  if (!agent) throw new Error('海龟汤 tools are for agents: gugu did not say which agent is calling')
+  needAgent(agent)
   const f = await openRound(game)
   const round = f.data
-  if (round.host && round.host !== agent) throw new Error('this round already has another host')
-  if (round.status === 'solved' || round.status === 'revealed') throw new Error(`this round is ${round.status}`)
+  if (round.host && round.host !== agent) throw new Error('this round has another host')
+  if (ended(round)) throw new Error(`this round is ${round.status}`)
   let secret = readJson(secretFile(f.entry.id))
   if (!secret) {
-    const puzzle = bundledPuzzle(round.puzzle.id)
+    const puzzle = bankPuzzle(round.puzzle.id)
     if (!puzzle) throw new Error(`puzzle ${round.puzzle.id} is not in this computer's 海龟汤 bank (update the App?)`)
-    secret = { puzzleId: puzzle.id, bottom: puzzle.bottom, keyPoints: puzzle.keyPoints }
+    secret = { id: puzzle.id, solution: puzzle.solution, facts: puzzle.facts, unknowns: puzzle.unknowns, character_claims: puzzle.character_claims, hints: puzzle.hints.slice(0, MAX_HINTS) }
     writeJson(secretFile(f.entry.id), secret)
   }
-  f.transact(() => {
-    f.data.host = agent
-    f.data.status = 'playing'
-  })
+  if (round.status !== 'playing') f.data.status = 'playing'
   await whenSaved(f)
   return {
+    title: round.puzzle.title,
     surface: round.puzzle.surface,
-    bottom: secret.bottom,
-    keyPoints: secret.keyPoints.map((text, index) => ({ index, text, found: Boolean(round.found?.[index]) })),
+    solution: secret.solution,
+    required_facts: required(secret).map((fact, index) => ({ index, text: fact.text })),
+    other_facts: secret.facts.filter((x) => !x.required).map((x) => x.text),
+    unknowns: secret.unknowns ?? [],
+    character_claims: secret.character_claims ?? [],
+    hints_left: secret.hints.length - hintsGiven(round),
     rules: RULES,
-    pending: pendingQuestions(f.data).map(({ id, by, kind, text }) => ({ id, by, kind, text })),
+    waiting: waiting(f.data),
   }
 }
 
 export const pending = {
-  description: 'The questions and guesses of a 海龟汤 round you host that wait for your judgement, oldest first.',
+  description: 'What waits for you in a 海龟汤 round you host: questions and guesses (oldest first), a hint asked for, give-up votes.',
   inputSchema: { type: 'object', required: ['game'], properties: { game: ROUND } },
   run: (args, call) => oneAtATime(async () => {
     const f = await openRound(args.game)
     requireHost(f.data, call.agent)
-    return pendingQuestions(f.data).map(({ id, by, kind, text }) => ({ id, by, kind, text }))
+    return waiting(f.data)
   }),
 }
 
 export const judge = {
   description:
-    'Judge questions and guesses of a 海龟汤 round you host, several at once. A question (kind ask) takes a verdict; ' +
-    `a guess takes the key points it gets right (found, by index). reply is optional, at most ${MAX_REPLY} characters, ` +
-    'and is refused if it quotes the bottom. Finding every key point solves the round and reveals the bottom.',
+    'Judge questions and guesses of a 海龟汤 round you host, several at once. A question (kind ask): verdict ' +
+    `${ASK_VERDICTS.join(' / ')}. A guess (kind guess): verdict ${GUESS_VERDICTS.join(' / ')} and hits, the required ` +
+    'facts (by index) it covers; solved needs all of them and reveals the solution to everyone. There is no text to write.',
   inputSchema: {
     type: 'object',
     required: ['game', 'answers'],
@@ -165,12 +177,11 @@ export const judge = {
         minItems: 1,
         items: {
           type: 'object',
-          required: ['id'],
+          required: ['id', 'verdict'],
           properties: {
             id: { type: 'string', description: 'The question id, from pending.' },
-            verdict: { type: 'string', enum: VERDICTS },
-            found: { type: 'array', items: { type: 'integer', minimum: 0 }, description: 'Key points (index) this guess gets right.' },
-            reply: { type: 'string', maxLength: MAX_REPLY },
+            verdict: { type: 'string', enum: [...ASK_VERDICTS, ...GUESS_VERDICTS] },
+            hits: { type: 'array', items: { type: 'integer', minimum: 0 }, description: 'A guess: the required facts it covers.' },
           },
         },
       },
@@ -183,71 +194,63 @@ async function judgeOnce({ game, answers }, { agent }) {
   const f = await openRound(game)
   const round = f.data
   requireHost(round, agent)
-  const secret = secretOf(f.entry.id)
-  // Check every answer before writing any: a refused one leaves the round as it was.
+  const facts = required(secretOf(f.entry.id))
+  // Every answer is checked before any is written: a refused one leaves the round as it was.
   const writes = answers.map((a) => {
     const q = round.questions?.[a.id]
     if (!q) throw new Error(`no question ${a.id} in this round`)
-    if (q.verdict || q.judged) throw new Error(`question ${a.id} is already judged`)
-    if (!KINDS.includes(q.kind)) throw new Error(`question ${a.id} has an unknown kind ${q.kind}`)
-    if (q.kind === 'ask' && !VERDICTS.includes(a.verdict)) throw new Error(`question ${a.id} needs a verdict: ${VERDICTS.join(' / ')}`)
-    const found = [...new Set(a.found ?? [])]
-    for (const i of found) if (!secret.keyPoints[i]) throw new Error(`there is no key point ${i} (0-${secret.keyPoints.length - 1})`)
-    const reply = String(a.reply ?? '').trim()
-    if ([...reply].length > MAX_REPLY) throw new Error(`reply to ${a.id} is longer than ${MAX_REPLY} characters`)
-    if (reply) guard(reply, secret, round, `reply to ${a.id}`)
-    return { id: a.id, q, verdict: a.verdict ?? null, found, reply }
+    if (q.verdict) throw new Error(`question ${a.id} is judged already`)
+    if (q.kind === 'ask') {
+      if (!ASK_VERDICTS.includes(a.verdict)) throw new Error(`question ${a.id} is a question: verdict ${ASK_VERDICTS.join(' / ')}`)
+      return { id: a.id, q, verdict: a.verdict }
+    }
+    if (q.kind !== 'guess') throw new Error(`question ${a.id} has an unknown kind ${q.kind}`)
+    if (!GUESS_VERDICTS.includes(a.verdict)) throw new Error(`question ${a.id} is a guess: verdict ${GUESS_VERDICTS.join(' / ')}`)
+    const hits = [...new Set(a.hits ?? [])]
+    for (const i of hits) if (!facts[i]) throw new Error(`there is no required fact ${i} (0-${facts.length - 1})`)
+    if (a.verdict === 'solved' && hits.length < facts.length) {
+      const missing = facts.map((_, i) => i).filter((i) => !hits.includes(i))
+      throw new Error(`solved needs every required fact; this guess misses ${missing.join(', ')} — judge it close, or list the hits it really has`)
+    }
+    if (a.verdict === 'wrong' && hits.length) throw new Error(`a guess with hits is close, not wrong`)
+    return { id: a.id, q, verdict: a.verdict, hits: hits.length }
   })
   const at = Date.now()
+  const solved = writes.find((w) => w.verdict === 'solved')
   f.transact(() => {
-    for (const w of writes) {
-      f.data.questions[w.id] = { ...w.q, judged: true, verdict: w.verdict, ...(w.reply ? { reply: w.reply } : {}), found: w.found, answeredAt: at }
-      for (const i of w.found) f.data.found[i] ??= { text: secret.keyPoints[i], by: w.q.by, at }
-    }
-    if (Object.keys(f.data.found).length >= secret.keyPoints.length) {
-      f.data.status = 'solved'
-      f.data.bottom = secret.bottom
-      f.data.endedAt = at
-    }
+    for (const w of writes) f.data.questions[w.id] = { ...w.q, verdict: w.verdict, ...(w.hits !== undefined ? { hits: w.hits } : {}), judgedAt: at }
+    if (solved) Object.assign(f.data, { status: 'solved', solvedBy: solved.id, bottom: secretOf(f.entry.id).solution, endedAt: at })
   })
   await whenSaved(f)
-  return { status: f.data.status, found: Object.keys(f.data.found).length, of: secret.keyPoints.length, pending: pendingQuestions(f.data).length }
+  return { status: f.data.status, waiting: ended(f.data) ? null : waiting(f.data) }
 }
 
 export const hint = {
-  description: `Give the players of a 海龟汤 round you host a hint (at most ${MAX_HINTS} a round, one line). Refused if it quotes the bottom.`,
-  inputSchema: { type: 'object', required: ['game', 'text'], properties: { game: ROUND, text: { type: 'string', maxLength: 60 } } },
+  description: 'Give the players of a 海龟汤 round you host its next prepared hint, when they asked for one. You do not write it.',
+  inputSchema: { type: 'object', required: ['game'], properties: { game: ROUND } },
   run: (args, call) => oneAtATime(async () => {
     const f = await openRound(args.game)
     requireHost(f.data, call.agent)
-    const secret = secretOf(f.entry.id)
-    const text = String(args.text ?? '').trim()
-    if (!text) throw new Error('the hint is empty')
-    if (Object.keys(f.data.hints ?? {}).length >= MAX_HINTS) throw new Error(`this round has had its ${MAX_HINTS} hints`)
-    guard(text, secret, f.data, 'the hint')
-    f.data.hints[randomUUID()] = { text, at: Date.now() }
+    const { hints } = secretOf(f.entry.id)
+    const level = hintsGiven(f.data)
+    if (level >= hints.length) throw new Error('every prepared hint is out already')
+    if (!f.data.hintAsks?.[level]) throw new Error('no one asked for a hint: hints are the players\' to ask for')
+    f.data.hints[level] = { text: hints[level], at: Date.now() }
     await whenSaved(f)
-    return 'hint given'
+    return `hint ${level + 1} of ${hints.length} given`
   }),
 }
 
 export const reveal = {
-  description:
-    'Reveal the bottom of a 海龟汤 round you host: only when the players have voted to give up (a majority of them). ' +
-    'A solved round is revealed already.',
+  description: 'Reveal the solution of a 海龟汤 round you host: only when a majority of the players voted to give up (alone: their one vote).',
   inputSchema: { type: 'object', required: ['game'], properties: { game: ROUND } },
   run: (args, call) => oneAtATime(async () => {
     const f = await openRound(args.game)
     requireHost(f.data, call.agent)
     const votes = Object.keys(f.data.giveUp ?? {}).length
     const needed = giveUpNeeded(f.data)
-    if (votes < needed) throw new Error(`only ${votes} of the ${needed} give-up votes needed; keep judging`)
-    const secret = secretOf(f.entry.id)
-    f.transact(() => {
-      f.data.status = 'revealed'
-      f.data.bottom = secret.bottom
-      f.data.endedAt = Date.now()
-    })
+    if (votes < needed) throw new Error(`${votes} of the ${needed} give-up votes needed: keep judging`)
+    Object.assign(f.data, { status: 'revealed', bottom: secretOf(f.entry.id).solution, endedAt: Date.now() })
     await whenSaved(f)
     return 'revealed'
   }),
@@ -255,34 +258,42 @@ export const reveal = {
 
 export const create = {
   description:
-    'Start a 海龟汤 round of a puzzle that is not in the bank — one you wrote for the players, or one a person told you ' +
-    'privately — in a chat, with you as its host. The bottom and key points stay on this computer; the chat sees the ' +
-    'surface only. Write key points as the 2-6 facts a player must find to solve it.',
+    'Start a 海龟汤 round of a puzzle that is not in the bank — one you made up for the players, or one a person told ' +
+    'you privately — in a chat, with you as its host. The solution, facts and hints stay on this computer; the chat sees ' +
+    'the title and surface only. The surface must be solvable by yes/no questions; required facts are the 1-4 things a ' +
+    'guess must have to count as solved.',
   inputSchema: {
     type: 'object',
-    required: ['chat', 'title', 'surface', 'bottom', 'key_points'],
+    required: ['chat', 'title', 'surface', 'solution', 'facts'],
     properties: {
       chat: { type: 'string', format: 'gugu-chat', description: 'The chat to play in.' },
-      title: { type: 'string', maxLength: 30 },
-      surface: { type: 'string', maxLength: 400, description: '汤面: what the players are told.' },
-      bottom: { type: 'string', maxLength: 1200, description: '汤底: the whole story.' },
-      key_points: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'string', maxLength: 80 } },
-      by: { type: 'string', description: 'Who wrote it, as the players may be told (default: you).' },
+      title: { type: 'string', minLength: 1, maxLength: 30 },
+      surface: { type: 'string', minLength: 1, maxLength: 400, description: '汤面: what the players are told.' },
+      solution: { type: 'string', minLength: 1, maxLength: 1200, description: '汤底: the whole story.' },
+      facts: {
+        type: 'array', minItems: 1, maxItems: 8,
+        items: { type: 'object', required: ['text', 'required'], properties: { text: { type: 'string', maxLength: 120 }, required: { type: 'boolean' } } },
+      },
+      hints: { type: 'array', maxItems: MAX_HINTS, items: { type: 'string', maxLength: 60 }, description: 'Up to 3, vaguest first.' },
+      author: { type: 'string', maxLength: 40, description: 'Who made it, as players may be told (default: the host).' },
     },
   },
   run: (args, call) => oneAtATime(async () => {
-    const { agent } = call
-    if (!agent) throw new Error('海龟汤 tools are for agents: gugu did not say which agent is calling')
-    const at = Date.now()
+    needAgent(call.agent)
+    const facts = args.facts.map((x) => ({ text: String(x.text).trim(), required: x.required === true }))
+    if (!facts.some((x) => x.required)) throw new Error('at least one fact must be required: what a guess needs to be solved')
     const puzzle = {
       id: `custom-${randomUUID()}`,
+      lang: null,
       title: String(args.title).trim(),
       surface: String(args.surface).trim(),
-      keyCount: args.key_points.length,
-      source: { name: args.by ? String(args.by) : 'host', license: null },
+      difficulty: null,
+      facts,
+      hints: (args.hints ?? []).map((h) => String(h).trim()).filter(Boolean),
+      source: { kind: 'host', author: args.author ? String(args.author) : null, license: null },
     }
-    const entry = await gugu.files.create({ chat: args.chat, name: `${puzzle.title}${FILE_SUFFIX}` }, { ...newRound({ puzzle, host: agent, at }), status: 'playing' })
-    writeJson(secretFile(entry.id), { puzzleId: puzzle.id, bottom: String(args.bottom).trim(), keyPoints: args.key_points.map((k) => String(k).trim()) })
+    const entry = await gugu.files.create({ chat: args.chat, name: `${puzzle.title}${FILE_SUFFIX}` }, { ...newRound({ puzzle: publicOf(puzzle), host: call.agent, at: Date.now() }), status: 'playing' })
+    writeJson(secretFile(entry.id), { id: puzzle.id, solution: String(args.solution).trim(), facts, unknowns: [], character_claims: [], hints: puzzle.hints })
     return { game: entry.id, name: entry.name, rules: RULES }
   }),
 }
