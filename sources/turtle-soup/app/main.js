@@ -13,9 +13,12 @@ const status = $('#status')
 /** Children as the DOM takes them: arrays flattened, null / undefined / false left out. */
 const kids = (children) => children.flat(Infinity).filter((c) => c !== null && c !== undefined && c !== false)
 /** An element with text (never markup: others wrote it) and children. */
+// The host's elements (<gugu-icon name>, <gugu-avatar user>, <gugu-time datetime>, <gugu-empty icon>) read attributes.
 function h(tag, props = {}, ...children) {
   const { dataset, ...rest } = props
-  const el = Object.assign(document.createElement(tag), rest)
+  const el = document.createElement(tag)
+  if (tag.includes('-')) for (const [k, v] of Object.entries(rest)) k === 'textContent' ? (el.textContent = v) : el.setAttribute(k, v)
+  else Object.assign(el, rest)
   if (dataset) Object.assign(el.dataset, dataset)
   el.append(...kids(children))
   return el
