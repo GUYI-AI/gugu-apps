@@ -1,0 +1,81 @@
+/* The reader. gugu's look is on the page already (@layer gugu): only layout here, values from the --em-* tokens.
+   Two exceptions, both ON the paper: a PDF page is white paper in light and dark alike, and the highlight colours are
+   marker ink on that paper — they must read the same for everyone, whatever their theme. */
+html, body { height: 100%; }
+body { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+.bar { display: flex; align-items: center; gap: var(--em-spacing-xs); padding: var(--em-spacing-xs) var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); min-height: var(--em-control-h-md); }
+.bar .title { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar .spacer { flex: 1; }
+.bar .pageno { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bar button { flex: none; }
+#side-toggle span { margin-left: 4px; }
+.readers { display: flex; gap: 2px; flex: none; }
+.reader { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px; border-radius: 999px; border: 2px solid transparent; background: none; min-height: 0; }
+.reader.following { border-color: var(--who); }
+.reader small { font-variant-numeric: tabular-nums; }
+
+.banner { margin: 0; padding: var(--em-spacing-xs) var(--em-spacing-md); background: var(--em-background-info); color: var(--em-foreground-info); }
+.banner[data-kind='error'] { background: var(--em-background-destructive); color: var(--em-foreground-destructive); }
+
+.layout { flex: 1; min-height: 0; display: flex; }
+.pages { flex: 1; min-width: 0; overflow: auto; background: var(--em-background-3); padding: 12px; outline: none; }
+.side { width: 320px; flex: none; border-left: 1px solid var(--em-border); display: flex; flex-direction: column; min-height: 0; background: var(--em-background); }
+.side[hidden] { display: none; }
+.tabs { display: flex; gap: var(--em-spacing-xs); padding: var(--em-spacing-xs) var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); }
+.side-body { flex: 1; overflow: auto; padding: var(--em-spacing-sm); display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+
+/* A narrow panel (a chat's 520 px, a topic's 340, a phone): the side is a sheet over the lower half. */
+@media (max-width: 720px) {
+  .side { position: fixed; left: 0; right: 0; bottom: 0; width: auto; height: 55%; border-left: 0; border-top: 1px solid var(--em-border); box-shadow: 0 -8px 24px rgb(0 0 0 / 0.12); z-index: 5; }
+  #side-toggle span { display: none; }
+}
+
+.page { position: relative; margin: 0 auto 12px; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.15); }
+.page canvas { position: absolute; inset: 0; display: block; }
+.marks { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.mark { position: absolute; mix-blend-mode: multiply; border-radius: 2px; }
+.mark.box { mix-blend-mode: normal; background: transparent; border: 2px solid var(--box); }
+.mark.focused { outline: 2px solid var(--em-foreground); outline-offset: 1px; }
+.c-yellow { --hl: rgb(253 224 71 / 0.55); --box: rgb(202 138 4); }
+.c-green { --hl: rgb(134 239 172 / 0.55); --box: rgb(22 163 74); }
+.c-blue { --hl: rgb(147 197 253 / 0.55); --box: rgb(37 99 235); }
+.c-pink { --hl: rgb(249 168 212 / 0.55); --box: rgb(219 39 119); }
+.mark { background: var(--hl); }
+.drawing-box { position: absolute; border: 2px dashed var(--em-foreground); z-index: 3; pointer-events: none; }
+.page.boxing { cursor: crosshair; }
+.page.boxing .textLayer { pointer-events: none; }
+
+/* PDF.js text layer (from pdf_viewer.css 5.6.205, what TextLayer needs to place and select its spans). */
+.textLayer { position: absolute; text-align: initial; inset: 0; overflow: clip; opacity: 1; line-height: 1; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; z-index: 2;
+  --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); }
+.textLayer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; }
+.textLayer > :not(.markedContent), .textLayer .markedContent span:not(.markedContent) { z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height)); --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.textLayer .markedContent { display: contents; }
+.textLayer span[role='img'] { user-select: none; cursor: default; }
+.textLayer ::selection { background: rgb(37 99 235 / 0.28); }
+.textLayer br::selection { background: transparent; }
+.textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none; }
+.textLayer.selecting .endOfContent { top: 0; }
+
+.sel-bar { position: fixed; z-index: 10; display: flex; align-items: center; gap: 4px; padding: 4px; background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-xl); box-shadow: 0 6px 20px rgb(0 0 0 / 0.16); }
+.sel-bar[hidden] { display: none; }
+.sel-colors { display: flex; gap: 2px; }
+.swatch { width: 24px; height: 24px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid var(--em-border); background: var(--hl); }
+
+.thread { display: flex; flex-direction: column; gap: var(--em-spacing-xs); padding: var(--em-spacing-sm); }
+.thread.focused { border-color: var(--em-foreground-muted); }
+.thread .quote { display: block; text-align: left; background: none; border: 0; padding: 0; min-height: 0; height: auto; white-space: normal; }
+.thread blockquote { margin: 0 0 2px; border-left: 3px solid var(--box); padding-left: var(--em-spacing-xs); max-height: 6.5em; overflow: hidden; }
+.comment { display: grid; grid-template-columns: auto 1fr auto; gap: var(--em-spacing-xs); align-items: start; }
+.comment p { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.comment .from-agent { color: var(--em-foreground-muted); }
+.reply { display: flex; flex-direction: column; gap: var(--em-spacing-xs); }
+.reply textarea { width: 100%; resize: vertical; }
+
+.flash { display: flex; flex-direction: column; gap: var(--em-spacing-sm); align-items: stretch; }
+.flash .front { font-size: var(--em-font-title); margin: 0; }
+.flash .back { margin: 0; white-space: pre-wrap; }
+.grades { justify-content: space-between; }
+.mastery li { grid-template-columns: 1fr 96px; }
+.mastery progress { width: 96px; }

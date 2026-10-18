@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>读论文</title>
+<link rel="stylesheet" href="reader.css" />
+</head>
+<body>
+  <header class="bar" id="bar">
+    <strong id="title" class="title"></strong>
+    <span id="readers" class="readers"></span>
+    <span class="spacer"></span>
+    <small id="pageno" class="muted pageno"></small>
+    <button id="box-toggle" type="button" aria-pressed="false"><gugu-icon name="focus"></gugu-icon></button>
+    <button id="zoom-out" type="button" class="zoom">−</button>
+    <button id="zoom-in" type="button" class="zoom">+</button>
+    <button id="side-toggle" type="button" aria-pressed="false"><gugu-icon name="library"></gugu-icon><span id="side-toggle-label"></span></button>
+  </header>
+  <p id="banner" class="banner" role="status" hidden></p>
+  <main class="layout" id="layout">
+    <div id="pages" class="pages" tabindex="0"></div>
+    <aside id="side" class="side" hidden>
+      <div role="tablist" class="tabs" id="tabs">
+        <button role="tab" data-tab="highlights" aria-selected="true" id="tab-highlights"></button>
+        <button role="tab" data-tab="cards" aria-selected="false" id="tab-cards"></button>
+        <button role="tab" data-tab="about" aria-selected="false" id="tab-about"></button>
+      </div>
+      <section id="side-body" class="side-body"></section>
+    </aside>
+  </main>
+  <div id="sel-bar" class="sel-bar" role="toolbar" hidden>
+    <span id="sel-colors" class="sel-colors"></span>
+    <button id="sel-comment" type="button"><gugu-icon name="message-square"></gugu-icon><span id="sel-comment-label"></span></button>
+    <button id="sel-ask" type="button" class="primary"><gugu-icon name="bot"></gugu-icon><span id="sel-ask-label"></span></button>
+    <button id="sel-copy" type="button"><gugu-icon name="copy"></gugu-icon></button>
+  </div>
+  <script type="module" src="reader.js"></script>
+</body>
+</html>

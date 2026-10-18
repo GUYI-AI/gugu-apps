@@ -1,0 +1,81 @@
+{
+  "id": "papers",
+  "name": "读论文",
+  "description": "A chat's reading group for PDF papers: highlights, threads, sourced answers and study cards. Its tools read a paper, cite a passage as a pill that opens it there, comment, add study cards and import arXiv or DOI papers; its skill papers says how.",
+  "localized": {
+    "zh": {
+      "name": "读论文",
+      "description": "在群里开读书会：打开群文件夹里的 PDF，或从 arXiv、DOI 导入一篇，大家一起划线、讨论，选一段直接问群里的 agent，它回答里的每个出处点一下就回到原文。学习卡记下每个人的复习和掌握度。"
+    },
+    "en": {
+      "name": "Papers",
+      "description": "A reading group for papers in a chat: open a PDF from the chat's folder or import one from arXiv or a DOI, highlight and discuss it together, and ask the chat's agents about a passage — every source they cite opens the paper there. Cards keep each person's reviews."
+    }
+  },
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 5,
+  "engines": {
+    "gugu": ">=0.2.57"
+  },
+  "entry": "shelf.html",
+  "icon": "icon.png",
+  "categories": [
+    "research"
+  ],
+  "license": "Apache-2.0",
+  "examples": [
+    "总结这篇论文，并在关键段落上划线",
+    "给这篇论文出 10 张学习卡片",
+    "找出这篇论文的代码并复现主实验"
+  ],
+  "permissions": {
+    "capabilities": [
+      "files:read",
+      "files:write",
+      "chat:relay",
+      "agents:tools"
+    ],
+    "network": [
+      "arxiv.org",
+      "export.arxiv.org",
+      "api.semanticscholar.org",
+      "api.openalex.org"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "shelf",
+        "title": "读论文",
+        "icon": "icon.png",
+        "entry": "shelf.html"
+      },
+      {
+        "name": "reader",
+        "title": "读论文",
+        "icon": "icon.png",
+        "entry": "reader.html",
+        "opensFiles": {
+          "chat": [
+            ".pdf",
+            ".paper.json"
+          ],
+          "session": [
+            ".pdf"
+          ]
+        },
+        "fileIcons": {
+          ".pdf": "pdf.png",
+          ".paper.json": "pdf.png"
+        }
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "skills": "skills"
+  }
+}

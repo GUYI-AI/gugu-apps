@@ -1,0 +1,8 @@
+{
+  "name": "gugu-papers-vendor",
+  "private": true,
+  "description": "What vendor/build.mjs copies into app/vendor/pdfjs/: pinned with this lockfile, installed with npm ci into a throwaway folder.",
+  "dependencies": {
+    "pdfjs-dist": "5.6.205"
+  }
+}
