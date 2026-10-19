@@ -21,6 +21,15 @@
       "sha256": "83b8d8391b81cdb4ac33f821e1b0c355db42e4ec56493e020674afa4ec00e4f5",
       "bytes": 210334,
       "yanked": null
+    },
+    {
+      "version": "0.2.8",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "e7fa3e584f6ed4c85cdded40fb75fe2ab375fccb",
+      "sha256": "3e3087d3972f2cea4bc28768c1fc8dfa9ecab5024e423998a0024723774b5c8a",
+      "bytes": 210922,
+      "yanked": null
     }
   ]
 }
