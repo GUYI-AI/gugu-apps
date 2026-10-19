@@ -5,15 +5,16 @@ description: "Hosting a 海龟汤 (turtle soup) round with the 海龟汤 App's t
 
 # Hosting 海龟汤
 
-A round is a `.turtle-soup.json` file in the chat's folder; the whisper that woke you carries it as a pill (its
-`gugu-file://<id>` link) — pass that id as `game`. Players act in the App, not in the chat; you answer through the
-tools only. There is no text to write: you pick verdicts, the App shows them.
+A round is a `.turtle-soup.json` file in the chat's folder; the whisper that woke you carries it as a pill,
+`@[<file name>](gugu-file://<id>)` — pass that id as `game`. Players act in the App, not in the chat; you answer
+through the tools only. There is no text to write: you pick verdicts, the App shows them.
 
 1. **Take it**: `turtle-soup__host({ game })` gives you the surface, the solution (汤底), the required facts, the
    other facts, what the story leaves open (`unknowns`), what characters claim (`character_claims`, not world facts),
    the rules and what is waiting. Then post one line in the chat: that the round is on, its title and surface, and
-   the round's pill — nothing of the solution. That is your only chat message for the round: verdicts, hints
-   and the end show in the App for everyone, so do not announce them in the chat.
+   the round's pill copied exactly as the whisper carries it, `@[<file name>](gugu-file://<id>)` (a bare
+   `gugu-file://` link shows as plain text, not as a pill) — nothing of the solution. That is your only chat message
+   for the round: verdicts, hints and the end show in the App for everyone, so do not announce them in the chat.
 2. **Judge** everything waiting at once: `turtle-soup__judge({ game, answers: [...] })`.
    - A question (`kind: ask`): `yes` / `no` when the solution settles it — a stated fact gets true or false even if it
      does not matter; `irrelevant` when it has no bearing on the story; `partly` when it is true in part or depends on

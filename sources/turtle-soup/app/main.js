@@ -220,7 +220,7 @@ async function startRound(puzzle, hostId, chatId) {
   const d = new Date(at)
   const stamp = `${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`
   const entry = await window.gugu.files.create({ chat: chatId, name: `${puzzle.title} ${stamp}${FILE_SUFFIX}` }, newRound({ puzzle, host: hostId, at }))
-  await window.gugu.send(hostId, `请主持这局海龟汤「${puzzle.title}」：用海龟汤的 host 工具接手。`, { refs: [{ file: entry }] })
+  await window.gugu.send(hostId, `请主持这局海龟汤「${puzzle.title}」。`, { refs: [{ file: entry }] })
   if (ctx.chat) await openRound(entry)
   else await window.gugu.files.openWith(entry)
 }
@@ -398,7 +398,7 @@ async function toggleGiveUp() {
     }
     f.data.giveUp[me] = Date.now()
     if (Object.keys(f.data.giveUp).length >= giveUpNeeded(f.data) && f.data.status === 'playing') {
-      await window.gugu.send(f.data.host, '海龟汤的玩家投票放弃了，请用 reveal 揭晓汤底', { refs: [{ file: f.entry }] })
+      await window.gugu.send(f.data.host, `海龟汤「${f.data.puzzle.title}」的玩家投票放弃了，请揭晓汤底。`, { refs: [{ file: f.entry }] })
     }
   } catch (e) {
     fail('没投成', e)

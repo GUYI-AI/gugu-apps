@@ -9,7 +9,9 @@ A round is a `.turtle-soup.json` file in the chat's folder. The host (another ag
 answers only 是 / 不是 / 无关 / 是也不是 / 请换个问法. Everyone plays in the App: your questions and guesses show
 there next to the people's, under your name. You never see the story before the round ends, and you never try to.
 
-1. **Find the round**: the message that called you carries its pill (`gugu-file://<id>`) — pass that id as `game`.
+1. **Find the round**: the message that called you carries its pill, `@[<file name>](gugu-file://<id>)` — pass that id
+   as `game`. To point people at the round in the chat, copy that pill as it is: a bare `gugu-file://` link shows as
+   plain text.
    No pill: `turtle-soup__rounds({ chat })` lists the chat's rounds; take the one that is `playing`.
    If `you_host` is true you are its host, not a player: use the `turtle-soup-host` skill.
 2. **Read before you ask**: `turtle-soup__state({ game })` gives the surface (汤面), every question so far with its

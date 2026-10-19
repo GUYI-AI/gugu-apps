@@ -20,11 +20,13 @@ const live = (target) => new Proxy(target, {
 const handle = (entry, data) => ({ entry, data: live(data), saved: true, status: 'online', transact: (fn) => fn(), onStatus: () => () => {} })
 // Whispers the tools send, and who cannot be told (send refuses them as gugu does: not-found).
 const sent = []
+const everSent = [] // every whisper of the whole file: `sent` is emptied between steps
 const unreachable = new Set()
 globalThis.gugu = {
   send: async (to, text, { refs }) => {
     if (unreachable.has(to)) throw Object.assign(new Error(`${to} cannot be told`), { code: 'not-found' })
     sent.push({ to, text, file: refs[0].file.id })
+    everSent.push(text)
     return { id: `msg-${sent.length}` }
   },
   files: {
@@ -215,7 +217,7 @@ test('hints and giving up: asked by the agent, the host woken, the agent told wh
   // Alone with the host, one vote is a majority: the host is told to reveal, the agent told it ended.
   const vote = await tools.give_up.run({ game: id }, AGENT)
   assert.deepEqual([vote.votes, vote.needed], [1, 1])
-  assert.match(sentTo(HOST.agent).at(-1).text, /reveal/)
+  assert.match(sentTo(HOST.agent).at(-1).text, /玩家投票放弃了，请揭晓汤底/)
   await assert.rejects(tools.give_up.run({ game: id }, AGENT), /voted to give up already/)
   await tools.give_up.run({ game: id, undo: true }, AGENT)
   assert.equal(data.giveUp[AGENT.agent], undefined)
@@ -233,7 +235,7 @@ test('a person\'s question judged wakes the agent players too, so they can take 
   sent.length = 0
   await tools.judge.run({ game: id, answers: [{ id: 'h1', verdict: 'no' }] }, HOST)
   assert.deepEqual(sent.map((m) => m.to), [AGENT.agent])
-  assert.match(sent[0].text, /别人的 1 个问题判了.*不用回复/)
+  assert.match(sent[0].text, /别人的 1 个问题判了/)
 })
 
 test('people are never whispered; an agent that cannot be told is said back to the host, the verdict stays', async () => {
@@ -283,4 +285,11 @@ test('a long round comes in pages under the answer budget; rounds lists a chat\'
   assert.deepEqual(listed.map((r) => [r.game, r.title, r.status, r.you_host]), [[made.game, '另一局', 'playing', false]])
   hasNoSolution(listed)
   assert.match(await tools.rounds.run({ chat: 'chat-empty' }, AGENT), /no 海龟汤 rounds/)
+})
+
+// The person whose computer hosts sees these whispers too (they go out in their name): sentences, never a tool's name.
+// What to do with them is the skills' job (10-19: 「用 turtle-soup__state 看全局」 showed in the opener's chat).
+test('every whisper reads as a sentence for people: no tool names', () => {
+  assert.ok(everSent.length > 5)
+  for (const text of everSent) assert.doesNotMatch(text, /turtle-soup__|\b(state|reveal|host|judge|hint|pending)\b/, text)
 })

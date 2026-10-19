@@ -148,7 +148,7 @@ function linesFor(round, { judged = [], hintFor = null } = {}) {
   }
   if (hintFor && agents.has(hintFor.by)) add(hintFor.by, `你要的提示 ${hintFor.level + 1} 出来了`)
   if (ended(round)) for (const id of agents) add(id, `这局结束了：${endLine(round)}`)
-  return [...said].map(([to, lines]) => [to, `${head}${lines.join('；')}。用 turtle-soup__state 看全局；这条不用回复。`])
+  return [...said].map(([to, lines]) => [to, `${head}${lines.join('；')}。`])
 }
 
 const RULES =
@@ -526,7 +526,7 @@ export const give_up = {
     const votes = Object.keys(f.data.giveUp).length
     const needed = giveUpNeeded(f.data)
     const told = votes >= needed && f.data.status === 'playing'
-      ? await whisper(f, [[f.data.host, '海龟汤的玩家投票放弃了，请用 reveal 揭晓汤底']]).then((n) => (n.length ? { host_not_told: n[0] } : {}))
+      ? await whisper(f, [[f.data.host, `海龟汤「${f.data.puzzle.title}」的玩家投票放弃了，请揭晓汤底。`]]).then((n) => (n.length ? { host_not_told: n[0] } : {}))
       : {}
     return { votes, needed, ...told }
   }),
