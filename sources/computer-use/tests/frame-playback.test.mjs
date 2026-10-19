@@ -26,7 +26,7 @@ test('the new frame and click cannot run ahead of the actual sampled cursor pres
 test('a frame without a native cursor never plays planned or stale clicks', async () => {
   const { events, player } = fixture();
   await player.show(frame(1, null));
-  assert.deepEqual(events, [['frame', 1], ['hide']]);
+  assert.deepEqual(events, [['hide'], ['frame', 1]]);
 });
 
 test('a new window size uses the new coordinate frame rather than flying across the old layout', async () => {
@@ -34,7 +34,7 @@ test('a new window size uses the new coordinate frame rather than flying across 
   await player.show(frame(1));
   events.length = 0;
   await player.show({ ...frame(2), width: 916 });
-  assert.deepEqual(events, [['frame', 2], ['place', 20], ['click']]);
+  assert.deepEqual(events, [['hide'], ['frame', 2], ['place', 20], ['click']]);
 });
 
 test('reset while decoding prevents a previous task picture from appearing in the new task', async () => {

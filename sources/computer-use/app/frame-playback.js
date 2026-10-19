@@ -18,10 +18,13 @@ export class FramePlayback {
     // different coordinate system, so its cursor is placed after the new image.
     if (measurable && previous && sameSize && moved) await this.view.move(cursor, frame);
     if (generation !== this.generation) return;
+    // Never leave a cursor in an old coordinate system visible while the
+    // browser decodes a resized picture (or a picture with no cursor sample).
+    if (!measurable || !sameSize) this.view.hide();
     await this.view.commit(src, frame);
     if (generation !== this.generation) return;
     this.frame = frame;
-    if (!measurable) { this.view.hide(); return; }
+    if (!measurable) return;
     this.view.place(cursor, frame);
     if (moved && cursor.click) this.view.click();
   }
