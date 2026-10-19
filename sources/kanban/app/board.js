@@ -6,38 +6,36 @@ const g = window.gugu
 
 const WORDS = {
   zh: {
-    title: '看板', newPlaceholder: '新卡片，回车添加', add: '添加', attach: '挂上当前任务',
+    title: '看板', newPlaceholder: '新卡片，回车添加', add: '添加', attach: '关联当前任务',
     roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
-    states: { running: '在跑', parked: '后台在跑', approval: '等你批准', answer: '等你回答', done: '回合结束', stopped: '停了', error: '出错', gone: '已不在任务列表', none: '无状态' },
-    note: 'agent 用工具改的卡，在任务状态变化或你切回看板时更新（平台通知上线后改成即时）。',
-    addColumn: '+ 列', columnName: '列名', back: '返回', close: '关闭', del: '删除卡片', delAgain: '再点一次删除',
+    states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务已移除', none: '无状态' },
+    note: 'agent 通过工具所做的修改，在任务状态变化或重新打开看板时显示。',
+    addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', del: '删除卡片', delAgain: '再次点击确认删除',
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
-    noteEmpty: '还没有说明', open: '进入任务', handTo: '交给它', remove: '移除',
-    attachCurrent: '挂上当前任务', pickTask: '挂任务…', start: '开工', starting: '正在开工…',
-    pickFile: '挂任务里的文件…', pickChatFile: '挂群文件…', addUrl: '加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
-    filter: '筛选', chooseTask: '选一个任务', noTasks: '这台电脑上没有任务', noFiles: '没有找到文件（输入文件名，搜你所在的全部对话）',
-    show: '查看', openIn: '用 App 打开', peekLater: '平台 peek 上线后改成就地打开', browser: '打开', message: '回到消息',
-    comment: '写评论', send: '发表', byAgent: (n) => `⚡ ${n}`, byPerson: '你',
-    noStatus: (e) => `读不到本机任务的状态：${e}`, noBoard: (e) => `读不到看板：${e}`,
-    handText: (c) => `请接手看板上的这张卡（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n开始时用看板的 claim 工具认领它，做完用 move 移到「待验收」，并用 link 挂上产物。`,
-    countWaiting: (n) => `${n} 张在等你`,
+    noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
+    attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
+    pickFile: '关联任务文件…', pickChatFile: '关联群文件…', addUrl: '添加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
+    filter: '筛选', chooseTask: '选择任务', noTasks: '本机暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
+    show: '查看', openIn: '用 App 打开', peekLater: '此类文件暂不支持在卡片内预览', browser: '打开', message: '查看消息',
+    comment: '添加评论', send: '发表', byAgent: (n) => `⚡ ${n}`, byPerson: '我',
+    noStatus: (e) => `无法读取本机任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`,
+    handText: (c) => `请处理看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n开始时用看板的 claim 工具认领，完成后用 move 移到「待验收」，并用 link 关联产出。`,
   },
   en: {
-    title: 'Board', newPlaceholder: 'New card, Enter to add', add: 'Add', attach: 'Link this task',
-    roles: { todo: 'To do', doing: 'Doing', review: 'Review', done: 'Done' },
-    states: { running: 'Running', parked: 'In background', approval: 'Needs approval', answer: 'Needs answer', done: 'Turn done', stopped: 'Stopped', error: 'Error', gone: 'Not in task list', none: 'No status' },
-    note: "Cards an agent changes with its tools update when a task's status changes or when you come back to the board (instant once the platform notifies).",
-    addColumn: '+ Column', columnName: 'Column name', back: 'Back', close: 'Close', del: 'Delete card', delAgain: 'Click again to delete',
+    title: 'Board', newPlaceholder: 'New card, press Enter to add', add: 'Add', attach: 'Link current task',
+    roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
+    states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task removed', none: 'No status' },
+    note: "Changes made by agents through tools appear when a task's status changes or when the board is reopened.",
+    addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', del: 'Delete card', delAgain: 'Click again to confirm',
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
-    noteEmpty: 'No note yet', open: 'Open task', handTo: 'Hand to it', remove: 'Remove',
-    attachCurrent: 'Link current task', pickTask: 'Link a task…', start: 'Start a task', starting: 'Starting…',
-    pickFile: "Link a task's file…", pickChatFile: 'Link a chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
-    filter: 'Filter', chooseTask: 'Pick a task', noTasks: 'No tasks on this computer', noFiles: 'No files found (type a name to search all your chats)',
-    show: 'Show', openIn: 'Open in its App', peekLater: 'Opens in place once the platform peek ships', browser: 'Open', message: 'Go to message',
-    comment: 'Write a comment', send: 'Post', byAgent: (n) => `⚡ ${n}`, byPerson: 'You',
-    noStatus: (e) => `Cannot read this computer's tasks: ${e}`, noBoard: (e) => `Cannot read the board: ${e}`,
-    handText: (c) => `Please take this card from the board (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\nClaim it with the board's claim tool when you start; when done, move it to review and link what you made.`,
-    countWaiting: (n) => `${n} waiting on you`,
+    noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
+    attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
+    pickFile: 'Link task file…', pickChatFile: 'Link chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
+    filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks on this device', noFiles: 'No files found. Enter a file name to search all chats.',
+    show: 'View', openIn: 'Open in App', peekLater: 'Preview in the card is not available for this file type', browser: 'Open', message: 'View message',
+    comment: 'Add a comment', send: 'Post', byAgent: (n) => `⚡ ${n}`, byPerson: 'Me',
+    noStatus: (e) => `Unable to read task status on this device: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`,
+    handText: (c) => `Please handle this card from the board (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\nClaim it with the board's claim tool when you start; when finished, move it to Review and link the output with link.`,
   },
 }
 
@@ -553,7 +551,7 @@ function addUrl(card) {
   input.focus()
 }
 
-/** 开工: a new task of the person's, on this card, started only by their click; it is linked and the card moves to doing. */
+/** 新建任务: a new task of the person's, on this card, started only by their click; it is linked and the card moves to doing. */
 async function startTask(card, button, project) {
   button.disabled = true
   button.textContent = t.starting
