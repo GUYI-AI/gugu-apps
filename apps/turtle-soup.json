@@ -1,0 +1,16 @@
+{
+  "id": "turtle-soup",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "bd3fe7b6b7443d85e1dd5763cfa18e0ad08076d3",
+      "sha256": "693717af7a60fd9458132ad59b62aeadd62103e8b3fe8073d40a455b79faa7f3",
+      "bytes": 136000,
+      "yanked": null
+    }
+  ]
+}
