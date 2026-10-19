@@ -1,0 +1,35 @@
+{
+  "id": "kanban",
+  "name": "看板",
+  "description": "你这台电脑上的一块任务看板：卡片挂上本机任务，任务在跑、在等你批准，卡上直接看得到；任务里的文件和群文件在卡片里就地看、就地改。agent 也能用工具领卡、推进。",
+  "localized": {
+    "zh": {
+      "name": "看板",
+      "description": "你这台电脑上的一块任务看板：卡片挂上本机任务，任务在跑、在等你批准，卡上直接看得到；任务里的文件和群文件在卡片里就地看、就地改。agent 也能用工具领卡、推进。"
+    },
+    "en": {
+      "name": "Board",
+      "description": "A task board on this computer: link cards to your tasks and see on the card whether each is running or waiting for your approval; read and edit tasks' files and chat files right in the card. Agents take and move cards with its tools."
+    }
+  },
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 6,
+  "engines": { "gugu": ">=0.2.57" },
+  "entry": "board.html",
+  "icon": "icon.png",
+  "categories": ["productivity"],
+  "background": { "entry": "background.html" },
+  "permissions": {
+    "capabilities": ["files:read", "files:write", "agents:read:all", "agents:control", "agents:tools"]
+  },
+  "contributes": {
+    "tabs": [
+      { "name": "board", "title": "看板", "entry": "board.html", "toolbar": [{ "id": "new", "title": "新卡片" }] }
+    ],
+    "mcpServers": [{ "tools": "tools.js" }],
+    "skills": "skills"
+  },
+  "examples": ["把这件事记到我的看板上", "看板上哪些卡在等我？"],
+  "license": "MIT"
+}
