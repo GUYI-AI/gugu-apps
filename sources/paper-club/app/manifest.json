@@ -1,14 +1,14 @@
 {
-  "id": "papers",
-  "name": "读论文",
-  "description": "A chat's reading group for PDF papers: highlights, threads, sourced answers and study cards. Its tools read a paper, cite a passage as a pill that opens it there, comment, add study cards and import arXiv or DOI papers; its skill papers says how.",
+  "id": "paper-club",
+  "name": "论文共读",
+  "description": "A chat's reading group for PDF papers: highlights, threads, sourced answers and study cards. Its tools read a paper, cite a passage as a pill that opens it there, comment, add study cards and import arXiv or DOI papers; its skill paper-club says how.",
   "localized": {
     "zh": {
-      "name": "读论文",
+      "name": "论文共读",
       "description": "在群里开读书会：打开群文件夹里的 PDF，或从 arXiv、DOI 导入一篇，大家一起划线、讨论，选一段直接问群里的 agent，它回答里的每个出处点一下就回到原文。学习卡记下每个人的复习和掌握度。"
     },
     "en": {
-      "name": "Papers",
+      "name": "Paper Club",
       "description": "A reading group for papers in a chat: open a PDF from the chat's folder or import one from arXiv or a DOI, highlight and discuss it together, and ask the chat's agents about a passage — every source they cite opens the paper there. Cards keep each person's reviews."
     }
   },
@@ -47,13 +47,13 @@
     "tabs": [
       {
         "name": "shelf",
-        "title": "读论文",
+        "title": "论文共读",
         "icon": "icon.png",
         "entry": "shelf.html"
       },
       {
         "name": "reader",
-        "title": "读论文",
+        "title": "论文共读",
         "icon": "icon.png",
         "entry": "reader.html",
         "opensFiles": {

@@ -1,4 +1,4 @@
-# 读论文
+# 论文共读
 
 一个群就是一个读书会。论文的 PDF 放在群文件夹里，大家的划线、讨论和学习卡就记在它旁边的 `<论文名>.paper.json` 里。人和 agent 都用自己的身份参与，引用一律是胶囊，点一下就回到原文那一处。
 
@@ -7,6 +7,6 @@
 - **学**：agent 出的学习卡都挂着原文出处。每个人按间隔重复复习，错题、掌握度都记下来，桌面和手机通用。
 - **导入**：在群右栏的书架里贴 arXiv 编号、DOI 或链接，或者上传 PDF。
 
-给 agent 的工具：`read`、`notes`、`evidence`、`cite`、`comment`、`add_cards`、`import_paper`。读书会里的做法写在 skill `papers` 里。
+给 agent 的工具：`read`、`notes`、`evidence`、`cite`、`comment`、`add_cards`、`import_paper`。读书会里的做法写在 skill `paper-club` 里。
 
 PDF 用 [PDF.js](https://github.com/mozilla/pdf.js)（Apache-2.0）渲染，打包在 `vendor/pdfjs/` 里，许可证在同一目录。

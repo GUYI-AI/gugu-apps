@@ -1,5 +1,5 @@
 /* global gugu */ // window.gugu: the platform runtime puts it on the page before this module runs.
-// 读论文 — the shelf: the tab that claims no file. Where it is decides what it lists:
+// 论文共读 — the shelf: the tab that claims no file. Where it is decides what it lists:
 // - the App's own page (its icon in the left bar; no chat, no session): the person's library — every paper in every chat
 //   they are in (files.search), with the chat it is in, its marks, who is reading it and their own mastery and due cards;
 //   an import goes into the chat they pick.
