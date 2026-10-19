@@ -64,3 +64,19 @@ test('migration conflict is not silently overwritten or marked complete', (t) =>
   assert.throws(() => openStore(), /migration conflict/)
   assert.equal(existsSync(join(root, 'daily-storage-v2.json')), false)
 })
+
+test('JSON null is corruption, never absence or an empty calendar', async (t) => {
+  const root = fixture(t)
+  for (const name of ['journal.json', 'daily-storage-v2.json', 'pending-days.json']) {
+    writeFileSync(join(root, name), 'null')
+    assert.throws(() => openStore(), /invalid/)
+    rmSync(join(root, name))
+  }
+  openStore()
+  const file = dayFile(root, '2026-10-19')
+  mkdirSync(join(root, 'days', '2026', '10'), { recursive: true })
+  writeFileSync(file, 'null')
+  await assert.rejects(query.run({}), /invalid day file/)
+  await assert.rejects(record.run({ kind: 'todo', title: 'must not replace corruption', date: '2026-10-19' }), /invalid day file/)
+  assert.equal(readFileSync(file, 'utf8'), 'null')
+})

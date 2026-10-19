@@ -12,7 +12,7 @@ export function checkDay(date) {
 const pause = new Int32Array(new SharedArrayBuffer(4))
 function read(file) {
   try { return JSON.parse(readFileSync(file, 'utf8')) }
-  catch (e) { if (e.code === 'ENOENT') return null; throw new Error(`${file}: ${e.message}`) }
+  catch (e) { if (e.code === 'ENOENT') return undefined; throw new Error(`${file}: ${e.message}`) }
 }
 function atomic(file, value) {
   mkdirSync(dirname(file), { recursive: true })
@@ -42,8 +42,8 @@ export function openStore() {
   const file = (date) => { checkDay(date); return join(root, 'days', date.slice(0, 4), date.slice(5, 7), `${date}.json`) }
   function recover() {
     const tx = read(pending)
-    if (!tx) return
-    if (tx.version !== 1 || !Array.isArray(tx.days)) throw new Error('invalid pending-days.json')
+    if (tx === undefined) return
+    if (!tx || tx.version !== 1 || !Array.isArray(tx.days)) throw new Error('invalid pending-days.json')
     for (const day of tx.days) { entries(day, day.date); atomic(file(day.date), day) }
     if (tx.migration) atomic(marker, { version: 2 })
     unlinkSync(pending)
@@ -54,17 +54,17 @@ export function openStore() {
   }
   recover()
   const migrated = read(marker)
-  if (migrated && migrated.version !== 2) throw new Error('invalid daily-storage-v2.json')
-  if (!migrated) {
+  if (migrated !== undefined && (!migrated || migrated.version !== 2)) throw new Error('invalid daily-storage-v2.json')
+  if (migrated === undefined) {
     const old = read(join(root, 'journal.json'))
     const days = {}
-    if (old) {
-      if (old.version !== 1 || !old.days || typeof old.days !== 'object' || Array.isArray(old.days)) throw new Error('invalid legacy journal.json')
+    if (old !== undefined) {
+      if (!old || old.version !== 1 || !old.days || typeof old.days !== 'object' || Array.isArray(old.days)) throw new Error('invalid legacy journal.json')
       for (const [date, list] of Object.entries(old.days)) {
         checkDay(date)
         if (!Array.isArray(list)) throw new Error(`invalid legacy entries: ${date}`)
         const existing = read(file(date))
-        if (existing && JSON.stringify(entries(existing, date)) !== JSON.stringify(list)) throw new Error(`migration conflict: ${date}`)
+        if (existing !== undefined && JSON.stringify(entries(existing, date)) !== JSON.stringify(list)) throw new Error(`migration conflict: ${date}`)
         days[date] = list
       }
     }
@@ -72,7 +72,7 @@ export function openStore() {
     commit(days, true)
   }
   return {
-    get(date) { const value = read(file(date)); return value ? entries(value, date) : [] },
+    get(date) { const value = read(file(date)); return value === undefined ? [] : entries(value, date) },
     commit,
     dates(month) {
       const base = join(root, 'days')
