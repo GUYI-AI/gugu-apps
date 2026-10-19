@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect width="256" height="256" fill="#F7C6A3"/>
+  <g stroke="#2A2833" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M56 176 C50 96 84 40 128 40 C172 40 206 96 200 176 Z" fill="#FFFFFF"/>
+  </g>
+  <ellipse cx="80" cy="124" rx="12" ry="7" fill="#F8A8B4"/>
+  <ellipse cx="176" cy="124" rx="12" ry="7" fill="#F8A8B4"/>
+  <ellipse cx="100" cy="102" rx="7" ry="9" fill="#2A2833"/>
+  <ellipse cx="156" cy="102" rx="7" ry="9" fill="#2A2833"/>
+  <circle cx="102" cy="98" r="2.6" fill="#FFFFFF"/>
+  <circle cx="158" cy="98" r="2.6" fill="#FFFFFF"/>
+  <!-- glasses -->
+  <g fill="none" stroke="#2A2833" stroke-width="5">
+    <circle cx="100" cy="102" r="19"/>
+    <circle cx="156" cy="102" r="19"/>
+    <path d="M119 100 C124 95 132 95 137 100"/>
+  </g>
+  <path d="M117 116 L139 116 L128 131 Z" fill="#F5B62E" stroke="#2A2833" stroke-width="5" stroke-linejoin="round"/>
+  <!-- paper -->
+  <g stroke="#2A2833" stroke-width="7" stroke-linejoin="round">
+    <path d="M44 150 L184 150 L212 176 L212 262 L44 262 Z" fill="#FFFDF6"/>
+    <path d="M184 150 L184 176 L212 176" fill="#EDE6D6"/>
+  </g>
+  <rect x="62" y="196" width="128" height="16" rx="8" fill="#FFD84D"/>
+  <g stroke="#B9B3A8" stroke-width="7" stroke-linecap="round">
+    <path d="M68 176 L160 176"/>
+    <path d="M68 204 L184 204"/>
+    <path d="M68 230 L176 230"/>
+  </g>
+  <path d="M68 204 L184 204" stroke="#6B6457" stroke-width="7" stroke-linecap="round"/>
+  <!-- wings holding the paper -->
+  <g stroke="#2A2833" stroke-width="7" stroke-linejoin="round" fill="#FFFFFF">
+    <path d="M30 156 C26 142 38 134 48 140 C56 145 58 158 54 170 C46 176 34 172 30 156 Z"/>
+    <path d="M226 160 C230 146 218 138 208 144 C200 149 198 162 202 174 C210 180 222 176 226 160 Z"/>
+  </g>
+</svg>
