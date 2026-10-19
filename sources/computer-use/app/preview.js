@@ -2,6 +2,7 @@
 // 画面只来自程序交回来的真截图(preview_state);没有就是空的,❌ 画一张假的。
 // 会话由咕咕盖章:callProgram 带的是这张页此刻所在的会话,页面拿不到别的会话的东西。
 import { MotionPlayer } from './cursor.js';
+import { FramePlayback } from './frame-playback.js';
 
 const gugu = window.gugu;
 const $ = (id) => document.getElementById(id);
@@ -20,6 +21,7 @@ const TEXT = {
     loading: '正在获取画面…',
     unseen: '暂时看不到画面',
     stale: '没有新画面：',
+    cursorStale: '光标暂不可用：',
     failed: '没能',
     verbs: { click: '点击', double_click: '双击', right_click: '右键点击', drag: '拖动', scroll: '滚动', type_text: '输入',
       press_key: '按键', hotkey: '按键', set_value: '填写', invoke_menu: '选择菜单', launch_app: '打开', set_window_frame: '调整窗口',
@@ -33,6 +35,7 @@ const TEXT = {
     loading: 'Getting the picture…',
     unseen: 'Cannot see the screen right now',
     stale: 'No fresh picture: ',
+    cursorStale: 'Cursor unavailable: ',
     failed: 'Could not',
     verbs: { click: 'Click', double_click: 'Double-click', right_click: 'Right-click', drag: 'Drag', scroll: 'Scroll', type_text: 'Type',
       press_key: 'Press', hotkey: 'Press', set_value: 'Fill in', invoke_menu: 'Choose menu', launch_app: 'Open', set_window_frame: 'Move window',
@@ -53,6 +56,29 @@ let player = null;
 let pending = null;
 /** The action the cursor points at now: its point stays on the same window pixel when the frame changes size. */
 let pointed = null;
+let nativeMode = false;
+const nativePlayback = new FramePlayback({
+  async decode(src) { const image = new Image(); image.src = src; await image.decode(); },
+  async commit(src) {
+    ui.stage.hidden = false;
+    ui.empty.hidden = true;
+    ui.frame.src = src;
+    await ui.frame.decode();
+  },
+  async move(cursor, frame) {
+    const at = onCanvas(cursor, frame);
+    if (at && player) await player.moveTo(at, { reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+  },
+  place(cursor, frame) {
+    const at = onCanvas(cursor, frame);
+    if (!at) return;
+    player ??= new MotionPlayer(ui.canvas);
+    player.place(at);
+    ui.canvas.style.visibility = 'visible';
+  },
+  click() { player?.click(); },
+  hide() { ui.canvas.style.visibility = 'hidden'; },
+});
 
 const visible = () => context?.layout?.visible !== false;
 const sessionId = () => context?.session?.id ?? null;
@@ -122,21 +148,25 @@ async function animate(action) {
 /** The frame changed size (pane resized, a picture of another size): the cursor stays on the same window pixel, ❌ on the
  *  same canvas pixel. A move under way ends where it was going. */
 function reproject() {
+  if (nativeMode) { nativePlayback.resize(); return; }
   const at = player && pointed && onCanvas(pointed.point, pointed.space);
   if (at) player.place(at);
 }
 
-function apply(state) {
+async function apply(state) {
   if (!state.session) { showEmpty(text.outside); return; }
+  nativeMode = state.nativeCursor === true;
   live = state.live && state.target?.pid !== undefined && state.target?.window_id !== undefined;
   const latest = state.actions.at(-1);
   const app = typeof state.target?.app === 'string' ? state.target.app : null;
   // The last picture stays up when a fresh one cannot be taken, but it says so: ❌ an old picture passing for a live one.
   const stale = live && typeof state.liveProblem === 'string' ? `${text.stale}${state.liveProblem}` : null;
-  const said = [app, latest && describe(latest), stale].filter(Boolean).join(' · ');
+  const cursorProblem = typeof state.cursorProblem === 'string' ? `${text.cursorStale}${state.cursorProblem}` : null;
+  const said = [app, latest && describe(latest), stale, cursorProblem].filter(Boolean).join(' · ');
   if (state.frame) {
+    if (nativeMode) await nativePlayback.show(state.frame);
+    else ui.frame.src = `data:${state.frame.mimeType};base64,${state.frame.data}`;
     shown = state.frame.seq;
-    ui.frame.src = `data:${state.frame.mimeType};base64,${state.frame.data}`;
     ui.when.setAttribute('datetime', state.frame.at);
   }
   if (shown === 0) {
@@ -146,6 +176,8 @@ function apply(state) {
   ui.empty.hidden = true;
   ui.stage.hidden = false;
   ui.what.textContent = said;
+  if (nativeMode) return;
+  ui.canvas.style.visibility = 'visible';
   const latestPointed = state.actions.findLast((action) => action.point);
   if (latestPointed) void animate(latestPointed);
 }
@@ -156,10 +188,12 @@ async function refresh(options = {}) {
   pending = { again: false };
   try {
     if (!sessionId()) { showEmpty(text.outside); return; }
+    const requestedSession = sessionId();
     const result = await gugu.callProgram('preview_state', { since: shown, live: Boolean(options.live) });
+    if (requestedSession !== sessionId()) return;
     if (result.isError) throw new Error(result.content?.find((block) => block.type === 'text')?.text ?? 'preview_state failed');
     ui.alert.hidden = true;
-    apply(result.structuredContent);
+    await apply(result.structuredContent);
   } catch (error) {
     // 空态和「桥断了」长得一样 —— 让第二种看得见。
     showError(error);
@@ -183,10 +217,13 @@ function schedule() {
 }
 
 function reset() {
+  nativePlayback.reset();
   shown = 0;
   animated = '';
   pointed = null;
   ui.frame.removeAttribute('src');
+  // Resolve an in-flight presentation move before destroying its RAF.
+  player?.place({ x: 0, y: 0 });
   player?.destroy();
   player = null;
 }
