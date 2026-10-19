@@ -1,0 +1,60 @@
+/* 看板: gugu's own look comes first (semantic HTML is styled already); this draws only the board, with gugu's tokens. */
+body { margin: 0; }
+#shell { display: flex; height: 100vh; container-type: inline-size; container-name: shell; }
+#main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: var(--em-spacing-lg) var(--em-spacing-lg) 0; gap: var(--em-spacing-md); }
+#bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-md); }
+#bar h1 { margin: 0; flex: 0 0 auto; }
+#new-card { flex: 1; min-width: 220px; gap: var(--em-spacing-sm); align-items: center; flex-wrap: wrap; }
+#new-title { flex: 1; min-width: 160px; }
+#attach-box { white-space: nowrap; }
+#tabs { display: none; }
+#board { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: var(--em-spacing-md); overflow-x: auto; padding-bottom: var(--em-spacing-md); }
+footer { padding-bottom: var(--em-spacing-sm); }
+
+.col { display: flex; flex-direction: column; min-height: 0; background: var(--em-background-3); border-radius: var(--em-radius-xl); padding: var(--em-spacing-sm); gap: var(--em-spacing-sm); }
+.col > h2 { margin: 0; padding: var(--em-spacing-xs) var(--em-spacing-sm); font-size: var(--em-font-body); display: flex; gap: var(--em-spacing-sm); align-items: baseline; }
+.col > h2 small { color: var(--em-foreground-muted); font-weight: normal; }
+.cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--em-spacing-sm); overflow-y: auto; min-height: 48px; flex: 1; }
+.cards.over { outline: 2px dashed var(--em-border-1); outline-offset: -2px; border-radius: var(--em-radius-control); }
+.card { background: var(--em-background); border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-sm) var(--em-spacing-md); cursor: pointer; display: flex; flex-direction: column; gap: var(--em-spacing-xs); text-align: left; width: 100%; color: inherit; font: inherit; }
+.card:hover { background: var(--em-hover); }
+.card[aria-selected="true"] { outline: 2px solid var(--em-accent-9); }
+.card.dragging { opacity: .4; }
+.card .meta { display: flex; flex-wrap: wrap; gap: var(--em-spacing-xs); align-items: center; color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
+
+.state { display: inline-flex; align-items: center; gap: 4px; font-size: var(--em-font-caption); padding: 0 6px; border-radius: 6px; background: var(--em-background-3); color: var(--em-foreground-muted); white-space: nowrap; }
+.state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.state.running, .state.parked { color: var(--em-foreground-info); background: var(--em-background-info); }
+.state.approval, .state.answer { color: var(--em-foreground-warning); background: var(--em-background-warning); }
+.state.done { color: var(--em-foreground-success); background: var(--em-background-success); }
+.state.error { color: var(--em-foreground-destructive); background: var(--em-background-destructive); }
+
+#drawer { flex: 0 0 min(480px, 50%); border-left: 1px solid var(--em-border); overflow-y: auto; padding: var(--em-spacing-lg); display: flex; flex-direction: column; gap: var(--em-spacing-lg); box-sizing: border-box; }
+#drawer[hidden] { display: none; }
+#drawer .head { display: flex; gap: var(--em-spacing-sm); align-items: center; }
+#drawer .head select { flex: 1; min-width: 0; }
+#d-title { font-size: var(--em-font-title); font-weight: 600; width: 100%; box-sizing: border-box; }
+#drawer section { display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+#drawer h5 { margin: 0; }
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--em-spacing-xs); }
+.links li { display: flex; gap: var(--em-spacing-sm); align-items: center; flex-wrap: wrap; padding: var(--em-spacing-xs) 0; border-bottom: 1px solid var(--em-border); }
+.links li .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.links li[aria-current="true"] .what { font-weight: 600; }
+.view { border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-md); max-height: 60vh; overflow: auto; }
+.view img, .view video { max-width: 100%; }
+.view .cm-editor { max-height: 55vh; }
+.picker { display: flex; flex-direction: column; gap: var(--em-spacing-sm); border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-sm); }
+.picker ul { max-height: 240px; overflow-y: auto; }
+.note-view:empty::before { content: attr(data-empty); color: var(--em-foreground-passive); }
+.comments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+
+/* Narrow (a chat's 520 panel, a topic's 340, a narrow pane): one column at a time, the card as a page of its own. */
+@container shell (max-width: 640px) {
+  #tabs { display: flex; gap: var(--em-spacing-xs); overflow-x: auto; }
+  #tabs button { flex: 1 0 auto; }
+  #board { grid-auto-columns: 100%; overflow-x: hidden; }
+  #board .col:not(.shown) { display: none; }
+  #shell.open #main { display: none; }
+  #drawer { flex: 1; border-left: 0; }
+  #attach-box span { display: none; }
+}
