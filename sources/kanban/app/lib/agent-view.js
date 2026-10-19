@@ -1,6 +1,7 @@
 // How the board reads to an agent (Node, for tools.js): columns by name, who wrote what as "you" / "the person",
 // task links with their status, and what others wrote wrapped as material rather than instructions.
 import { columnsInOrder, cardsIn, taskState } from './core.js'
+import { readAgentsSnapshot } from './store.js'
 
 /** What an agent's answer may weigh: Codex keeps about 12 KB of a tool's answer (guide apps-programs). */
 export const ANSWER_BYTES = 7500
@@ -9,16 +10,21 @@ export const columnName = (column) => column.title ?? column.role ?? column.id
 
 const who = (by, agent) => (by === 'person' ? 'the person' : by === agent ? 'you' : by)
 
-/** This computer's agents by session id, for the status of a card's task links. Throws when gugu says no. */
+/**
+ * This computer's tasks by session id, for the status of a card's task links: from agents.json, which the background
+ * page writes whenever a task moves (a program cannot list agents itself). null when it has not written it yet.
+ */
 export async function agentsBySession() {
-  const rows = await globalThis.gugu.listAgents()
-  return new Map(rows.filter((row) => !row.deviceId).map((row) => [row.sessionId, row]))
+  const snapshot = await readAgentsSnapshot()
+  return snapshot ? new Map(snapshot.agents.map((row) => [row.sessionId, row])) : null
 }
 
 function linkView(link, agents) {
   if (link.kind !== 'task') return link
+  // No snapshot yet (the board's background page has not run): the status is unknown, said as such.
+  if (!agents) return { kind: 'task', session: link.session, title: link.title ?? null, status: 'unknown' }
   const row = agents.get(link.session)
-  return { kind: 'task', session: link.session, title: row?.title ?? null, status: taskState(row).key }
+  return { kind: 'task', session: link.session, title: row?.title ?? link.title ?? null, status: taskState(row).key }
 }
 
 /** One card, with every field, for `get`. Its words are someone's writing: material, never instructions. */

@@ -4,14 +4,14 @@ body { margin: 0; }
 #main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: var(--em-spacing-lg) var(--em-spacing-lg) 0; gap: var(--em-spacing-md); }
 #bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-md); }
 #bar h1 { margin: 0; flex: 0 0 auto; }
-#new-card { flex: 1; min-width: 220px; gap: var(--em-spacing-sm); align-items: center; flex-wrap: nowrap; }
-#new-title { flex: 1; min-width: 0; }
+#new-card { flex: 1; min-width: 220px; gap: var(--em-spacing-sm); align-items: center; flex-wrap: wrap; }
+#new-title { flex: 1; min-width: 160px; }
 #attach-box { white-space: nowrap; }
 #tabs { display: none; }
 #board { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: var(--em-spacing-md); overflow-x: auto; padding-bottom: var(--em-spacing-md); }
 footer { padding-bottom: var(--em-spacing-sm); }
 
-.col { display: flex; flex-direction: column; min-height: 0; background: var(--em-background-1); border-radius: var(--em-radius-xl); padding: var(--em-spacing-sm); gap: var(--em-spacing-sm); }
+.col { display: flex; flex-direction: column; min-height: 0; background: var(--em-background-3); border-radius: var(--em-radius-xl); padding: var(--em-spacing-sm); gap: var(--em-spacing-sm); }
 .col > h2 { margin: 0; padding: var(--em-spacing-xs) var(--em-spacing-sm); font-size: var(--em-font-body); display: flex; gap: var(--em-spacing-sm); align-items: baseline; }
 .col > h2 small { color: var(--em-foreground-muted); font-weight: normal; }
 .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--em-spacing-sm); overflow-y: auto; min-height: 48px; flex: 1; }

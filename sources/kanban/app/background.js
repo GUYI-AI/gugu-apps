@@ -42,6 +42,10 @@ async function readAgents() {
   try {
     agents = (await g.listAgents()).filter((row) => !row.deviceId)
     failure.agents = null
+    // The App's program has no listAgents (a program's gugu has only a page's own verbs): its tools read this snapshot,
+    // written here whenever the tasks move. It is not the board — board.json still has one writer, the program.
+    const rows = agents.map(({ agentId, sessionId, title, status, detail, failure: f }) => ({ agentId, sessionId, title, status, detail, failure: f ? { kind: f.kind } : null }))
+    await g.writeData('agents.json', JSON.stringify({ at: new Date().toISOString(), agents: rows }))
   } catch (error) {
     // The board still works without statuses; the pages say why there are none.
     agents = []

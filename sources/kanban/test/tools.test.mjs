@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, readFile } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -12,7 +12,9 @@ const agentRows = [{ agentId: AGENT, sessionId: 's-agent', deviceId: null, title
 before(async () => {
   dir = await mkdtemp(path.join(tmpdir(), 'kanban-test-'))
   process.env.GUGU_EXTENSION_DATA_DIR = dir
-  globalThis.gugu = { listAgents: async () => agentRows }
+  // As the background page writes it. A program's gugu has no listAgents (mac1 10-19): the tools must not ask for it.
+  await writeFile(path.join(dir, 'agents.json'), JSON.stringify({ at: '2026-10-19T00:00:00.000Z', agents: agentRows }))
+  globalThis.gugu = {}
   tools = await import('../app/tools.js')
 })
 after(() => rm(dir, { recursive: true, force: true }))
@@ -76,4 +78,12 @@ test('a refused change writes nothing', async () => {
   const before = await board()
   await assert.rejects(tools.apply.run({ op: { type: 'card.move', card: 'nope', column: 'todo' } }, {}), /no card/)
   assert.equal((await board()).rev, before.rev)
+})
+
+test('before the background page has listed the tasks, a task link says unknown rather than failing', async () => {
+  await unlink(path.join(dir, 'agents.json'))
+  const listed = await tools.list.run({}, asAgent)
+  const tasks = listed.columns.flatMap((c) => c.cards).flatMap((c) => c.tasks ?? [])
+  assert.ok(tasks.length > 0)
+  assert.ok(tasks.every((t) => t.status === 'unknown'))
 })

@@ -15,7 +15,7 @@ const WORDS = {
     noteEmpty: '还没有说明', open: '进入任务', handTo: '交给它', remove: '移除',
     attachCurrent: '挂上当前任务', pickTask: '挂任务…', start: '开工', starting: '正在开工…',
     pickFile: '挂任务里的文件…', pickChatFile: '挂群文件…', addUrl: '加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
-    filter: '筛选', chooseTask: '选一个任务', noTasks: '这台电脑上没有任务', noFiles: '没有找到文件',
+    filter: '筛选', chooseTask: '选一个任务', noTasks: '这台电脑上没有任务', noFiles: '没有找到文件（输入文件名，搜你所在的全部对话）',
     show: '查看', openIn: '用 App 打开', peekLater: '平台 peek 上线后改成就地打开', browser: '打开', message: '回到消息',
     comment: '写评论', send: '发表', byAgent: (n) => `⚡ ${n}`, byPerson: '你',
     noStatus: (e) => `读不到本机任务的状态：${e}`, noBoard: (e) => `读不到看板：${e}`,
@@ -32,7 +32,7 @@ const WORDS = {
     noteEmpty: 'No note yet', open: 'Open task', handTo: 'Hand to it', remove: 'Remove',
     attachCurrent: 'Link current task', pickTask: 'Link a task…', start: 'Start a task', starting: 'Starting…',
     pickFile: "Link a task's file…", pickChatFile: 'Link a chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
-    filter: 'Filter', chooseTask: 'Pick a task', noTasks: 'No tasks on this computer', noFiles: 'No files found',
+    filter: 'Filter', chooseTask: 'Pick a task', noTasks: 'No tasks on this computer', noFiles: 'No files found (type a name to search all your chats)',
     show: 'Show', openIn: 'Open in its App', peekLater: 'Opens in place once the platform peek ships', browser: 'Open', message: 'Go to message',
     comment: 'Write a comment', send: 'Post', byAgent: (n) => `⚡ ${n}`, byPerson: 'You',
     noStatus: (e) => `Cannot read this computer's tasks: ${e}`, noBoard: (e) => `Cannot read the board: ${e}`,
@@ -42,7 +42,9 @@ const WORDS = {
 }
 
 const $ = (id) => document.getElementById(id)
-const ctx = await g.getContext()
+// The page is moved between places (the dock, a chat's panel, a task's tab) and told by onContextChanged: where it
+// is now — its session or chat — is read again on every change, never kept from the first load.
+let ctx = await g.getContext()
 let t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
 
 let board = null
@@ -226,7 +228,6 @@ $('new-title').setAttribute('aria-label', t.newPlaceholder)
 $('new-add').textContent = t.add
 $('note').textContent = t.note
 $('attach-label').textContent = t.attach
-$('attach-box').hidden = !ctx.session
 $('new-card').addEventListener('submit', async (event) => {
   event.preventDefault()
   const title = $('new-title').value.trim()
@@ -346,13 +347,14 @@ async function updateDrawer() {
   if (drawer !== d) return
   const current = appState?.activeSessionId
   const linked = new Set(taskLinks(card).map(([, l]) => l.session))
-  d.taskActions.replaceChildren(
+  // replaceChildren writes a null as the text "null": leave the absent button out.
+  d.taskActions.replaceChildren(...[
     current && !linked.has(current)
       ? h('button', { text: t.attachCurrent, onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })) })
       : null,
     h('button', { text: t.pickTask, onclick: () => pickTask(card) }),
     h('button', { text: t.start, onclick: (e) => startTask(card, e.currentTarget, appState?.activeProjectId) }),
-  )
+  ].filter(Boolean))
 
   d.links.replaceChildren(...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)))
   d.linkActions.replaceChildren(
@@ -519,12 +521,19 @@ function pickChatFile(card) {
     const draw = (entries) => list.replaceChildren(...(entries.length
       ? entries.filter((e) => e.type !== 'folder').map((e) => h('li', {}, h('button', { class: 'card', onclick: () => pick(e) }, h('strong', { text: e.path ?? e.name }), h('span', { class: 'meta', text: e.chatName ?? '' }))))
       : [h('li', { class: 'muted', text: t.noFiles })]))
-    draw(await g.files.recent({ limit: 30 }))
+    // Before anything is typed: this chat's files when the board is open in one, then the ones opened lately; typing
+    // searches every chat the person is in.
+    const start = async () => {
+      const [here, recent] = await Promise.all([ctx.chat ? g.files.list({ chat: ctx.chat.id }) : [], g.files.recent({ limit: 30 })])
+      const seen = new Set()
+      return [...here, ...recent].filter((e) => !seen.has(e.id) && seen.add(e.id))
+    }
+    draw(await start())
     let asked = 0
     filter.addEventListener('input', async () => {
       const q = filter.value.trim()
       const mine = ++asked
-      const entries = q ? await g.files.search({ query: q, limit: 30 }) : await g.files.recent({ limit: 30 })
+      const entries = q ? await g.files.search({ query: q, limit: 30 }) : await start()
       if (mine === asked) draw(entries)
     })
   })
@@ -565,9 +574,16 @@ async function startTask(card, button, project) {
 
 // ── where the page is ────────────────────────────────────────────────────────
 
-g.onContextChanged((next) => {
-  if (next.locale) t = WORDS[String(next.locale).startsWith('zh') ? 'zh' : 'en']
-  const now = next.layout?.visible ?? visible
+function placed() {
+  $('attach-box').hidden = !ctx.session
+}
+placed()
+
+g.onContextChanged(async () => {
+  ctx = await g.getContext()
+  t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+  placed()
+  const now = ctx.layout?.visible ?? visible
   // Back on screen: read the board again (an agent's tool call may have changed it meanwhile).
   if (now && !visible) g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
   visible = now

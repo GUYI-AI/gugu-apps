@@ -57,3 +57,13 @@ export function apply(op, by) {
 
 /** The board as it is now, read in the same queue as the writes (never between a write's read and its save). */
 export const snapshot = () => oneAtATime(readBoard)
+
+/** The background page's list of this computer's tasks (agents.json), or null when it has not written one yet. */
+export async function readAgentsSnapshot() {
+  try {
+    return JSON.parse(await readFile(path.join(dir(), 'agents.json'), 'utf8'))
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null
+    throw new Error(`看板 could not read agents.json: ${error.message}`)
+  }
+}
