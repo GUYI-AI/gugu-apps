@@ -188,7 +188,7 @@ function newRoundForm(puzzles, chats = null) {
     chatPick.onchange = loadHosts
     loadHosts()
   }
-  form.append(
+  form.append(...kids([
     chatPick ? h('label', {}, '在哪个聊天里', chatPick) : null,
     h('div', { className: 'row' }, h('label', {}, '语言', language), h('label', {}, '难度', level)),
     h('label', {}, '题目', pick),
@@ -196,7 +196,7 @@ function newRoundForm(puzzles, chats = null) {
     noHost,
     h('p', { className: 'muted', textContent: '主持人的主人看得到汤底：别让要一起猜的人的 agent 主持。' }),
     h('div', { className: 'row' }, go),
-  )
+  ]))
   form.onsubmit = async (ev) => {
     ev.preventDefault()
     go.disabled = true
