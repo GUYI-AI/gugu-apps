@@ -3,6 +3,7 @@
 // 会话由咕咕盖章:callProgram 带的是这张页此刻所在的会话,页面拿不到别的会话的东西。
 import { MotionPlayer } from './cursor.js';
 import { FramePlayback } from './frame-playback.js';
+import { startPageContext } from './page-context.js';
 
 const gugu = window.gugu;
 const $ = (id) => document.getElementById(id);
@@ -229,28 +230,25 @@ function reset() {
 }
 
 async function start() {
-  try {
-    context = await gugu.getContext();
-  } catch (error) {
-    showError(error);
-    return;
-  }
-  text = textFor(context.locale);
   const resized = new ResizeObserver(reproject);
   resized.observe(ui.frame);
   resized.observe(ui.canvas);
   // Each change brings the whole context: moved to another task, or to a place with none, it is that place's now.
-  gugu.onContextChanged((next) => {
-    const moved = (next.session?.id ?? null) !== sessionId();
-    context = next;
-    text = textFor(context.locale);
-    if (moved) reset();
-    void refresh();
-  });
   gugu.onProgramNotification((notification) => {
-    if (notification.method === CHANGED) void refresh();
+    if (context && notification.method === CHANGED) void refresh();
   });
-  await refresh();
+  await startPageContext({
+    read: () => gugu.getContext(),
+    subscribe: (receive) => gugu.onContextChanged(receive),
+    accept(next) {
+      const moved = (next.session?.id ?? null) !== sessionId();
+      context = next;
+      text = textFor(context.locale);
+      if (moved) reset();
+      void refresh();
+    },
+    reject: showError,
+  });
 }
 
 void start();
