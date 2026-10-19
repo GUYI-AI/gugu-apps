@@ -5,7 +5,7 @@
   "subtitle": "Native app control for agents",
   "version": "0.2.1",
   "icon": "icon.png",
-  "apiVersion": 7,
+  "apiVersion": 8,
   "engines": { "gugu": ">=0.2.57" },
   "author": "Gugu",
   "categories": ["productivity"],

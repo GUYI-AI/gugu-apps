@@ -6,7 +6,7 @@
   "localized": { "en": { "subtitle": "Watch agents and get alerts" } },
   "author": "咕咕",
   "version": "0.1.5",
-  "apiVersion": 7,
+  "apiVersion": 8,
   "engines": { "gugu": ">=0.2.57" },
   "entry": "radar.html",
   "icon": "icon.png",

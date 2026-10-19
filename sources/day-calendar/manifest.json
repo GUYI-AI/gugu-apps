@@ -5,7 +5,7 @@
   "subtitle": "Calendar, to-dos and notes",
   "author": "咕咕",
   "version": "0.4.3",
-  "apiVersion": 7,
+  "apiVersion": 8,
   "engines": { "gugu": ">=0.2.57" },
   "localized": {
     "zh-CN": {
