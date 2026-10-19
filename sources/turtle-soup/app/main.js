@@ -237,7 +237,7 @@ function drawRound() {
 /** Who wrote the puzzle and under what licence — shown once the solution is (CC BY / BY-SA ask for it). */
 function credit(p) {
   const s = p.source
-  if (!s || s.kind === 'host') return h('small', { className: 'muted', textContent: s?.author ? `题目：${s.author}` : '题目：主持人出的' })
+  if (!s || s.kind === 'host') return h('small', { className: 'muted', textContent: '题目：主持人自出' })
   const link = s.url ? h('a', { href: s.url, textContent: '原作', onclick: (ev) => { ev.preventDefault(); window.gugu.openBrowserTab(s.url).catch((e) => fail('打不开链接', e)) } }) : null
   const from = s.collection && s.collection !== s.author ? ` · 收自 ${s.collection}` : ''
   return h('small', { className: 'muted' }, `题目：${s.author ?? ''} · ${s.license}${from}${link ? ' · ' : ''}`, link)
