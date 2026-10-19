@@ -1,0 +1,16 @@
+{
+  "id": "kanban",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "f88ef1daba7bd1209eff9bad249cd5a33cea5564",
+      "sha256": "6c0e9ccd30658baa82a996d798144e457147f7fcad33190366b9a6d107934885",
+      "bytes": 27524,
+      "yanked": null
+    }
+  ]
+}
