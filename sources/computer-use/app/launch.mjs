@@ -7,9 +7,15 @@ export function launchConfig(settings, { platform = process.platform, home = hom
   if (settings.command !== undefined && typeof settings.command !== 'string') throw new Error('MCP 程序必须是字符串。');
   let command = settings.command?.trim() ?? '';
   if (!command) {
-    if (platform !== 'darwin') throw new Error('请在 App 配置页填写这台电脑上的 Computer Use MCP 程序和启动参数。');
+    if (platform !== 'darwin') {
+      throw new Error('这台电脑上没有可自动查找的 Computer Use 客户端：自动查找只支持 macOS 上的 Codex Computer Use。'
+        + '请在 App 配置页的「MCP 程序」中填写本机 Computer Use MCP 程序的路径，并按它的说明填写「启动参数」。');
+    }
     const installed = join(home, '.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient');
-    if (!exists(installed)) throw new Error('没有找到已安装的 Computer Use 客户端。请在 App 配置页填写本机 MCP 程序。');
+    if (!exists(installed)) {
+      throw new Error('这台电脑上没有安装 Codex Computer Use 客户端。请先按 Codex 的说明安装它；'
+        + '或在 App 配置页的「MCP 程序」中填写本机其他 Computer Use MCP 程序的路径。');
+    }
     command = installed;
   }
   if (command.startsWith('~/')) command = join(home, command.slice(2));

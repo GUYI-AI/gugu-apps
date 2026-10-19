@@ -10,8 +10,8 @@ import { launchConfig, runServer } from '../app/launch.mjs';
 test('autodetects the installed macOS client, and fails explicitly when absent or not configured', () => {
   const expected = '/test/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient';
   assert.deepEqual(launchConfig({}, { platform: 'darwin', home: '/test', exists: (path) => path === expected }), { command: expected, args: ['mcp'] });
-  assert.throws(() => launchConfig({}, { platform: 'darwin', exists: () => false }), /没有找到/);
-  assert.throws(() => launchConfig({}, { platform: 'linux' }), /填写/);
+  assert.throws(() => launchConfig({}, { platform: 'darwin', exists: () => false }), /没有安装 Codex Computer Use 客户端.*按 Codex 的说明安装.*「MCP 程序」/);
+  assert.throws(() => launchConfig({}, { platform: 'linux' }), /只支持 macOS 上的 Codex Computer Use.*「MCP 程序」/);
   assert.throws(() => launchConfig({ command: '/missing' }, { exists: () => false }), /找不到/);
   assert.deepEqual(launchConfig({ command: 'native-mcp', arguments: '[]' }), { command: 'native-mcp', args: [] });
   for (const args of ['{}', '[1]', 'not json']) assert.throws(() => launchConfig({ command: 'native-mcp', arguments: args }), /JSON 字符串数组/);
