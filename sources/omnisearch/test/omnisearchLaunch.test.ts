@@ -119,6 +119,42 @@ describe('全能搜索 launch.mjs', () => {
       firecrawl.close()
     }
   }, 30_000)
+
+  // 10-19 on mac1: agents saw `web_extract(url, mode?, …)`, guessed mode "text", then took "extract" from omnisearch's own
+  // refusal — Firecrawl's AI extraction, which times out. Reading a page needs no mode; a mode is only for a whole site.
+  it('web_extract: read a page with no mode; a mode only for a whole site, anything else refused before Firecrawl is asked', async () => {
+    const asked: string[] = []
+    const firecrawl = createServer((request, response) => {
+      asked.push(request.url ?? '')
+      response.writeHead(200, { 'content-type': 'application/json' })
+        .end(JSON.stringify({ success: true, data: { markdown: '# Example Domain\n\nThis domain is for use in examples.', metadata: {} } }))
+    })
+    await new Promise<void>((done) => firecrawl.listen(0, '127.0.0.1', done))
+    try {
+      const { port } = firecrawl.address() as AddressInfo
+      const app = launch({ keys: { firecrawl: 'fc-test-not-a-real-key' }, use: {}, firecrawl_base_url: `http://127.0.0.1:${port}` })
+      await app.open()
+      const tools = (await app.ask('tools/list')).result?.tools as { name: string; inputSchema: { properties: Record<string, { enum?: string[] }> } }[]
+      const extract = tools.find((tool) => tool.name === 'web_extract')!
+      expect(Object.keys(extract.inputSchema.properties).sort()).toEqual(['mode', 'url'])
+      expect(extract.inputSchema.properties.mode.enum).toEqual(['crawl', 'map'])
+
+      const call = (args: object) => app.ask('tools/call', { name: 'web_extract', arguments: { url: 'https://example.com', ...args } })
+      for (const mode of ['text', 'extract']) {
+        const refused = await call({ mode })
+        expect(refused.result?.isError).toBe(true)
+        expect(JSON.stringify(refused.result?.content)).toMatch(/leave mode out/)
+      }
+      expect(asked).toEqual([])
+
+      const read = await call({})
+      expect(read.result?.isError).toBeFalsy()
+      expect(JSON.stringify(read.result?.content)).toContain('This domain is for use in examples.')
+      expect(asked).toEqual(['/v2/scrape'])
+    } finally {
+      firecrawl.close()
+    }
+  }, 30_000)
 })
 
 describe('全能搜索 catalog.mjs: which service a capability uses', () => {

@@ -62,16 +62,16 @@ function serverEnv(settings) {
 // The arguments an agent can use whatever service answers; the rest are one service's knobs.
 const KEEP_ARGS = {
 	web_search: ['query', 'limit', 'include_domains', 'exclude_domains', 'time_range', 'provider'],
-	web_extract: ['url', 'provider', 'mode', 'query', 'format'],
+	web_extract: ['url', 'provider', 'mode'],
 	ai_search: ['query', 'provider', 'limit'],
 };
-// web_extract's modes, by the service that has them.
-const EXTRACT_MODES = {
-	firecrawl: ['scrape', 'crawl', 'map', 'extract', 'actions'],
-	tavily: ['extract', 'crawl', 'map'],
-	exa: ['contents', 'similar'],
-	kagi: ['summarize'],
-};
+// web_extract without a mode reads the pages it is given (each service's default). A mode is only for more than that,
+// by the service that has it: crawl reads the whole site, map lists its URLs. The services' other modes do not read the
+// page asked for (Firecrawl extract is an AI extraction with a fixed prompt that times out, actions fixed browser steps,
+// Exa similar other pages): an agent guessing a mode (10-19: "text", then "extract") landed on them.
+const SITE_MODES = { firecrawl: ['crawl', 'map'], tavily: ['crawl', 'map'], exa: [], kagi: [] };
+const SITE_MODE_ABOUT = { crawl: '"crawl" reads the whole site from it', map: '"map" lists the site\'s URLs' };
+const siteModes = (services) => [...new Set(services.flatMap((s) => SITE_MODES[s] ?? []))];
 const capabilityOfTool = (name) => CAPABILITIES.find((c) => c.tool === name);
 const servicesWithKey = (capability, settings) => Object.keys(capability.via).filter((s) => settings.keys[s]);
 
@@ -100,16 +100,17 @@ function presentTool(tool, settings) {
 			};
 		}
 	}
+	const modes = capability.id === 'web_extract' ? siteModes([chosen, ...others]) : [];
 	if (capability.id === 'web_extract' && schema.properties?.mode) {
-		const modes = [...new Set([chosen, ...others].flatMap((s) => EXTRACT_MODES[s] ?? []))];
-		schema.properties.mode = { ...schema.properties.mode, enum: modes, description: `How to read: ${[chosen, ...others].map((s) => `${SERVICES[s].name} ${EXTRACT_MODES[s].join('/')}`).join('; ')}. Defaults to the service's usual mode.` };
+		if (modes.length === 0) delete schema.properties.mode;
+		else schema.properties.mode = { type: 'string', enum: modes, description: `Leave it out to read the given page(s). Only for more than that: ${modes.map((m) => SITE_MODE_ABOUT[m]).join('; ')}${modeServices([chosen, ...others])}.` };
 	}
 	if (Array.isArray(schema.required)) {
 		schema.required = schema.required.filter((k) => k in (schema.properties ?? {}) && k !== 'provider');
 	}
 	const lead = {
 		web_search: 'Search the web: titles, URLs and snippets. Read a page you found with web_extract.',
-		web_extract: 'Read web pages: give a URL (or several) and get the text. A whole site: mode "crawl" or "map" where the service has it.',
+		web_extract: `Read web pages: give a URL (or several) and get their text.${modes.length ? ` A whole site: mode ${modes.map((m) => `"${m}"`).join(' or ')}.` : ''}`,
 		library_docs: tool.description,
 		ai_search: 'A direct answer to a question, with the sources it came from.',
 		github_search: tool.description,
@@ -131,9 +132,20 @@ function prepareCall(params, settings) {
 	if (keep) for (const name of Object.keys(args)) if (!keep.includes(name)) delete args[name];
 	const chosen = serviceFor(capability, settings);
 	const service = args.provider && args.provider in capability.via ? args.provider : chosen;
+	if (capability.id === 'web_extract' && service && args.mode !== undefined && !(SITE_MODES[service] ?? []).includes(args.mode)) {
+		const modes = SITE_MODES[service] ?? [];
+		return { refused: `mode ${JSON.stringify(args.mode)} is not one of ${SERVICES[service].name}'s: leave mode out to read the given page(s).${modes.length ? ` Only for more than that: ${modes.map((m) => SITE_MODE_ABOUT[m]).join('; ')}.` : ''}` };
+	}
 	if (service && capability.via[service] !== null) args.provider = capability.via[service];
 	else delete args.provider;
 	return { ...params, arguments: args };
+}
+
+/** Which services a site mode is for, said only when some of the offered ones have none. */
+function modeServices(services) {
+	const without = services.filter((s) => (SITE_MODES[s] ?? []).length === 0);
+	if (without.length === 0) return '';
+	return ` (${services.filter((s) => !without.includes(s)).map((s) => SERVICES[s].name).join(', ')} only)`;
 }
 
 let initializeRequest = null; // gugu's own, replayed to each omnisearch started after it
@@ -201,7 +213,13 @@ async function forward(message) {
 	} else {
 		await server.ready;
 	}
-	if (message.method === 'tools/call') message = { ...message, params: prepareCall(message.params, server.settings) };
+	if (message.method === 'tools/call') {
+		const params = prepareCall(message.params, server.settings);
+		if (params.refused) {
+			return toGugu({ jsonrpc: '2.0', id: message.id, result: { content: [{ type: 'text', text: params.refused }], isError: true } });
+		}
+		message = { ...message, params };
+	}
 	if (message.id !== undefined && message.method !== undefined) server.pending.set(message.id, message.method);
 	server.write(message);
 	if (message.method === 'notifications/initialized') {
