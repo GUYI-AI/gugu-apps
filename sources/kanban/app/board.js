@@ -595,6 +595,7 @@ g.onContextChanged(async () => {
 
 if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
 else {
-  for (const el of $('main').children) el.hidden = true
-  $('main').append(h('p', { id: 'desktop-only', class: 'muted', text: t.desktopOnly }))
+  // style, not `hidden`: the page's own rules give #bar a display, and that wins over the attribute.
+  for (const el of $('main').children) el.style.display = 'none'
+  $('main').append(h('gugu-empty', { id: 'desktop-only' }, h('strong', { text: t.desktopOnly })))
 }
