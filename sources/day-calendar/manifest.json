@@ -3,9 +3,11 @@
   "name": "Calendar",
   "description": "The person's calendar: record writes a to-do or a memory on a day. It shows in the task page's side panel as a month with the chosen day's to-dos and memories.",
   "author": "咕咕",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "apiVersion": 3,
-  "engines": { "gugu": ">=0.2.53" },
+  "engines": {
+    "gugu": ">=0.2.58"
+  },
   "localized": {
     "zh-CN": {
       "name": "日历",
@@ -19,11 +21,24 @@
   "entry": "main.html",
   "icon": "icon.png",
   "permissions": {
-    "capabilities": ["agents:tools"]
+    "capabilities": [
+      "agents:tools"
+    ]
   },
   "contributes": {
-    "tabs": [{ "name": "main", "title": "日历", "entry": "main.html" }],
-    "mcpServers": [{ "tools": "tools.js" }]
+    "tabs": [
+      {
+        "name": "main",
+        "title": "日历",
+        "entry": "main.html"
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "agentInstructions": "在处理你实际收到的每轮用户消息时，主动维护此人的日历，无需等待“帮我记”“记下来”等请求。明确的个人计划用 day-calendar 的 record(kind=\"todo\")；已经发生的个人事项用 record(kind=\"memory\")。例如“下午我要去打网球”应自动记为今天的待办，detail 保留“下午”，不要编造具体时刻。通过 catalog_list / catalog_call 调用日历工具；原生列出的工具也可直接使用。先用 query 查询去重；用户说完成、补充、更改时间或日期时，用 query 找到已有条目，再用 update 更新其 ID；完成待办不要另建同名记事。query 不传日期可搜索全部历史。确定有多个候选且无法关联时询问，不得随意更新。只处理用户本人明确表达的真实事项，不记录假设、引文、他人安排、代码示例或本轮讨论中的示例句。依据用户当地日期和时区解释今天、明天、昨天；日期关键且无法确定时询问，不凭空补全时间。只从本会话实际收到的消息提取，不扫描其他聊天。用户要求不记或停用时立即遵从。工具成功后才简短告知已记入；失败如实说明。"
   },
   "license": "MIT"
 }
