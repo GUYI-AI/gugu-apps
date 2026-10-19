@@ -51,9 +51,10 @@ export function createReview({ strings, notes, onOpenHighlight, onAsk, say }) {
     const f = notes()
     const user = me()
     if (!f || !user) return
+    // ❌ `??=` on the live file: assigning a fresh map that way can lose writes (the platform's word, 10-19); make it, then fill it.
     f.transact(() => {
-      f.data.reviews ??= {}
-      f.data.reviews[user] ??= {}
+      if (!f.data.reviews) f.data.reviews = {}
+      if (!f.data.reviews[user]) f.data.reviews[user] = {}
       f.data.reviews[user][id] = schedule(f.data.reviews[user][id], value)
     })
     session.queue.shift()

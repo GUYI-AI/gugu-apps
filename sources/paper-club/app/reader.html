@@ -8,15 +8,22 @@
 </head>
 <body>
   <header class="bar" id="bar">
+    <button id="back" type="button" hidden><gugu-icon name="chevron-left"></gugu-icon></button>
     <strong id="title" class="title"></strong>
     <span id="readers" class="readers"></span>
     <span class="spacer"></span>
     <small id="pageno" class="muted pageno"></small>
+    <button id="import-toggle" type="button"><gugu-icon name="import"></gugu-icon></button>
     <button id="box-toggle" type="button" aria-pressed="false"><gugu-icon name="focus"></gugu-icon></button>
     <button id="zoom-out" type="button" class="zoom">−</button>
     <button id="zoom-in" type="button" class="zoom">+</button>
     <button id="side-toggle" type="button" aria-pressed="false"><gugu-icon name="library"></gugu-icon><span id="side-toggle-label"></span></button>
   </header>
+  <form id="import-box" class="row import-box" hidden>
+    <input id="import-ref" type="search" autocomplete="off" />
+    <button id="import-go" class="primary" type="submit"></button>
+    <button id="import-upload" type="button"></button>
+  </form>
   <p id="banner" class="banner" role="status" hidden></p>
   <main class="layout" id="layout">
     <div id="pages" class="pages" tabindex="0"></div>

@@ -13,8 +13,8 @@
     }
   },
   "author": "咕咕",
-  "version": "0.1.2",
-  "apiVersion": 5,
+  "version": "0.2.0",
+  "apiVersion": 6,
   "engines": {
     "gugu": ">=0.2.57"
   },
@@ -34,6 +34,7 @@
       "files:read",
       "files:write",
       "chat:relay",
+      "chat:read",
       "agents:tools"
     ],
     "network": [
