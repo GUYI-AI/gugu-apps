@@ -38,6 +38,15 @@
       "sha256": "a0ba9f3143a80877613a3e31e40fafcb35bcec5c851770caa29a34de69a50159",
       "bytes": 155529,
       "yanked": null
+    },
+    {
+      "version": "0.2.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "b4a6111b1356bad083ac3cb74f3b48c3edd3c607",
+      "sha256": "0c9adbb93d2ada56c7e793344f82354f040c6e76ec401a2fb30f030264dc9af9",
+      "bytes": 156212,
+      "yanked": null
     }
   ]
 }
