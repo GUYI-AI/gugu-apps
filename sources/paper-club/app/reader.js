@@ -1,5 +1,5 @@
 /* global gugu */ // window.gugu: the platform runtime puts it on the page before this module runs.
-// 读论文 (code: papers) — the reader. It opens the PDF the host hands it (its claim: a chat's .pdf, a session's .pdf, or a
+// 论文共读 (code: paper-club) — the reader. It opens the PDF the host hands it (its claim: a chat's .pdf, a session's .pdf, or a
 // paper's notes file .paper.json, which names its PDF), draws it with PDF.js, and keeps what people mark on it in the
 // notes file beside it (lib/paper.js): highlights on a passage or a boxed region, comment threads, study cards. Everyone
 // with the paper open is in the notes file's presence: who reads which page, and following one of them.

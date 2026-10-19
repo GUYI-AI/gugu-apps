@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Copies the PDF.js files the App ships — app/vendor/pdfjs/ — out of the pinned pdfjs-dist, byte for byte.
 //
-//   node vendor/build.mjs            (from sources/papers; needs npm and the network)
+//   node vendor/build.mjs            (from sources/paper-club; needs npm and the network)
 //   node vendor/build.mjs --check    (copies to a temp folder and fails if any file differs from the repo's)
 //
 // What goes in is pinned by package.json + package-lock.json beside this file (npm ci into a throwaway folder). PDF.js

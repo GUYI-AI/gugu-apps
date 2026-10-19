@@ -2,7 +2,7 @@
 
 const STRINGS = {
   zh: {
-    title: '读论文',
+    title: '论文共读',
     loading: '正在打开…',
     noFile: '从群文件夹里点开一篇 PDF，就在这里读。',
     failed: '出错了：{e}',
@@ -79,7 +79,7 @@ const STRINGS = {
     importInto: '导入到哪个群',
   },
   en: {
-    title: 'Papers',
+    title: 'Paper Club',
     loading: 'Opening…',
     noFile: 'Open a PDF from the chat\'s folder and read it here.',
     failed: 'Something went wrong: {e}',
