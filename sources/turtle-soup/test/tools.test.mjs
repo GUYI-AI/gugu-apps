@@ -100,12 +100,13 @@ test('only the host judges; reveal waits for a majority of give-up votes', async
 })
 
 test('a puzzle of the host\'s own keeps solution, facts and hints on this computer', async () => {
-  const made = await tools.create.run({ chat: 'chat-1', title: '自制', surface: '他笑了。', solution: '因为他中了彩票，奖金很多。', facts: [{ text: '他中了彩票', required: true }], hints: ['和钱有关'] }, HOST)
+  const made = await tools.create.run({ chat: 'chat-1', title: '自制', surface: '他笑了。', solution: '因为他中了彩票，奖金很多。', facts: [{ text: '他中了彩票', required: true }], hints: ['和钱有关'], author: 'user:a085' }, HOST)
   const round = files.get(made.game).data
   assert.equal(round.status, 'playing')
   assert.ok(!JSON.stringify(round).includes('彩票'))
   assert.ok(!JSON.stringify(round).includes('和钱有关'))
   assert.deepEqual([round.puzzle.requiredCount, round.puzzle.hintCount], [1, 1])
+  assert.deepEqual(round.puzzle.source, { kind: 'host', license: null }) // shown as 主持人自出: no words of the host's
   round.questions.q1 = { by: 'user:p1', kind: 'guess', text: '他买彩票中奖了', at: 2 }
   assert.equal((await tools.judge.run({ game: made.game, answers: [{ id: 'q1', verdict: 'solved', hits: [0] }] }, HOST)).status, 'solved')
 })

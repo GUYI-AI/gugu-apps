@@ -12,7 +12,8 @@ tools only. There is no text to write: you pick verdicts, the App shows them.
 1. **Take it**: `turtle-soup__host({ game })` gives you the surface, the solution (汤底), the required facts, the
    other facts, what the story leaves open (`unknowns`), what characters claim (`character_claims`, not world facts),
    the rules and what is waiting. Then post one line in the chat: that the round is on, its title and surface, and
-   the round's pill — nothing of the solution.
+   the round's pill — nothing of the solution. That is your only chat message for the round: verdicts, hints
+   and the end show in the App for everyone, so do not announce them in the chat.
 2. **Judge** everything waiting at once: `turtle-soup__judge({ game, answers: [...] })`.
    - A question (`kind: ask`): `yes` / `no` when the solution settles it — a stated fact gets true or false even if it
      does not matter; `irrelevant` when it has no bearing on the story; `partly` when it is true in part or depends on

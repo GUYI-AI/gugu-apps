@@ -275,7 +275,6 @@ export const create = {
         items: { type: 'object', required: ['text', 'required'], properties: { text: { type: 'string', maxLength: 120 }, required: { type: 'boolean' } } },
       },
       hints: { type: 'array', maxItems: MAX_HINTS, items: { type: 'string', maxLength: 60 }, description: 'Up to 3, vaguest first.' },
-      author: { type: 'string', maxLength: 40, description: 'Who made it, as players may be told (default: the host).' },
     },
   },
   run: (args, call) => oneAtATime(async () => {
@@ -290,7 +289,7 @@ export const create = {
       difficulty: null,
       facts,
       hints: (args.hints ?? []).map((h) => String(h).trim()).filter(Boolean),
-      source: { kind: 'host', author: args.author ? String(args.author) : null, license: null },
+      source: { kind: 'host', license: null },
     }
     const entry = await gugu.files.create({ chat: args.chat, name: `${puzzle.title}${FILE_SUFFIX}` }, { ...newRound({ puzzle: publicOf(puzzle), host: call.agent, at: Date.now() }), status: 'playing' })
     writeJson(secretFile(entry.id), { id: puzzle.id, solution: String(args.solution).trim(), facts, unknowns: [], character_claims: [], hints: puzzle.hints })
