@@ -44,6 +44,7 @@ function readSettings() {
 	}
 }
 
+const NO_KEY = '未配置搜索服务的 API key，请在全能搜索的设置页填写。';
 const anyKey = (settings) => Object.keys(SERVICES).some((id) => typeof settings.keys[id] === 'string' && settings.keys[id].trim());
 
 /** settings.json is the only source of keys: one the person cleared is gone even if the shell has it. */
@@ -259,7 +260,10 @@ async function checkService(id, service) {
 	toGugu({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(structured) }], structuredContent: structured } });
 }
 
-/** No service has a key: gugu is answered here and omnisearch stays unstarted — no tools for agents, the page its own two. */
+/**
+ * No service has a key: gugu is answered here and omnisearch stays unstarted — no tools for agents, the page its own two.
+ * `instructions` says why, in words an agent can pass on: gugu shows them where it says this App gives agents no tools.
+ */
 function answerWithoutServer(message) {
 	if (message.method === 'initialize' && message.id !== undefined) {
 		initializeRequest = message; // replayed to the omnisearch started once a key is saved
@@ -267,6 +271,7 @@ function answerWithoutServer(message) {
 			protocolVersion: message.params?.protocolVersion ?? '2025-06-18',
 			capabilities: { tools: { listChanged: true } },
 			serverInfo: { name: 'omnisearch', version: VERSION },
+			instructions: NO_KEY,
 		} });
 	}
 	if (message.method === 'notifications/initialized') initialized = true;

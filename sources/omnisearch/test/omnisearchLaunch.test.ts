@@ -53,8 +53,9 @@ function launch(settings?: object) {
     return awaitFact(`answer to ${method}`, () => answers.get(id))
   }
   const open = async () => {
-    await ask('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } })
+    const answer = await ask('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } })
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
+    return answer
   }
   return { ask, open, stderr: () => stderr, data }
 }
@@ -68,7 +69,8 @@ const toolNames = (answer: { result?: Record<string, unknown> }) =>
 describe('全能搜索 launch.mjs', () => {
   it('no key anywhere: agents get no tool, the page still gets its status, and omnisearch is never started', async () => {
     const app = launch()
-    await app.open()
+    // Why agents get nothing, in initialize's instructions: what gugu shows where it says this App gives agents no tools.
+    expect((await app.open()).result?.instructions).toBe('未配置搜索服务的 API key，请在全能搜索的设置页填写。')
     expect(toolNames(await app.ask('tools/list'))).toEqual([])
     const status = await app.ask('tools/call', { name: 'provider_status', arguments: {} })
     const structured = status.result?.structuredContent as { settings_path: string; services: Record<string, boolean> }
