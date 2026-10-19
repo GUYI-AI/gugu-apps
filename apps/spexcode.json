@@ -1,0 +1,16 @@
+{
+  "id": "spexcode",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.7.0",
+      "repo": "shuxueshuxue/Spexcode",
+      "path": "distribution/gugu/spexcode",
+      "commit": "604926ef4295227ca64390d3ca829a1ae9d13f97",
+      "sha256": "4c70731333684ca7c1b870fa280221f9ba1d281a957fb68b177959ef322e141d",
+      "bytes": 353082,
+      "yanked": null
+    }
+  ]
+}

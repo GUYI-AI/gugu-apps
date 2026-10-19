@@ -1,0 +1,84 @@
+{
+  "id": "paper-club",
+  "name": "论文共读",
+  "description": "Read papers alone or as a chat's reading group: highlights, threads, sourced answers, study cards. Its tools read a paper (a chat's or a project's on this computer), cite a passage as a link back to it, comment, add cards and import arXiv or DOI papers; skill paper-club says how.",
+  "localized": {
+    "zh": {
+      "name": "论文共读",
+      "description": "一个人读，或在群里开读书会：从 arXiv、DOI 导入或上传 PDF，划线、讨论，选一段直接问 agent，它回答里的每个出处点一下就回到原文。一个人用时论文放在本机的项目文件夹里，问本机的任务；在群里时放在群文件夹里，问群里的 agent。学习卡记下每个人的复习和掌握度。"
+    },
+    "en": {
+      "name": "Paper Club",
+      "description": "Read papers alone or with a chat: import from arXiv or a DOI or upload a PDF, highlight and discuss it, and ask an agent about a passage — every source it cites opens the paper there. Alone, papers stay in a project folder on this computer; cards keep each person's reviews."
+    }
+  },
+  "author": "咕咕",
+  "version": "0.3.1",
+  "apiVersion": 7,
+  "engines": {
+    "gugu": ">=0.2.57"
+  },
+  "entry": "shelf.html",
+  "icon": "icon.png",
+  "categories": [
+    "research"
+  ],
+  "license": "Apache-2.0",
+  "examples": [
+    "总结这篇论文，并在关键段落上划线",
+    "给这篇论文出 10 张学习卡片",
+    "找出这篇论文的代码并复现主实验"
+  ],
+  "permissions": {
+    "capabilities": [
+      "files:read",
+      "files:write",
+      "chat:relay",
+      "chat:read",
+      "agents:read:all",
+      "agents:control",
+      "agents:tools"
+    ],
+    "network": [
+      "arxiv.org",
+      "export.arxiv.org",
+      "api.semanticscholar.org",
+      "api.openalex.org"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "shelf",
+        "title": "论文共读",
+        "icon": "icon.png",
+        "entry": "shelf.html"
+      },
+      {
+        "name": "reader",
+        "title": "论文共读",
+        "icon": "icon.png",
+        "entry": "reader.html",
+        "opensFiles": {
+          "chat": [
+            ".pdf",
+            ".paper.json"
+          ],
+          "session": [
+            ".pdf"
+          ]
+        },
+        "fileIcons": {
+          ".pdf": "pdf.png",
+          ".paper.json": "pdf.png"
+        }
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "skills": "skills"
+  }
+}

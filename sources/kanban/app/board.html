@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>看板</title>
+  <link rel="stylesheet" href="board.css">
+</head>
+<body>
+  <div id="shell">
+    <section id="main" aria-labelledby="heading">
+      <header id="bar">
+        <h1 id="heading">看板</h1>
+        <form id="new-card" class="row">
+          <input id="new-title" type="text" autocomplete="off">
+          <label id="attach-box" hidden><input id="attach-task" type="checkbox" checked> <span id="attach-label"></span></label>
+          <button id="new-add" class="primary" type="submit"></button>
+        </form>
+      </header>
+      <p id="alert" role="alert" hidden></p>
+      <div id="tabs" role="tablist"></div>
+      <div id="board"></div>
+    </section>
+    <aside id="drawer" hidden aria-labelledby="d-title"></aside>
+  </div>
+  <script type="module" src="board.js"></script>
+</body>
+</html>

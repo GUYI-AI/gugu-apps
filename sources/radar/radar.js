@@ -9,6 +9,9 @@ import { LEVELS } from './levels.js'
 import { WORDS, wordsFor } from './words.js'
 
 const g = window.gugu
+// The background page keeps the watches and listAgents says how each agent is; a phone has neither (its `gugu` has no
+// onBackgroundMessage — the host's way of saying so). There the page says it is a computer's, and asks for nothing.
+const desktop = typeof g.onBackgroundMessage === 'function'
 const $ = (id) => document.getElementById(id)
 
 let W = WORDS.zh
@@ -283,18 +286,18 @@ async function refresh() {
 }
 
 $('refresh').addEventListener('click', () => {
-  g.sendToBackground({ type: 'check' }).catch((error) => g.reportError(W.couldNot(W.title, error?.message ?? error)))
+  if (desktop) g.sendToBackground({ type: 'check' }).catch((error) => g.reportError(W.couldNot(W.title, error?.message ?? error)))
 })
 $('mode-local').addEventListener('click', () => { mode = 'local'; selected = null; render(); graph.fit() })
 $('mode-all').addEventListener('click', () => { mode = 'all'; selected = null; render(); graph.fit() })
 $('depth').addEventListener('change', (ev) => { depth = Number(ev.target.value); render(); graph.fit() })
 $('graph').addEventListener('click', (ev) => { if (ev.target === $('graph')) { selected = null; renderSide() } })
 
-g.onBackgroundMessage((message) => {
+if (desktop) g.onBackgroundMessage((message) => {
   if (message?.type === 'state') void refresh()
 })
-g.onAgentsChanged(() => void refresh())
-g.onContextChanged((next) => {
+if (desktop) g.onAgentsChanged(() => void refresh())
+if (desktop) g.onContextChanged((next) => {
   const moved = next?.session?.agentId !== ctx?.session?.agentId
   ctx = next
   if (moved) { mode = ctx?.session?.agentId ? 'local' : 'all'; selected = null; graph.fit() }
@@ -307,6 +310,12 @@ g.onContextChanged((next) => {
   ctx = await g.getContext()
   W = wordsFor(ctx?.locale)
   renderWords()
+  if (!desktop) {
+    // style, not `hidden`: the page's own rules give its parts a display, and that wins over the attribute.
+    for (const el of document.body.children) if (el.tagName !== 'SCRIPT') el.style.display = 'none'
+    document.body.prepend(h('gugu-empty', { id: 'desktop-only' }, h('strong', {}, W.desktopOnly)))
+    return
+  }
   mode = ctx?.session?.agentId ? 'local' : 'all'
   renderBar()
   await refresh()

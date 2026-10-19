@@ -1,0 +1,2574 @@
+{
+  "version": 1,
+  "puzzles": [
+    {
+      "id": "coop-soup-sample-001",
+      "lang": "zh",
+      "title": "闹钟",
+      "surface": "我定了早上7点的闹钟。早上它响了，我按掉，继续睡。10点我自然醒过来，一看手机，闹钟设置明明还是7点，可它再也没有响过第二次。",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "逻辑"
+      ],
+      "requiredCount": 4,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-002",
+      "lang": "zh",
+      "title": "鱼缸",
+      "surface": "我养了一缸热带鱼。昨天我给鱼缸换了水，用的是刚买的矿泉水。今天早上，鱼全死了。",
+      "difficulty": "easy",
+      "tags": [
+        "宠物",
+        "日常"
+      ],
+      "requiredCount": 4,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-003",
+      "lang": "zh",
+      "title": "备用钥匙",
+      "surface": "我把钥匙忘在家里，想起家门口的脚垫下有一把备用钥匙，于是我用它开了门。第二天我发现备用钥匙也不见了，但我还是进了门。",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "逻辑"
+      ],
+      "requiredCount": 4,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-004",
+      "lang": "zh",
+      "title": "雨伞",
+      "surface": "下雨天，我撑着一把伞出门。回来的时候伞不见了，可我却浑身干爽。",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "逻辑"
+      ],
+      "requiredCount": 4,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "coop-soup-sample-005",
+      "lang": "zh",
+      "title": "送信",
+      "surface": "邮递员以前每天都会往我家门缝里塞一封信。有一天起，他不再塞信了，我反而特别高兴。",
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "反转"
+      ],
+      "requiredCount": 4,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "AZHi-xinxin（haiguitang-coop）",
+        "url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/samples/sample_soups.json",
+        "license": "CC-BY-4.0",
+        "collection": "haiguitang-coop",
+        "collection_url": "https://github.com/AZHi-xinxin/haiguitang-coop/blob/72dc96b107d63bfcebedc503e3d57bbd416b8ffd/CONTENT_LICENSE.md",
+        "adaptation": "咕咕：改为咕咕题库格式（soup_face → surface，soup_bottom → solution，key_elements → 必要事实，难度改为 easy / medium / hard），文字未改。"
+      }
+    },
+    {
+      "id": "gugu-late-call",
+      "lang": "zh",
+      "title": "深夜的电话",
+      "surface": "他每天深夜拨同一个号码，从不开口，听完就挂。某天电话那头有人说了一声「喂？」，他当场哭了。",
+      "difficulty": "medium",
+      "tags": [
+        "亲情",
+        "日常"
+      ],
+      "requiredCount": 3,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "咕咕",
+        "license": "CC0-1.0"
+      }
+    },
+    {
+      "id": "gugu-sunny-umbrella",
+      "lang": "zh",
+      "title": "晴天的伞",
+      "surface": "大晴天，一个男人撑着伞慢慢走出一栋楼，一路上有人站在两边为他鼓掌。",
+      "difficulty": "easy",
+      "tags": [
+        "温情"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "咕咕",
+        "license": "CC0-1.0"
+      }
+    },
+    {
+      "id": "gugu-crash-success",
+      "lang": "zh",
+      "title": "成功了",
+      "surface": "一辆车直直撞上了路边的大树。司机下车看了看车头，高兴地掏出对讲机：「成功了！」",
+      "difficulty": "easy",
+      "tags": [
+        "入门"
+      ],
+      "requiredCount": 1,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "咕咕",
+        "license": "CC0-1.0"
+      }
+    },
+    {
+      "id": "gugu-empty-seat",
+      "lang": "zh",
+      "title": "靠窗的座位",
+      "surface": "一家小餐馆里，靠窗的那个座位从不让客人坐。老板说，那个座位的客人每天都来。",
+      "difficulty": "medium",
+      "tags": [
+        "温情"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "咕咕",
+        "license": "CC0-1.0"
+      }
+    },
+    {
+      "id": "soupbase-absent-object-zh",
+      "lang": "zh",
+      "title": "读心术的上一件东西",
+      "surface": "甲离开房间后，我选一件东西，乙记住。甲回来，乙逐个问，甲总能在问到我选的物品时答“是”。\n三轮提问分别是：\n“杯子？钢琴？钥匙？”\n“勺子？花瓶？冰山？手表？”\n“椅子？盘子？杯子？床？硬币？”\n甲每次都只在最后一项答“是”。房里有这些日用品，却没有钢琴、冰山或床。甲没有偷听，也看不到我选物品。两人怎么配合的？",
+      "difficulty": "medium",
+      "tags": [
+        "暗号",
+        "互动",
+        "推理"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Donbhupi / Rand al'Thor",
+        "url": "https://puzzling.stackexchange.com/questions/9827/reading-minds-can-be-easy",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Reading minds can be easy》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/absent-object.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-backup-soul-zh",
+      "lang": "zh",
+      "title": "抓不完的同一个魂",
+      "surface": "【幻想】地府把一个寿数已尽的魂带走，入册手续一应俱全。\n几天后，生死簿却显示它又在人间。再抓一次，依旧如此。\n没有抓错人，没有伪造记录，也没人打开地府的出口。阎王到人间看了一次“修理”，终于明白了。修的是什么？",
+      "difficulty": "hard",
+      "tags": [
+        "幻想",
+        "科技",
+        "反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-578",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《聊斋 · 缉魂》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/backup-soul.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-bedtime-stairs-zh",
+      "lang": "zh",
+      "title": "晚饭后的十层楼",
+      "surface": "旅馆里的这家人住在十楼。白天出入，他们总是乘电梯；晚饭后回房间，却每天一起走楼梯。\n电梯没有停运，他们也不怕拥挤。父母并不喜欢爬楼，但这几天终于能早点睡了。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "温和",
+        "动机"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "cpj / LowIntHighCha",
+        "url": "https://puzzling.stackexchange.com/questions/31772/my-strange-hotel-room-neighbours",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《My strange hotel room neighbours》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/bedtime-stairs.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-bestselling-poster-zh",
+      "lang": "zh",
+      "title": "畅销的海报",
+      "surface": "小歌手的海报卖得比节目单还便宜，却总是无人问津。\n演出当天，母亲戴上志愿者的帽子，给观众发食物。随后，她悄悄拿走一些东西，又去小卖部买光了一类商品。\n没过多久，儿子的海报突然热卖。可现场并没有多出一个喜欢他的歌迷。为什么？",
+      "difficulty": "hard",
+      "tags": [
+        "黑色幽默",
+        "反转",
+        "恶作剧"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "张承（Zhangcheng10）",
+        "url": "https://ltda.wikidot.com/soup-556",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《为爱而窃》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/bestselling-poster.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-blank-last-page-zh",
+      "lang": "zh",
+      "title": "空白的最后一页",
+      "surface": "读到一本书的最后一页时，女孩笑了。那一页一个字也没有，而她之前一直很紧张。发生了什么？",
+      "difficulty": "hard",
+      "tags": [
+        "日常",
+        "文字"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "Soupbase",
+        "url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/blank-last-page.json",
+        "license": "CC0-1.0",
+        "note": "Soupbase-authored example, prepared with AI assistance; dedicated under CC0 1.0. See content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/blank-last-page.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-broken-countdown-zh",
+      "lang": "zh",
+      "title": "倒数为什么从 5 跳到 6",
+      "surface": "一个每秒减一的倒计时牌，使用由七条发光线段拼出的数字。\n我先看见 5，一秒后却变成 6。再过一秒，只剩最上面一横和右下方一竖亮着。\n计时程序没倒着运行，也没重置，是什么出了问题？",
+      "difficulty": "medium",
+      "tags": [
+        "观察",
+        "数字",
+        "推理"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Mike Ball / ColdFrog",
+        "url": "https://puzzling.stackexchange.com/questions/46990/the-broken-crosswalk-timer",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《The broken crosswalk timer》。原文许可：CC BY-SA 4.0 / CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/broken-countdown.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-broken-taillight-zh",
+      "lang": "zh",
+      "title": "砸了车灯却获救",
+      "surface": "男人故意弄坏了一辆正在行驶的车的尾灯。警方拦下车后，先把他放了出来，随后带走了驾驶员。\n他没有修理资格，也不是执法人员，更没有得到车主同意。为什么他不但没被当场抓走，反而获救了？",
+      "difficulty": "medium",
+      "tags": [
+        "悬疑",
+        "反转",
+        "动机"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FumbleFingers / Beastly Gerbil",
+        "url": "https://puzzling.stackexchange.com/questions/45170/why-didnt-they-arrest-bob",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Why didn't they arrest Bob?》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/broken-taillight.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-cinema-witness-zh",
+      "lang": "zh",
+      "title": "没人报警的枪声",
+      "surface": "我坐着，看见一个很眼熟的人拔枪，另一个人随即倒下。周围很多人都看见了，却没人报警。\n我也没有离开。过了很久，灯亮了，我们才陆续起身。大家没有串通，更不是吓得不敢动。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "经典",
+        "视角",
+        "日常"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Smart / LinuxBlanket",
+        "url": "https://puzzling.stackexchange.com/questions/66008/why-does-nobody-contact-the-police-about-the-murder",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Why does nobody contact the police about the murder?》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/cinema-witness.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-copied-chess-zh",
+      "lang": "zh",
+      "title": "不会下棋的八分",
+      "surface": "一个只认识棋子、不懂战术的人，同时和八位高手下棋。他四盘执白、四盘执黑，可以在棋盘间走动，高手会等他落子。\n赢一盘得两分，和棋得一分，输棋零分。他没有助手和电子设备，却保证自己总分至少八分。他用的是什么办法？",
+      "difficulty": "hard",
+      "tags": [
+        "策略",
+        "经典",
+        "反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "user3453281 / singletee",
+        "url": "https://puzzling.stackexchange.com/questions/8722/houdini-versus-the-chess-masters",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Houdini versus the chess masters》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/copied-chess.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-crooked-parking-zh",
+      "lang": "zh",
+      "title": "一夜之间停歪的车",
+      "surface": "周一早晨，我把车停进一排排列整齐的车里，和前后车辆完全对齐。晚上我搭同事的车回家。\n周二回来时，我的车还在原位，却明显斜跨着两个停车位；其他车都停得很规矩。没人碰过我的车，停车线也没重画。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "观察",
+        "环境"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / Tom",
+        "url": "https://puzzling.stackexchange.com/questions/105855/explain-this-bad-parking-job",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Explain this bad parking job》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/crooked-parking.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-discarded-purchase-zh",
+      "lang": "zh",
+      "title": "出门就扔的商品",
+      "surface": "男人买了一件很薄的小商品，走到商店门口时看了一眼，就把它扔进垃圾桶。\n商品不是坏的，店员没有骗他，他也没有生气或要求退款。这正是他预料中可能发生的结果。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "反常行为"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Riley / Rupert Morrish",
+        "url": "https://puzzling.stackexchange.com/questions/64123/man-buys-item-throws-it-away-on-his-way-out",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Man buys item, throws it away on his way out》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/discarded-purchase.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-doorbell-zh",
+      "lang": "zh",
+      "title": "没有响过的门铃",
+      "surface": "小林按了门铃，屋里没有任何铃声。几秒后，小周却来开门了。小周没有看见门外的小林，也没有听到他的声音。他怎么知道有人来？",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "反直觉"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "Soupbase",
+        "url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/doorbell.json",
+        "license": "CC0-1.0",
+        "note": "Soupbase-authored example, prepared with AI assistance; dedicated under CC0 1.0. See content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/doorbell.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-embrace-zh",
+      "lang": "zh",
+      "title": "拥抱",
+      "surface": "他越过不该越过的界线，她偏要迎着所有人而来。两人的“拥抱”把我从瞌睡中惊醒。\n前方的分岔口，还有一个人突然停下来等着。慌乱中，我也给了他一个“拥抱”。\n这段相遇为什么没有让任何人感到温暖？",
+      "difficulty": "hard",
+      "tags": [
+        "隐喻",
+        "事故",
+        "多层反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "朝夕（gnoh）",
+        "url": "https://ltda.wikidot.com/soup-021",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《拥抱》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/embrace.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-empty-elevator-zh",
+      "lang": "zh",
+      "title": "送走的空电梯",
+      "surface": "男人在公寓大厅叫来一部电梯，进去后按了二楼，立刻又走出来，看着空电梯上行。\n随后他再次按下大厅的呼梯键，才顺利回到了高层的家。他不是恶作剧，也没有替别人叫电梯。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "反常行为"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Gabriel Burns / user21939",
+        "url": "https://puzzling.stackexchange.com/questions/35609/the-empty-elevator",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《The Empty Elevator》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/empty-elevator.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-falling-sky-zh",
+      "lang": "zh",
+      "title": "天塌之前",
+      "surface": "【幻想故事】两座岛隔着一道深沟，一直靠船来往。\n某天，一个声音从世界外传来。对面的岛突然升到了头顶，船却落了下来。那里的人还活着，只能用长绳把货物吊上去。\n后来，另一个更严厉的声音传来，天真的塌了。发生了什么？",
+      "difficulty": "hard",
+      "tags": [
+        "幻想",
+        "空间",
+        "反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "妄想摘星辰（WXmirage）",
+        "url": "https://ltda.wikidot.com/soup-158",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《忧天》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/falling-sky.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-four-generations-zh",
+      "lang": "zh",
+      "title": "谁偷吃了那块寿司",
+      "surface": "三位母亲带着各自唯一的女儿聚餐，没有其他人在场。饭前，所有人闭眼说祝福，每一对母女各伸一只手相握，始终没有松开或换手。\n结束后，盘里少了一块寿司，确定是其中一人用手拿走的。最年轻的孩子知道不是自己，想了一下，就看向桌上最年长的人。她为什么能确定？",
+      "difficulty": "hard",
+      "tags": [
+        "关系",
+        "推理",
+        "日常"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "TTT / Dan Russell",
+        "url": "https://puzzling.stackexchange.com/questions/38681/the-missing-piece-of-sushi",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《The missing piece of sushi》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/four-generations.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-ghost-paywall-zh",
+      "lang": "zh",
+      "title": "法师的三十秒",
+      "surface": "【幻想】法师靠一段声音驱鬼，几十年没有失败。\n这次声音响起，鬼已经开始退散，却在三十秒后突然停住，鬼又扑了回来。\n法师查明原因后决定退休：“不是法术失灵，是以后做一单就赔一单。”为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "幻想",
+        "喜剧",
+        "现代生活"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-576",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《聊斋 · 隐退记》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/ghost-paywall.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-grounded-pilot-zh",
+      "lang": "zh",
+      "title": "飞机坠毁，他毫发无伤",
+      "surface": "一名飞行员正在控制飞机。飞机撞上了树，摔得粉碎。\n他没有跳伞，没有离开驾驶位置，也没有任何防护装置，却连一道擦伤都没有。飞机是真的，不是游戏或录像。怎么回事？",
+      "difficulty": "easy",
+      "tags": [
+        "经典",
+        "视角",
+        "温和"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "stackzebra / Saeïdryl",
+        "url": "https://puzzling.stackexchange.com/questions/64907/how-did-the-pilot-survive-the-crash",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《How did the pilot survive the crash?》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/grounded-pilot.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-half-bottle-zh",
+      "lang": "zh",
+      "title": "不用刻度的半瓶水",
+      "surface": "透明瓶子上细下粗，没有容量刻度。一位女士没倒出水、没称重，也不知道瓶子的尺寸。\n她在水面处做了个记号，拧紧瓶盖，把瓶子倒过来，等水静止后看了一眼，就确定里面的水恰好占容积的一半。她看到了什么？",
+      "difficulty": "medium",
+      "tags": [
+        "观察",
+        "空间",
+        "科学"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Akanksha / JMP",
+        "url": "https://puzzling.stackexchange.com/questions/87398/half-filled-water-bottle",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Half filled water bottle》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/half-bottle.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-haunted-review-zh",
+      "lang": "zh",
+      "title": "桃木剑的差评",
+      "surface": "【幻想】妻子说丈夫突然变了，怀疑他被邪物附身，便买来一把驱邪桃木剑。\n几天后，她身体越来越虚弱，丈夫却照旧。她把剑扔掉，给了差评。\n卖剑的道士上门，用同一把剑驱走了邪物，妻子才撤回差评。剑并没坏，哪里出了问题？",
+      "difficulty": "hard",
+      "tags": [
+        "幻想",
+        "误会",
+        "多层反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-580",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《聊斋 · 道士消评记》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/haunted-review.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-head-turn-zh",
+      "lang": "zh",
+      "title": "教练说，可以掉头",
+      "surface": "【幻想】在这个世界，鬼可以装成人生活，但必须先获得人类明确许可，才能露出本来面目。\n一名驾校教练带学生上路。学生指着交通标志问是什么意思，教练解释后，学生开心地道谢，教练却被眼前的变化吓呆了。\n教练明明只是在讲交通规则，他说了什么？",
+      "difficulty": "medium",
+      "tags": [
+        "幻想",
+        "喜剧",
+        "中文双关"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "￡9.15",
+        "url": "https://ltda.wikidot.com/soup-915",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《头等大事》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/head-turn.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-hotel-bankruptcy-zh",
+      "lang": "zh",
+      "title": "推车到旅馆",
+      "surface": "他用手把车往前推，停在一家旅馆前。\n没有撞坏任何东西，也没有进去住过，他却发现自己已经破产。旁边的人看着这一幕，一点也不惊讶。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "经典",
+        "轻松",
+        "场景反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "jkl3699 / NL628 / puzzledPig",
+        "url": "https://puzzling.stackexchange.com/questions/64056/why-is-he-bankrupt",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Why is he bankrupt?》。原文许可：CC BY-SA 3.0 / 4.0（按投稿与修订时间）；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/hotel-bankruptcy.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-ice-filled-drum-zh",
+      "lang": "zh",
+      "title": "装满以后还能再装",
+      "surface": "我用水把一个硬质容器占得满满当当，放在温暖的房间里。\n第二天，没有人取走里面的水，也没有渗漏或蒸发，容器更没有变大；我却还能往里面倒入好几升水，一滴都没溢出。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "经典",
+        "科学",
+        "措辞"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "cst1992 / Matt",
+        "url": "https://puzzling.stackexchange.com/questions/31249/the-magical-water-drum",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《The magical water drum》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/ice-filled-drum.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-iced-tea-zh",
+      "lang": "zh",
+      "title": "喝得更快的人",
+      "surface": "两位朋友点了相同的冰茶。甲接连喝完几杯，每次续杯都是刚做好的；乙只点一杯，慢慢地喝。\n乙后来中毒身亡，甲却平安无事。检查发现，两人喝过的每一杯里原本都有毒物。\n他们没有交换饮料，也没有人事先服过解药。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "经典",
+        "悬疑",
+        "时间差"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "generalcrispy / Bozman / Alex Vermillion / Aggie Kidd / Mr Pie",
+        "url": "https://puzzling.stackexchange.com/questions/2980/poisoned-iced-tea",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Poisoned Iced Tea》。原文许可：CC BY-SA 3.0 / 4.0（按投稿与修订时间）；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/iced-tea.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-jianghu-romance-zh",
+      "lang": "zh",
+      "title": "情断江湖",
+      "surface": "侠客阿强爱上了飞贼阿珍。他们比武、闯荡江湖，还办过一场盛大的婚礼。\n一天，阿强提出见面。阿珍没有拒绝，只说起了山里的爷爷，最后问：“你能帮帮他吗？”\n阿强听完她要自己做的事，立刻结束了这段关系，独自回到江湖。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "喜剧",
+        "反转",
+        "日常"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "五仁瓜子",
+        "url": "https://ltda.wikidot.com/soup-018",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《情断江湖》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/jianghu-romance.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-last-horse-zh",
+      "lang": "zh",
+      "title": "越慢越好的赛马",
+      "surface": "两位骑手各带自己的马参赛。规则是：两匹马都到终点后，谁的马后到，谁拿奖金。\n他们一开始都磨磨蹭蹭。裁判说了一句话，两人立刻翻身上马，拼命向终点冲去。规则没变，他们也没约好平分奖金。裁判说了什么？",
+      "difficulty": "medium",
+      "tags": [
+        "策略",
+        "经典",
+        "反直觉"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Umur Kontacı / Rohinb97",
+        "url": "https://puzzling.stackexchange.com/questions/3839/race-of-patience-for-the-sake-of-love",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Race of patience for the sake of love》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/last-horse.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lighter-passenger-zh",
+      "lang": "zh",
+      "title": "多了乘客，车却更轻",
+      "surface": "一辆货车出发前过了磅。开了很长一段路后，一只小鸟落在车顶，跟着它一起通过另一台准确的地磅。\n第二次读数反而更低。司机没换人，货物没少，也没人扔东西下车。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "科学",
+        "反直觉"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Engineer Toast / Paul Rowe",
+        "url": "https://puzzling.stackexchange.com/questions/10000/a-semi-truck-weighing-exactly-10-000-pounds",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《A semi truck weighing exactly 10,000 pounds》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/lighter-passenger.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lit-room-zh",
+      "lang": "zh",
+      "title": "一直亮着的房间",
+      "surface": "晚上，林远看到对面房间的灯亮着，就放心地关上手机睡了。他没有和任何人联系，房间里也没有人。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "科技"
+      ],
+      "requiredCount": 3,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "Soupbase",
+        "url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/lit-room.json",
+        "license": "CC0-1.0",
+        "note": "Soupbase-authored example, prepared with AI assistance; dedicated under CC0 1.0. See content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/lit-room.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lucky-prophet-zh",
+      "lang": "zh",
+      "title": "连续猜中的陌生邮件",
+      "surface": "陌生人连续三周给我发邮件，提前预测三场尚未进行的比赛胜负，三次都对。每封邮件只有一个明确预测，时间也无法造假。\n他并不能控制比赛，不会预知未来，也没什么分析本领，却并不意外会有像我这样的收件人。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "悬疑",
+        "反直觉",
+        "信息差"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Chess960 / Stratos",
+        "url": "https://puzzling.stackexchange.com/questions/97732/predicting-the-future",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Predicting the future?》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/lucky-prophet.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lunar-detour-zh",
+      "lang": "zh",
+      "title": "睡过头却正好到站",
+      "surface": "【科幻】未来，我从阿姆斯特朗镇去奥尔德林城，沿平坦公路一直向东，正常两小时就到。\n我只给自动驾驶车输入了“保持速度，向东”，打算到站后手动停车，却睡着了。九小时后醒来，目的地的穹顶恰好又在前方。\n车没有故障、停车、掉头或减速。为什么没有越开越远？",
+      "difficulty": "hard",
+      "tags": [
+        "科幻",
+        "空间",
+        "时间"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "sam / Daniel Mathias",
+        "url": "https://puzzling.stackexchange.com/questions/97368/a-timely-late-arrival-in-the-future",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《A timely late arrival in The Future》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/lunar-detour.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-masked-delivery-zh",
+      "lang": "zh",
+      "title": "蒙面人抱走了孩子",
+      "surface": "几个戴着面罩的人围住一位女人，其中一人拿着刀。过了一会儿，他们抱走了她的孩子。\n女人的伴侣一直在场，却没有阻止；后来这对伴侣还付了钱，向这些人道谢。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "视角",
+        "温和",
+        "反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "jamesdlin / DooplissForce",
+        "url": "https://puzzling.stackexchange.com/questions/38599/masked-strangers-take-baby-at-knifepoint",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Masked strangers take baby at knifepoint》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/masked-delivery.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-missing-islands-zh",
+      "lang": "zh",
+      "title": "少了六座岛",
+      "surface": "飞行员在黎明飞过一片海域，数到 17 座裸露的岩石小岛。\n一周后，她在同样时段沿同样航线飞过，只数到 11 座。高度、视野和天气都差不多，她没有漏数。\n没有施工、地震或侵蚀，岩石也没有移动。六座岛去哪了？",
+      "difficulty": "easy",
+      "tags": [
+        "自然",
+        "观察",
+        "温和"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / Weather Vane",
+        "url": "https://puzzling.stackexchange.com/questions/106050/why-did-the-number-of-islands-change",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Why did the number of islands change?》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/missing-islands.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-nine-more-eggs-zh",
+      "lang": "zh",
+      "title": "先买一颗，再买九颗",
+      "surface": "一个游客进店，先请店员拿一颗鸡蛋。等店员拿来后，他指着它说：“再来九个这样的。”\n他从一开始就想买十颗，也知道十颗的价格。没有限购、折扣或质量问题。为什么不一口气说完？",
+      "difficulty": "medium",
+      "tags": [
+        "喜剧",
+        "语言",
+        "日常"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "vsz / Aethon",
+        "url": "https://puzzling.stackexchange.com/questions/30339/a-strange-way-of-buying-eggs",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《A strange way of buying eggs》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/nine-more-eggs.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-past-halfway-zh",
+      "lang": "zh",
+      "title": "来回都过半",
+      "surface": "我沿同一条路往返家和公司。每次从车窗看见朋友的房子时，我都会想：“路已经走过一半了。”\n无论去公司还是回家，这句话都是真的。房子没有移动，路程也没有变长。怎么回事？",
+      "difficulty": "medium",
+      "tags": [
+        "视角",
+        "日常",
+        "措辞"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Etheryte / Rand al'Thor",
+        "url": "https://puzzling.stackexchange.com/questions/12736/a-long-lonely-drive",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《A long, lonely drive》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/past-halfway.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-perfect-fit-zh",
+      "lang": "zh",
+      "title": "般配",
+      "surface": "甲躲在坚硬的外壳里，以为自己终于逃过一劫。乙却被送到了面前。\n甲说：“怎么偏偏是你？”\n乙说：“我们原本就是一体的。用我来对付你，大小正合适。”\n紧接着，甲被赶了出来。发生了什么？",
+      "difficulty": "medium",
+      "tags": [
+        "反转",
+        "日常",
+        "拟人"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "妄想摘星辰（WXmirage）",
+        "url": "https://ltda.wikidot.com/soup-812",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《般配》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/perfect-fit.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-rain-elevator-zh",
+      "lang": "zh",
+      "title": "雨天直达十楼",
+      "surface": "一个住在十楼的人，每天出门都能乘电梯直达一楼。\n独自回家时，晴天通常只坐到五楼，再走楼梯；雨天却能直接坐到十楼。电梯一直运转正常，按钮也没有换过。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "经典",
+        "日常",
+        "反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Elgert / HumanlyRespectable",
+        "url": "https://puzzling.stackexchange.com/questions/2419/elevator-puzzle",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Elevator puzzle》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/rain-elevator.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-return-trams-zh",
+      "lang": "zh",
+      "title": "下班总要等更久",
+      "surface": "我每天随机时间出门上下班，不查时刻表。所有能用的电车线路都稳定地每十分钟一班，两个方向一样，也没有满员、晚点或末班车问题。\n但长期算下来，上班时在站里等车的时间，总比下班回家时短很多。我没有绕路，也没有故意错过车。为什么？",
+      "difficulty": "hard",
+      "tags": [
+        "交通",
+        "空间",
+        "反直觉"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Swiss Frank / konvas",
+        "url": "https://puzzling.stackexchange.com/questions/71488/mysterious-trams",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Mysterious Trams》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/return-trams.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-roman-dress-zh",
+      "lang": "zh",
+      "title": "L 太大，XL 正好",
+      "surface": "女士在一家服装店试裙子，标签写着 L 的那条太大。\n店员给她换了同款 XL，她一试却正合身。两条裙子都没有改过，标签也没有贴错。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "符号",
+        "日常",
+        "反转"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "dr_ / Auribouros",
+        "url": "https://puzzling.stackexchange.com/questions/115944/strange-shopping",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Strange shopping》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/roman-dress.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-serial-banknotes-zh",
+      "lang": "zh",
+      "title": "一秒数清的钱",
+      "surface": "我把一叠刚取出的同面额新钞交给朋友，里面恰好有 41 张。\n他没有逐张翻数，没有用机器，也没有问我，只看了最上面和最下面两张，就准确说出了张数。他怎么做到的？",
+      "difficulty": "medium",
+      "tags": [
+        "观察",
+        "日常",
+        "数字"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "BrettFromLA / Spencerkatty",
+        "url": "https://puzzling.stackexchange.com/questions/48674/how-did-he-count-my-money-so-fast",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《How did he count my money so fast?》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/serial-banknotes.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-snow-license-plate-zh",
+      "lang": "zh",
+      "title": "雪堆里的签名",
+      "surface": "有人把一大堆雪推到别人家门口，随后驾车逃走。现场没有监控，也没有目击者。\n屋主只查看了车尾碰过的那面雪墙，就提供了一组信息，让调查人员找到了那辆车。他看见了什么？",
+      "difficulty": "medium",
+      "tags": [
+        "悬疑",
+        "观察",
+        "日常"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / msh210",
+        "url": "https://puzzling.stackexchange.com/questions/87953/the-case-of-the-pranking-snowplow",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《The case of the pranking snowplow》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/snow-license-plate.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-thank-you-at-gunpoint-zh",
+      "lang": "zh",
+      "title": "枪口下的谢谢",
+      "surface": "一个男人走进酒吧，向酒保要一杯水。酒保看了他一会儿，突然拿出一把枪对着他。\n没有人开枪。男人愣了一下，随后真诚地说了声“谢谢”，连水都没喝就走了。\n他不是被迫道谢，也不是逃跑。为什么？",
+      "difficulty": "easy",
+      "tags": [
+        "经典",
+        "反直觉",
+        "轻悬疑"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "SteamCode / Welz",
+        "url": "https://puzzling.stackexchange.com/questions/64047/why-use-the-gun",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Why use the gun?》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/thank-you-at-gunpoint.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-three-escalators-zh",
+      "lang": "zh",
+      "title": "两下只一上",
+      "surface": "一座高架车站每天上站台和下站台的人数差不多，三个并排的扶梯速度也一样。\n车站却长期开两部向下、一部向上。它没有在赶乘客走，也不是其中一部故障。为什么这样安排？",
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "反直觉",
+        "观察"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / 2012rcampion",
+        "url": "https://puzzling.stackexchange.com/questions/86301/three-subway-escalators",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Three Subway Escalators》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/three-escalators.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-too-many-batteries-zh",
+      "lang": "zh",
+      "title": "170 节电池",
+      "surface": "妻子请丈夫照着纸条买电池。纸条写清了规格，却没写数量。\n他看完后认真地买回了 170 节，还说：“我完全照着你写的买的。”他没有囤货打算，也不是商店只能整箱卖。为什么偏偏是 170？",
+      "difficulty": "medium",
+      "tags": [
+        "喜剧",
+        "误会",
+        "数字"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Devsman / clintperry",
+        "url": "https://puzzling.stackexchange.com/questions/31685/why-did-john-buy-so-many-batteries",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Why did John buy so many batteries?》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/too-many-batteries.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-two-oracles-zh",
+      "lang": "zh",
+      "title": "同一门预言术",
+      "surface": "【幻想】这门预言术有个限制：每次开口，必须把同一件事的好处和坏处全说完。\n古人靠它算命，顾客嫌他扫兴，生意越来越差。现代人学会后，规则没变，也从不说假话，却成了两群人各自追捧的“唯一清醒者”。他做了什么？",
+      "difficulty": "hard",
+      "tags": [
+        "幻想",
+        "现代生活",
+        "视角"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-583",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《聊斋 · 卜算》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/two-oracles.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-undamaged-armor-zh",
+      "lang": "zh",
+      "title": "给没有弹孔的地方加固",
+      "surface": "一支航空队检查所有返航飞机，发现机翼上弹孔很多，发动机附近几乎没有。\n有人提议重点加固机翼，工程师却要求优先保护弹孔最少的区域。他不是看错了统计表。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "反直觉",
+        "观察",
+        "推理"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Chuck / M Oehm",
+        "url": "https://puzzling.stackexchange.com/questions/57058/save-our-wwii-planes",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Save our WWII planes》。原文许可：CC BY-SA 4.0 / CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/undamaged-armor.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-unfading-rose-zh",
+      "lang": "zh",
+      "title": "不会凋谢的约定",
+      "surface": "她病重时劝我：“以后也要好好生活。”\n我送去一盆玫瑰，说：“等这朵花谢了，我就不再想你。”她摸了摸花，没有反驳。\n她离开以后，我在花盆里找到一张纸条：“原来你给自己留了一个永远。”\n她为什么这样写？",
+      "difficulty": "medium",
+      "tags": [
+        "情感",
+        "温和",
+        "细节"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Alice in Reality（YimiQ）",
+        "url": "https://ltda.wikidot.com/soup-727",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《这是献给你的最后一朵花》。原文许可：CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/unfading-rose.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-unsaid-address-zh",
+      "lang": "zh",
+      "title": "没说出口的地址",
+      "surface": "警方第一次联系一名男子：“我们在城外发现了你妻子的遗体，请你来一下……”\n男子急忙挂断电话，很快赶到了那处偏僻现场。警员看到他，反而开始怀疑他。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "悬疑",
+        "细节",
+        "推理"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Aggie Kidd / A.D.",
+        "url": "https://puzzling.stackexchange.com/questions/16460/how-did-the-police-know",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《How did the police know?》。原文许可：CC BY-SA 4.0 / CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/unsaid-address.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-vanishing-weight-zh",
+      "lang": "zh",
+      "title": "几秒钟的减重",
+      "surface": "一个人站在秤上，按了墙上的按钮。门关上后，他没有移动双脚，秤的读数却突然下降。\n几秒后，读数又恢复了。他没有脱衣服，也没有拿起或放下任何东西。发生了什么？",
+      "difficulty": "easy",
+      "tags": [
+        "观察",
+        "日常",
+        "科学"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Quark-epoch / Quintec",
+        "url": "https://puzzling.stackexchange.com/questions/72865/mysterious-loss-of-weight",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Mysterious loss of weight》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/vanishing-weight.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-winter-car-zh",
+      "lang": "zh",
+      "title": "冬天烫，夏天凉",
+      "surface": "同一辆车，停在同一个有固定遮挡的车位，车头方向也相同。\n一个晴朗夏日下午，我回来时车内还算凉；一个晴朗冬日下午，同一时间回来，车内却晒得很热。\n车窗都关着，没人开空调，周围建筑没有变化。为什么？",
+      "difficulty": "medium",
+      "tags": [
+        "日常",
+        "观察",
+        "空间"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "dotancohen / GentlePurpleRain",
+        "url": "https://puzzling.stackexchange.com/questions/24120/car-hotter-in-winter",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Car hotter in winter》。原文许可：CC BY-SA 4.0 / CC BY-SA 3.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/winter-car.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-younger-birthday-zh",
+      "lang": "zh",
+      "title": "妹妹先过三十岁生日",
+      "surface": "一对双胞胎在同一家医院出生，出生证上的年月日完全相同，哥哥先出生。\n三十年后的一次视频通话中，妹妹已经在庆祝三十岁生日，哥哥却说：“我这儿还没到生日呢。”\n两人的钟表和日历都没错，他们也没有提前庆祝。怎么回事？",
+      "difficulty": "easy",
+      "tags": [
+        "日常",
+        "时间",
+        "视角"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "rybo111 / Jafe",
+        "url": "https://puzzling.stackexchange.com/questions/82003/sallys-older-brother",
+        "license": "CC-BY-SA-4.0",
+        "note": "改编自《Sally's older brother》。原文许可：CC BY-SA 4.0；本改编与翻译采用 CC BY-SA 4.0。Soupbase 借助 AI 重述、翻译并补充主持事实和三档提示；完整署名、修订历史与改编说明见内容许可文件。",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/zh/younger-birthday.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-absent-object-en",
+      "lang": "en",
+      "title": "The Object Before the Answer",
+      "surface": "A leaves the room while I choose an object and B remembers it. When A returns, B asks a series of questions. In three rounds the lists are:\n“Cup? Piano? Keys?”\n“Spoon? Vase? Iceberg? Watch?”\n“Chair? Plate? Cup? Bed? Coin?”\nA says yes only to the last item each time, always correctly. The everyday objects are present, but there is no piano, iceberg or bed. A neither sees nor overhears my choices. How does the trick work?",
+      "difficulty": "medium",
+      "tags": [
+        "Code",
+        "Interactive",
+        "Reasoning"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Donbhupi / Rand al'Thor",
+        "url": "https://puzzling.stackexchange.com/questions/9827/reading-minds-can-be-easy",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Reading minds can be easy”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/absent-object.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-backup-soul-en",
+      "lang": "en",
+      "title": "The Soul That Kept Coming Back",
+      "surface": "[Fantasy] The underworld takes a soul whose allotted life has ended and properly records its arrival. Days later it is back among the living. Another collection produces the same result. Identity and records are correct, and nobody opens an underworld exit. Watching a “repair” on Earth reveals the answer. What is repaired?",
+      "difficulty": "hard",
+      "tags": [
+        "Fantasy",
+        "Technology",
+        "Twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-578",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “聊斋 · 缉魂”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/backup-soul.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-bedtime-stairs-en",
+      "lang": "en",
+      "title": "Ten Floors After Dinner",
+      "surface": "A family staying on the tenth floor uses the elevator throughout the day, but climbs the stairs together after dinner. The elevator works and crowds do not bother them. The parents dislike climbing, yet lately they can finally get to sleep earlier. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Everyday",
+        "Gentle",
+        "Motive"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "cpj / LowIntHighCha",
+        "url": "https://puzzling.stackexchange.com/questions/31772/my-strange-hotel-room-neighbours",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “My strange hotel room neighbours”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/bedtime-stairs.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-bestselling-poster-en",
+      "lang": "en",
+      "title": "The Bestselling Poster",
+      "surface": "An unknown singer’s posters cost less than the programme, yet nobody bought them.\nAt a concert his mother volunteered to hand out food. She then quietly removed some supplies and bought out one kind of item at the venue’s only shop.\nSoon the posters were selling fast, although he had not gained a single fan. Why?",
+      "difficulty": "hard",
+      "tags": [
+        "Dark comedy",
+        "Twist",
+        "Mischief"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "张承（Zhangcheng10）",
+        "url": "https://ltda.wikidot.com/soup-556",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “为爱而窃”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/bestselling-poster.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-blank-last-page-en",
+      "lang": "en",
+      "title": "The blank last page",
+      "surface": "When a girl reached the last page of a book, she smiled. There was not a single word on it, and she had been nervous until then. What happened?",
+      "difficulty": "hard",
+      "tags": [
+        "Everyday",
+        "Writing"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "Soupbase",
+        "url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/blank-last-page.json",
+        "license": "CC0-1.0",
+        "note": "English translation of the bundled CC0 example 3, prepared with AI assistance; dedicated under CC0 1.0.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/blank-last-page.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-broken-countdown-en",
+      "lang": "en",
+      "title": "A Countdown from 5 to 6",
+      "surface": "A timer counts down once per second using seven illuminated segments per digit. I see 5, then 6 one second later. After another second only the top horizontal segment and lower-right vertical segment glow. The timer has neither reversed nor reset. What is wrong?",
+      "difficulty": "medium",
+      "tags": [
+        "Observation",
+        "Numbers",
+        "Reasoning"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Mike Ball / ColdFrog",
+        "url": "https://puzzling.stackexchange.com/questions/46990/the-broken-crosswalk-timer",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “The broken crosswalk timer”. Source license: CC BY-SA 4.0 / CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/broken-countdown.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-broken-taillight-en",
+      "lang": "en",
+      "title": "The Broken Light That Saved Him",
+      "surface": "A man deliberately damages the taillight of a moving car. Police stop it, let him out and take the driver away. He is neither a mechanic nor an officer and has no permission from the owner. Why is he rescued instead of being immediately taken away?",
+      "difficulty": "medium",
+      "tags": [
+        "Mystery",
+        "Twist",
+        "Motive"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FumbleFingers / Beastly Gerbil",
+        "url": "https://puzzling.stackexchange.com/questions/45170/why-didnt-they-arrest-bob",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Why didn't they arrest Bob?”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/broken-taillight.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-cinema-witness-en",
+      "lang": "en",
+      "title": "The Shot Nobody Reported",
+      "surface": "I sit and watch a familiar-looking person draw a gun; someone else falls. Many people around me see it, but nobody calls the police. I stay seated too. Much later the lights come on and we leave. Nobody is conspiring or frozen with fear. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Classic",
+        "Perspective",
+        "Everyday"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Smart / LinuxBlanket",
+        "url": "https://puzzling.stackexchange.com/questions/66008/why-does-nobody-contact-the-police-about-the-murder",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Why does nobody contact the police about the murder?”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/cinema-witness.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-copied-chess-en",
+      "lang": "en",
+      "title": "Eight Points Without Chess Skill",
+      "surface": "Someone who can identify chess pieces but knows no strategy plays eight experts at once: four games as White and four as Black. There are no clocks, and opponents wait while he moves between boards. A win earns two points, a draw one, a loss zero. Without helpers or devices, how can he guarantee at least eight points?",
+      "difficulty": "hard",
+      "tags": [
+        "Strategy",
+        "Classic",
+        "Twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "user3453281 / singletee",
+        "url": "https://puzzling.stackexchange.com/questions/8722/houdini-versus-the-chess-masters",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Houdini versus the chess masters”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/copied-chess.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-crooked-parking-en",
+      "lang": "en",
+      "title": "Crooked Overnight",
+      "surface": "On Monday I park neatly in line with the surrounding cars, then ride home with a colleague. On Tuesday my car is still in exactly the same spot, but it now sits crookedly across two bays. All the other cars are properly parked. Nobody moved my car or repainted the lines. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Everyday",
+        "Observation",
+        "Environment"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / Tom",
+        "url": "https://puzzling.stackexchange.com/questions/105855/explain-this-bad-parking-job",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Explain this bad parking job”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/crooked-parking.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-discarded-purchase-en",
+      "lang": "en",
+      "title": "Bought, Checked, Discarded",
+      "surface": "A man buys a thin little item. At the shop entrance he looks at it and drops it in a bin. It is not defective, nobody deceived him, and he neither gets angry nor asks for a refund. This was an outcome he expected might happen. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Everyday",
+        "Odd behavior"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Riley / Rupert Morrish",
+        "url": "https://puzzling.stackexchange.com/questions/64123/man-buys-item-throws-it-away-on-his-way-out",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Man buys item, throws it away on his way out”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/discarded-purchase.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-doorbell-en",
+      "lang": "en",
+      "title": "The silent doorbell",
+      "surface": "Lin pressed the doorbell. There was no sound inside. A few seconds later, Zhou opened the door. Zhou had neither seen Lin outside nor heard his voice. How did Zhou know someone had arrived?",
+      "difficulty": "easy",
+      "tags": [
+        "Everyday",
+        "Perspective"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "Soupbase",
+        "url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/doorbell.json",
+        "license": "CC0-1.0",
+        "note": "Soupbase-authored example, prepared with AI assistance; dedicated under CC0 1.0. See content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/doorbell.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-embrace-en",
+      "lang": "en",
+      "title": "Embrace",
+      "surface": "He crossed a line he should not have crossed. She came against the entire crowd. Their “embrace” jolted me awake.\nAt the fork ahead, someone else suddenly stopped to wait. In my panic, I gave him an “embrace” too.\nWhy did nobody find these encounters heartwarming?",
+      "difficulty": "hard",
+      "tags": [
+        "Metaphor",
+        "Accident",
+        "Multiple twists"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "朝夕（gnoh）",
+        "url": "https://ltda.wikidot.com/soup-021",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “拥抱”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/embrace.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-empty-elevator-en",
+      "lang": "en",
+      "title": "Sending Away an Empty Elevator",
+      "surface": "In his apartment lobby, a man steps into an elevator, presses two and immediately steps back out. He watches it leave empty, calls an elevator again and finally reaches his upper-floor home. It is neither a prank nor a favor for someone else. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Everyday",
+        "Odd behavior"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Gabriel Burns / user21939",
+        "url": "https://puzzling.stackexchange.com/questions/35609/the-empty-elevator",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “The Empty Elevator”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/empty-elevator.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-falling-sky-en",
+      "lang": "en",
+      "title": "Before the Sky Fell",
+      "surface": "[Fantasy] Two islands lay across a deep gap from each other and traded by boat.\nA voice came from outside their world. One island rose overhead, but its boats fell. People still lived up there and had to haul goods on long ropes.\nThen a sterner voice spoke, and the sky fell. What happened?",
+      "difficulty": "hard",
+      "tags": [
+        "Fantasy",
+        "Space",
+        "Twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "妄想摘星辰（WXmirage）",
+        "url": "https://ltda.wikidot.com/soup-158",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “忧天”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/falling-sky.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-four-generations-en",
+      "lang": "en",
+      "title": "Who Took the Sushi?",
+      "surface": "Three mothers dine with their only daughters, with nobody else present. They close their eyes to say good wishes, each mother and daughter joining one hand. Nobody lets go or changes hands. A piece of sushi disappears, taken by someone’s free hand. The youngest knows she did not take it and quickly looks at the eldest. Why can she tell?",
+      "difficulty": "hard",
+      "tags": [
+        "Relationships",
+        "Reasoning",
+        "Everyday"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "TTT / Dan Russell",
+        "url": "https://puzzling.stackexchange.com/questions/38681/the-missing-piece-of-sushi",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “The missing piece of sushi”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/four-generations.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-ghost-paywall-en",
+      "lang": "en",
+      "title": "Thirty Seconds of Exorcism",
+      "surface": "[Fantasy] An exorcist has driven away spirits with a particular sound for decades. This time the spirits begin retreating, but after exactly thirty seconds the sound stops and they return. After investigating, the exorcist retires: “The spell still works. Every job would lose money now.” Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Fantasy",
+        "Comedy",
+        "Modern life"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-576",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “聊斋 · 隐退记”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/ghost-paywall.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-grounded-pilot-en",
+      "lang": "en",
+      "title": "The Unhurt Pilot",
+      "surface": "A pilot is controlling a plane when it hits a tree and breaks apart. The pilot never jumps out, leaves the operating position or uses protective equipment, yet suffers no scratch. It is a real aircraft, not a game or recording. How?",
+      "difficulty": "easy",
+      "tags": [
+        "Classic",
+        "Perspective",
+        "Gentle"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "stackzebra / Saeïdryl",
+        "url": "https://puzzling.stackexchange.com/questions/64907/how-did-the-pilot-survive-the-crash",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “How did the pilot survive the crash?”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/grounded-pilot.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-half-bottle-en",
+      "lang": "en",
+      "title": "Half Full Without a Scale",
+      "surface": "A transparent bottle is narrow at the top and wide below, with no volume scale. Without pouring, weighing or measuring it, a woman marks the water level, seals the bottle and turns it upside down. After the water settles, one look proves it is exactly half full. What does she see?",
+      "difficulty": "medium",
+      "tags": [
+        "Observation",
+        "Space",
+        "Science"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Akanksha / JMP",
+        "url": "https://puzzling.stackexchange.com/questions/87398/half-filled-water-bottle",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Half filled water bottle”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/half-bottle.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-haunted-review-en",
+      "lang": "en",
+      "title": "A One-Star Spirit Sword",
+      "surface": "[Fantasy] A woman thinks her changed husband is possessed and buys a spirit-banishing wooden sword. Over the next few days she weakens, while he stays the same. She throws it away and leaves a bad review. The seller visits, banishes a spirit with that very sword, and she removes the review. The sword was never broken. What went wrong?",
+      "difficulty": "hard",
+      "tags": [
+        "Fantasy",
+        "Misunderstanding",
+        "Layered twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-580",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “聊斋 · 道士消评记”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/haunted-review.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-head-turn-en",
+      "lang": "en",
+      "title": "Permission to Turn Your Head",
+      "surface": "[Fantasy; Chinese wordplay] Ghosts may live disguised as humans, but need a human’s explicit permission to reveal their true form. During a driving lesson conducted in Chinese, a student asks about a road sign. The instructor explains it. The student says thanks, transforms, and terrifies the instructor. What instruction was misunderstood?",
+      "difficulty": "medium",
+      "tags": [
+        "Fantasy",
+        "Comedy",
+        "Chinese wordplay"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "￡9.15",
+        "url": "https://ltda.wikidot.com/soup-915",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “头等大事”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/head-turn.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-hotel-bankruptcy-en",
+      "lang": "en",
+      "title": "Bankrupt at the Hotel",
+      "surface": "He pushed his car forward by hand and stopped at a hotel.\nHe had damaged nothing and had not stayed there, yet he realised he was bankrupt. The people beside him were unsurprised. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Classic",
+        "Lighthearted",
+        "Setting twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "jkl3699 / NL628 / puzzledPig",
+        "url": "https://puzzling.stackexchange.com/questions/64056/why-is-he-bankrupt",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Why is he bankrupt?”. Source license: CC BY-SA 3.0 / 4.0（按投稿与修订时间）; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/hotel-bankruptcy.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-ice-filled-drum-en",
+      "lang": "en",
+      "title": "Room in a Full Container",
+      "surface": "Water completely fills a rigid container, which I leave in a warm room. The next day none has been removed, leaked or evaporated, and the container has not expanded. Yet I can pour several more liters of water into it without overflowing. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Classic",
+        "Science",
+        "Wording"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "cst1992 / Matt",
+        "url": "https://puzzling.stackexchange.com/questions/31249/the-magical-water-drum",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “The magical water drum”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/ice-filled-drum.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-iced-tea-en",
+      "lang": "en",
+      "title": "The Faster Drinker",
+      "surface": "Two friends ordered the same iced tea. One quickly finished several glasses, with each refill freshly prepared. The other slowly drank just one.\nThe slow drinker died from poisoning; the fast drinker survived. Every glass had originally contained poison. Neither swapped drinks or took an antidote. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Classic",
+        "Mystery",
+        "Timing"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "generalcrispy / Bozman / Alex Vermillion / Aggie Kidd / Mr Pie",
+        "url": "https://puzzling.stackexchange.com/questions/2980/poisoned-iced-tea",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Poisoned Iced Tea”. Source license: CC BY-SA 3.0 / 4.0（按投稿与修订时间）; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/iced-tea.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-jianghu-romance-en",
+      "lang": "en",
+      "title": "A Jianghu Romance",
+      "surface": "A swordsman fell in love with a thief. They duelled, travelled the martial world together and held a grand wedding.\nOne day he asked to meet her. Instead of refusing, she talked about her grandfather in the mountains and asked for help.\nAfter hearing what she wanted him to do, he ended their relationship and returned to his adventures alone. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Comedy",
+        "Twist",
+        "Everyday"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "五仁瓜子",
+        "url": "https://ltda.wikidot.com/soup-018",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “情断江湖”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/jianghu-romance.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-last-horse-en",
+      "lang": "en",
+      "title": "The Race to Finish Last",
+      "surface": "Two riders enter their own horses in a race. Once both horses finish, the owner of the later horse wins the prize. Initially both riders dawdle. A judge says one sentence, and they mount up and race flat out. The rules are unchanged and they have not agreed to split the prize. What was said?",
+      "difficulty": "medium",
+      "tags": [
+        "Strategy",
+        "Classic",
+        "Counterintuitive"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Umur Kontacı / Rohinb97",
+        "url": "https://puzzling.stackexchange.com/questions/3839/race-of-patience-for-the-sake-of-love",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Race of patience for the sake of love”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/last-horse.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lighter-passenger-en",
+      "lang": "en",
+      "title": "An Extra Passenger, a Lighter Truck",
+      "surface": "A truck is weighed before setting off. After a long drive, a small bird lands on its roof and rides across another accurate weighbridge. The second reading is lower. The driver and cargo are unchanged, and nobody threw anything out. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Everyday",
+        "Science",
+        "Counterintuitive"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Engineer Toast / Paul Rowe",
+        "url": "https://puzzling.stackexchange.com/questions/10000/a-semi-truck-weighing-exactly-10-000-pounds",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “A semi truck weighing exactly 10,000 pounds”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/lighter-passenger.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lit-room-en",
+      "lang": "en",
+      "title": "The room with the light on",
+      "surface": "At night, Lin Yuan saw the light on in the room across from his home. Reassured, he put his phone away and went to sleep. He had not contacted anyone, and the room was empty. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Everyday",
+        "Technology"
+      ],
+      "requiredCount": 3,
+      "hintCount": 3,
+      "source": {
+        "kind": "original",
+        "author": "Soupbase",
+        "url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/lit-room.json",
+        "license": "CC0-1.0",
+        "note": "English translation of the bundled CC0 example 2, prepared with AI assistance; dedicated under CC0 1.0.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/lit-room.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lucky-prophet-en",
+      "lang": "en",
+      "title": "Three Perfect Predictions",
+      "surface": "For three weeks a stranger emails me the winner of an upcoming contest. All three predictions are correct. Each email makes one definite claim and its advance timestamp is genuine. The sender cannot control results, foresee the future or analyze contests well, yet expects some recipients like me. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Mystery",
+        "Counterintuitive",
+        "Information"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Chess960 / Stratos",
+        "url": "https://puzzling.stackexchange.com/questions/97732/predicting-the-future",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Predicting the future?”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/lucky-prophet.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-lunar-detour-en",
+      "lang": "en",
+      "title": "Oversleeping into a Timely Arrival",
+      "surface": "[Science fiction] In the future, Armstrong Town is two hours west of Aldrin City along a level road. I tell my car only to maintain speed and head east, planning to stop it manually. I fall asleep. Nine hours after departure, I wake to find the destination’s dome ahead again. The car never failed, stopped, turned around or slowed down. Why?",
+      "difficulty": "hard",
+      "tags": [
+        "Science fiction",
+        "Space",
+        "Time"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "sam / Daniel Mathias",
+        "url": "https://puzzling.stackexchange.com/questions/97368/a-timely-late-arrival-in-the-future",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “A timely late arrival in The Future”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/lunar-detour.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-masked-delivery-en",
+      "lang": "en",
+      "title": "The Masked People and the Baby",
+      "surface": "Masked people gather around a woman. One holds a blade. Soon they carry her child away. Her partner watches without intervening; afterward the couple pays these people and thanks them. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Perspective",
+        "Gentle",
+        "Twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "jamesdlin / DooplissForce",
+        "url": "https://puzzling.stackexchange.com/questions/38599/masked-strangers-take-baby-at-knifepoint",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Masked strangers take baby at knifepoint”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/masked-delivery.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-missing-islands-en",
+      "lang": "en",
+      "title": "Six Islands Missing",
+      "surface": "At dawn a pilot counts 17 bare rocky islets. A week later, at the same time of day on the same route and altitude, she counts only 11. Visibility is clear and her count is correct. No construction, earthquake or erosion occurred, and the rocks never moved. Where did six islands go?",
+      "difficulty": "easy",
+      "tags": [
+        "Nature",
+        "Observation",
+        "Gentle"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / Weather Vane",
+        "url": "https://puzzling.stackexchange.com/questions/106050/why-did-the-number-of-islands-change",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Why did the number of islands change?”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/missing-islands.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-nine-more-eggs-en",
+      "lang": "en",
+      "title": "One Egg, Then Nine More",
+      "surface": "A tourist asks a shopkeeper for one egg. Once it is brought out, he points and says, “Nine more like that, please.” He always intended to buy ten and knew the total price. There are no purchase limits, discounts or quality concerns. Why split the request?",
+      "difficulty": "medium",
+      "tags": [
+        "Comedy",
+        "Language",
+        "Everyday"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "vsz / Aethon",
+        "url": "https://puzzling.stackexchange.com/questions/30339/a-strange-way-of-buying-eggs",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “A strange way of buying eggs”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/nine-more-eggs.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-past-halfway-en",
+      "lang": "en",
+      "title": "Past Halfway in Both Directions",
+      "surface": "I travel the same road between home and work. Whenever I look through the vehicle window at my friend’s house, I think, “More than halfway now.” This is true in both directions. The house stays put and the route never changes. How?",
+      "difficulty": "medium",
+      "tags": [
+        "Perspective",
+        "Everyday",
+        "Wording"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Etheryte / Rand al'Thor",
+        "url": "https://puzzling.stackexchange.com/questions/12736/a-long-lonely-drive",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “A long, lonely drive”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/past-halfway.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-perfect-fit-en",
+      "lang": "en",
+      "title": "A Perfect Fit",
+      "surface": "A hid inside a hard shell, thinking the danger had passed. Then B was brought over.\n“Why did it have to be you?” A asked.\n“We used to be one,” B replied. “I am just the right size for this.”\nA was promptly forced out. What happened?",
+      "difficulty": "medium",
+      "tags": [
+        "Twist",
+        "Everyday",
+        "Personification"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "妄想摘星辰（WXmirage）",
+        "url": "https://ltda.wikidot.com/soup-812",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “般配”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/perfect-fit.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-rain-elevator-en",
+      "lang": "en",
+      "title": "The Rainy-Day Elevator",
+      "surface": "A resident of the tenth floor always takes the elevator straight to the lobby. Returning alone on dry days, he usually gets out on the fifth floor and walks the rest. On rainy days he rides straight to ten. The elevator works normally and its buttons never move. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Classic",
+        "Everyday",
+        "Twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Elgert / HumanlyRespectable",
+        "url": "https://puzzling.stackexchange.com/questions/2419/elevator-puzzle",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Elevator puzzle”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/rain-elevator.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-return-trams-en",
+      "lang": "en",
+      "title": "The Longer Wait Home",
+      "surface": "I leave for work and home at irregular times, without checking a timetable. Every usable tram line runs reliably every ten minutes in both directions. There are no crowds, delays or last-service issues. Over time I wait much less at the stop going to work than coming home. Why?",
+      "difficulty": "hard",
+      "tags": [
+        "Transport",
+        "Space",
+        "Counterintuitive"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Swiss Frank / konvas",
+        "url": "https://puzzling.stackexchange.com/questions/71488/mysterious-trams",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Mysterious Trams”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/return-trams.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-roman-dress-en",
+      "lang": "en",
+      "title": "L Is Too Big, XL Fits",
+      "surface": "A woman tries a dress labeled L and finds it too large. The assistant brings the same style labeled XL, which fits perfectly. Neither dress has been altered and neither label is wrong. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Symbols",
+        "Everyday",
+        "Twist"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "dr_ / Auribouros",
+        "url": "https://puzzling.stackexchange.com/questions/115944/strange-shopping",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Strange shopping”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/roman-dress.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-serial-banknotes-en",
+      "lang": "en",
+      "title": "Counting Cash in a Second",
+      "surface": "I hand a friend a stack of fresh banknotes, all the same denomination. There are exactly 41. Without counting through them, using a machine or asking me, he checks only the top and bottom notes and states the total. How?",
+      "difficulty": "medium",
+      "tags": [
+        "Observation",
+        "Everyday",
+        "Numbers"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "BrettFromLA / Spencerkatty",
+        "url": "https://puzzling.stackexchange.com/questions/48674/how-did-he-count-my-money-so-fast",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “How did he count my money so fast?”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/serial-banknotes.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-snow-license-plate-en",
+      "lang": "en",
+      "title": "A Signature in the Snow",
+      "surface": "Someone piles snow across a driveway and drives away. There are no cameras or witnesses. The homeowner examines the snowbank where the vehicle’s rear touched it and supplies information that identifies the vehicle. What was there?",
+      "difficulty": "medium",
+      "tags": [
+        "Mystery",
+        "Observation",
+        "Everyday"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / msh210",
+        "url": "https://puzzling.stackexchange.com/questions/87953/the-case-of-the-pranking-snowplow",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “The case of the pranking snowplow”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/snow-license-plate.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-thank-you-at-gunpoint-en",
+      "lang": "en",
+      "title": "Thank You at Gunpoint",
+      "surface": "A man entered a bar and asked for water. After watching him for a moment, the bartender suddenly pointed a gun at him.\nNobody fired. The man paused, sincerely said “Thank you” and left without drinking. He was neither thanking the bartender under pressure nor fleeing. Why?",
+      "difficulty": "easy",
+      "tags": [
+        "Classic",
+        "Counterintuitive",
+        "Light mystery"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "SteamCode / Welz",
+        "url": "https://puzzling.stackexchange.com/questions/64047/why-use-the-gun",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Why use the gun?”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. See content/LICENSE.md for attribution and changes.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/thank-you-at-gunpoint.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-three-escalators-en",
+      "lang": "en",
+      "title": "Two Down, One Up",
+      "surface": "An elevated station has three parallel escalators of equal speed. Similar numbers of passengers go up and down each day, yet two escalators normally go down and only one goes up. None is broken, and the station is not trying to discourage entry. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Everyday",
+        "Counterintuitive",
+        "Observation"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "FlanMan / 2012rcampion",
+        "url": "https://puzzling.stackexchange.com/questions/86301/three-subway-escalators",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Three Subway Escalators”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/three-escalators.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-too-many-batteries-en",
+      "lang": "en",
+      "title": "Why 170 Batteries?",
+      "surface": "A woman writes down a battery specification but no quantity. Her husband returns with 170 batteries and insists he followed the note exactly. He was not stocking up, and the shop sold individual batteries. Why that number?",
+      "difficulty": "medium",
+      "tags": [
+        "Comedy",
+        "Misunderstanding",
+        "Numbers"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Devsman / clintperry",
+        "url": "https://puzzling.stackexchange.com/questions/31685/why-did-john-buy-so-many-batteries",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Why did John buy so many batteries?”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/too-many-batteries.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-two-oracles-en",
+      "lang": "en",
+      "title": "One Gift, Two Prophets",
+      "surface": "[Fantasy] A prophetic gift forces its user to state every benefit and drawback of an event whenever speaking. An ancient practitioner loses clients who dislike hearing bad news. A modern user obeys the same rule and never lies, yet becomes the favorite “clear thinker” of two opposing audiences. What changes?",
+      "difficulty": "hard",
+      "tags": [
+        "Fantasy",
+        "Modern life",
+        "Perspective"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "瑞颜（RuiYanRY）",
+        "url": "https://ltda.wikidot.com/soup-583",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “聊斋 · 卜算”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/two-oracles.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-undamaged-armor-en",
+      "lang": "en",
+      "title": "Armor Where There Are No Holes",
+      "surface": "An air unit examines its returning planes. Their wings show many bullet holes, while areas around the engines show almost none. Someone proposes stronger wings, but an engineer prioritizes the areas with few holes. The engineer has read the table correctly. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Counterintuitive",
+        "Observation",
+        "Reasoning"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Chuck / M Oehm",
+        "url": "https://puzzling.stackexchange.com/questions/57058/save-our-wwii-planes",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Save our WWII planes”. Source license: CC BY-SA 4.0 / CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/undamaged-armor.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-unfading-rose-en",
+      "lang": "en",
+      "title": "A Promise That Would Not Wilt",
+      "surface": "During her final illness, she asks me to keep living well after she is gone. I bring a potted rose and say, “When this flower fades, I will stop thinking of you.” She touches it without arguing. Later I find a note in the pot: “You have left yourself a forever.” Why did she write that?",
+      "difficulty": "medium",
+      "tags": [
+        "Emotion",
+        "Gentle",
+        "Details"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Alice in Reality（YimiQ）",
+        "url": "https://ltda.wikidot.com/soup-727",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “这是献给你的最后一朵花”. Source license: CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/unfading-rose.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-unsaid-address-en",
+      "lang": "en",
+      "title": "The Address Never Given",
+      "surface": "Police contact a man for the first time: “We found your wife’s body outside town. Please come…” He hangs up in a hurry and soon arrives at the remote scene. Seeing him there makes an officer suspicious. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Mystery",
+        "Details",
+        "Reasoning"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Aggie Kidd / A.D.",
+        "url": "https://puzzling.stackexchange.com/questions/16460/how-did-the-police-know",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “How did the police know?”. Source license: CC BY-SA 4.0 / CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/unsaid-address.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-vanishing-weight-en",
+      "lang": "en",
+      "title": "Lighter for a Few Seconds",
+      "surface": "Standing on a scale, someone presses a wall button. A door closes and the reading drops, although their feet do not move. A few seconds later it returns to normal. No clothes or other objects have been removed or added. What happened?",
+      "difficulty": "easy",
+      "tags": [
+        "Observation",
+        "Everyday",
+        "Science"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "Quark-epoch / Quintec",
+        "url": "https://puzzling.stackexchange.com/questions/72865/mysterious-loss-of-weight",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Mysterious loss of weight”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/vanishing-weight.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-winter-car-en",
+      "lang": "en",
+      "title": "Hotter on a Winter Afternoon",
+      "surface": "The same car is parked in the same partially sheltered space, facing the same way. On a sunny summer afternoon it stays fairly cool inside. On a sunny winter afternoon, at the same time, the cabin is sun-baked. Windows are shut, air conditioning is off and nearby structures are unchanged. Why?",
+      "difficulty": "medium",
+      "tags": [
+        "Everyday",
+        "Observation",
+        "Space"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "dotancohen / GentlePurpleRain",
+        "url": "https://puzzling.stackexchange.com/questions/24120/car-hotter-in-winter",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Car hotter in winter”. Source license: CC BY-SA 4.0 / CC BY-SA 3.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/winter-car.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    },
+    {
+      "id": "soupbase-younger-birthday-en",
+      "lang": "en",
+      "title": "The Younger Twin’s Earlier Birthday",
+      "surface": "Twins were born in the same hospital on the same calendar date, with the brother born first. Thirty years later, during a video call, his sister is celebrating her thirtieth birthday. He says, “It is not my birthday here yet.” Their clocks are correct and neither celebrates early. How?",
+      "difficulty": "easy",
+      "tags": [
+        "Everyday",
+        "Time",
+        "Perspective"
+      ],
+      "requiredCount": 2,
+      "hintCount": 3,
+      "source": {
+        "kind": "adapted",
+        "author": "rybo111 / Jafe",
+        "url": "https://puzzling.stackexchange.com/questions/82003/sallys-older-brother",
+        "license": "CC-BY-SA-4.0",
+        "note": "Adapted from “Sally's older brother”. Source license: CC BY-SA 4.0; this adaptation and translation: CC BY-SA 4.0. Retold, translated and structured for Soupbase with AI assistance. Full attribution, revision histories and changes: content/LICENSE.md.",
+        "collection": "Soupbase",
+        "collection_url": "https://github.com/spoonnotfound/soupbase/blob/b36c2da267023e6c580b1238edb787f3d4c99fb6/content/puzzles/en/younger-birthday.json",
+        "adaptation": "咕咕：字段改为咕咕题库格式（facts 去掉 id），文字未改。"
+      }
+    }
+  ]
+}

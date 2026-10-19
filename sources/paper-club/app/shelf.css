@@ -1,0 +1,15 @@
+/* The shelf: gugu's look is on the page already; layout only. */
+body { margin: 0; }
+main { padding: var(--em-spacing-md); gap: var(--em-spacing-sm); }
+.importer { flex-wrap: wrap; }
+.importer input { flex: 1 1 14em; min-width: 0; }
+.banner, #note { margin: 0; }
+#note { white-space: normal; overflow-wrap: anywhere; }
+.banner[data-kind='error'] { color: var(--em-foreground-destructive); }
+#papers li { cursor: pointer; }
+#papers li > div { min-width: 0; }
+#papers strong { overflow: hidden; text-overflow: ellipsis; }
+.mine { display: flex; align-items: center; gap: var(--em-spacing-xs); }
+.mine progress { width: 64px; }
+#target { flex: 1 1 8em; min-width: 0; }
+.importer button { flex: none; }

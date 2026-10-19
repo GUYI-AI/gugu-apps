@@ -1,0 +1,77 @@
+{
+  "note": "咕咕原创题，以 CC0 1.0 放弃权利（app/bank/LICENSE.md）。格式同 Soupbase。",
+  "puzzles": [
+    {
+      "id": "gugu-late-call",
+      "lang": "zh",
+      "title": "深夜的电话",
+      "surface": "他每天深夜拨同一个号码，从不开口，听完就挂。某天电话那头有人说了一声「喂？」，他当场哭了。",
+      "solution": "那个号码是他已故父亲生前的手机号，一直没有注销。电话打过去没人接，会转到父亲当年亲自录的语音信箱问候，他每晚打过去只为再听一遍父亲的声音。那天号码被运营商回收、分给了一个陌生人，接电话的是别人——他知道父亲的声音再也听不到了。",
+      "facts": [
+        { "text": "号码属于他已经去世的父亲。", "required": true },
+        { "text": "他每晚听的是父亲录的语音信箱问候。", "required": true },
+        { "text": "号码被回收分给了陌生人，他再也听不到父亲的声音。", "required": true },
+        { "text": "他从不开口是因为对面只是录音。", "required": false }
+      ],
+      "unknowns": ["没有设定父亲去世多久。"],
+      "character_claims": [],
+      "hints": ["他不是在等人接电话。", "他想听的那个声音，是录下来的。", "号码不会永远属于同一个人。"],
+      "difficulty": "medium",
+      "tags": ["亲情", "日常"],
+      "source": { "kind": "original", "author": "咕咕", "license": "CC0-1.0" }
+    },
+    {
+      "id": "gugu-sunny-umbrella",
+      "lang": "zh",
+      "title": "晴天的伞",
+      "surface": "大晴天，一个男人撑着伞慢慢走出一栋楼，一路上有人站在两边为他鼓掌。",
+      "solution": "他是一名刚做完最后一次化疗的病人，医生嘱咐他治疗期间避免阳光直射，所以他撑着伞。今天他的治疗全部结束、可以出院了，鼓掌的是一路送他出门的护士和病友。",
+      "facts": [
+        { "text": "他是病人，这栋楼是医院。", "required": true },
+        { "text": "撑伞是因为医嘱要他避开阳光。", "required": false },
+        { "text": "他的治疗结束、今天出院，鼓掌的人在为他庆祝。", "required": true }
+      ],
+      "unknowns": ["没有设定他得的是什么病。"],
+      "character_claims": [],
+      "hints": ["伞不是用来挡雨的。", "这栋楼里的人，大多在等一件事结束。", "掌声是送别，也是祝贺。"],
+      "difficulty": "easy",
+      "tags": ["温情"],
+      "source": { "kind": "original", "author": "咕咕", "license": "CC0-1.0" }
+    },
+    {
+      "id": "gugu-crash-success",
+      "lang": "zh",
+      "title": "成功了",
+      "surface": "一辆车直直撞上了路边的大树。司机下车看了看车头，高兴地掏出对讲机：「成功了！」",
+      "solution": "他是一名特技演员，正在拍电影里的撞车镜头。撞树是事先设计好的特技，对讲机那头是导演，这条一次就拍成了。",
+      "facts": [
+        { "text": "他在拍电影，撞车是计划好的特技。", "required": true },
+        { "text": "对讲机那头是剧组，这条一次就拍成了。", "required": false }
+      ],
+      "unknowns": ["没有设定是什么电影。"],
+      "character_claims": [],
+      "hints": ["撞车不是意外。", "旁边还有很多人在看，他们也拿着设备。", "有人要的就是这一下。"],
+      "difficulty": "easy",
+      "tags": ["入门"],
+      "source": { "kind": "original", "author": "咕咕", "license": "CC0-1.0" }
+    },
+    {
+      "id": "gugu-empty-seat",
+      "lang": "zh",
+      "title": "靠窗的座位",
+      "surface": "一家小餐馆里，靠窗的那个座位从不让客人坐。老板说，那个座位的客人每天都来。",
+      "solution": "餐馆是老板和老伴一起开的，老伴生前每天都坐在那个靠窗的位置看街上的人。她去世以后，老板每天照旧给那个位置摆上一杯热茶，就当她还像从前一样每天都来陪着他。",
+      "facts": [
+        { "text": "座位属于老板已经去世的老伴。", "required": true },
+        { "text": "她生前天天坐在那里，老板每天照旧为她留座、摆茶。", "required": true },
+        { "text": "餐馆是两人一起开的。", "required": false }
+      ],
+      "unknowns": ["没有设定老伴去世多久。"],
+      "character_claims": [],
+      "hints": ["这个客人不需要点菜。", "老板说的「每天都来」，是他心里的事实。", "这个座位以前确实每天都有人坐。"],
+      "difficulty": "medium",
+      "tags": ["温情"],
+      "source": { "kind": "original", "author": "咕咕", "license": "CC0-1.0" }
+    }
+  ]
+}

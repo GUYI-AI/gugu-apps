@@ -53,8 +53,9 @@ function launch(settings?: object) {
     return awaitFact(`answer to ${method}`, () => answers.get(id))
   }
   const open = async () => {
-    await ask('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } })
+    const answer = await ask('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } })
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
+    return answer
   }
   return { ask, open, stderr: () => stderr, data }
 }
@@ -68,7 +69,8 @@ const toolNames = (answer: { result?: Record<string, unknown> }) =>
 describe('全能搜索 launch.mjs', () => {
   it('no key anywhere: agents get no tool, the page still gets its status, and omnisearch is never started', async () => {
     const app = launch()
-    await app.open()
+    // Why agents get nothing, in initialize's instructions: what gugu shows where it says this App gives agents no tools.
+    expect((await app.open()).result?.instructions).toBe('未配置搜索服务的 API key，请在全能搜索的设置页填写。')
     expect(toolNames(await app.ask('tools/list'))).toEqual([])
     const status = await app.ask('tools/call', { name: 'provider_status', arguments: {} })
     const structured = status.result?.structuredContent as { settings_path: string; services: Record<string, boolean> }
@@ -113,6 +115,42 @@ describe('全能搜索 launch.mjs', () => {
       const answer = check.result?.structuredContent as { ok: boolean; reason: string | null }
       expect(hits).toBeGreaterThan(0)
       expect(answer.reason).not.toMatch(/omnisearch stopped/)
+    } finally {
+      firecrawl.close()
+    }
+  }, 30_000)
+
+  // 10-19 on mac1: agents saw `web_extract(url, mode?, …)`, guessed mode "text", then took "extract" from omnisearch's own
+  // refusal — Firecrawl's AI extraction, which times out. Reading a page needs no mode; a mode is only for a whole site.
+  it('web_extract: read a page with no mode; a mode only for a whole site, anything else refused before Firecrawl is asked', async () => {
+    const asked: string[] = []
+    const firecrawl = createServer((request, response) => {
+      asked.push(request.url ?? '')
+      response.writeHead(200, { 'content-type': 'application/json' })
+        .end(JSON.stringify({ success: true, data: { markdown: '# Example Domain\n\nThis domain is for use in examples.', metadata: {} } }))
+    })
+    await new Promise<void>((done) => firecrawl.listen(0, '127.0.0.1', done))
+    try {
+      const { port } = firecrawl.address() as AddressInfo
+      const app = launch({ keys: { firecrawl: 'fc-test-not-a-real-key' }, use: {}, firecrawl_base_url: `http://127.0.0.1:${port}` })
+      await app.open()
+      const tools = (await app.ask('tools/list')).result?.tools as { name: string; inputSchema: { properties: Record<string, { enum?: string[] }> } }[]
+      const extract = tools.find((tool) => tool.name === 'web_extract')!
+      expect(Object.keys(extract.inputSchema.properties).sort()).toEqual(['mode', 'url'])
+      expect(extract.inputSchema.properties.mode.enum).toEqual(['crawl', 'map'])
+
+      const call = (args: object) => app.ask('tools/call', { name: 'web_extract', arguments: { url: 'https://example.com', ...args } })
+      for (const mode of ['text', 'extract']) {
+        const refused = await call({ mode })
+        expect(refused.result?.isError).toBe(true)
+        expect(JSON.stringify(refused.result?.content)).toMatch(/leave mode out/)
+      }
+      expect(asked).toEqual([])
+
+      const read = await call({})
+      expect(read.result?.isError).toBeFalsy()
+      expect(JSON.stringify(read.result?.content)).toContain('This domain is for use in examples.')
+      expect(asked).toEqual(['/v2/scrape'])
     } finally {
       firecrawl.close()
     }

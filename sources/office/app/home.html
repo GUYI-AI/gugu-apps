@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>咕咕办公</title>
+<link rel="stylesheet" href="home.css" />
+</head>
+<body>
+  <header class="stack">
+    <input id="query" type="search" autocomplete="off" />
+    <div id="kinds" role="tablist"></div>
+  </header>
+  <main id="main">
+    <p id="note" role="status" class="muted" hidden></p>
+    <p id="error" role="alert" hidden></p>
+    <section id="groups" hidden>
+      <h5 id="groups-title"></h5>
+      <div id="group-list" class="row"></div>
+    </section>
+    <section>
+      <div class="row heading">
+        <button id="back" type="button" hidden><gugu-icon name="chevron-left"></gugu-icon></button>
+        <h5 id="files-title"></h5>
+      </div>
+      <ul id="files" class="list"></ul>
+      <div id="empty" hidden></div>
+    </section>
+  </main>
+  <script type="module" src="home.js"></script>
+</body>
+</html>

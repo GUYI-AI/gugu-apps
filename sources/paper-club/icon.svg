@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B8DEF"/>
+      <stop offset="1" stop-color="#3B5BDB"/>
+    </linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#1B2A6B" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <!-- back page -->
+  <rect x="78" y="44" width="122" height="156" rx="12" fill="#FFFFFF" opacity="0.35" transform="rotate(8 139 122)"/>
+  <!-- front page -->
+  <g filter="url(#sh)">
+    <rect x="56" y="52" width="124" height="160" rx="12" fill="#FFFFFF"/>
+  </g>
+  <rect x="74" y="74" width="58" height="9" rx="4.5" fill="#3B5BDB"/>
+  <g fill="#D3DAEA">
+    <rect x="74" y="98" width="88" height="7" rx="3.5"/>
+    <rect x="74" y="140" width="88" height="7" rx="3.5"/>
+    <rect x="74" y="161" width="64" height="7" rx="3.5"/>
+    <rect x="74" y="182" width="78" height="7" rx="3.5"/>
+  </g>
+  <rect x="70" y="114" width="96" height="17" rx="5" fill="#FFD84D"/>
+  <rect x="74" y="119" width="84" height="7" rx="3.5" fill="#8A6D00" opacity="0.55"/>
+  <!-- discussion bubble -->
+  <g filter="url(#sh)">
+    <path d="M150 150 h56 a14 14 0 0 1 14 14 v26 a14 14 0 0 1 -14 14 h-30 l-14 14 v-14 h-12 a14 14 0 0 1 -14 -14 v-26 a14 14 0 0 1 14 -14 z" fill="#FFD84D"/>
+  </g>
+  <g fill="#3B3200">
+    <circle cx="163" cy="177" r="5"/>
+    <circle cx="178" cy="177" r="5"/>
+    <circle cx="193" cy="177" r="5"/>
+  </g>
+</svg>

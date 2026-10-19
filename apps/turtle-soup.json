@@ -1,0 +1,61 @@
+{
+  "id": "turtle-soup",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "bd3fe7b6b7443d85e1dd5763cfa18e0ad08076d3",
+      "sha256": "693717af7a60fd9458132ad59b62aeadd62103e8b3fe8073d40a455b79faa7f3",
+      "bytes": 136000,
+      "yanked": null
+    },
+    {
+      "version": "0.1.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "78665fbe2f5a231baead9e25ff62f0f7ad17d676",
+      "sha256": "ad1ed53442f28966e0a317995f0bb2a721135ae7c24ec20b2b605429f84557ad",
+      "bytes": 134494,
+      "yanked": null
+    },
+    {
+      "version": "0.1.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "b51c6f281b868366ece59713825935064351b815",
+      "sha256": "dd255c08cd6c0aaa441ddb845ff9d0a7100e57416e03caaf509aca79cabb7f5a",
+      "bytes": 134660,
+      "yanked": null
+    },
+    {
+      "version": "0.2.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "1e14cb9b4d75fc7c50544f90b0f7be38e2f46c58",
+      "sha256": "a0ba9f3143a80877613a3e31e40fafcb35bcec5c851770caa29a34de69a50159",
+      "bytes": 155529,
+      "yanked": null
+    },
+    {
+      "version": "0.2.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "b4a6111b1356bad083ac3cb74f3b48c3edd3c607",
+      "sha256": "0c9adbb93d2ada56c7e793344f82354f040c6e76ec401a2fb30f030264dc9af9",
+      "bytes": 156212,
+      "yanked": null
+    },
+    {
+      "version": "0.2.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "4a8f47abeceb5f2d5ee01c531f5beb6a659fa6a7",
+      "sha256": "d57e5781114b229b9b48fecbe161acabb73921f3f42621d62c4ff540c5151c37",
+      "bytes": 156393,
+      "yanked": null
+    }
+  ]
+}

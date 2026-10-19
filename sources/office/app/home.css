@@ -1,0 +1,11 @@
+/* The home page: gugu's look is on the page already (semantic HTML, .row / .stack / .list); only the layout is here. */
+html, body { height: 100%; }
+body { margin: 0; display: flex; flex-direction: column; }
+header { flex: none; padding: var(--em-spacing-lg) var(--em-spacing-lg) var(--em-spacing-sm); gap: var(--em-spacing-sm); }
+header input[type="search"] { width: 100%; }
+main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) var(--em-spacing-xl); }
+.heading { align-items: center; gap: var(--em-spacing-xs); }
+#group-list { gap: var(--em-spacing-xs); }
+.list img.kind { width: 20px; height: 20px; flex: none; }
+.list .where { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#groups { margin-bottom: var(--em-spacing-lg); }

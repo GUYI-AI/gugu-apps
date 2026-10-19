@@ -1,0 +1,10 @@
+{
+  "name": "gugu-app-paper-club",
+  "private": true,
+  "type": "module",
+  "description": "论文共读. app/ is the App, what the market packs; vendor/ copies PDF.js into app/vendor/pdfjs/; test/ is its tests.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node vendor/build.mjs --check && node --test test/*.test.mjs"
+  }
+}
