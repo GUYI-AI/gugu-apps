@@ -4,7 +4,7 @@
 // something waits for it; the round file is what everyone sees, live.
 import {
   FILE_SUFFIX, VERDICT_LABEL, DIFFICULTY_LABEL, MAX_QUESTION, MAX_GUESS,
-  newRound, ended, questionsInOrder, pendingQuestions, hintsGiven, hintWaiting, checkQuestion, giveUpNeeded,
+  newRound, ended, questionsInOrder, hintsGiven, hintWaiting, checkQuestion, giveUpNeeded, somethingWaits,
 } from './game.js'
 
 const $ = (sel) => document.querySelector(sel)
@@ -65,7 +65,7 @@ async function showLobby() {
   lobby.hidden = false
   window.gugu.setTabTitle('海龟汤').catch((e) => console.warn('setTabTitle', e)) // only the tab's name
   if (!ctx.chat) {
-    put(lobby, h('gugu-empty', { icon: 'users' }, h('strong', { textContent: '海龟汤在聊天里玩' }), h('small', { textContent: '在群里，或在和你的 agent 的私聊里，从右栏打开它' })))
+    await showEveryRound(lobby)
     return
   }
   put(lobby, h('p', { className: 'muted', textContent: '正在读这个群的牌局…' }))
@@ -93,6 +93,31 @@ async function showLobby() {
           h('div', {}, h('strong', { textContent: entry.name.slice(0, -FILE_SUFFIX.length) }), h('span', { textContent: entry.createdBy?.name ? `${entry.createdBy.name} 开的` : '' })),
           h('gugu-time', { datetime: entry.updatedAt ?? entry.createdAt }))))
       : null,
+  )
+}
+
+/** Outside a chat (the App's own page): the rounds of every chat this person is in; one opens in its own chat. */
+async function showEveryRound(lobby) {
+  put(lobby, h('p', { className: 'muted', textContent: '正在找你的牌局…' }))
+  let rounds = []
+  try {
+    rounds = await window.gugu.files.search({ query: FILE_SUFFIX, suffixes: ['.json'], limit: 50 })
+    rounds = rounds.filter((e) => e.name.endsWith(FILE_SUFFIX))
+  } catch (e) {
+    fail('找不到牌局', e)
+  }
+  put(lobby,
+    h('h2', { textContent: '海龟汤' }),
+    h('p', { className: 'muted', textContent: '开一局要在群里或私聊里：从那里的右栏打开海龟汤。下面是你所在聊天里的牌局，点一局就在它的聊天里打开。' }),
+    rounds.length
+      ? h('ul', { className: 'list', ariaLabel: '我的牌局' }, rounds.map((entry) => {
+          const go = () => window.gugu.files.openWith(entry).catch((e) => fail('打不开这一局', e))
+          return h('li', { tabIndex: 0, role: 'button', ariaLabel: entry.name, onclick: go, onkeydown: (ev) => ev.key === 'Enter' && go() },
+            h('gugu-icon', { name: 'message-circle' }),
+            h('div', {}, h('strong', { textContent: entry.name.slice(0, -FILE_SUFFIX.length) }), h('span', { textContent: entry.chatName ?? '' })),
+            h('gugu-time', { datetime: entry.updatedAt ?? entry.createdAt }))
+        }))
+      : h('gugu-empty', { icon: 'message-circle' }, h('strong', { textContent: '还没有牌局' }), h('small', { textContent: '在群里或私聊里，从右栏打开海龟汤开一局' })),
   )
 }
 
@@ -286,8 +311,6 @@ async function tellHost(round, before, text) {
   if (round.status !== 'playing' || before) return
   await window.gugu.send(round.host, text, { refs: [{ file: current.entry }] })
 }
-
-const somethingWaits = (round) => pendingQuestions(round).length > 0 || hintWaiting(round)
 
 async function submit(kind) {
   const f = current

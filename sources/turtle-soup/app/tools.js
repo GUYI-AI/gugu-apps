@@ -1,16 +1,23 @@
-// 海龟汤's tools for the host agent. Every export here is one tool (gugu's tools.js rule).
+// 海龟汤's tools: the host's (host, pending, judge, hint, reveal, create) and the players' (rounds, state, ask, guess,
+// request_hint, give_up). Every export here is one tool (gugu's tools.js rule).
 //
 // The round file in the chat (`<title>.turtle-soup.json`) is what players see. The rest of the puzzle — solution,
 // facts, hints — stays here, in this App's data folder on the host's computer (secrets/<round file id>.json), until
 // the round ends. The host picks verdicts; no tool takes free text from it, so nothing it writes can carry the answer.
+// The players' tools read the round file only, never secrets/: what they answer, any player sees in the App anyway.
 // Who calls is `agent`, stamped by gugu — never an argument.
+//
+// Waking (apps-programs' followers): whoever adds to what waits for the host whispers it, as the page does; an agent
+// player is marked in the round's `agents` (stamped, by its own call), and the host's judge / hint / reveal whisper each
+// agent player what was done to it. People see it all in the App and are never whispered.
 import { readFileSync, writeFileSync, renameSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import {
-  FILE_SUFFIX, ASK_VERDICTS, GUESS_VERDICTS, MAX_HINTS,
-  publicOf, newRound, ended, pendingQuestions, hintsGiven, hintWaiting, giveUpNeeded,
+  FILE_SUFFIX, ASK_VERDICTS, GUESS_VERDICTS, MAX_HINTS, VERDICT_LABEL,
+  publicOf, newRound, ended, questionsInOrder, pendingQuestions, hintsGiven, hintWaiting, giveUpNeeded,
+  checkQuestion, somethingWaits, waitingFrom,
 } from './game.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -56,9 +63,9 @@ function bankPuzzle(id) {
   return bank?.puzzles?.find((p) => p.id === id) ?? null
 }
 
-/** The round file as a live handle, opened as the calling agent (format gugu-file). */
+/** The round file as a live handle, opened as the calling agent: its id (format gugu-file), or an entry listed in a chat it handed. */
 async function openRound(game) {
-  const f = await gugu.files.open({ id: game })
+  const f = await gugu.files.open(typeof game === 'string' ? { id: game } : game)
   if (!f.entry?.name?.endsWith(FILE_SUFFIX)) throw new Error(`${f.entry?.name ?? game} is not a 海龟汤 round (${FILE_SUFFIX})`)
   if (f.data?.version !== 1) throw new Error(`this round is version ${f.data?.version}; this 海龟汤 reads version 1`)
   return f
@@ -101,6 +108,47 @@ function waiting(round) {
     hint_asked: hintWaiting(round),
     give_up: { votes: Object.keys(round.giveUp ?? {}).length, needed: giveUpNeeded(round) },
   }
+}
+
+/** Whisper each one its line, the round's pill under it. What could not be told is said back, never swallowed. */
+async function whisper(f, lines) {
+  const notTold = []
+  for (const [to, text] of lines) {
+    try {
+      await gugu.send(to, text, { refs: [{ file: f.entry }] })
+    } catch (e) {
+      notTold.push(`${to}: ${e.code ?? 'failed'} — ${e.message}`)
+    }
+  }
+  return notTold
+}
+
+const agentPlayers = (round) => Object.keys(round.agents ?? {}).filter((id) => id !== round.host)
+
+/** How a round ended, in the line an agent player is woken with. */
+const endLine = (round) => (round.status === 'revealed' ? '大家放弃了，汤底已揭晓' : '有人还原成功，汤底已揭晓')
+
+/**
+ * What the host did, told to the agent players: each its own verdict, its hint, or the end; and any other verdict to
+ * every agent player, so one that waits for the people to ask (the player skill's pace) wakes when they did.
+ */
+function linesFor(round, { judged = [], hintFor = null } = {}) {
+  const head = `海龟汤「${round.puzzle.title}」：`
+  const said = new Map()
+  const add = (to, line) => said.set(to, [...(said.get(to) ?? []), line])
+  const agents = new Set(agentPlayers(round))
+  for (const q of judged) {
+    if (!agents.has(q.by)) continue
+    const label = q.verdict === 'close' ? `接近（中 ${q.hits}/${round.puzzle.requiredCount} 条）` : VERDICT_LABEL[q.verdict]
+    add(q.by, `你的${q.kind === 'guess' ? '还原' : '问题'}「${q.text}」：${label}`)
+  }
+  for (const id of agents) {
+    const others = judged.filter((q) => q.by !== id).length
+    if (others && !ended(round)) add(id, `别人的 ${others} 个问题判了`)
+  }
+  if (hintFor && agents.has(hintFor.by)) add(hintFor.by, `你要的提示 ${hintFor.level + 1} 出来了`)
+  if (ended(round)) for (const id of agents) add(id, `这局结束了：${endLine(round)}`)
+  return [...said].map(([to, lines]) => [to, `${head}${lines.join('；')}。用 turtle-soup__state 看全局；这条不用回复。`])
 }
 
 const RULES =
@@ -222,7 +270,8 @@ async function judgeOnce({ game, answers }, { agent }) {
     if (solved) Object.assign(f.data, { status: 'solved', solvedBy: solved.id, bottom: secretOf(f.entry.id).solution, endedAt: at })
   })
   await whenSaved(f)
-  return { status: f.data.status, waiting: ended(f.data) ? null : waiting(f.data) }
+  const notTold = await whisper(f, linesFor(f.data, { judged: writes.map((w) => ({ ...w.q, verdict: w.verdict, hits: w.hits })) }))
+  return { status: f.data.status, waiting: ended(f.data) ? null : waiting(f.data), ...(notTold.length ? { players_not_told: notTold } : {}) }
 }
 
 export const hint = {
@@ -237,7 +286,8 @@ export const hint = {
     if (!f.data.hintAsks?.[level]) throw new Error('no one asked for a hint: hints are the players\' to ask for')
     f.data.hints[level] = { text: hints[level], at: Date.now() }
     await whenSaved(f)
-    return `hint ${level + 1} of ${hints.length} given`
+    const notTold = await whisper(f, linesFor(f.data, { hintFor: { by: f.data.hintAsks[level].by, level } }))
+    return `hint ${level + 1} of ${hints.length} given${notTold.length ? `; players not told: ${notTold.join('; ')}` : ''}`
   }),
 }
 
@@ -252,7 +302,8 @@ export const reveal = {
     if (votes < needed) throw new Error(`${votes} of the ${needed} give-up votes needed: keep judging`)
     Object.assign(f.data, { status: 'revealed', bottom: secretOf(f.entry.id).solution, endedAt: Date.now() })
     await whenSaved(f)
-    return 'revealed'
+    const notTold = await whisper(f, linesFor(f.data))
+    return `revealed${notTold.length ? `; players not told: ${notTold.join('; ')}` : ''}`
   }),
 }
 
@@ -294,5 +345,189 @@ export const create = {
     const entry = await gugu.files.create({ chat: args.chat, name: `${puzzle.title}${FILE_SUFFIX}` }, { ...newRound({ puzzle: publicOf(puzzle), host: call.agent, at: Date.now() }), status: 'playing' })
     writeJson(secretFile(entry.id), { id: puzzle.id, solution: String(args.solution).trim(), facts, unknowns: [], character_claims: [], hints: puzzle.hints })
     return { game: entry.id, name: entry.name, rules: RULES }
+  }),
+}
+
+// ── the players' tools ──────────────────────────────────────────────────────────────────────────────────────────
+
+/** A player of this round: anyone but its host, while it is on. */
+function requirePlayer(round, agent) {
+  needAgent(agent)
+  if (round.host === agent) throw new Error('you host this round: the host judges, it does not play — player tools are for the others')
+  if (ended(round)) throw new Error(`this round is over (${round.status}); state shows the solution`)
+}
+
+/** Wake the host — unless something already waited for it (it judges everything waiting before it stops), as the page does. */
+async function tellHost(f, before, text) {
+  if (f.data.status !== 'playing' || before) return {}
+  const notTold = await whisper(f, [[f.data.host, text]])
+  return notTold.length ? { host_not_told: notTold[0] } : {}
+}
+
+/** An agent player's own mark in the round, made by its own call: the host's tools whisper it from then on. */
+function markAgent(f, agent) {
+  // What is assigned into f.data is copied in: write the key through the live object, never into the {} just assigned.
+  if (!f.data.agents) f.data.agents = {}
+  f.data.agents[agent] = true
+}
+
+/** Most of a round an answer carries, in bytes: agents keep about 8 KB of one (apps-programs). */
+const STATE_BYTES = 6000
+
+export const rounds = {
+  description: 'The 海龟汤 (turtle soup) rounds in a chat, newest first: to join one when nobody handed you its pill.',
+  inputSchema: { type: 'object', required: ['chat'], properties: { chat: { type: 'string', format: 'gugu-chat', description: 'The chat.' } } },
+  run: async ({ chat }, { agent }) => {
+    needAgent(agent)
+    const entries = (await gugu.files.list({ chat }))
+      .filter((e) => e.type !== 'folder' && e.name.endsWith(FILE_SUFFIX))
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+      .slice(0, 10)
+    const found = []
+    for (const entry of entries) {
+      try {
+        const f = await openRound(entry)
+        found.push({ game: entry.id, title: f.data.puzzle.title, status: f.data.status, host: f.data.host, you_host: f.data.host === agent, updated_at: entry.updatedAt })
+      } catch (e) {
+        found.push({ game: entry.id, name: entry.name, unreadable: e.message })
+      }
+    }
+    return found.length ? found : 'no 海龟汤 rounds in this chat: a person starts one from the 海龟汤 panel'
+  },
+}
+
+export const state = {
+  description:
+    'A 海龟汤 round as its players see it: the surface (汤面), every question and guess with its verdict, the hints ' +
+    'given, give-up votes, whether you may ask now, and the solution once the round is over. Read it before you ask.',
+  inputSchema: {
+    type: 'object',
+    required: ['game'],
+    properties: {
+      game: ROUND,
+      from: { type: 'integer', minimum: 1, description: 'The first question to list, by its number n (default 1); a long round comes in pages: pass next.' },
+    },
+  },
+  run: async ({ game, from = 1 }, { agent }) => {
+    needAgent(agent)
+    const f = await openRound(game)
+    const round = f.data
+    const p = round.puzzle
+    const all = questionsInOrder(round)
+    const rows = []
+    let bytes = 0
+    for (const [i, q] of all.slice(from - 1).entries()) {
+      const row = {
+        n: from + i, id: q.id, by: q.by, ...(q.by === agent ? { mine: true } : {}), kind: q.kind, text: q.text,
+        verdict: q.verdict ?? 'waiting', ...(q.verdict === 'close' ? { hits: q.hits } : {}),
+      }
+      bytes += Buffer.byteLength(JSON.stringify(row))
+      if (rows.length && bytes > STATE_BYTES) break
+      rows.push(row)
+    }
+    const next = from + rows.length <= all.length ? from + rows.length : null
+    const over = ended(round)
+    const mine = waitingFrom(round, agent)
+    const why = round.host === agent ? 'you host this round' : over ? 'the round is over' : mine ? `your ${mine.kind === 'guess' ? 'guess' : 'question'} ${mine.id} waits for the host's verdict; you are told when it is judged` : null
+    return {
+      title: p.title,
+      surface: p.surface,
+      required_facts: p.requiredCount,
+      status: round.status,
+      host: round.host,
+      questions: { total: all.length, rows, ...(next ? { next } : {}) },
+      hints: Object.keys(round.hints ?? {}).sort((a, b) => a - b).map((k) => round.hints[k].text),
+      hint: { given: hintsGiven(round), of: p.hintCount, asked: hintWaiting(round) },
+      give_up: { votes: Object.keys(round.giveUp ?? {}).length, needed: giveUpNeeded(round), yours: Boolean(round.giveUp?.[agent]) },
+      you: { can_ask: !why, ...(why ? { why } : {}) },
+      ...(over ? { solution: round.bottom, ...(round.status === 'solved' ? { solved_by: round.questions?.[round.solvedBy]?.by ?? null } : {}) } : {}),
+    }
+  },
+}
+
+const PLAYER_TEXT = { type: 'string', minLength: 1 }
+
+function putter(kind, wake) {
+  return async ({ game, text }, { agent }) => {
+    const f = await openRound(game)
+    const round = f.data
+    requirePlayer(round, agent)
+    const line = checkQuestion(kind, text)
+    const mine = waitingFrom(round, agent)
+    if (mine) throw new Error(`your ${mine.kind === 'guess' ? 'guess' : 'question'} "${mine.text}" still waits for the host's verdict — one at a time; you are told when it is judged`)
+    const before = somethingWaits(round)
+    const id = randomUUID()
+    f.transact(() => {
+      markAgent(f, agent)
+      f.data.questions[id] = { by: agent, kind, text: line, at: Date.now() }
+    })
+    await whenSaved(f)
+    return { id, ...(round.status === 'waiting' ? { note: 'the host has not taken the round yet; it sees this when it does' } : {}), ...(await tellHost(f, before, wake)) }
+  }
+}
+
+export const ask = {
+  description:
+    'Ask the host of a 海龟汤 round a yes/no question about the story (up to 120 characters). One at a time: the next ' +
+    'once this one is judged — you are told then.',
+  inputSchema: { type: 'object', required: ['game', 'text'], properties: { game: ROUND, text: { ...PLAYER_TEXT, maxLength: 120 } } },
+  run: (args, call) => oneAtATime(() => putter('ask', '海龟汤有新问题')(args, call)),
+}
+
+export const guess = {
+  description:
+    'Tell the host of a 海龟汤 round the whole story as you think it is (up to 400 characters): solved when it has ' +
+    'every required fact, otherwise close (how many it has) or wrong. Counts as your one question in waiting.',
+  inputSchema: { type: 'object', required: ['game', 'text'], properties: { game: ROUND, text: { ...PLAYER_TEXT, maxLength: 400 } } },
+  run: (args, call) => oneAtATime(() => putter('guess', '海龟汤有人提交了还原')(args, call)),
+}
+
+export const request_hint = {
+  description: 'Ask the host of a 海龟汤 round for its next prepared hint (each round has up to 3). You are told when it is out.',
+  inputSchema: { type: 'object', required: ['game'], properties: { game: ROUND } },
+  run: (args, call) => oneAtATime(async () => {
+    const f = await openRound(args.game)
+    const round = f.data
+    requirePlayer(round, call.agent)
+    const level = hintsGiven(round)
+    if (level >= round.puzzle.hintCount) throw new Error('every hint of this round is out already')
+    if (hintWaiting(round)) throw new Error('a hint is asked for already: wait for the host to give it')
+    const before = somethingWaits(round)
+    f.transact(() => {
+      markAgent(f, call.agent)
+      f.data.hintAsks[level] = { by: call.agent, at: Date.now() }
+    })
+    await whenSaved(f)
+    return { asked: `hint ${level + 1} of ${round.puzzle.hintCount}`, ...(await tellHost(f, before, '海龟汤的玩家要一条提示')) }
+  }),
+}
+
+export const give_up = {
+  description:
+    'Vote to give up a 海龟汤 round and see the solution (undo: take your vote back). The host reveals it once a ' +
+    'majority of the players voted.',
+  inputSchema: { type: 'object', required: ['game'], properties: { game: ROUND, undo: { type: 'boolean' } } },
+  run: (args, call) => oneAtATime(async () => {
+    const f = await openRound(args.game)
+    const round = f.data
+    requirePlayer(round, call.agent)
+    if (args.undo) {
+      if (!round.giveUp?.[call.agent]) throw new Error('you have not voted to give up')
+      delete f.data.giveUp[call.agent]
+      await whenSaved(f)
+      return { votes: Object.keys(f.data.giveUp).length, needed: giveUpNeeded(f.data) }
+    }
+    if (round.giveUp?.[call.agent]) throw new Error('you voted to give up already')
+    f.transact(() => {
+      markAgent(f, call.agent)
+      f.data.giveUp[call.agent] = Date.now()
+    })
+    await whenSaved(f)
+    const votes = Object.keys(f.data.giveUp).length
+    const needed = giveUpNeeded(f.data)
+    const told = votes >= needed && f.data.status === 'playing'
+      ? await whisper(f, [[f.data.host, '海龟汤的玩家投票放弃了，请用 reveal 揭晓汤底']]).then((n) => (n.length ? { host_not_told: n[0] } : {}))
+      : {}
+    return { votes, needed, ...told }
   }),
 }
