@@ -311,8 +311,9 @@ if (desktop) g.onContextChanged((next) => {
   W = wordsFor(ctx?.locale)
   renderWords()
   if (!desktop) {
-    for (const el of document.body.children) if (el.tagName !== 'SCRIPT') el.hidden = true
-    document.body.prepend(h('p', { id: 'desktop-only', class: 'muted' }, W.desktopOnly))
+    // style, not `hidden`: the page's own rules give its parts a display, and that wins over the attribute.
+    for (const el of document.body.children) if (el.tagName !== 'SCRIPT') el.style.display = 'none'
+    document.body.prepend(h('gugu-empty', { id: 'desktop-only' }, h('strong', {}, W.desktopOnly)))
     return
   }
   mode = ctx?.session?.agentId ? 'local' : 'all'
