@@ -1,36 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <rect width="256" height="256" fill="#F7C6A3"/>
-  <g stroke="#2A2833" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M56 176 C50 96 84 40 128 40 C172 40 206 96 200 176 Z" fill="#FFFFFF"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B8DEF"/>
+      <stop offset="1" stop-color="#3B5BDB"/>
+    </linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#1B2A6B" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <!-- back page -->
+  <rect x="78" y="44" width="122" height="156" rx="12" fill="#FFFFFF" opacity="0.35" transform="rotate(8 139 122)"/>
+  <!-- front page -->
+  <g filter="url(#sh)">
+    <rect x="56" y="52" width="124" height="160" rx="12" fill="#FFFFFF"/>
   </g>
-  <ellipse cx="80" cy="124" rx="12" ry="7" fill="#F8A8B4"/>
-  <ellipse cx="176" cy="124" rx="12" ry="7" fill="#F8A8B4"/>
-  <ellipse cx="100" cy="102" rx="7" ry="9" fill="#2A2833"/>
-  <ellipse cx="156" cy="102" rx="7" ry="9" fill="#2A2833"/>
-  <circle cx="102" cy="98" r="2.6" fill="#FFFFFF"/>
-  <circle cx="158" cy="98" r="2.6" fill="#FFFFFF"/>
-  <!-- glasses -->
-  <g fill="none" stroke="#2A2833" stroke-width="5">
-    <circle cx="100" cy="102" r="19"/>
-    <circle cx="156" cy="102" r="19"/>
-    <path d="M119 100 C124 95 132 95 137 100"/>
+  <rect x="74" y="74" width="58" height="9" rx="4.5" fill="#3B5BDB"/>
+  <g fill="#D3DAEA">
+    <rect x="74" y="98" width="88" height="7" rx="3.5"/>
+    <rect x="74" y="140" width="88" height="7" rx="3.5"/>
+    <rect x="74" y="161" width="64" height="7" rx="3.5"/>
+    <rect x="74" y="182" width="78" height="7" rx="3.5"/>
   </g>
-  <path d="M117 116 L139 116 L128 131 Z" fill="#F5B62E" stroke="#2A2833" stroke-width="5" stroke-linejoin="round"/>
-  <!-- paper -->
-  <g stroke="#2A2833" stroke-width="7" stroke-linejoin="round">
-    <path d="M44 150 L184 150 L212 176 L212 262 L44 262 Z" fill="#FFFDF6"/>
-    <path d="M184 150 L184 176 L212 176" fill="#EDE6D6"/>
+  <rect x="70" y="114" width="96" height="17" rx="5" fill="#FFD84D"/>
+  <rect x="74" y="119" width="84" height="7" rx="3.5" fill="#8A6D00" opacity="0.55"/>
+  <!-- discussion bubble -->
+  <g filter="url(#sh)">
+    <path d="M150 150 h56 a14 14 0 0 1 14 14 v26 a14 14 0 0 1 -14 14 h-30 l-14 14 v-14 h-12 a14 14 0 0 1 -14 -14 v-26 a14 14 0 0 1 14 -14 z" fill="#FFD84D"/>
   </g>
-  <rect x="62" y="196" width="128" height="16" rx="8" fill="#FFD84D"/>
-  <g stroke="#B9B3A8" stroke-width="7" stroke-linecap="round">
-    <path d="M68 176 L160 176"/>
-    <path d="M68 204 L184 204"/>
-    <path d="M68 230 L176 230"/>
-  </g>
-  <path d="M68 204 L184 204" stroke="#6B6457" stroke-width="7" stroke-linecap="round"/>
-  <!-- wings holding the paper -->
-  <g stroke="#2A2833" stroke-width="7" stroke-linejoin="round" fill="#FFFFFF">
-    <path d="M30 156 C26 142 38 134 48 140 C56 145 58 158 54 170 C46 176 34 172 30 156 Z"/>
-    <path d="M226 160 C230 146 218 138 208 144 C200 149 198 162 202 174 C210 180 222 176 226 160 Z"/>
+  <g fill="#3B3200">
+    <circle cx="163" cy="177" r="5"/>
+    <circle cx="178" cy="177" r="5"/>
+    <circle cx="193" cy="177" r="5"/>
   </g>
 </svg>
