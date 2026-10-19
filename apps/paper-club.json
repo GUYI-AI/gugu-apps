@@ -1,0 +1,16 @@
+{
+  "id": "paper-club",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "f9bb538ca43b09e8a354d9a24b13e2d43a51c492",
+      "sha256": "6b34709bc970c768b3f4b3ed88977db43e0972f9af4459ec35fcd55e579a804e",
+      "bytes": 2244241,
+      "yanked": null
+    }
+  ]
+}
