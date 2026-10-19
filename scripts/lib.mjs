@@ -270,6 +270,8 @@ export function inspectAppDir(dir, id, version, mediaBase) {
       fail(`${where} 要是 1–${SUBTITLE_MAX_CHARS} 字的一句话(市场上名字下面那一行,放不下会被截断):${JSON.stringify(subtitle)}`);
     }
   }
+  // 与咕咕客户端 manifest.ts 同一条:写了 subtitle 就要 apiVersion 7,只认得 6 的客户端(共用 0.2.57 的旧 Beta)才会拿到上一版。
+  if (subtitles.some(([, subtitle]) => subtitle !== undefined) && manifest.apiVersion < 7) fail('写了 subtitle 就要 apiVersion 7');
   if (manifest.entry) bundleFile(dir, manifest.entry);
   const tabs = manifest.contributes?.tabs ?? [];
   for (const tab of tabs) {

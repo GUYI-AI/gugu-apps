@@ -162,15 +162,18 @@ test('verify:description 的第一句在 <gugu_apps> 里会被截成半句就红
   writeIndex(app);
 });
 
-test('verify:subtitle(含 localized 里的)超过 30 字就红,说出是哪一处;30 字整绿', async () => {
+test('verify:subtitle(含 localized 里的)超过 30 字就红,说出是哪一处;没写 apiVersion 7 也红;30 字整、apiVersion 7 绿', async () => {
   const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
   const base = git(index, 'rev-parse', 'HEAD');
-  const long = await recordFor(commitProbe('0.5.0', { subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(31) } } }), '0.5.0');
+  const old = await recordFor(commitProbe('0.4.9', { subtitle: '一句话' }), '0.4.9');
+  writeIndex({ ...app, versions: [...app.versions, old] });
+  assert.match(verify(base).out, /写了 subtitle 就要 apiVersion 7/);
+  const long = await recordFor(commitProbe('0.5.0', { apiVersion: 7, subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(31) } } }), '0.5.0');
   writeIndex({ ...app, versions: [...app.versions, long] });
   const red = verify(base);
   assert.equal(red.ok, false);
   assert.match(red.out, /localized\.en\.subtitle 要是 1–30 字的一句话/);
-  const fits = await recordFor(commitProbe('0.5.1', { subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(30) } } }), '0.5.1');
+  const fits = await recordFor(commitProbe('0.5.1', { apiVersion: 7, subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(30) } } }), '0.5.1');
   writeIndex({ ...app, versions: [...app.versions, fits] });
   assert.equal(verify(base).ok, true, '对照:30 字整');
   writeIndex(app);
