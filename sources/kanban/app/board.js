@@ -18,6 +18,7 @@ const WORDS = {
     filter: '筛选', chooseTask: '选择任务', noTasks: '本机暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
     show: '查看', openIn: '用 App 打开', peekLater: '此类文件暂不支持在卡片内预览', browser: '打开', message: '查看消息',
     comment: '添加评论', send: '发表', byAgent: (n) => `⚡ ${n}`, byPerson: '我',
+    desktopOnly: '看板仅支持在电脑上使用。',
     noStatus: (e) => `无法读取本机任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`,
     handText: (c) => `请处理看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n开始时用看板的 claim 工具认领，完成后用 move 移到「待验收」，并用 link 关联产出。`,
   },
@@ -34,6 +35,7 @@ const WORDS = {
     filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks on this device', noFiles: 'No files found. Enter a file name to search all chats.',
     show: 'View', openIn: 'Open in App', peekLater: 'Preview in the card is not available for this file type', browser: 'Open', message: 'View message',
     comment: 'Add a comment', send: 'Post', byAgent: (n) => `⚡ ${n}`, byPerson: 'Me',
+    desktopOnly: 'The board is only available on a computer.',
     noStatus: (e) => `Unable to read task status on this device: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`,
     handText: (c) => `Please handle this card from the board (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\nClaim it with the board's claim tool when you start; when finished, move it to Review and link the output with link.`,
   },
@@ -44,6 +46,10 @@ const $ = (id) => document.getElementById(id)
 // is now — its session or chat — is read again on every change, never kept from the first load.
 let ctx = await g.getContext()
 let t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+// The board is read and written only through the background page and the App's program, and a phone has neither (its
+// `gugu` has no onBackgroundMessage — the host's way of saying so). There the page says it is a computer's, and asks the
+// background for nothing.
+const desktop = typeof g.onBackgroundMessage === 'function'
 
 let board = null
 let agents = []
@@ -91,7 +97,7 @@ function change(op) {
 // A change refused is already said in #alert; the click that asked for it has nothing more to do.
 const quietly = (promise) => promise.catch(() => {})
 
-g.onBackgroundMessage((message) => {
+if (desktop) g.onBackgroundMessage((message) => {
   if (message?.type === 'refused') {
     waiting.get(message.id)?.reject(new Error(message.message))
     waiting.delete(message.id)
@@ -235,7 +241,7 @@ $('new-card').addEventListener('submit', async (event) => {
   await quietly(change({ type: 'card.create', title, links, ...(column ? { column } : {}) }).then(() => { $('new-title').value = '' }))
 })
 
-g.onCommand((id) => { if (id === 'new') $('new-title').focus() })
+g.onCommand((id) => { if (id === 'new' && desktop) $('new-title').focus() })
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
@@ -583,8 +589,13 @@ g.onContextChanged(async () => {
   placed()
   const now = ctx.layout?.visible ?? visible
   // Back on screen: read the board again (an agent's tool call may have changed it meanwhile).
-  if (now && !visible) g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+  if (desktop && now && !visible) g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
   visible = now
 })
 
-g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
+if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
+else {
+  // style, not `hidden`: the page's own rules give #bar a display, and that wins over the attribute.
+  for (const el of $('main').children) el.style.display = 'none'
+  $('main').append(h('gugu-empty', { id: 'desktop-only' }, h('strong', { text: t.desktopOnly })))
+}
