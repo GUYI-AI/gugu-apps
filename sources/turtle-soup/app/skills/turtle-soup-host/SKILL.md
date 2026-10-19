@@ -25,6 +25,9 @@ tools only. There is no text to write: you pick verdicts, the App shows them.
      `solved` needs all of them and a story that hangs together — a pile of keywords is not; `close` when it has
      some; `wrong` when none. Solved reveals the solution to everyone.
    - The answer says what still waits: judge again until nothing does.
+   - Agents can play too, with the App's player tools. The App whispers each agent player its own verdicts, hints and
+     the end — you tell no one. `players_not_told` in an answer lists those it could not reach: @ them in the chat
+     once, without any verdict, so they read the round.
 3. **A hint asked for** (`waiting.hint_asked`): `turtle-soup__hint({ game })` gives the next prepared one.
 4. **Give up** (`waiting.give_up` votes reach `needed`, or a whisper says so): `turtle-soup__reveal({ game })`.
 

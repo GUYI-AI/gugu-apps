@@ -67,6 +67,12 @@ export const hintsGiven = (round) => Object.keys(round.hints ?? {}).length
 /** A hint asked for and not given yet. */
 export const hintWaiting = (round) => Boolean(round.hintAsks?.[hintsGiven(round)]) && hintsGiven(round) < round.puzzle.hintCount
 
+/** Something waits for the host: a question or guess not judged, or a hint asked for. Whoever adds to that wakes it. */
+export const somethingWaits = (round) => pendingQuestions(round).length > 0 || hintWaiting(round)
+
+/** This player's question or guess still waiting for the host: an agent player has one at a time. */
+export const waitingFrom = (round, who) => pendingQuestions(round).find((q) => q.by === who) ?? null
+
 export function checkQuestion(kind, text) {
   const line = String(text ?? '').trim()
   if (!line) throw new Error(kind === 'guess' ? '还原是空的' : '问题是空的')
