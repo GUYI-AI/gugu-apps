@@ -13,14 +13,14 @@
     }
   },
   "author": "咕咕",
-  "version": "0.2.0",
-  "apiVersion": 3,
+  "version": "0.2.1",
+  "apiVersion": 6,
   "engines": { "gugu": ">=0.2.57" },
   "entry": "main.html",
   "icon": "icon.png",
   "categories": ["games"],
   "permissions": {
-    "capabilities": ["files:read", "files:write", "chat:relay", "agents:tools"]
+    "capabilities": ["files:read", "files:write", "chat:relay", "chat:read", "agents:tools"]
   },
   "contributes": {
     "tabs": [
