@@ -241,7 +241,7 @@ $('new-card').addEventListener('submit', async (event) => {
   await quietly(change({ type: 'card.create', title, links, ...(column ? { column } : {}) }).then(() => { $('new-title').value = '' }))
 })
 
-g.onCommand((id) => { if (id === 'new') $('new-title').focus() })
+g.onCommand((id) => { if (id === 'new' && desktop) $('new-title').focus() })
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
