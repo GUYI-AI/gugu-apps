@@ -1,7 +1,7 @@
 {
   "id": "computer-use",
   "name": "Computer Use",
-  "description": "Let agents operate this computer's apps, and see what they do: each task's Computer tab shows the window its agent works in, its cursor and its steps.",
+  "description": "Lets agents operate this computer's apps, and shows what they do. Each task's Computer tab shows the window its agent works in, its cursor and its steps.",
   "version": "0.2.0",
   "icon": "icon.png",
   "apiVersion": 5,
