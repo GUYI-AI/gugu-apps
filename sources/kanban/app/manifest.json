@@ -1,35 +1,64 @@
 {
   "id": "kanban",
   "name": "看板",
-  "description": "你这台电脑上的一块任务看板：卡片挂上本机任务，任务在跑、在等你批准，卡上直接看得到；任务里的文件和群文件在卡片里就地看、就地改。agent 也能用工具领卡、推进。",
+  "description": "本机任务看板：卡片可关联本机任务并显示其运行状态；任务文件与群文件可在卡片内查看和编辑；agent 可通过工具认领和推进卡片。",
   "localized": {
     "zh": {
       "name": "看板",
-      "description": "你这台电脑上的一块任务看板：卡片挂上本机任务，任务在跑、在等你批准，卡上直接看得到；任务里的文件和群文件在卡片里就地看、就地改。agent 也能用工具领卡、推进。"
+      "description": "本机任务看板：卡片可关联本机任务并显示其运行状态；任务文件与群文件可在卡片内查看和编辑；agent 可通过工具认领和推进卡片。"
     },
     "en": {
       "name": "Board",
-      "description": "A task board on this computer: link cards to your tasks and see on the card whether each is running or waiting for your approval; read and edit tasks' files and chat files right in the card. Agents take and move cards with its tools."
+      "description": "A task board on this device: link cards to local tasks and see their status; view and edit task files and chat files in the card; agents can claim and move cards with tools."
     }
   },
   "author": "咕咕",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "apiVersion": 6,
-  "engines": { "gugu": ">=0.2.57" },
+  "engines": {
+    "gugu": ">=0.2.57"
+  },
   "entry": "board.html",
   "icon": "icon.png",
-  "categories": ["productivity"],
-  "background": { "entry": "background.html" },
+  "categories": [
+    "productivity"
+  ],
+  "background": {
+    "entry": "background.html"
+  },
   "permissions": {
-    "capabilities": ["files:read", "files:write", "agents:read:all", "agents:control", "agents:tools"]
+    "capabilities": [
+      "files:read",
+      "files:write",
+      "agents:read:all",
+      "agents:control",
+      "agents:tools"
+    ]
   },
   "contributes": {
     "tabs": [
-      { "name": "board", "title": "看板", "entry": "board.html", "toolbar": [{ "id": "new", "title": "新卡片" }] }
+      {
+        "name": "board",
+        "title": "看板",
+        "entry": "board.html",
+        "toolbar": [
+          {
+            "id": "new",
+            "title": "新卡片"
+          }
+        ]
+      }
     ],
-    "mcpServers": [{ "tools": "tools.js" }],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
     "skills": "skills"
   },
-  "examples": ["把这件事记到我的看板上", "看板上哪些卡在等我？"],
+  "examples": [
+    "将这件事添加到我的看板",
+    "看板上有哪些卡片待我处理？"
+  ],
   "license": "MIT"
 }
