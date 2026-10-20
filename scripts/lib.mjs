@@ -27,6 +27,8 @@ export const INDEX_REPO = 'shuxueshuxue/gugu-apps';
 // agent 读到的 <gugu_apps> 里,一个 App 一行「- 名字 (id): description 的第一句」,超过这么多字就被截掉、接一个「…」——
 // agent 只看到半句(10-13 实测:转录里都是「(id, n…」)。description 是写给 agent 的;写给人的在 localized 里。
 export const GUGU_APPS_LINE_MAX_CHARS = 120;
+// 名字下面那一句(manifest 的 subtitle,可写在 localized 里):与咕咕客户端 manifest.ts 同值,一行写得下。
+export const SUBTITLE_MAX_CHARS = 30;
 /** 第一句:拉丁文到「.」后面跟空白或结尾为止(「v1.2」不算),中文到「。」。 */
 export const firstSentence = (description) => /^[\s\S]*?(?:\.(?=\s|$)|。)/.exec(description)?.[0] ?? description;
 /** 这一版在 agent 的 <gugu_apps> 里那一行(没截之前)。 */
@@ -262,6 +264,14 @@ export function inspectAppDir(dir, id, version, mediaBase) {
         `把第一句写短(它说给 agent 听这个 App 做什么;写给人的放 localized):${line}`
     );
   }
+  const subtitles = [['subtitle', manifest.subtitle], ...Object.entries(manifest.localized ?? {}).map(([tag, text]) => [`localized.${tag}.subtitle`, text?.subtitle])];
+  for (const [where, subtitle] of subtitles) {
+    if (subtitle !== undefined && (typeof subtitle !== 'string' || subtitle.trim() === '' || [...subtitle].length > SUBTITLE_MAX_CHARS)) {
+      fail(`${where} 要是 1–${SUBTITLE_MAX_CHARS} 字的一句话(市场上名字下面那一行,放不下会被截断):${JSON.stringify(subtitle)}`);
+    }
+  }
+  // 与咕咕客户端 manifest.ts 同一条:写了 subtitle 就要 apiVersion 8,只认得 7 的客户端(0.2.57-beta.113.1 / 115.1)才会拿到上一版。
+  if (subtitles.some(([, subtitle]) => subtitle !== undefined) && manifest.apiVersion < 8) fail('写了 subtitle 就要 apiVersion 8');
   if (manifest.entry) bundleFile(dir, manifest.entry);
   const tabs = manifest.contributes?.tabs ?? [];
   for (const tab of tabs) {

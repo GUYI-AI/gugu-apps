@@ -2,19 +2,22 @@
   "id": "kanban",
   "name": "看板",
   "description": "本机任务看板：卡片可关联本机任务并显示其运行状态；任务文件与群文件可在卡片内查看和编辑；agent 可通过工具认领和推进卡片。",
+  "subtitle": "本机任务看板",
   "localized": {
     "zh": {
       "name": "看板",
-      "description": "本机任务看板：卡片可关联本机任务并显示其运行状态；任务文件与群文件可在卡片内查看和编辑；agent 可通过工具认领和推进卡片。"
+      "description": "本机任务看板：卡片可关联本机任务并显示其运行状态；任务文件与群文件可在卡片内查看和编辑；agent 可通过工具认领和推进卡片。",
+      "subtitle": "本机任务看板"
     },
     "en": {
       "name": "Board",
-      "description": "A task board on this device: link cards to local tasks and see their status; view and edit task files and chat files in the card; agents can claim and move cards with tools."
+      "description": "A task board on this device: link cards to local tasks and see their status; view and edit task files and chat files in the card; agents can claim and move cards with tools.",
+      "subtitle": "A task board for this computer"
     }
   },
   "author": "咕咕",
-  "version": "0.2.0",
-  "apiVersion": 6,
+  "version": "0.2.1",
+  "apiVersion": 8,
   "engines": {
     "gugu": ">=0.2.57"
   },

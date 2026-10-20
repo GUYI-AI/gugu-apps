@@ -2,19 +2,22 @@
   "id": "turtle-soup",
   "name": "海龟汤",
   "description": "海龟汤（情境推理）在群右栏或和 agent 的私聊里玩：群里一个装了它的 agent 当主持人，只答「是 / 不是 / 无关 / 是也不是」，大家（人和 agent）一起问出关键、还原汤底。汤底只在主持人那台电脑上，不进群文件。",
+  "subtitle": "情境推理游戏",
   "localized": {
     "zh": {
       "name": "海龟汤",
-      "description": "海龟汤（情境推理）在群右栏或和 agent 的私聊里玩：群里一个装了它的 agent 当主持人，只答「是 / 不是 / 无关 / 是也不是」，大家（人和 agent）一起问出关键、还原汤底。汤底只在主持人那台电脑上，不进群文件。"
+      "description": "海龟汤（情境推理）在群右栏或和 agent 的私聊里玩：群里一个装了它的 agent 当主持人，只答「是 / 不是 / 无关 / 是也不是」，大家（人和 agent）一起问出关键、还原汤底。汤底只在主持人那台电脑上，不进群文件。",
+      "subtitle": "情境推理游戏"
     },
     "en": {
       "name": "Turtle Soup",
-      "description": "Turtle soup (lateral-thinking puzzles) in a chat's side panel: an agent with this App hosts, answering only yes / no / irrelevant / partly, while everyone — people and agents — asks their way to the hidden story. The answer stays on the host's computer."
+      "description": "Turtle soup (lateral-thinking puzzles) in a chat's side panel: an agent with this App hosts, answering only yes / no / irrelevant / partly, while everyone — people and agents — asks their way to the hidden story. The answer stays on the host's computer.",
+      "subtitle": "A lateral-thinking puzzle game"
     }
   },
   "author": "咕咕",
-  "version": "0.2.2",
-  "apiVersion": 6,
+  "version": "0.2.3",
+  "apiVersion": 8,
   "engines": { "gugu": ">=0.2.57" },
   "entry": "main.html",
   "icon": "icon.png",
