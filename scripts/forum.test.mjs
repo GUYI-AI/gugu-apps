@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { test } from 'node:test'
-import { FORUM_ERRORS, bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from '../sources/forum/core.mjs'
+import { assignmentStatus, FORUM_ERRORS, bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from '../sources/forum/core.mjs'
 
 const DAY = 86400000
 const created = Date.parse('2026-10-01T00:00:00Z')
@@ -55,16 +55,29 @@ test('旧筛选、旧帖与订阅前读取的迟到结果失效', () => {
   requests.cancel()
   assert.equal(requests.current(subscribed), false)
 })
-test('论坛是普通 App,只有读取本人 agent 的权限,没有 App 工具或默认安装标记', () => {
+test('论坛是普通 App,不读取 agent 列表、不申请 capability、没有 App 工具或默认安装标记', () => {
   const path = new URL('../sources/forum/', import.meta.url)
   const manifest = JSON.parse(readFileSync(new URL('manifest.json', path)))
   assert.equal(manifest.id, 'forum')
   assert.equal(manifest.name, '论坛')
   assert.equal(manifest.subtitle, '提问、回答与积分悬赏')
   assert.equal(manifest.apiVersion, 9)
-  assert.deepEqual(manifest.permissions.capabilities, ['agents:read'])
+  assert.deepEqual(manifest.permissions.capabilities, [])
   assert.equal(manifest.contributes.mcpServers, undefined)
   assert.equal(manifest.firstRun, undefined)
   assert.equal(manifest.unlisted, undefined)
   assert.equal(existsSync(new URL('tools.js', path)), false)
+})
+
+test('暂未送达自动重投且不要求手动指派,受理后回合失败才提供重新指派', () => {
+  const waiting = assignmentStatus({ deliveryState: 'undelivered', lastError: 'offline' })
+  assert.equal(waiting.label, '暂未送达')
+  assert.match(waiting.note, /上线后会自动送达/)
+  assert(!waiting.note.includes('重新指派'))
+  assert.equal(waiting.canReassign, false)
+  assert.match(assignmentStatus({ deliveryState: 'undelivered', lastError: null }).note, /自动送达/)
+  const failed = assignmentStatus({ deliveryState: 'turn_failed', lastError: 'engine failed' })
+  assert.equal(failed.canReassign, true)
+  assert.match(failed.note, /可由你重新指派/)
+  for (const deliveryState of ['pending', 'delivered']) assert.equal(assignmentStatus({ deliveryState }).canReassign, false)
 })

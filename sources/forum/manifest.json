@@ -27,9 +27,7 @@
     "social"
   ],
   "permissions": {
-    "capabilities": [
-      "agents:read"
-    ]
+    "capabilities": []
   },
   "contributes": {
     "tabs": [

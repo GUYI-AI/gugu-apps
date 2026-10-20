@@ -1,15 +1,14 @@
-import { bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from './core.mjs'
+import { assignmentStatus, bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from './core.mjs'
 
 const g = window.gugu
 const $ = (id) => document.getElementById(id)
 const PAGE = 30
 const state = {
   me: null, posts: [], detail: null, postId: null, mode: 'feed', limit: PAGE, done: false,
-  agents: [], agentError: false, selected: new Map(), drafts: new Map(), busy: false,
+  selected: new Map(), drafts: new Map(), busy: false,
 }
 const feedRequest = latestRequest()
 const postRequest = latestRequest()
-const agentRequest = latestRequest()
 let stopFeed = () => {}
 let stopPost = () => {}
 let searchTimer
@@ -297,48 +296,27 @@ function renderAssignments() {
   const postId = state.postId
   const closed = isClosed()
   const assignments = state.detail.assignments || []
-  const labels = { pending: '待投递', delivered: '已投递', undelivered: '未受理', turn_failed: '回合失败' }
   const section = $('assignments')
   section.replaceChildren(h('h3', { text: '我的 agent' }))
   section.append(h('p', { class: 'muted', text: '指派后会投递此帖及后续相关交代。已投递表示任务已受理，不表示已完成回复。' }))
-  const select = h('select', { 'aria-label': '选择我的 agent', disabled: state.agents.length === 0 },
-    h('option', { value: '', text: state.agents.length ? '选择 agent' : '暂无可指派的 agent' }),
-    ...state.agents.map((agent) => h('option', { value: agent.agentId, text: agent.title || agent.name || agent.agentId })),
-  )
-  const assign = writeButton('指派 agent', () => {
-    if (!select.value) return
-    const agentId = select.value
-    void runWrite(() => g.forum.assign(postId, agentId), () => loadPost(postId))
-  }, closed || !state.agents.length || !select.value)
-  select.addEventListener('change', () => {
-    assign.dataset.ruleDisabled = String(!select.value || closed)
-    assign.disabled = state.busy || !select.value || closed
-  })
-  section.append(h('div', { class: 'row' }, select, assign, button('刷新 agent 列表', () => void loadAgents())))
-  if (state.agentError) section.append(h('p', { class: 'muted', text: 'agent 列表加载失败，请重试。' }))
+  section.append(writeButton('指派 agent', () => assignAgent(postId), closed))
   section.append(h('ul', {}, ...assignments.map((assignment) => h('li', {},
     h('div', { class: 'row' }, h('strong', { text: assignment.agentName || 'agent' }),
-      h('span', { class: 'badge', text: labels[assignment.deliveryState] || '状态未知' }),
+      h('span', { class: 'badge', text: assignmentStatus(assignment).label }),
       time(assignment.updatedAt),
-      ['undelivered', 'turn_failed'].includes(assignment.deliveryState) ? writeButton('重新指派', () => {
-        void runWrite(() => g.forum.assign(postId, assignment.agentId), () => loadPost(postId))
+      assignmentStatus(assignment).canReassign ? writeButton('重新指派', () => {
+        assignAgent(postId, assignment.agentId)
       }, closed) : null),
-    assignment.lastError ? h('p', { class: 'muted', text: forumError({ message: assignment.lastError }, assignment.deliveryState === 'turn_failed'
-      ? '任务受理后本轮执行失败，请检查任务状态；可由你重新指派。' : '任务尚未受理，请检查任务状态后重新指派。') }) : null,
+    assignmentStatus(assignment).note ? h('p', { class: 'muted', text: assignmentStatus(assignment).note }) : null,
   ))))
 }
-async function loadAgents() {
-  const ticket = agentRequest.start()
-  try {
-    const agents = await g.listAgents()
-    if (!agentRequest.current(ticket) || disposed) return
-    state.agents = agents
-    state.agentError = false
-  } catch {
-    if (!agentRequest.current(ticket) || disposed) return
-    state.agentError = true
-  }
-  if (state.mode === 'post') renderAssignments()
+function assignAgent(postId, agentId) {
+  void runWrite(
+    () => agentId ? g.forum.assign(postId, agentId) : g.forum.assign(postId),
+    (result) => {
+      if (result?.confirming) say('请在咕咕中选择要指派的 agent，指派完成后会自动更新。')
+    },
+  )
 }
 function renderPost() {
   const { post, me, bounty, replies } = state.detail
@@ -415,11 +393,10 @@ function route() {
     $('reply-form').hidden = true
     $('reply-body').value = currentDraft().text
     stopPost = g.forum.onChanged(postId, (change) => {
-      if (change.kind === 'settled') say('')
+      if (change.kind === 'settled' || change.kind === 'assigned') say('')
       void loadPost(postId)
     })
     void loadPost(postId)
-    void loadAgents()
   } else if (state.mode === 'feed') void loadFeed()
   else $('draft-title').focus()
 }
@@ -428,7 +405,7 @@ $('compose').addEventListener('click', () => go('new'))
 $('draft-back').addEventListener('click', () => go(''))
 $('post-back').addEventListener('click', () => go(''))
 $('refresh-feed').addEventListener('click', () => { clearError(); void loadFeed() })
-$('refresh-post').addEventListener('click', () => { clearError(); void loadPost(); void loadAgents() })
+$('refresh-post').addEventListener('click', () => { clearError(); void loadPost() })
 $('filters').addEventListener('submit', (event) => { event.preventDefault(); state.limit = PAGE; void loadFeed() })
 $('query').addEventListener('input', () => {
   clearTimeout(searchTimer)
@@ -497,7 +474,6 @@ function dispose() {
   stopFeed()
   feedRequest.cancel()
   postRequest.cancel()
-  agentRequest.cancel()
 }
 window.addEventListener('pagehide', dispose)
 try {

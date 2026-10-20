@@ -73,3 +73,14 @@ export function latestRequest() {
   let serial = 0
   return { start: () => ++serial, current: (id) => id === serial, cancel: () => { serial += 1 } }
 }
+
+/** Unaccepted deliveries retry automatically; only a failed accepted turn offers manual reassignment. */
+export function assignmentStatus({ deliveryState, lastError }) {
+  const labels = { pending: '待投递', delivered: '已投递', undelivered: '暂未送达', turn_failed: '回合失败' }
+  const note = deliveryState === 'undelivered'
+    ? '暂未送达：运行此 agent 的咕咕未在线，上线后会自动送达。'
+    : deliveryState === 'turn_failed'
+      ? forumError({ message: lastError }, '任务受理后本轮执行失败，请检查任务状态；可由你重新指派。')
+      : ''
+  return { label: labels[deliveryState] || '状态未知', note, canReassign: deliveryState === 'turn_failed' }
+}
