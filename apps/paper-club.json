@@ -1,6 +1,7 @@
 {
   "id": "paper-club",
   "unlisted": false,
+  "featured": true,
   "deprecated": null,
   "versions": [
     {

@@ -1,6 +1,7 @@
 {
   "id": "spexcode",
   "unlisted": false,
+  "featured": true,
   "deprecated": null,
   "versions": [
     {
