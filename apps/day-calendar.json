@@ -11,6 +11,15 @@
       "sha256": "3dbad18790ad79b4e9e729fae8d4844eb5378f819b7171d800d3f44156ef73bd",
       "bytes": 21128,
       "yanked": null
+    },
+    {
+      "version": "0.4.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "da9b3caa91524e887da3c56030d7c169e2c06d605eedd05f699f6c252db0c5ef",
+      "bytes": 355384,
+      "yanked": null
     }
   ]
 }
