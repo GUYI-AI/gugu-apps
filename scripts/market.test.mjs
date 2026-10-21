@@ -67,7 +67,9 @@ function verify(base) {
 class FakeOss {
   objects = new Map();
   puts = [];
+  requests = [];
   async put(key, bytes, { headers }) {
+    this.requests.push(['PUT', key]);
     if (headers['x-oss-forbid-overwrite'] === 'true' && this.objects.has(key)) {
       throw Object.assign(new Error('exists'), { code: 'FileAlreadyExists', status: 409 });
     }
@@ -75,6 +77,8 @@ class FakeOss {
     this.objects.set(key, Buffer.from(bytes));
   }
   async head(key) {
+    this.requests.push(['HEAD', key]);
+    if (!this.objects.has(key)) throw Object.assign(new Error('no'), { code: 'NoSuchKey', status: 404 });
     return { res: { headers: { etag: `"${createHash('md5').update(this.objects.get(key)).digest('hex').toUpperCase()}"` } } };
   }
   async get(key) {
@@ -207,6 +211,65 @@ test('putObject:同名同字节算写过;同名不同字节报红,❌ 覆盖;只
   await putObject(oss, INDEX_KEY, Buffer.from('{"apps":[]}'), 'application/json');
   await putObject(oss, INDEX_KEY, Buffer.from('{"apps":[1]}'), 'application/json');
   assert.equal(oss.objects.get(INDEX_KEY).toString(), '{"apps":[1]}');
+});
+
+test('putObject:已存在的共享图片先 HEAD 核 ETag,同字节跳过、不同字节拒绝,都不发 PUT', async () => {
+  const oss = new FakeOss();
+  const key = 'market/media/office/shared.jpg';
+  oss.objects.set(key, Buffer.from('shared image'));
+  assert.equal(await putObject(oss, key, Buffer.from('shared image'), 'image/jpeg'), 'same');
+  await assert.rejects(putObject(oss, key, Buffer.from('changed image'), 'image/jpeg'), /字节不同/);
+  assert.deepEqual(oss.requests, [['HEAD', key], ['HEAD', key]]);
+  assert.equal(oss.objects.get(key).toString(), 'shared image');
+});
+
+test('putObject:HEAD 404 才 PUT;index.json 直接 PUT;dry-run 不访问 OSS', async () => {
+  const oss = new FakeOss();
+  const key = 'market/media/office/new.jpg';
+  // HEAD 的 404 响应没有错误正文,不一定带 NoSuchKey。
+  oss.head = async (name) => {
+    oss.requests.push(['HEAD', name]);
+    throw Object.assign(new Error('missing'), { status: 404 });
+  };
+  assert.equal(await putObject(oss, key, Buffer.from('new image'), 'image/jpeg'), 'written');
+  assert.equal(await putObject(oss, INDEX_KEY, Buffer.from('{}'), 'application/json'), 'written');
+  assert.equal(await putObject(oss, 'market/dry-run', Buffer.from('x'), 'text/plain', true), 'written');
+  assert.deepEqual(oss.requests, [['HEAD', key], ['PUT', key], ['PUT', INDEX_KEY]]);
+});
+
+test('putObject:HEAD 后才被别人写入时,PUT 仍禁止覆盖,再核 ETag 判断同字节或冲突', async () => {
+  for (const racedBytes of ['same', 'different']) {
+    const oss = new FakeOss();
+    const key = 'market/media/office/race.jpg';
+    const head = oss.head.bind(oss);
+    oss.head = async (name) => {
+      try {
+        return await head(name);
+      } catch (error) {
+        oss.objects.set(name, Buffer.from(racedBytes));
+        throw error;
+      }
+    };
+    const result = putObject(oss, key, Buffer.from('same'), 'image/jpeg');
+    if (racedBytes === 'same') assert.equal(await result, 'same');
+    else await assert.rejects(result, /字节不同/);
+    assert.deepEqual(oss.requests, [['HEAD', key], ['PUT', key], ['HEAD', key]]);
+    assert.equal(oss.objects.get(key).toString(), racedBytes);
+    assert.deepEqual(oss.puts, []);
+  }
+});
+
+test('putObject:HEAD 权限 / 网络错误直接报错,不 PUT、不重试', async () => {
+  for (const error of [Object.assign(new Error('forbidden'), { status: 403 }), new Error('socket hang up')]) {
+    const oss = new FakeOss();
+    const key = 'market/media/office/shared.jpg';
+    oss.head = async (name) => {
+      oss.requests.push(['HEAD', name]);
+      throw error;
+    };
+    await assert.rejects(putObject(oss, key, Buffer.from('image'), 'image/jpeg'), (actual) => actual === error);
+    assert.deepEqual(oss.requests, [['HEAD', key]]);
+  }
 });
 
 test('sync:写齐包 / 图标 / README 与图 / meta / index;重跑除 index 外 0 次写入;下架的不进 index', async () => {
