@@ -57,6 +57,15 @@
       "sha256": "b95352f54f1910ce1743f639ace7bc6d5d0c890475279559a71b7837c760fb29",
       "bytes": 475813,
       "yanked": null
+    },
+    {
+      "version": "0.1.6",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/radar",
+      "commit": "f972c44c28705baf193307c03b1c7418f38b1b60",
+      "sha256": "287febede8168429d78177d8198bfb58fd79651401832a06d2bcb69aca5953a4",
+      "bytes": 492447,
+      "yanked": null
     }
   ]
 }
