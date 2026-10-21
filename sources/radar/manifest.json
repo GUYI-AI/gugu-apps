@@ -5,7 +5,7 @@
   "subtitle": "关注 agent 的运行状态",
   "localized": { "en": { "subtitle": "Watch agents and get alerts" } },
   "author": "咕咕",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "apiVersion": 8,
   "engines": { "gugu": ">=0.2.57" },
   "entry": "radar.html",
