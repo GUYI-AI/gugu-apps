@@ -236,6 +236,70 @@ function attachNotes(notes) {
 // ─── pages ─────────────────────────────────────────────────────────────────
 
 let observer = null
+const textLayers = new Map()
+let previousSelectionRange = null
+let pointerDown = false
+
+function resetTextLayer(end, text) {
+  text.append(end)
+  end.style.width = ''
+  end.style.height = ''
+  end.style.userSelect = ''
+  text.classList.remove('selecting')
+}
+
+/**
+ * Keep PDF.js's end marker beside the active selection so an empty line cannot select the whole layer.
+ * Ported from pdfjs-dist 5.6.205 `web/text_layer_builder.js` #enableGlobalSelectionListener (lines 210-361):
+ * https://github.com/mozilla/pdf.js/blob/v5.6.205/web/text_layer_builder.js#L210-L361
+ */
+function updateTextLayerSelection() {
+  const selection = getSelection()
+  if (!selection?.rangeCount) {
+    textLayers.forEach(resetTextLayer)
+    previousSelectionRange = null
+    return
+  }
+
+  const active = new Set()
+  for (let i = 0; i < selection.rangeCount; i++) {
+    const range = selection.getRangeAt(i)
+    for (const text of textLayers.keys()) if (range.intersectsNode(text)) active.add(text)
+  }
+  for (const [text, end] of textLayers) {
+    if (active.has(text)) text.classList.add('selecting')
+    else resetTextLayer(end, text)
+  }
+
+  const range = selection.getRangeAt(0)
+  const modifyStart = previousSelectionRange && (
+    range.compareBoundaryPoints(Range.END_TO_END, previousSelectionRange) === 0 ||
+    range.compareBoundaryPoints(Range.START_TO_END, previousSelectionRange) === 0
+  )
+  let anchor = modifyStart ? range.startContainer : range.endContainer
+  if (anchor.nodeType === Node.TEXT_NODE) anchor = anchor.parentNode
+  const parentTextLayer = anchor.parentElement?.closest('.textLayer')
+  const end = textLayers.get(parentTextLayer)
+  if (end && anchor.parentElement) {
+    if (!modifyStart && range.endOffset === 0) {
+      do {
+        while (!anchor.previousSibling) anchor = anchor.parentNode
+        anchor = anchor.previousSibling
+      } while (!anchor.childNodes.length)
+    }
+    end.style.width = parentTextLayer.style.width
+    end.style.height = parentTextLayer.style.height
+    end.style.userSelect = 'text'
+    anchor.parentElement.insertBefore(end, modifyStart ? anchor : anchor.nextSibling)
+  }
+  previousSelectionRange = range.cloneRange()
+}
+
+function bindTextLayer(text, end) {
+  textLayers.set(text, end)
+  text.addEventListener('pointerdown', () => text.classList.add('selecting'))
+  return () => textLayers.delete(text)
+}
 
 async function layoutPages() {
   const doc = state.doc
@@ -261,7 +325,7 @@ async function layoutPages() {
     counts.className = 'counts'
     el.append(marks, counts)
     holder.append(el)
-    const page = { n, el, marks, counts, canvas: null, text: null, vp1: n === 1 ? vp1 : null, rendered: false, task: null }
+    const page = { n, el, marks, counts, canvas: null, text: null, textSelectionCleanup: null, vp1: n === 1 ? vp1 : null, rendered: false, task: null }
     state.pages.push(page)
     sizePage(page)
     observer.observe(el)
@@ -314,6 +378,8 @@ async function renderPage(page) {
     page.text?.remove()
     page.canvas = canvas
     page.text = text
+    page.textSelectionCleanup?.()
+    page.textSelectionCleanup = bindTextLayer(text, end)
     page.el.prepend(canvas)
     page.el.append(text)
     page.rendered = true
@@ -329,6 +395,8 @@ async function renderPage(page) {
 }
 
 function unrenderPage(page) {
+  page.textSelectionCleanup?.()
+  page.textSelectionCleanup = null
   page.canvas?.remove()
   page.text?.remove()
   page.canvas = page.text = null
@@ -445,6 +513,7 @@ function readSelection() {
 
 let selTimer = 0
 function onSelectionChange() {
+  updateTextLayerSelection()
   clearTimeout(selTimer)
   selTimer = setTimeout(() => {
     const picked = readSelection()
@@ -1003,6 +1072,22 @@ $('sel-copy').onclick = () => {
 $('pages').addEventListener('scroll', onScroll, { passive: true })
 $('pages').addEventListener('click', onPageClick)
 document.addEventListener('selectionchange', onSelectionChange)
+document.addEventListener('pointerdown', () => { pointerDown = true })
+document.addEventListener('pointerup', () => {
+  pointerDown = false
+  textLayers.forEach(resetTextLayer)
+  previousSelectionRange = null
+})
+window.addEventListener('blur', () => {
+  pointerDown = false
+  textLayers.forEach(resetTextLayer)
+  previousSelectionRange = null
+})
+document.addEventListener('keyup', () => {
+  if (pointerDown) return
+  textLayers.forEach(resetTextLayer)
+  previousSelectionRange = null
+})
 document.addEventListener('keydown', (event) => {
   if (event.target.closest?.('input, textarea')) return
   if ((event.metaKey || event.ctrlKey) && (event.key === '=' || event.key === '+')) { event.preventDefault(); rezoom(state.zoom + 1) }
