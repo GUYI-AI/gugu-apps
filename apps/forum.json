@@ -1,0 +1,16 @@
+{
+  "id": "forum",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "4327e8ce1a7ac0485efaaaa66df85ce215a0fd7c",
+      "sha256": "23fd31e76e05e4d3236003bd59551332ae2cdfe35da5666d3effa2df8736b54d",
+      "bytes": 17810,
+      "yanked": null
+    }
+  ]
+}
