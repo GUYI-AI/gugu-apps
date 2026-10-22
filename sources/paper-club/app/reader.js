@@ -95,6 +95,7 @@ function labels() {
   $('tab-about').textContent = t.about
   $('sel-comment-label').textContent = t.comment
   $('sel-ask-label').textContent = t.ask
+  $('sel-new-task-label').textContent = t.askNew
   $('sel-colors').replaceChildren(
     ...COLORS.map((color) => {
       const b = document.createElement('button')
@@ -121,6 +122,7 @@ async function openPaper(file) {
   }
   state.entry = pdfHandle.entry
   state.place = placeOfEntry(state.entry)
+  $('sel-new-task').hidden = !state.place.project
   pdfHandle.onStatus?.(() => { if (pdfHandle.status === 'gone') say(state.t.gone, 'error') })
   const bytes = new Uint8Array(await (await pdfHandle.blob()).arrayBuffer())
   try {
@@ -590,12 +592,36 @@ function askAbout(id, h, text) {
   return gugu.compose(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { session: state.place.session })
 }
 
-/** The passage's words, page, project and path, into the composer the person picks (gugu lists the places, not this page). */
-async function askTask(h, text) {
+/** A project's PDF: the passage's words, page, project and path, with the project's name. */
+async function projectWords(h, text) {
   const project = state.place.project
   const name = (await gugu.projects.list()).projects.find((p) => p.id === project)?.name ?? project
-  const placed = await gugu.compose(fmt(state.t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }))
+  return { name, words: fmt(state.t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }) }
+}
+
+/** Into the composer the person picks — one of their tasks or a chat (gugu lists the places, not this page). */
+async function askTask(h, text) {
+  const placed = await gugu.compose((await projectWords(h, text)).words)
   if (!placed.cancelled) say(state.t.askPlaced)
+}
+
+/** A new task in the PDF's project, starting from the passage. Starting takes a while: said at once, and not twice meanwhile. */
+async function askNewTask() {
+  const picked = state.selection
+  const id = await markSelection({ color: 'blue' })
+  if (!id) return
+  const button = $('sel-new-task')
+  button.disabled = true
+  say(state.t.askStarting)
+  try {
+    const { name, words } = await projectWords(state.notes.data.highlights[id], fmt(state.t.askText, { n: picked.page }))
+    await gugu.spawnAgent(words, { project: state.place.project, title: $('title').textContent })
+    say(fmt(state.t.askStarted, { project: name }))
+  } catch (error) {
+    say(fmt(state.t.askFailed, { e: error.message }), 'error')
+  } finally {
+    button.disabled = false
+  }
 }
 
 async function commentSelection() {
@@ -1036,6 +1062,7 @@ for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
   }
 }
 $('sel-ask').onclick = () => askAgent()
+$('sel-new-task').onclick = () => askNewTask()
 $('sel-comment').onclick = () => commentSelection()
 $('sel-copy').onclick = () => {
   const quote = state.selection?.quote

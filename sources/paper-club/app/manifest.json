@@ -38,6 +38,7 @@
       "files:write",
       "chat:relay",
       "chat:read",
+      "agents:control",
       "agents:tools"
     ],
     "network": [
