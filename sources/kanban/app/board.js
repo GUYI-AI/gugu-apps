@@ -14,8 +14,9 @@ const WORDS = {
     states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务已移除', none: '无状态' },
     all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
     addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
-    column: '列', progress: '进度', waitingOn: '在等', next: '下一步', due: '截止', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
-    updated: '更新', toggle: '展开或收起',
+    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
+    addNote: '添加说明…', editNote: '编辑说明', addLink: '添加', noLinks: '暂无关联', messageLink: '群消息', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
+    updated: '更新时间', toggle: '展开或收起',
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
     noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
     attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
@@ -35,7 +36,8 @@ const WORDS = {
     states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task removed', none: 'No status' },
     all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
     addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
-    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
+    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
+    addNote: 'Add a note…', editNote: 'Edit note', addLink: 'Add', noLinks: 'Nothing linked yet', messageLink: 'Chat message', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
     updated: 'Updated', toggle: 'Expand or collapse',
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
     noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
@@ -348,65 +350,60 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && selected && !event.target.closest?.('input, textarea, .cm-editor')) closeCard()
 })
 
-/** One progress field of the open card: saved when it changes (leaving the box, Enter), never while being typed in. */
-function fieldInput(id, key, props) {
-  const input = h('input', { 'aria-label': t[key], ...props })
-  input.addEventListener('change', () => {
-    const value = props.type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value
-    quietly(change({ type: 'card.update', card: id, [key]: value }))
+/**
+ * The open card reads as a page, and changes one thing at a time (owner 10-22, after Linear's issue view): the title and
+ * the note are edited where they stand once clicked; each property is a value until clicked, then its own editor, saved
+ * on Enter or leaving it, put back on Esc. Nothing is an input until it is asked to be one.
+ */
+function inlineEditor(d, key, start, make, save) {
+  if (d.editing && d.editing !== key) d.finish?.()
+  d.editing = key
+  const editor = make()
+  const done = (keep) => {
+    if (d.editing !== key) return
+    d.editing = null
+    d.finish = null
+    if (keep) save(editor.value)
+    updateDrawer(true)
+  }
+  d.finish = () => done(true)
+  editor.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !(editor.tagName === 'TEXTAREA' && !(event.metaKey || event.ctrlKey))) { event.preventDefault(); done(true) }
+    if (event.key === 'Escape') { event.stopPropagation(); done(false) }
   })
-  return input
+  editor.addEventListener('blur', () => done(true))
+  if (editor.tagName === 'SELECT') editor.addEventListener('change', () => done(true))
+  start.replaceWith(editor)
+  editor.focus()
+  if (editor.select && editor.tagName === 'INPUT') editor.select()
+}
+
+const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due']
+
+/** A property's value as text, or null when it has none. */
+function propText(card, key) {
+  if (key === 'column') return columnTitle(board.columns[card.column])
+  if (key === 'progress') return typeof card.progress === 'number' ? `${card.progress}%` : null
+  return card[key] || null
 }
 
 function buildDrawer(id) {
-  const card = board.cards[id]
-  const column = h('select', { 'aria-label': t.column, onchange: (e) => quietly(change({ type: 'card.move', card: id, column: e.target.value })) })
   let armed = false
   const del = h('button', { class: 'danger', text: t.del, onclick: () => {
     if (!armed) { armed = true; del.textContent = t.delAgain; return }
     quietly(change({ type: 'card.delete', card: id }))
   } })
   const more = h('details', { class: 'more' }, h('summary', { 'aria-label': t.more }, icon('ellipsis')), h('div', { class: 'menu' }, del))
-  const title = h('input', { id: 'd-title', type: 'text', value: card.title, 'aria-label': t.title })
-  title.addEventListener('change', () => quietly(change({ type: 'card.update', card: id, title: title.value })))
+  const back = h('button', { class: 'plain', 'aria-label': narrow() ? t.back : t.close, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
+  const crumb = h('small', { class: 'muted crumb' })
 
-  const fields = {
-    progress: fieldInput(id, 'progress', { type: 'number', min: '0', max: '100', step: '1', inputmode: 'numeric' }),
-    waitingOn: fieldInput(id, 'waitingOn', { type: 'text' }),
-    next: fieldInput(id, 'next', { type: 'text' }),
-    due: fieldInput(id, 'due', { type: 'text' }),
-  }
-  const updated = h('small', { class: 'muted' })
-
-  const tasks = h('ul', { class: 'links' })
-  const taskActions = h('div', { class: 'row' })
+  const title = h('div', { class: 'title-slot' })
+  const props = h('dl', { class: 'props', 'aria-label': t.props })
+  const note = h('div', { class: 'note-slot' })
   const links = h('ul', { class: 'links' })
-  const linkActions = h('div', { class: 'row' })
+  const addMenu = h('details', { class: 'add-menu' }, h('summary', {}, icon('plus'), ` ${t.addLink}`), h('div', { class: 'menu' }))
   const picker = h('div')
   const view = h('div')
-
-  const noteView = h('div', { class: 'note-view', 'data-empty': t.noteEmpty })
-  const noteEdit = h('textarea', { rows: '8', hidden: true, 'aria-label': t.noteH })
-  const noteButton = h('button', { text: t.edit })
-  noteButton.addEventListener('click', () => {
-    if (noteEdit.hidden) {
-      noteEdit.value = board.cards[id]?.note ?? ''
-      noteEdit.hidden = false
-      noteView.hidden = true
-      noteButton.textContent = t.done
-      noteEdit.focus()
-    } else {
-      saveNote()
-    }
-  })
-  const saveNote = () => {
-    const text = noteEdit.value
-    noteEdit.hidden = true
-    noteView.hidden = false
-    noteButton.textContent = t.edit
-    if (text !== (board.cards[id]?.note ?? '')) quietly(change({ type: 'card.update', card: id, note: text }))
-  }
-
   const comments = h('ul', { class: 'comments' })
   const commentBox = h('textarea', { rows: '2', placeholder: t.comment, 'aria-label': t.comment })
   const commentSend = h('button', { text: t.send, onclick: () => {
@@ -414,81 +411,130 @@ function buildDrawer(id) {
     if (text) quietly(change({ type: 'comment.add', card: id, text }).then(() => { commentBox.value = '' }))
   } })
 
-  const back = h('button', { 'aria-label': narrow() ? t.back : t.close, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
-  const label = (key, input) => h('label', {}, t[key], input)
-  const root = h('div', { class: 'stack' },
-    h('div', { class: 'head' }, back, column, more),
+  const root = h('div', { class: 'detail' },
+    h('div', { class: 'head' }, back, crumb, h('span', { class: 'spacer' }), more),
     title,
-    h('div', { class: 'fields' }, label('progress', fields.progress), label('due', fields.due), label('waitingOn', fields.waitingOn), label('next', fields.next)),
-    updated,
-    h('section', {}, h('h5', { text: t.tasks }), tasks, taskActions),
-    h('section', {}, h('h5', { text: t.links }), links, linkActions, picker, view),
-    h('section', {}, h('div', { class: 'row' }, h('h5', { text: t.noteH }), noteButton), noteView, noteEdit),
-    h('section', {}, h('h5', { text: t.comments }), comments, commentBox, h('div', {}, commentSend)),
+    props,
+    h('section', {}, h('h5', { text: t.noteH }), note),
+    h('section', {}, h('div', { class: 'section-head' }, h('h5', { text: t.links }), addMenu), links, picker, view),
+    h('section', {}, h('h5', { text: t.comments }), comments, h('div', { class: 'comment-box' }, commentBox, h('div', {}, commentSend))),
   )
-  return { id, root, column, title, fields, updated, tasks, taskActions, links, linkActions, picker, view, noteView, noteEdit, comments, viewing: null, file: null, shownNote: null }
+  return { id, root, crumb, title, props, note, links, addMenu, picker, view, comments, editing: null, finish: null, viewing: null, file: null, shownNote: null }
 }
 
-async function updateDrawer() {
+async function updateDrawer(force = false) {
   const d = drawer
   const card = d && board.cards[d.id]
   if (!card) return
-  d.column.replaceChildren(...columnsInOrder(board).map((c) => h('option', { value: c.id, selected: c.id === card.column, text: columnTitle(c) })))
-  if (document.activeElement !== d.title) d.title.value = card.title
-  for (const [key, input] of Object.entries(d.fields)) {
-    if (document.activeElement !== input) input.value = card[key] ?? ''
+  d.crumb.textContent = home?.kind === 'chat' ? home.name : t.local
+
+  // The title: a heading until clicked.
+  if (d.editing !== 'title') {
+    const heading = h('h2', { class: 'editable', tabindex: '0', role: 'button', 'aria-label': `${t.title}: ${card.title}`, text: card.title })
+    const edit = () => inlineEditor(d, 'title', heading, () => h('input', { type: 'text', class: 'title-input', value: card.title, 'aria-label': t.title }),
+      (value) => { if (value.trim() && value !== card.title) quietly(change({ type: 'card.update', card: card.id, title: value })) })
+    heading.addEventListener('click', edit)
+    heading.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit() })
+    d.title.replaceChildren(heading)
   }
-  d.updated.replaceChildren(...(card.updatedAt ? [`${t.updated} `, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? ` · ${t.stale}` : ''] : []))
 
-  d.tasks.replaceChildren(...taskLinks(card).map(([lid, link]) => {
-    const row = agentBySession(link.session)
-    return h('li', {},
-      link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : null,
-      stateBadge(link),
-      h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
-      h('button', { text: t.open, onclick: () => g.showSession(link.session, { peek: true }).catch((e) => showAlert(e.message)) }),
-      h('button', { text: t.handTo, onclick: () => g.compose(t.handText(card, chatOfBoard()), { session: link.session }).catch((e) => showAlert(e.message)) }),
-      h('button', { 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x')),
-    )
-  }))
-  const appState = await g.getAppState().catch(() => null) // the current task is a convenience: without it the button is not offered
-  if (drawer !== d) return
-  const current = appState?.activeSessionId
-  const linked = new Set(taskLinks(card).map(([, l]) => l.session))
-  // replaceChildren writes a null as the text "null": leave the absent button out.
-  d.taskActions.replaceChildren(...[
-    current && !linked.has(current)
-      ? h('button', { text: t.attachCurrent, onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })) })
-      : null,
-    desktop ? h('button', { text: t.pickTask, onclick: () => pickTask(card) }) : null,
-    desktop ? h('button', { text: t.start, onclick: (e) => startTask(card, e.currentTarget, appState?.activeProjectId) }) : null,
-  ].filter(Boolean))
+  // The properties: values; one of them an editor while it is being changed.
+  const rows = []
+  const tasks = taskLinks(card)
+  const propRow = (key, valueNode, editable) => {
+    rows.push(h('div', { class: 'prop' }, h('dt', { text: t[key] }), h('dd', { 'data-prop': key }, valueNode)))
+    if (!editable || d.editing === key) return
+    valueNode.addEventListener('click', () => {
+      inlineEditor(d, key, valueNode, () => {
+        if (key === 'column') return h('select', { 'aria-label': t.column }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, selected: c.id === card.column, text: columnTitle(c) })))
+        if (key === 'progress') return h('input', { type: 'number', min: '0', max: '100', step: '1', inputmode: 'numeric', value: card.progress ?? '', 'aria-label': t.progress })
+        return h('input', { type: 'text', value: card[key] ?? '', 'aria-label': t[key] })
+      }, (value) => {
+        if (key === 'column') { if (value !== card.column) quietly(change({ type: 'card.move', card: card.id, column: value })); return }
+        const next = key === 'progress' ? (value === '' ? null : Number(value)) : value
+        if ((card[key] ?? (key === 'progress' ? null : '')) !== next) quietly(change({ type: 'card.update', card: card.id, [key]: next }))
+      })
+    })
+  }
+  const valueButton = (key) => {
+    const text = propText(card, key)
+    return h('button', { class: `prop-value${text ? '' : ' empty'}${key === 'waitingOn' && text ? ' waiting' : ''}`, 'aria-label': `${t[key]}: ${text ?? t.unset}` },
+      key === 'progress' && text ? h('span', { class: 'bar', style: `--p:${card.progress}%` }) : null,
+      text ?? t.unset)
+  }
+  propRow('column', valueButton('column'), true)
+  propRow('owner', h('div', { class: 'owners' }, ...(tasks.length ? tasks.map(([, l]) => h('span', { class: 'owner' },
+    l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null,
+    stateBadge(l),
+    h('span', { class: 'muted', text: agentBySession(l.session)?.deviceLabel ?? '' }))) : [h('span', { class: 'muted', text: t.unset })])), false)
+  for (const key of ['progress', 'waitingOn', 'next', 'due']) propRow(key, valueButton(key), true)
+  if (card.updatedAt) rows.push(h('div', { class: 'prop' }, h('dt', { text: t.updated }), h('dd', { class: 'muted' }, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? h('div', { class: 'stale-note', text: t.stale }) : null)))
+  // A property being edited keeps its editor (and its half-typed value): the properties are drawn again after it.
+  if (!PROPS.includes(d.editing)) d.props.replaceChildren(...rows)
 
-  d.links.replaceChildren(...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)))
-  d.linkActions.replaceChildren(...[
-    desktop ? h('button', { text: t.pickFile, onclick: () => pickTaskFile(card) }) : null,
-    h('button', { text: t.pickChatFile, onclick: () => pickChatFile(card) }),
-    // A gugu without project folders for Apps has no gugu.projects: the button is not offered there.
-    typeof g.projects?.list === 'function' ? h('button', { text: t.pickProjectFile, onclick: () => pickProjectFile(card) }) : null,
-    h('button', { text: t.addUrl, onclick: () => addUrl(card) }),
-  ].filter(Boolean))
-
-  if (d.noteEdit.hidden && d.shownNote !== card.note) {
+  // The note: rendered; clicked, a textarea that saves when left.
+  if (d.editing !== 'note' && (force || d.shownNote !== card.note || !d.note.firstChild)) {
     d.shownNote = card.note
+    const shown = h('div', { class: `note-view editable${card.note ? '' : ' empty'}`, tabindex: '0', role: 'button', 'aria-label': t.editNote })
     if (card.note) {
       const md = await g.markdown()
       if (drawer !== d) return
-      md.render(d.noteView, card.note, { density: 'comfortable' })
-    } else {
-      d.noteView.replaceChildren()
+      md.render(shown, card.note, { density: 'comfortable' })
+    } else shown.textContent = t.addNote
+    const edit = (event) => {
+      if (event.target.closest?.('a')) return // a link in the note opens; it does not start editing
+      inlineEditor(d, 'note', shown, () => h('textarea', { rows: '10', class: 'note-input', 'aria-label': t.noteH }, card.note ?? ''),
+        (value) => { if (value !== (card.note ?? '')) quietly(change({ type: 'card.update', card: card.id, note: value })) })
     }
+    shown.addEventListener('click', edit)
+    shown.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit(e) })
+    d.note.replaceChildren(shown)
   }
+
+  // Links: the card's tasks first, then its files and pages; what can be done to one shows on the row it is about.
+  d.links.replaceChildren(
+    ...tasks.map(([lid, link]) => {
+      const row = agentBySession(link.session)
+      return h('li', {},
+        link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : icon('bot'),
+        h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
+        stateBadge(link),
+        h('span', { class: 'acts' },
+          h('button', { class: 'plain', text: t.open, onclick: () => g.showSession(link.session, { peek: true }).catch((e) => showAlert(e.message)) }),
+          h('button', { class: 'plain', text: t.handTo, onclick: () => g.compose(t.handText(card, chatOfBoard()), { session: link.session }).catch((e) => showAlert(e.message)) }),
+          h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))),
+      )
+    }),
+    ...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)),
+  )
+  if (!d.links.childElementCount) d.links.append(h('li', { class: 'muted empty-row', text: t.noLinks }))
+
+  const appState = await g.getAppState().catch(() => null) // the current task is a convenience: without it the item is not offered
+  if (drawer !== d) return
+  const current = appState?.activeSessionId
+  const linked = new Set(tasks.map(([, l]) => l.session))
+  const item = (text, run) => h('button', { class: 'plain', text, onclick: (e) => { d.addMenu.open = false; run(e) } })
+  d.addMenu.querySelector('.menu').replaceChildren(...[
+    current && !linked.has(current)
+      ? item(t.attachCurrent, () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })))
+      : null,
+    desktop ? item(t.pickTask, () => pickTask(card)) : null,
+    desktop ? item(t.start, (e) => startTask(card, e.currentTarget, appState?.activeProjectId)) : null,
+    desktop ? item(t.pickFile, () => pickTaskFile(card)) : null,
+    item(t.pickChatFile, () => pickChatFile(card)),
+    // A gugu without project folders for Apps has no gugu.projects: the item is not offered there.
+    typeof g.projects?.list === 'function' ? item(t.pickProjectFile, () => pickProjectFile(card)) : null,
+    item(t.addUrl, () => addUrl(card)),
+  ].filter(Boolean))
+
   const said = Object.values(board.comments).filter((c) => c.card === card.id).sort((a, b) => a.at.localeCompare(b.at))
-  d.comments.replaceChildren(...said.map((c) => h('li', { class: 'stack' }, h('small', { class: 'muted' }, byLabel(c.by), ' · ', h('gugu-time', { datetime: c.at })), h('span', { text: c.text }))))
+  d.comments.replaceChildren(...said.map((c) => h('li', { class: 'comment' },
+    h('div', { class: 'comment-head' }, h('strong', { text: byLabel(c.by) }), h('small', { class: 'muted' }, h('gugu-time', { datetime: c.at }))),
+    h('div', { text: c.text }))))
 }
 
 function linkRow(card, lid, link) {
-  const remove = h('button', { 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))
+  const remove = h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))
   const current = drawer.viewing === lid ? 'true' : 'false'
   switch (link.kind) {
     case 'file':
@@ -498,14 +544,17 @@ function linkRow(card, lid, link) {
       // Drawn in the card when the App can (md, text, images, video); every file also opens beside the board, in the
       // App that opens it or gugu's own preview.
       return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }),
-        drawable(name) ? h('button', { text: t.show, onclick: () => showFile(lid, link) }) : null,
-        h('button', { text: t.openBeside, onclick: () => g.files.openWith(refOf(link), { peek: true }).catch((e) => showAlert(e.message)) }),
-        remove)
+        h('span', { class: 'acts' },
+          drawable(name) ? h('button', { class: 'plain', text: t.show, onclick: () => showFile(lid, link) }) : null,
+          h('button', { class: 'plain', text: t.openBeside, onclick: () => g.files.openWith(refOf(link), { peek: true }).catch((e) => showAlert(e.message)) }),
+          remove))
     }
     case 'message':
-      return h('li', {}, icon('message-square'), h('span', { class: 'what', text: link.excerpt ?? link.message }), h('button', { text: t.message, onclick: () => g.showMessage(link.message).catch((e) => showAlert(e.message)) }), remove)
+      return h('li', {}, icon('message-square'), h('span', { class: 'what', text: link.excerpt ?? t.messageLink }),
+        h('span', { class: 'acts' }, h('button', { class: 'plain', text: t.message, onclick: () => g.showMessage(link.message).catch((e) => showAlert(e.message)) }), remove))
     default:
-      return h('li', {}, icon(link.kind === 'pr' ? 'git-pull-request' : 'link'), h('span', { class: 'what', text: `${link.title ?? link.url}${link.state ? ` · ${link.state}` : ''}`, title: link.url }), h('button', { text: t.browser, onclick: () => g.openBrowserTab(link.url).catch((e) => showAlert(e.message)) }), remove)
+      return h('li', {}, icon(link.kind === 'pr' ? 'git-pull-request' : 'link'), h('span', { class: 'what', text: `${link.title ?? link.url}${link.state ? ` · ${link.state}` : ''}`, title: link.url }),
+        h('span', { class: 'acts' }, h('button', { class: 'plain', text: t.browser, onclick: () => g.openBrowserTab(link.url).catch((e) => showAlert(e.message)) }), remove))
   }
 }
 
@@ -803,7 +852,13 @@ function placed() {
 
 g.onContextChanged(async () => {
   ctx = await g.getContext()
-  t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+  const words = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+  // The language changed: the open card's fixed parts (headings, buttons) were worded once, when it was built.
+  if (words !== t && selected) {
+    t = words
+    openCard(selected)
+  }
+  t = words
   placed()
   const now = ctx.layout?.visible ?? visible
   // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere, a chat's new board).
