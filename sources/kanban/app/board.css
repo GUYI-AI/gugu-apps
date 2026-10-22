@@ -7,7 +7,7 @@ body { margin: 0; }
 #where { width: auto; max-width: 240px; }
 #summary { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #filters { display: flex; gap: var(--em-spacing-xs); }
-#board { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 1fr); gap: var(--em-spacing-md); overflow-x: auto; padding-bottom: var(--em-spacing-md); align-items: start; }
+#board { flex: 1; min-height: 0; display: grid; gap: var(--em-spacing-md); overflow-x: auto; padding-bottom: var(--em-spacing-md); align-items: start; }
 .add-column { padding-top: var(--em-spacing-xs); }
 .add-column button { white-space: nowrap; }
 
@@ -50,6 +50,7 @@ body { margin: 0; }
 #drawer .more { position: relative; }
 #drawer .more summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; height: var(--em-control-h-md); width: var(--em-control-h-md); border-radius: var(--em-radius-control); }
 #drawer .more summary::-webkit-details-marker { display: none; }
+#drawer .more summary::before, #drawer .more summary::after { content: none; display: none; }
 #drawer .more summary:hover { background: var(--em-hover); }
 #drawer .more .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 1; background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-xs); white-space: nowrap; }
 #d-title { font-size: var(--em-font-title); font-weight: 600; width: 100%; box-sizing: border-box; }
@@ -79,7 +80,7 @@ body { margin: 0; }
   .col[data-role="doing"] { order: -2; }
   .col[data-role="review"] { order: -1; }
   .add-column { order: 1; }
-  .col > h2 .toggle { display: inline-flex; padding: 0; height: auto; min-height: 0; background: none; border: 0; }
+  .col > h2 .toggle { display: inline-flex; padding: 0; width: auto; min-width: 0; height: auto; min-height: 0; background: none; border: 0; }
   .col.collapsed .cards, .col.collapsed > .add, .col.collapsed > .adding { display: none; }
   .cards { overflow: visible; }
   #shell.open #main { display: none; }

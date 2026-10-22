@@ -73,6 +73,7 @@ let visible = ctx.layout?.visible ?? true
 const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
 let adding = null // the open add-card box: { column, root, input, attach }
 const waiting = new Map()
+let stateProblem = false
 
 /** Element maker: text goes in as text (others wrote it), never as markup. */
 function h(tag, props = {}, ...kids) {
@@ -132,9 +133,11 @@ if (desktop) g.onBackgroundMessage((message) => {
   localBoard = message.board
   agents = message.agents ?? []
   agentsKnown = !message.failure?.agents
+  // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
   const problems = [home?.kind === 'local' && message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
   if (problems.length) showAlert(problems.join(' · '))
-  else if (!message.done) showAlert(null)
+  else if (stateProblem && !message.done) showAlert(null)
+  stateProblem = problems.length > 0
   if (message.done) {
     waiting.get(message.done.id)?.resolve(message.done.result)
     waiting.delete(message.done.id)
@@ -185,6 +188,8 @@ function render() {
       h('button', { role: 'tab', 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } }, label)),
   )
 
+  // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
+  $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
   const hadFocus = adding && document.activeElement === adding.input
   $('board').replaceChildren(
     ...columns.map((c) => columnView(c, flags)),
@@ -772,11 +777,12 @@ function askAgents() {
  */
 async function fillSwitcher() {
   const select = $('where')
-  const found = await g.files.search({ suffixes: [BOARD_SUFFIX], limit: 50 }).catch((error) => {
+  // A suffix is one extension (.json): the board's double one is matched by the path instead.
+  const found = await g.files.search({ query: BOARD_SUFFIX, suffixes: ['.json'], limit: 50 }).catch((error) => {
     showAlert(error?.message ?? String(error))
     return []
   })
-  const boards = found.filter((e) => e.type !== 'folder')
+  const boards = found.filter((e) => e.type !== 'folder' && e.name.endsWith(BOARD_SUFFIX))
   select.replaceChildren(
     h('option', { value: '', text: t.local }),
     ...boards.map((e) => h('option', { value: e.id, text: fileLabel(e) })),
@@ -800,8 +806,11 @@ g.onContextChanged(async () => {
   t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
   placed()
   const now = ctx.layout?.visible ?? visible
-  // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere).
-  if (desktop && now && !visible) g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+  // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere, a chat's new board).
+  if (desktop && now && !visible) {
+    g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+    if (!ctx.chat && !ctx.file) fillSwitcher()
+  }
   visible = now
   render()
 })
