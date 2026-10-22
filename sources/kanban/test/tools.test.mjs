@@ -6,6 +6,25 @@ import path from 'node:path'
 
 let dir
 let tools
+
+// A chat's files as gugu.files gives a program: list, open by entry or { id }, create, a JSON file's live data.
+// Writes land at once here (saved stays true); what is checked is that the tools go through open → transact.
+const chatFiles = new Map() // id -> { entry, data }
+const fakeFiles = {
+  async open(ref) {
+    const file = chatFiles.get(ref.id)
+    if (!file) throw Object.assign(new Error('not found'), { code: 'not-found' })
+    return { entry: file.entry, data: file.data, saved: true, status: 'online', transact: (fn) => fn(), toJSON: () => structuredClone(file.data), onStatus: () => () => {}, close() {} }
+  },
+  async list({ chat }) {
+    return [...chatFiles.values()].filter((f) => f.entry.chat === chat).map((f) => ({ ...f.entry, type: 'json' }))
+  },
+  async create({ chat, name }, content) {
+    const entry = { id: `f${chatFiles.size + 1}`, chat, name, path: name }
+    chatFiles.set(entry.id, { entry, data: structuredClone(content) })
+    return entry
+  },
+}
 const AGENT = 'user:00000000-0000-0000-0000-00000000000a'
 const agentRows = [{ agentId: AGENT, sessionId: 's-agent', deviceId: null, title: 'Fix login', status: 'needs_user', detail: 'approval' }]
 
@@ -14,7 +33,7 @@ before(async () => {
   process.env.GUGU_EXTENSION_DATA_DIR = dir
   // As the background page writes it. A program's gugu has no listAgents (mac1 10-19): the tools must not ask for it.
   await writeFile(path.join(dir, 'agents.json'), JSON.stringify({ at: '2026-10-19T00:00:00.000Z', agents: agentRows }))
-  globalThis.gugu = {}
+  globalThis.gugu = { files: fakeFiles }
   tools = await import('../app/tools.js')
 })
 after(() => rm(dir, { recursive: true, force: true }))
@@ -86,4 +105,27 @@ test('before the background page has listed the tasks, a task link says unknown 
   const tasks = listed.columns.flatMap((c) => c.cards).flatMap((c) => c.tasks ?? [])
   assert.ok(tasks.length > 0)
   assert.ok(tasks.every((t) => t.status === 'unknown'))
+})
+
+test("a chat's board: made on first use, the same tools, a lane reports progress and links its report", async () => {
+  const chat = 'chat-lanes'
+  await tools.create.run({ chat, title: 'Merge the boards' }, asAgent)
+  const file = [...chatFiles.values()].find((f) => f.entry.chat === chat)
+  assert.equal(file.entry.name, '协作看板.board.json')
+  const card = Object.values(file.data.cards)[0]
+  await tools.claim.run({ chat, card: card.id }, asAgent)
+  await tools.update.run({ chat, card: card.id, progress: 40, waitingOn: 'a mac1 slot', next: 'measure' }, asAgent)
+  chatFiles.set('report', { entry: { id: 'report', chat, name: 'merge.html', path: '车道/merge.html' }, data: {} })
+  await tools.link.run({ chat, card: card.id, kind: 'chatfile', file: 'report' }, asAgent)
+  const after = file.data.cards[card.id]
+  assert.equal(after.column, 'doing')
+  assert.deepEqual([after.progress, after.waitingOn, after.next, after.updatedBy], [40, 'a mac1 slot', 'measure', AGENT])
+  assert.deepEqual(Object.values(after.links).map((l) => l.kind).sort(), ['chatfile', 'task'])
+  assert.equal(Object.values(after.links).find((l) => l.kind === 'chatfile').name, '车道/merge.html')
+  const got = await tools.get.run({ chat, card: card.id }, asAgent)
+  assert.equal(got.waitingOn, 'a mac1 slot')
+  const local = await board()
+  assert.ok(!Object.values(local.cards).some((c) => c.title === 'Merge the boards'), "this computer's board is untouched")
+  // Only one board file for the chat, however many calls.
+  assert.equal([...chatFiles.values()].filter((f) => f.entry.chat === chat && f.entry.name.endsWith('.board.json')).length, 1)
 })

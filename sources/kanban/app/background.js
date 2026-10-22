@@ -1,12 +1,14 @@
 /**
- * 看板 — background page: the one place the pages talk to.
+ * 协作看板 — background page: the one place the pages talk to about this computer's board and the person's tasks. (A
+ * chat's board is a file each page opens itself; only the tasks' statuses come from here.)
  *
  * - The board: a page's change comes here (sendToBackground), goes to the App's program (callProgram 'apply', the
  *   board's only writer), and the board that comes back goes to every page (broadcastToViews). A page never calls the
  *   program itself: in a tab of a task on another computer that call would run on that computer, with its board. This
  *   page always runs on this one.
- * - The tasks: this computer's agents (listAgents), sent to every page whenever one moves (onAgentsChanged), so each
- *   card shows its task's status.
+ * - The tasks: the person's agents on this computer and their other online ones (listAgents), sent to every page
+ *   whenever one here moves (onAgentsChanged), and read again when a page asks (a chat's board changed: another
+ *   computer's agent may have moved), so each card shows its task's status.
  * - An agent's change through a tool: gugu sends `tools/called` after every tools.js call, and the board is read again.
  *   A gugu too old to send it still has the board read again when a page shows again and when an agent moves — never
  *   on a timer.
@@ -24,7 +26,7 @@ function parse(answer) {
 }
 
 const send = (message) =>
-  g.broadcastToViews(message).catch((error) => g.reportError(`看板 could not reach its pages: ${error?.message ?? error}`))
+  g.broadcastToViews(message).catch((error) => g.reportError(`协作看板 could not reach its pages: ${error?.message ?? error}`))
 
 const say = () => send({ type: 'state', board, agents, failure })
 
@@ -34,27 +36,33 @@ async function readBoard() {
     failure.board = null
   } catch (error) {
     failure.board = error?.message ?? String(error)
-    g.reportError(`看板 could not read the board: ${failure.board}`)
+    g.reportError(`协作看板 could not read the board: ${failure.board}`)
   }
 }
 
 async function readAgents() {
   try {
-    agents = (await g.listAgents()).filter((row) => !row.deviceId)
+    // This computer's tasks and the person's other online computers' (agents:read:all-machines): a chat's board has
+    // cards whose tasks run anywhere.
+    agents = await g.listAgents()
     failure.agents = null
     // The App's program has no listAgents (a program's gugu has only a page's own verbs): its tools read this snapshot,
     // written here whenever the tasks move. It is not the board — board.json still has one writer, the program.
-    const rows = agents.map(({ agentId, sessionId, title, status, detail, failure: f }) => ({ agentId, sessionId, title, status, detail, failure: f ? { kind: f.kind } : null }))
+    const rows = agents.map(({ agentId, sessionId, deviceLabel, title, status, detail, failure: f }) => ({ agentId, sessionId, deviceLabel, title, status, detail, failure: f ? { kind: f.kind } : null }))
     await g.writeData('agents.json', JSON.stringify({ at: new Date().toISOString(), agents: rows }))
   } catch (error) {
     // The board still works without statuses; the pages say why there are none.
     agents = []
     failure.agents = error?.message ?? String(error)
-    g.reportError(`看板 could not read this computer's tasks: ${failure.agents}`)
+    g.reportError(`协作看板 could not read this computer's tasks: ${failure.agents}`)
   }
 }
 
 g.onViewMessage(async (message) => {
+  if (message?.type === 'agents') {
+    await readAgents()
+    return say()
+  }
   if (message?.type === 'hello') {
     await Promise.all([readBoard(), readAgents()])
     return say()
