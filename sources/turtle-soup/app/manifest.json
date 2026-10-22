@@ -23,7 +23,7 @@
   "icon": "icon.png",
   "categories": ["games"],
   "permissions": {
-    "capabilities": ["files:read", "files:write", "chat:relay", "chat:read", "agents:tools"]
+    "capabilities": ["files:read", "files:write", "chat:relay", "agents:tools"]
   },
   "contributes": {
     "tabs": [
