@@ -10,17 +10,30 @@ let tools
 // A chat's files as gugu.files gives a program: list, open by entry or { id }, create, a JSON file's live data.
 // Writes land at once here (saved stays true); what is checked is that the tools go through open → transact.
 const chatFiles = new Map() // id -> { entry, data }
+let openHandles = 0
+let beforeCreate = null // a test's hook: another writer acting between the list and the create
 const fakeFiles = {
   async open(ref) {
     const file = chatFiles.get(ref.id)
     if (!file) throw Object.assign(new Error('not found'), { code: 'not-found' })
-    return { entry: file.entry, data: file.data, saved: true, status: 'online', transact: (fn) => fn(), toJSON: () => structuredClone(file.data), onStatus: () => () => {}, close() {} }
+    openHandles += 1
+    let closed = false
+    return { entry: file.entry, data: file.data, saved: true, status: 'online', transact: (fn) => fn(), toJSON: () => structuredClone(file.data), onStatus: () => () => {}, close() { if (!closed) { closed = true; openHandles -= 1 } } }
+  },
+  async remove(entry) {
+    chatFiles.delete(entry.id)
   },
   async list({ chat }) {
     return [...chatFiles.values()].filter((f) => f.entry.chat === chat).map((f) => ({ ...f.entry, type: 'json' }))
   },
   async create({ chat, name }, content) {
-    const entry = { id: `f${chatFiles.size + 1}`, chat, name, path: name }
+    const hook = beforeCreate
+    beforeCreate = null
+    if (hook) await hook()
+    // As the host does: a name the folder has gets ` (2)`.
+    const taken = [...chatFiles.values()].some((f) => f.entry.chat === chat && f.entry.name === name)
+    if (taken) name = name.replace(/\.board\.json$/, ' (2).board.json')
+    const entry = { id: `f${chatFiles.size + 1}-${Math.random().toString(36).slice(2, 6)}`, chat, name, path: name }
     chatFiles.set(entry.id, { entry, data: structuredClone(content) })
     return entry
   },
@@ -128,4 +141,32 @@ test("a chat's board: made on first use, the same tools, a lane reports progress
   assert.ok(!Object.values(local.cards).some((c) => c.title === 'Merge the boards'), "this computer's board is untouched")
   // Only one board file for the chat, however many calls.
   assert.equal([...chatFiles.values()].filter((f) => f.entry.chat === chat && f.entry.name.endsWith('.board.json')).length, 1)
+})
+
+test('every chat board file a call opens is closed when the call ends, a refused one too', async () => {
+  const chat = 'chat-lanes'
+  await tools.list.run({ chat }, asAgent)
+  await assert.rejects(tools.move.run({ chat, card: 'nope', column: 'doing' }, asAgent), /no card/)
+  assert.equal(openHandles, 0)
+})
+
+test('two making a chat board at once: the second opens the first, and what it made is removed', async () => {
+  const chat = 'chat-race'
+  // Another agent makes the board between this call's list and its create: the host names this one (2).
+  beforeCreate = () => fakeFiles.create({ chat, name: '协作看板.board.json' }, { version: 1, rev: 0, columns: { todo: { id: 'todo', role: 'todo', title: null, order: 'V' } }, cards: {}, comments: {} })
+  await tools.create.run({ chat, title: 'mine' }, asAgent)
+  const files = [...chatFiles.values()].filter((f) => f.entry.chat === chat)
+  assert.deepEqual(files.map((f) => f.entry.name), ['协作看板.board.json'])
+  assert.deepEqual(Object.values(files[0].data.cards).map((c) => c.title), ['mine'])
+  // The host refusing the second instead (the folder's names are unique): the same outcome.
+  const chat2 = 'chat-race-2'
+  beforeCreate = async () => {
+    await fakeFiles.create({ chat: chat2, name: '协作看板.board.json' }, { version: 1, rev: 0, columns: { todo: { id: 'todo', role: 'todo', title: null, order: 'V' } }, cards: {}, comments: {} })
+    throw Object.assign(new Error('name taken'), { code: 'name-taken' })
+  }
+  await tools.create.run({ chat: chat2, title: 'mine too' }, asAgent)
+  const files2 = [...chatFiles.values()].filter((f) => f.entry.chat === chat2)
+  assert.equal(files2.length, 1)
+  assert.deepEqual(Object.values(files2[0].data.cards).map((c) => c.title), ['mine too'])
+  assert.equal(openHandles, 0)
 })

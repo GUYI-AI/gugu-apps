@@ -19,17 +19,28 @@ function needAgent(call, what) {
   if (!call.agent) throw new Error(`${what} is for agents: gugu did not say which agent is calling`)
 }
 
-/** The board a call works on: the chat's when it names one, else this computer's. */
-async function boardOf(chat) {
-  if (chat === undefined) return { read: readNow, apply: async (op, who) => (await applyToBoard(op, who)).result }
+/**
+ * Runs `fn` on the board a call works on: the chat's when it names one, else this computer's. A chat's board file is
+ * opened for this call only and closed when it ends — after its writes reached the server, or failed to — so a lane
+ * reporting all day keeps no copies or connections open. (gugu also closes what an agent's call opened when the call
+ * ends, guide apps-programs; closing here does not lean on it.)
+ */
+async function withBoard(chat, fn) {
+  if (chat === undefined) return fn({ read: readNow, apply: async (op, who) => (await applyToBoard(op, who)).result })
   const f = await openChatBoard(gugu.files, chat)
-  return {
-    read: async () => f.toJSON(),
-    apply: async (op, who) => {
-      const result = applyToFile(f, op, who)
-      await whenSaved(f)
-      return result
-    },
+  try {
+    let wrote = false
+    const answer = await fn({
+      read: async () => f.toJSON(),
+      apply: async (op, who) => {
+        wrote = true
+        return applyToFile(f, op, who)
+      },
+    })
+    if (wrote) await whenSaved(f)
+    return answer
+  } finally {
+    f.close()
   }
 }
 
@@ -61,7 +72,7 @@ export const list = {
   annotations: { readOnlyHint: true },
   _meta: forAgents,
   async run({ chat, column }, call) {
-    const [board, agents] = await Promise.all([(await boardOf(chat)).read(), agentsBySession()])
+    const [board, agents] = await Promise.all([withBoard(chat, (b) => b.read()), agentsBySession()])
     const only = column === undefined ? null : findColumn(board, column)
     if (column !== undefined && !only) throw new Error(`no column "${column}"; list without column shows them all`)
     return listView(board, call.agent, agents, only?.id ?? null)
@@ -74,7 +85,7 @@ export const get = {
   annotations: { readOnlyHint: true },
   _meta: forAgents,
   async run({ chat, card }, call) {
-    const [board, agents] = await Promise.all([(await boardOf(chat)).read(), agentsBySession()])
+    const [board, agents] = await Promise.all([withBoard(chat, (b) => b.read()), agentsBySession()])
     const found = board.cards[String(card)]
     if (!found) throw new Error(`there is no card ${card}; list shows the cards`)
     return cardView(board, found, call.agent, agents)
@@ -105,10 +116,11 @@ export const create = {
       if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('message is a chat message id: msg:<uuid> or <uuid>')
       links.push({ kind: 'message', message: id })
     }
-    const board = await boardOf(chat)
-    const op = { type: 'card.create', title, note, links, ...(column === undefined ? {} : { column: columnId(await board.read(), column) }) }
-    const result = await board.apply(op, by(call))
-    return `added card ${result.card}`
+    return withBoard(chat, async (board) => {
+      const op = { type: 'card.create', title, note, links, ...(column === undefined ? {} : { column: columnId(await board.read(), column) }) }
+      const result = await board.apply(op, by(call))
+      return `added card ${result.card}`
+    })
   },
 }
 
@@ -122,10 +134,12 @@ export const claim = {
   async run({ chat, card }, call) {
     needAgent(call, 'claim')
     if (!call.session) throw new Error('gugu did not say which task you are in, so there is nothing to link')
-    const board = await boardOf(chat)
-    const doing = findColumn(await board.read(), 'doing')
-    await board.apply({ type: 'link.add', card: String(card), link: { kind: 'task', session: call.session, agent: call.agent } }, by(call))
-    if (doing) await board.apply({ type: 'card.move', card: String(card), column: doing.id }, by(call))
+    const doing = await withBoard(chat, async (board) => {
+      const column = findColumn(await board.read(), 'doing')
+      await board.apply({ type: 'link.add', card: String(card), link: { kind: 'task', session: call.session, agent: call.agent } }, by(call))
+      if (column) await board.apply({ type: 'card.move', card: String(card), column: column.id }, by(call))
+      return column
+    })
     return doing ? `claimed ${card}: linked to your task, moved to ${columnName(doing)}` : `claimed ${card}: linked to your task`
   },
 }
@@ -143,7 +157,7 @@ export const update = {
   _meta: forAgents,
   async run({ chat, card, progress, waitingOn, next, due, title, note }, call) {
     needAgent(call, 'update')
-    await (await boardOf(chat)).apply({ type: 'card.update', card: String(card), progress, waitingOn, next, due, title, note }, by(call))
+    await withBoard(chat, (board) => board.apply({ type: 'card.update', card: String(card), progress, waitingOn, next, due, title, note }, by(call)))
     return `updated ${card}`
   },
 }
@@ -154,8 +168,7 @@ export const move = {
   _meta: forAgents,
   async run({ chat, card, column }, call) {
     needAgent(call, 'move')
-    const board = await boardOf(chat)
-    await board.apply({ type: 'card.move', card: String(card), column: columnId(await board.read(), column) }, by(call))
+    await withBoard(chat, async (board) => board.apply({ type: 'card.move', card: String(card), column: columnId(await board.read(), column) }, by(call)))
     return `moved ${card}`
   },
 }
@@ -166,7 +179,7 @@ export const comment = {
   _meta: forAgents,
   async run({ chat, card, text }, call) {
     needAgent(call, 'comment')
-    await (await boardOf(chat)).apply({ type: 'comment.add', card: String(card), text }, by(call))
+    await withBoard(chat, (board) => board.apply({ type: 'comment.add', card: String(card), text }, by(call)))
     return `commented on ${card}`
   },
 }
@@ -202,12 +215,12 @@ export const link = {
       if (!chatFile) throw new Error('a chatfile link needs file: the chat file id')
       const f = await gugu.files.open({ id: chatFile })
       const { id, chat: fileChat, path: filePath, name } = f.entry
-      f.close()
+      f.close() // only its entry was needed
       target = { kind: 'chatfile', file: id, name: filePath ?? name, ...(fileChat ? { chat: fileChat } : {}) }
     } else {
       target = { kind, url, ...(state ? { state } : {}), ...(title ? { title } : {}) }
     }
-    const result = await (await boardOf(chat)).apply({ type: 'link.add', card: String(card), link: target }, by(call))
+    const result = await withBoard(chat, (board) => board.apply({ type: 'link.add', card: String(card), link: target }, by(call)))
     return result.existed ? `already linked to ${card}` : `linked to ${card}`
   },
 }
