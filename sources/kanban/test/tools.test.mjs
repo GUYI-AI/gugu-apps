@@ -6,6 +6,38 @@ import path from 'node:path'
 
 let dir
 let tools
+
+// A chat's files as gugu.files gives a program: list, open by entry or { id }, create, a JSON file's live data.
+// Writes land at once here (saved stays true); what is checked is that the tools go through open → transact.
+const chatFiles = new Map() // id -> { entry, data }
+let openHandles = 0
+let beforeCreate = null // a test's hook: another writer acting between the list and the create
+const fakeFiles = {
+  async open(ref) {
+    const file = chatFiles.get(ref.id)
+    if (!file) throw Object.assign(new Error('not found'), { code: 'not-found' })
+    openHandles += 1
+    let closed = false
+    return { entry: file.entry, data: file.data, saved: true, status: 'online', transact: (fn) => fn(), toJSON: () => structuredClone(file.data), onStatus: () => () => {}, close() { if (!closed) { closed = true; openHandles -= 1 } } }
+  },
+  async remove(entry) {
+    chatFiles.delete(entry.id)
+  },
+  async list({ chat }) {
+    return [...chatFiles.values()].filter((f) => f.entry.chat === chat).map((f) => ({ ...f.entry, type: 'json' }))
+  },
+  async create({ chat, name }, content) {
+    const hook = beforeCreate
+    beforeCreate = null
+    if (hook) await hook()
+    // As the host does: a name the folder has gets ` (2)`.
+    const taken = [...chatFiles.values()].some((f) => f.entry.chat === chat && f.entry.name === name)
+    if (taken) name = name.replace(/\.board\.json$/, ' (2).board.json')
+    const entry = { id: `f${chatFiles.size + 1}-${Math.random().toString(36).slice(2, 6)}`, chat, name, path: name }
+    chatFiles.set(entry.id, { entry, data: structuredClone(content) })
+    return entry
+  },
+}
 const AGENT = 'user:00000000-0000-0000-0000-00000000000a'
 const agentRows = [{ agentId: AGENT, sessionId: 's-agent', deviceId: null, title: 'Fix login', status: 'needs_user', detail: 'approval' }]
 
@@ -14,7 +46,7 @@ before(async () => {
   process.env.GUGU_EXTENSION_DATA_DIR = dir
   // As the background page writes it. A program's gugu has no listAgents (mac1 10-19): the tools must not ask for it.
   await writeFile(path.join(dir, 'agents.json'), JSON.stringify({ at: '2026-10-19T00:00:00.000Z', agents: agentRows }))
-  globalThis.gugu = {}
+  globalThis.gugu = { files: fakeFiles }
   tools = await import('../app/tools.js')
 })
 after(() => rm(dir, { recursive: true, force: true }))
@@ -86,4 +118,55 @@ test('before the background page has listed the tasks, a task link says unknown 
   const tasks = listed.columns.flatMap((c) => c.cards).flatMap((c) => c.tasks ?? [])
   assert.ok(tasks.length > 0)
   assert.ok(tasks.every((t) => t.status === 'unknown'))
+})
+
+test("a chat's board: made on first use, the same tools, a lane reports progress and links its report", async () => {
+  const chat = 'chat-lanes'
+  await tools.create.run({ chat, title: 'Merge the boards' }, asAgent)
+  const file = [...chatFiles.values()].find((f) => f.entry.chat === chat)
+  assert.equal(file.entry.name, '协作看板.board.json')
+  const card = Object.values(file.data.cards)[0]
+  await tools.claim.run({ chat, card: card.id }, asAgent)
+  await tools.update.run({ chat, card: card.id, progress: 40, waitingOn: 'a mac1 slot', next: 'measure' }, asAgent)
+  chatFiles.set('report', { entry: { id: 'report', chat, name: 'merge.html', path: '车道/merge.html' }, data: {} })
+  await tools.link.run({ chat, card: card.id, kind: 'chatfile', file: 'report' }, asAgent)
+  const after = file.data.cards[card.id]
+  assert.equal(after.column, 'doing')
+  assert.deepEqual([after.progress, after.waitingOn, after.next, after.updatedBy], [40, 'a mac1 slot', 'measure', AGENT])
+  assert.deepEqual(Object.values(after.links).map((l) => l.kind).sort(), ['chatfile', 'task'])
+  assert.equal(Object.values(after.links).find((l) => l.kind === 'chatfile').name, '车道/merge.html')
+  const got = await tools.get.run({ chat, card: card.id }, asAgent)
+  assert.equal(got.waitingOn, 'a mac1 slot')
+  const local = await board()
+  assert.ok(!Object.values(local.cards).some((c) => c.title === 'Merge the boards'), "this computer's board is untouched")
+  // Only one board file for the chat, however many calls.
+  assert.equal([...chatFiles.values()].filter((f) => f.entry.chat === chat && f.entry.name.endsWith('.board.json')).length, 1)
+})
+
+test('every chat board file a call opens is closed when the call ends, a refused one too', async () => {
+  const chat = 'chat-lanes'
+  await tools.list.run({ chat }, asAgent)
+  await assert.rejects(tools.move.run({ chat, card: 'nope', column: 'doing' }, asAgent), /no card/)
+  assert.equal(openHandles, 0)
+})
+
+test('two making a chat board at once: the second opens the first, and what it made is removed', async () => {
+  const chat = 'chat-race'
+  // Another agent makes the board between this call's list and its create: the host names this one (2).
+  beforeCreate = () => fakeFiles.create({ chat, name: '协作看板.board.json' }, { version: 1, rev: 0, columns: { todo: { id: 'todo', role: 'todo', title: null, order: 'V' } }, cards: {}, comments: {} })
+  await tools.create.run({ chat, title: 'mine' }, asAgent)
+  const files = [...chatFiles.values()].filter((f) => f.entry.chat === chat)
+  assert.deepEqual(files.map((f) => f.entry.name), ['协作看板.board.json'])
+  assert.deepEqual(Object.values(files[0].data.cards).map((c) => c.title), ['mine'])
+  // The host refusing the second instead (the folder's names are unique): the same outcome.
+  const chat2 = 'chat-race-2'
+  beforeCreate = async () => {
+    await fakeFiles.create({ chat: chat2, name: '协作看板.board.json' }, { version: 1, rev: 0, columns: { todo: { id: 'todo', role: 'todo', title: null, order: 'V' } }, cards: {}, comments: {} })
+    throw Object.assign(new Error('name taken'), { code: 'name-taken' })
+  }
+  await tools.create.run({ chat: chat2, title: 'mine too' }, asAgent)
+  const files2 = [...chatFiles.values()].filter((f) => f.entry.chat === chat2)
+  assert.equal(files2.length, 1)
+  assert.deepEqual(Object.values(files2[0].data.cards).map((c) => c.title), ['mine too'])
+  assert.equal(openHandles, 0)
 })

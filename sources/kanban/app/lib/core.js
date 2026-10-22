@@ -1,5 +1,7 @@
-// 看板's board, as data: the operations every writer goes through, the order keys, and how a task's status reads on a
-// card. No Node, no DOM: tools.js (the one writer, Node) and the pages (the browser) import the same file.
+// 协作看板's board, as data: the operations every writer goes through, the order keys, and how a card reads (its task's
+// status, whether it waits on someone, whether it went quiet). No Node, no DOM: tools.js (Node) and the pages (the
+// browser) import the same file, and apply it to either home of a board — this computer's board.json, or a chat's
+// board file (a live object, gugu.files) — alike.
 
 export const BOARD_VERSION = 1
 
@@ -37,6 +39,9 @@ function midpoint(a, b) {
 
 /** Ties (two writers picked the same key) sort by id, the same way everywhere. */
 export const byOrder = (x, y) => (x.order < y.order ? -1 : x.order > y.order ? 1 : x.id < y.id ? -1 : x.id > y.id ? 1 : 0)
+
+/** Ids for new cards, links, comments and columns: short, and the same maker in Node and the browser. */
+export const newId = () => crypto.randomUUID().replaceAll('-', '').slice(0, 12)
 
 export function emptyBoard() {
   const columns = {}
@@ -103,6 +108,24 @@ const text = (value, what, max) => {
   return s
 }
 
+/** What a card says about its progress, besides its column: any card may carry them, an agent's lane keeps them current. */
+const PROGRESS_FIELDS = { waitingOn: 500, next: 500, due: 100 }
+
+function setProgress(card, op) {
+  if (op.progress !== undefined) {
+    const n = op.progress === null || op.progress === '' ? null : Number(op.progress)
+    if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 100)) throw new Error('progress is a whole number from 0 to 100, or null')
+    card.progress = n
+  }
+  for (const [field, max] of Object.entries(PROGRESS_FIELDS)) if (op[field] !== undefined) card[field] = text(op[field], field, max).trim()
+}
+
+/** Every change to a card says when and by whom: the page shows it, and a lane that stops saying anything goes stale. */
+function touch(card, by, at) {
+  card.updatedAt = at
+  card.updatedBy = by
+}
+
 function needCard(board, id) {
   const card = board.cards[id]
   if (!card) throw new Error(`there is no card ${id} on the board`)
@@ -146,7 +169,8 @@ export function applyOp(board, op, { by, now, id }) {
       const column = op.column ? needColumn(board, op.column).id : columnsInOrder(board)[0].id
       const title = text(op.title, 'a title', 500).trim()
       if (!title) throw new Error('a card needs a title')
-      const card = { id: id(), title, note: text(op.note, 'a note', 100_000), column, order: '', by, links: {}, createdAt: at, updatedAt: at }
+      const card = { id: id(), title, note: text(op.note, 'a note', 100_000), column, order: '', by, links: {}, createdAt: at, updatedAt: at, updatedBy: by }
+      setProgress(card, op)
       card.order = placeIn(cardsIn(board, column), {}, card.id)
       for (const link of op.links ?? []) card.links[id()] = { ...checkLink(link), by, at }
       board.cards[card.id] = card
@@ -154,13 +178,16 @@ export function applyOp(board, op, { by, now, id }) {
     }
     case 'card.update': {
       const card = needCard(board, op.card)
+      // Every field is checked before any is written: a card in a chat's file is live, a half-written change is sent.
+      const changes = {}
       if (op.title !== undefined) {
-        const title = text(op.title, 'a title', 500).trim()
-        if (!title) throw new Error('a card needs a title')
-        card.title = title
+        changes.title = text(op.title, 'a title', 500).trim()
+        if (!changes.title) throw new Error('a card needs a title')
       }
-      if (op.note !== undefined) card.note = text(op.note, 'a note', 100_000)
-      card.updatedAt = at
+      if (op.note !== undefined) changes.note = text(op.note, 'a note', 100_000)
+      setProgress(changes, op)
+      Object.assign(card, changes)
+      touch(card, by, at)
       return { card: card.id }
     }
     case 'card.move': {
@@ -168,7 +195,7 @@ export function applyOp(board, op, { by, now, id }) {
       const column = needColumn(board, op.column ?? card.column).id
       card.order = placeIn(cardsIn(board, column), op, card.id)
       card.column = column
-      card.updatedAt = at
+      touch(card, by, at)
       return { card: card.id, column }
     }
     case 'card.delete': {
@@ -185,14 +212,14 @@ export function applyOp(board, op, { by, now, id }) {
       if (same) return { card: card.id, link: same[0], existed: true }
       const lid = id()
       card.links[lid] = { ...link, by, at }
-      card.updatedAt = at
+      touch(card, by, at)
       return { card: card.id, link: lid }
     }
     case 'link.remove': {
       const card = needCard(board, op.card)
       if (!card.links[op.link]) throw new Error(`card ${card.id} has no link ${op.link}`)
       delete card.links[op.link]
-      card.updatedAt = at
+      touch(card, by, at)
       return { card: card.id }
     }
     case 'comment.add': {
@@ -201,7 +228,7 @@ export function applyOp(board, op, { by, now, id }) {
       if (!body) throw new Error('a comment needs text')
       const cid = id()
       board.comments[cid] = { id: cid, card: card.id, by, text: body, at }
-      card.updatedAt = at
+      touch(card, by, at)
       return { comment: cid }
     }
     case 'column.create': {
@@ -253,4 +280,20 @@ export function taskState(agent) {
     default:
       return { key: 'none', waiting: false }
   }
+}
+
+/** A card in progress with a task on it and no word for this long has gone quiet: the board greys it. */
+export const STALE_MS = 45 * 60 * 1000
+
+/**
+ * What a card asks of people, read from the card and its tasks: `waiting` — its waitingOn says who or what it waits
+ * on; `asks` — one of its tasks waits on the person (approval, answer); `stale` — in progress, with a task, and not
+ * changed for STALE_MS. `stateOf(session)` is that task's taskState, or null when the statuses are not known here.
+ */
+export function cardFlags(board, card, stateOf, now) {
+  const tasks = Object.values(card.links).filter((l) => l.kind === 'task')
+  const waiting = Boolean(card.waitingOn)
+  const asks = tasks.some((l) => stateOf(l.session)?.waiting)
+  const stale = board.columns[card.column]?.role === 'doing' && tasks.length > 0 && now - Date.parse(card.updatedAt) > STALE_MS
+  return { waiting, asks, stale, attention: waiting || asks }
 }

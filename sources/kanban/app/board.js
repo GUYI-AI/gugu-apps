@@ -1,41 +1,54 @@
-// 看板 — the board page. The same page wherever it opens (the dock, a chat's panel, a task's tab): the board comes from
-// the background page, and every change goes back through it to the App's program, the board's only writer.
-import { columnsInOrder, cardsIn, taskState } from './lib/core.js'
+// 协作看板 — the board page. The same page wherever it opens (the dock, a task's tab, a chat's panel, a board file), on
+// one of two homes of a board: this computer's (from the background page; every change goes back through it to the
+// App's program, its only writer) or a chat's (its board file, opened here live; a change is applied to the file).
+// Everything below the home — cards, columns, the open card — is one page for both.
+import { columnsInOrder, cardsIn, taskState, cardFlags } from './lib/core.js'
+import { openChatBoard, applyToFile, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
 
 const g = window.gugu
 
 const WORDS = {
   zh: {
-    title: '看板', newPlaceholder: '新卡片，回车添加', add: '添加', attach: '关联当前任务',
+    title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
     roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
     states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务已移除', none: '无状态' },
-    addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', del: '删除卡片', delAgain: '再次点击确认删除',
+    all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
+    addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
+    column: '列', progress: '进度', waitingOn: '在等', next: '下一步', due: '截止', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
+    updated: '更新', toggle: '展开或收起',
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
     noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
     attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
     pickFile: '关联任务文件…', pickChatFile: '关联群文件…', addUrl: '添加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
-    filter: '筛选', chooseTask: '选择任务', noTasks: '本机暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
+    filter: '筛选', chooseTask: '选择任务', noTasks: '暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
     show: '查看', openBeside: '在旁边打开', pickProjectFile: '关联项目文件…', chooseProject: '选择项目', noProjects: '暂无项目', browser: '打开', message: '查看消息',
-    comment: '添加评论', send: '发表', byAgent: (n) => `⚡ ${n}`, byPerson: '我',
-    desktopOnly: '看板仅支持在电脑上使用。',
-    noStatus: (e) => `无法读取本机任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`,
-    handText: (c) => `请处理看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n开始时用看板的 claim 工具认领，完成后用 move 移到「待验收」，并用 link 关联产出。`,
+    comment: '添加评论', send: '发表', byPerson: '我',
+    desktopOnly: '本机看板仅支持在电脑上使用。', phoneHint: '在群或私聊的右栏打开协作看板，可查看该对话的看板。',
+    noStatus: (e) => `无法读取任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`, gone: '看板文件已删除，或你已不在该对话中。',
+    handText: (c, chat) => `请处理协作看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
+      `${chat ? `这张卡片在对话「${chat.name}」的看板上，调用看板工具时传 chat: "${chat.id}"。` : ''}` +
+      '开始时用 claim 认领，进展用 update 更新，完成后用 move 移到「待验收」，并用 link 关联产出。',
   },
   en: {
-    title: 'Board', newPlaceholder: 'New card, press Enter to add', add: 'Add', attach: 'Link current task',
+    title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
     roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
     states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task removed', none: 'No status' },
-    addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', del: 'Delete card', delAgain: 'Click again to confirm',
+    all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
+    addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
+    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
+    updated: 'Updated', toggle: 'Expand or collapse',
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
     noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
     attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
     pickFile: 'Link task file…', pickChatFile: 'Link chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
-    filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks on this device', noFiles: 'No files found. Enter a file name to search all chats.',
+    filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks', noFiles: 'No files found. Enter a file name to search all chats.',
     show: 'View', openBeside: 'Open beside', pickProjectFile: 'Link project file…', chooseProject: 'Select project', noProjects: 'No projects', browser: 'Open', message: 'View message',
-    comment: 'Add a comment', send: 'Post', byAgent: (n) => `⚡ ${n}`, byPerson: 'Me',
-    desktopOnly: 'The board is only available on a computer.',
-    noStatus: (e) => `Unable to read task status on this device: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`,
-    handText: (c) => `Please handle this card from the board (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\nClaim it with the board's claim tool when you start; when finished, move it to Review and link the output with link.`,
+    comment: 'Add a comment', send: 'Post', byPerson: 'Me',
+    desktopOnly: "This computer's board is only available on a computer.", phoneHint: "Open Teamboard in a chat's side panel to see that chat's board.",
+    noStatus: (e) => `Unable to read task status: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`, gone: 'The board file was deleted, or you are no longer in that chat.',
+    handText: (c, chat) => `Please handle this card from Teamboard (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
+      `${chat ? `It is on the board of the chat "${chat.name}": pass chat: "${chat.id}" to the board's tools. ` : ''}` +
+      'Claim it with claim when you start, report progress with update; when finished, move it to Review and link the output with link.',
   },
 }
 
@@ -44,17 +57,23 @@ const $ = (id) => document.getElementById(id)
 // is now — its session or chat — is read again on every change, never kept from the first load.
 let ctx = await g.getContext()
 let t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
-// The board is read and written only through the background page and the App's program, and a phone has neither (its
-// `gugu` has no onBackgroundMessage — the host's way of saying so). There the page says it is a computer's, and asks the
-// background for nothing.
+// This computer's board is read and written only through the background page and the App's program, and a phone has
+// neither (its `gugu` has no onBackgroundMessage — the host's way of saying so). A chat's board needs neither.
 const desktop = typeof g.onBackgroundMessage === 'function'
 
+/** Where the board shown is kept: this computer (`{ kind: 'local' }`) or a chat's board file (`{ kind: 'chat', f }`). */
+let home = null
 let board = null
+let localBoard = null
 let agents = []
-let shownColumn = null
+let agentsKnown = false // false on a phone, and until the background page has listed them: no status is drawn then
+let filter = 'all'
 let selected = null
 let visible = ctx.layout?.visible ?? true
+const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
+let adding = null // the open add-card box: { column, root, input, attach }
 const waiting = new Map()
+let stateProblem = false
 
 /** Element maker: text goes in as text (others wrote it), never as markup. */
 function h(tag, props = {}, ...kids) {
@@ -77,16 +96,25 @@ function showAlert(message) {
   $('alert').hidden = !message
 }
 
-/** One change to the board, through the background page; resolves the program's result, rejects with its reason. */
+/** Who a change on this board is by: the person on this computer's board; on a chat's, their own id (others see it). */
+const me = () => (home?.kind === 'chat' ? home.f.presence.self.userId : 'person')
+
+/** One change to the board shown; resolves the result, rejects with the reason (already said in #alert). */
 function change(op) {
-  const id = crypto.randomUUID()
-  return new Promise((resolve, reject) => {
-    waiting.set(id, { resolve, reject })
-    g.sendToBackground({ type: 'op', id, op }).catch((error) => {
-      waiting.delete(id)
-      reject(error)
+  let done
+  if (home?.kind === 'chat') {
+    done = new Promise((resolve) => resolve(applyToFile(home.f, op, me())))
+  } else {
+    const id = crypto.randomUUID()
+    done = new Promise((resolve, reject) => {
+      waiting.set(id, { resolve, reject })
+      g.sendToBackground({ type: 'op', id, op }).catch((error) => {
+        waiting.delete(id)
+        reject(error)
+      })
     })
-  }).catch((error) => {
+  }
+  return done.catch((error) => {
     showAlert(error?.message ?? String(error))
     throw error
   })
@@ -102,61 +130,82 @@ if (desktop) g.onBackgroundMessage((message) => {
     return
   }
   if (message?.type !== 'state') return
-  board = message.board
+  localBoard = message.board
   agents = message.agents ?? []
-  const problems = [message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
+  agentsKnown = !message.failure?.agents
+  // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
+  const problems = [home?.kind === 'local' && message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
   if (problems.length) showAlert(problems.join(' · '))
-  else if (!message.done) showAlert(null)
+  else if (stateProblem && !message.done) showAlert(null)
+  stateProblem = problems.length > 0
   if (message.done) {
     waiting.get(message.done.id)?.resolve(message.done.result)
     waiting.delete(message.done.id)
   }
+  if (home?.kind === 'local') board = localBoard
   render()
 })
 
 const agentBySession = (session) => agents.find((a) => a.sessionId === session) ?? null
 const agentById = (id) => agents.find((a) => a.agentId === id) ?? null
+const stateOf = (session) => (agentsKnown ? taskState(agentBySession(session)) : null)
 const columnTitle = (column) => column.title ?? t.roles[column.role] ?? column.id
 const taskLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind === 'task')
 const otherLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind !== 'task')
+const flagsOf = (card) => cardFlags(board, card, stateOf, Date.now())
+const chatOfBoard = () => (home?.kind === 'chat' ? { id: home.f.entry.chat, name: home.name } : null)
 
+/** A task's status, as gugu states it; nothing where the statuses are not known (a phone). */
 function stateBadge(link) {
-  const { key } = taskState(agentBySession(link.session))
-  return h('span', { class: `state ${key}`, text: t.states[key] })
+  const state = stateOf(link.session)
+  return state ? h('span', { class: `state ${state.key}`, text: t.states[state.key] }) : null
 }
 
 function byLabel(by) {
-  if (by === 'person') return t.byPerson
-  return t.byAgent(agentById(by)?.title ?? by.slice(5, 13))
+  if (by === 'person' || by === me()) return t.byPerson
+  return ctx.chat?.members?.find((m) => m.id === by)?.name ?? agentById(by)?.title ?? by.slice(5, 13)
 }
 
 // ── the board ────────────────────────────────────────────────────────────────
 
 function render() {
   if (!board) return
-  const columns = columnsInOrder(board)
-  if (!shownColumn || !board.columns[shownColumn]) shownColumn = columns[0]?.id ?? null
-
-  let waitingCount = 0
-  for (const card of Object.values(board.cards)) {
-    if (taskLinks(card).some(([, l]) => taskState(agentBySession(l.session)).waiting)) waitingCount += 1
+  // Typing a card's title in the add box: an IME's half-typed word would be lost if the box were rebuilt under it.
+  if (adding?.composing) {
+    adding.pending = true
+    return
   }
-  g.setTabBadge(waitingCount || null).catch((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
+  const columns = columnsInOrder(board)
+  const cards = Object.values(board.cards)
+  const flags = new Map(cards.map((c) => [c.id, flagsOf(c)]))
+  const attention = cards.filter((c) => flags.get(c.id).attention).length
+  g.setTabBadge(attention || null).catch((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
 
-  $('tabs').replaceChildren(
-    ...columns.map((c) =>
-      h('button', { role: 'tab', 'aria-selected': c.id === shownColumn ? 'true' : 'false', onclick: () => { shownColumn = c.id; render() } }, `${columnTitle(c)} ${cardsIn(board, c.id).length}`),
-    ),
+  const waitingCount = cards.filter((c) => flags.get(c.id).waiting).length
+  $('summary').textContent = [t.count(cards.length), waitingCount ? t.waitingCount(waitingCount) : null].filter(Boolean).join(' · ')
+  $('filters').replaceChildren(
+    ...[['all', t.all], ['attention', attention ? `${t.attention} ${attention}` : t.attention]].map(([key, label]) =>
+      h('button', { role: 'tab', 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } }, label)),
   )
-  $('board').replaceChildren(...columns.map(columnView), h('div', {}, h('button', { onclick: addColumn, text: t.addColumn })))
+
+  // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
+  $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
+  const hadFocus = adding && document.activeElement === adding.input
+  $('board').replaceChildren(
+    ...columns.map((c) => columnView(c, flags)),
+    h('div', { class: 'add-column' }, h('button', { onclick: addColumn, text: t.addColumn })),
+  )
+  if (hadFocus) adding.input.focus()
   if (selected && !board.cards[selected]) closeCard()
   else if (selected) updateDrawer()
 }
 
-function columnView(column) {
-  const cards = cardsIn(board, column.id)
+function columnView(column, flags) {
+  const all = cardsIn(board, column.id)
+  const cards = filter === 'attention' ? all.filter((c) => flags.get(c.id).attention) : all
+  if (!collapsed.has(column.id)) collapsed.set(column.id, column.role === 'todo' || column.role === 'done')
   const list = h('ul', { class: 'cards', 'data-col': column.id })
-  list.append(...cards.map((card) => h('li', {}, cardView(card))))
+  list.append(...cards.map((card) => h('li', {}, cardView(card, flags.get(card.id)))))
   list.addEventListener('dragover', (event) => {
     event.preventDefault()
     list.classList.add('over')
@@ -172,23 +221,31 @@ function columnView(column) {
     quietly(change({ type: 'card.move', card: id, column: column.id, ...(below ? { before: below.dataset.card } : {}) }))
   })
   const title = h('span', { text: columnTitle(column), title: t.columnName, ondblclick: () => renameColumn(column, title) })
-  return h('section', { class: `col${column.id === shownColumn ? ' shown' : ''}`, 'aria-label': columnTitle(column) },
-    h('h2', {}, title, h('small', { text: String(cards.length) })),
+  const toggle = h('button', { class: 'toggle', 'aria-label': `${columnTitle(column)} · ${t.toggle}`, 'aria-expanded': collapsed.get(column.id) ? 'false' : 'true', onclick: () => { collapsed.set(column.id, !collapsed.get(column.id)); render() } },
+    icon(collapsed.get(column.id) ? 'chevron-right' : 'chevron-down'))
+  return h('section', { class: `col${collapsed.get(column.id) ? ' collapsed' : ''}`, 'data-role': column.role ?? '', 'aria-label': columnTitle(column) },
+    h('h2', {}, toggle, title, h('small', { text: String(cards.length) })),
     list,
+    adding?.column === column.id ? adding.root : h('button', { class: 'add', onclick: () => openAdd(column.id) }, icon('plus'), t.addCard),
   )
 }
 
-function cardView(card) {
+function cardView(card, flags) {
   const tasks = taskLinks(card)
   const others = otherLinks(card).length
-  const el = h('button', { class: 'card', draggable: 'true', 'data-card': card.id, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => openCard(card.id) },
-    h('strong', { text: card.title }),
-    (tasks.length || others || card.by !== 'person')
-      ? h('span', { class: 'meta' },
-          tasks.map(([, l]) => stateBadge(l)),
-          others ? h('span', {}, icon('paperclip'), ` ${others}`) : null,
-          card.by !== 'person' ? h('span', { text: byLabel(card.by) }) : null)
-      : null,
+  const machines = [...new Set(tasks.map(([, l]) => agentBySession(l.session)?.deviceLabel).filter(Boolean))]
+  const titleId = `c-${card.id}`
+  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}`, draggable: 'true', 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => openCard(card.id) },
+    h('strong', { id: titleId, text: card.title }),
+    card.waitingOn ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn) })) : null,
+    typeof card.progress === 'number' ? h('span', { class: 'bar', role: 'img', 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
+    h('span', { class: 'meta' },
+      tasks.map(([, l]) => (l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null)),
+      tasks.map(([, l]) => stateBadge(l)),
+      machines.map((m) => h('span', { text: m })),
+      others ? h('span', {}, icon('paperclip'), ` ${others}`) : null,
+      h('span', { class: 'spacer' }),
+      card.updatedAt ? h('gugu-time', { datetime: card.updatedAt, title: flags.stale ? t.stale : undefined }) : null),
   )
   el.addEventListener('dragstart', (event) => {
     event.dataTransfer.setData('text/plain', card.id)
@@ -222,27 +279,50 @@ function addColumn(event) {
   input.focus()
 }
 
-// ── a new card ───────────────────────────────────────────────────────────────
+// ── a new card: at the bottom of its column ─────────────────────────────────
 
-$('heading').textContent = t.title
-$('new-title').placeholder = t.newPlaceholder
-$('new-title').setAttribute('aria-label', t.newPlaceholder)
-$('new-add').textContent = t.add
-$('attach-label').textContent = t.attach
-$('new-card').addEventListener('submit', async (event) => {
-  event.preventDefault()
-  const title = $('new-title').value.trim()
-  if (!title) return
-  const links = ctx.session && $('attach-task').checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
-  const column = narrow() ? shownColumn : undefined
-  await quietly(change({ type: 'card.create', title, links, ...(column ? { column } : {}) }).then(() => { $('new-title').value = '' }))
+function openAdd(column) {
+  const input = h('input', { type: 'text', placeholder: t.newPlaceholder, 'aria-label': t.newPlaceholder, autocomplete: 'off' })
+  // In a task's tab the new card can carry that task (this computer's board, or a chat's: the task is the person's).
+  const attach = ctx.session ? h('input', { type: 'checkbox', checked: true }) : null
+  const root = h('form', { class: 'adding stack' }, input, attach ? h('label', {}, attach, ` ${t.attach}`) : null)
+  adding = { column, root, input, attach, composing: false, pending: false }
+  input.addEventListener('compositionstart', () => { adding.composing = true })
+  input.addEventListener('compositionend', () => {
+    adding.composing = false
+    if (adding.pending) render()
+  })
+  input.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAdd() })
+  input.addEventListener('blur', () => setTimeout(() => { if (adding?.input === input && !input.value.trim() && !root.contains(document.activeElement)) closeAdd() }, 0))
+  root.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const title = input.value.trim()
+    if (!title) return
+    const links = attach?.checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
+    // Cleared at once, so the next title can be typed while this one is saved.
+    input.value = ''
+    quietly(change({ type: 'card.create', title, links, column }))
+  })
+  if (collapsed.get(column)) collapsed.set(column, false)
+  render()
+  input.focus()
+}
+
+function closeAdd() {
+  adding = null
+  render()
+}
+
+g.onCommand((id) => {
+  if (id !== 'new' || !board) return
+  const columns = columnsInOrder(board)
+  // Narrow, the first column that is open; wide, the first.
+  openAdd((narrow() && columns.find((c) => !collapsed.get(c.id))?.id) || columns[0].id)
 })
-
-g.onCommand((id) => { if (id === 'new' && desktop) $('new-title').focus() })
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
-let drawer = null // the open card's live parts: { card, title, noteView, noteEdit, viewing, ... }
+let drawer = null // the open card's live parts: { card, title, fields, noteView, noteEdit, viewing, ... }
 
 function openCard(id) {
   selected = id
@@ -268,16 +348,35 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && selected && !event.target.closest?.('input, textarea, .cm-editor')) closeCard()
 })
 
+/** One progress field of the open card: saved when it changes (leaving the box, Enter), never while being typed in. */
+function fieldInput(id, key, props) {
+  const input = h('input', { 'aria-label': t[key], ...props })
+  input.addEventListener('change', () => {
+    const value = props.type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value
+    quietly(change({ type: 'card.update', card: id, [key]: value }))
+  })
+  return input
+}
+
 function buildDrawer(id) {
   const card = board.cards[id]
-  const column = h('select', { 'aria-label': t.roles.doing, onchange: (e) => quietly(change({ type: 'card.move', card: id, column: e.target.value })) })
+  const column = h('select', { 'aria-label': t.column, onchange: (e) => quietly(change({ type: 'card.move', card: id, column: e.target.value })) })
   let armed = false
   const del = h('button', { class: 'danger', text: t.del, onclick: () => {
     if (!armed) { armed = true; del.textContent = t.delAgain; return }
     quietly(change({ type: 'card.delete', card: id }))
   } })
+  const more = h('details', { class: 'more' }, h('summary', { 'aria-label': t.more }, icon('ellipsis')), h('div', { class: 'menu' }, del))
   const title = h('input', { id: 'd-title', type: 'text', value: card.title, 'aria-label': t.title })
   title.addEventListener('change', () => quietly(change({ type: 'card.update', card: id, title: title.value })))
+
+  const fields = {
+    progress: fieldInput(id, 'progress', { type: 'number', min: '0', max: '100', step: '1', inputmode: 'numeric' }),
+    waitingOn: fieldInput(id, 'waitingOn', { type: 'text' }),
+    next: fieldInput(id, 'next', { type: 'text' }),
+    due: fieldInput(id, 'due', { type: 'text' }),
+  }
+  const updated = h('small', { class: 'muted' })
 
   const tasks = h('ul', { class: 'links' })
   const taskActions = h('div', { class: 'row' })
@@ -315,16 +414,19 @@ function buildDrawer(id) {
     if (text) quietly(change({ type: 'comment.add', card: id, text }).then(() => { commentBox.value = '' }))
   } })
 
-  const back = h('button', { 'aria-label': t.back, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
+  const back = h('button', { 'aria-label': narrow() ? t.back : t.close, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
+  const label = (key, input) => h('label', {}, t[key], input)
   const root = h('div', { class: 'stack' },
-    h('div', { class: 'head' }, back, column, del),
+    h('div', { class: 'head' }, back, column, more),
     title,
+    h('div', { class: 'fields' }, label('progress', fields.progress), label('due', fields.due), label('waitingOn', fields.waitingOn), label('next', fields.next)),
+    updated,
     h('section', {}, h('h5', { text: t.tasks }), tasks, taskActions),
     h('section', {}, h('h5', { text: t.links }), links, linkActions, picker, view),
     h('section', {}, h('div', { class: 'row' }, h('h5', { text: t.noteH }), noteButton), noteView, noteEdit),
     h('section', {}, h('h5', { text: t.comments }), comments, commentBox, h('div', {}, commentSend)),
   )
-  return { id, root, column, title, tasks, taskActions, links, linkActions, picker, view, noteView, noteEdit, comments, viewing: null, file: null, shownNote: null }
+  return { id, root, column, title, fields, updated, tasks, taskActions, links, linkActions, picker, view, noteView, noteEdit, comments, viewing: null, file: null, shownNote: null }
 }
 
 async function updateDrawer() {
@@ -333,14 +435,19 @@ async function updateDrawer() {
   if (!card) return
   d.column.replaceChildren(...columnsInOrder(board).map((c) => h('option', { value: c.id, selected: c.id === card.column, text: columnTitle(c) })))
   if (document.activeElement !== d.title) d.title.value = card.title
+  for (const [key, input] of Object.entries(d.fields)) {
+    if (document.activeElement !== input) input.value = card[key] ?? ''
+  }
+  d.updated.replaceChildren(...(card.updatedAt ? [`${t.updated} `, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? ` · ${t.stale}` : ''] : []))
 
   d.tasks.replaceChildren(...taskLinks(card).map(([lid, link]) => {
     const row = agentBySession(link.session)
     return h('li', {},
+      link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : null,
       stateBadge(link),
-      h('span', { class: 'what', text: row?.title ?? link.title ?? link.session }),
+      h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
       h('button', { text: t.open, onclick: () => g.showSession(link.session, { peek: true }).catch((e) => showAlert(e.message)) }),
-      h('button', { text: t.handTo, onclick: () => g.compose(t.handText(card), { session: link.session }).catch((e) => showAlert(e.message)) }),
+      h('button', { text: t.handTo, onclick: () => g.compose(t.handText(card, chatOfBoard()), { session: link.session }).catch((e) => showAlert(e.message)) }),
       h('button', { 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x')),
     )
   }))
@@ -353,13 +460,13 @@ async function updateDrawer() {
     current && !linked.has(current)
       ? h('button', { text: t.attachCurrent, onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })) })
       : null,
-    h('button', { text: t.pickTask, onclick: () => pickTask(card) }),
-    h('button', { text: t.start, onclick: (e) => startTask(card, e.currentTarget, appState?.activeProjectId) }),
+    desktop ? h('button', { text: t.pickTask, onclick: () => pickTask(card) }) : null,
+    desktop ? h('button', { text: t.start, onclick: (e) => startTask(card, e.currentTarget, appState?.activeProjectId) }) : null,
   ].filter(Boolean))
 
   d.links.replaceChildren(...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)))
   d.linkActions.replaceChildren(...[
-    h('button', { text: t.pickFile, onclick: () => pickTaskFile(card) }),
+    desktop ? h('button', { text: t.pickFile, onclick: () => pickTaskFile(card) }) : null,
     h('button', { text: t.pickChatFile, onclick: () => pickChatFile(card) }),
     // A gugu without project folders for Apps has no gugu.projects: the button is not offered there.
     typeof g.projects?.list === 'function' ? h('button', { text: t.pickProjectFile, onclick: () => pickProjectFile(card) }) : null,
@@ -600,7 +707,7 @@ async function startTask(card, button, project) {
   button.disabled = true
   button.textContent = t.starting
   try {
-    const { agentId } = await g.spawnAgent(t.handText(card), { title: card.title, ...(project ? { project } : {}) })
+    const { agentId } = await g.spawnAgent(t.handText(card, chatOfBoard()), { title: card.title, ...(project ? { project } : {}) })
     const row = (await g.listAgents()).find((a) => a.agentId === agentId)
     if (!row) throw new Error(`the new task (${agentId}) is not in the task list`)
     await change({ type: 'link.add', card: card.id, link: { kind: 'task', session: row.sessionId, agent: agentId, title: card.title } })
@@ -614,26 +721,109 @@ async function startTask(card, button, project) {
   }
 }
 
-// ── where the page is ────────────────────────────────────────────────────────
+// ── which board: this computer's, or a chat's board file ─────────────────────
+
+/** A board file's name, shown next to its chat's name when it is not the chat's own board. */
+const fileLabel = (entry) => [entry.chatName ?? ctx.chat?.name, entry.name === CHAT_BOARD_NAME ? null : entry.name.slice(0, -BOARD_SUFFIX.length)].filter(Boolean).join(' · ')
+
+async function showChatBoard(open) {
+  leaveHome()
+  try {
+    const f = await open()
+    const name = ctx.chat?.id === f.entry.chat ? ctx.chat.name : fileLabel(f.entry)
+    home = { kind: 'chat', f, name }
+    board = f.toJSON()
+    f.onChange(({ local }) => {
+      board = f.toJSON()
+      render()
+      // Someone else's change — an agent's on another computer, say — may come with that agent moving: ask for the
+      // statuses again (the background page hears only this computer's agents move).
+      if (!local && desktop) askAgents()
+    })
+    f.onStatus((status) => { if (status === 'gone') showAlert(t.gone) })
+    showAlert(null)
+  } catch (error) {
+    home = null
+    board = null
+    showAlert(t.noBoard(error?.message ?? String(error)))
+  }
+  if (selected) closeCard()
+  render()
+}
+
+function showLocalBoard() {
+  leaveHome()
+  home = { kind: 'local' }
+  board = localBoard
+  if (selected) closeCard()
+  render()
+}
+
+function leaveHome() {
+  if (home?.kind === 'chat') home.f.close()
+  home = null
+  adding = null
+}
+
+let asking = null
+function askAgents() {
+  if (asking) return
+  asking = g.sendToBackground({ type: 'agents' }).catch((e) => showAlert(e.message)).finally(() => { asking = null })
+}
+
+/**
+ * Opened in a chat (its panel, or one of its board files): that chat's board, nothing to pick. Anywhere else (the dock,
+ * a task's tab): this computer's board, and the chats' boards the person can reach, to switch to.
+ */
+async function fillSwitcher() {
+  const select = $('where')
+  // A suffix is one extension (.json): the board's double one is matched by the path instead.
+  const found = await g.files.search({ query: BOARD_SUFFIX, suffixes: ['.json'], limit: 50 }).catch((error) => {
+    showAlert(error?.message ?? String(error))
+    return []
+  })
+  const boards = found.filter((e) => e.type !== 'folder' && e.name.endsWith(BOARD_SUFFIX))
+  select.replaceChildren(
+    h('option', { value: '', text: t.local }),
+    ...boards.map((e) => h('option', { value: e.id, text: fileLabel(e) })),
+  )
+  select.value = home?.kind === 'chat' ? home.f.entry.id : ''
+  select.hidden = boards.length === 0
+  select.onchange = () => {
+    const entry = boards.find((e) => e.id === select.value)
+    if (entry) showChatBoard(() => g.files.open(entry))
+    else showLocalBoard()
+  }
+}
 
 function placed() {
-  $('attach-box').hidden = !ctx.session
+  $('heading').textContent = t.title
+  $('where').setAttribute('aria-label', t.where)
 }
-placed()
 
 g.onContextChanged(async () => {
   ctx = await g.getContext()
   t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
   placed()
   const now = ctx.layout?.visible ?? visible
-  // Back on screen: read the board again (an agent's tool call may have changed it meanwhile).
-  if (desktop && now && !visible) g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+  // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere, a chat's new board).
+  if (desktop && now && !visible) {
+    g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+    if (!ctx.chat && !ctx.file) fillSwitcher()
+  }
   visible = now
+  render()
 })
 
+placed()
 if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
-else {
+if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
+else if (ctx.chat) await showChatBoard(() => openChatBoard(g.files, ctx.chat.id))
+else if (desktop) {
+  showLocalBoard()
+  fillSwitcher()
+} else {
   // style, not `hidden`: the page's own rules give #bar a display, and that wins over the attribute.
   for (const el of $('main').children) el.style.display = 'none'
-  $('main').append(h('gugu-empty', { id: 'desktop-only' }, h('strong', { text: t.desktopOnly })))
+  $('main').append(h('gugu-empty', { id: 'desktop-only', icon: 'layout-grid' }, h('strong', { text: t.desktopOnly }), h('small', { text: t.phoneHint })))
 }
