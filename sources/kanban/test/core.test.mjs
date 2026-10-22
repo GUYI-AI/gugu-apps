@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { keyBetween, emptyBoard, applyOp, cardsIn, columnsInOrder, findColumn, taskState } from '../app/lib/core.js'
+import { keyBetween, emptyBoard, applyOp, cardsIn, columnsInOrder, findColumn, taskState, cardFlags, STALE_MS } from '../app/lib/core.js'
 
 let n = 0
 const ctx = (by = 'person') => ({ by, now: '2026-10-19T00:00:00.000Z', id: () => `id${++n}` })
@@ -105,3 +105,37 @@ test('a project file link needs its project and a path inside it', () => {
   assert.throws(() => applyOp(board, { type: 'link.add', card, link: { kind: 'project', project: 'p1', path: '../../etc/passwd' } }, ctx()), /without \.\./)
 })
 
+
+test('progress: any card carries it, checked before anything is written, every change says who', () => {
+  const board = emptyBoard()
+  const card = applyOp(board, { type: 'card.create', title: 'lane', progress: 10, next: 'read the code' }, ctx('user:a')).card
+  assert.equal(board.cards[card].progress, 10)
+  assert.equal(board.cards[card].updatedBy, 'user:a')
+  applyOp(board, { type: 'card.update', card, progress: 60, waitingOn: ' mac1 slot ', due: '16:30' }, ctx('user:b'))
+  assert.deepEqual([board.cards[card].progress, board.cards[card].waitingOn, board.cards[card].due, board.cards[card].next], [60, 'mac1 slot', '16:30', 'read the code'])
+  assert.equal(board.cards[card].updatedBy, 'user:b')
+  const before = JSON.stringify(board)
+  assert.throws(() => applyOp(board, { type: 'card.update', card, title: 'renamed', progress: 101 }, ctx()), /0 to 100/)
+  assert.throws(() => applyOp(board, { type: 'card.update', card, title: 'renamed', progress: 2.5 }, ctx()), /0 to 100/)
+  assert.equal(JSON.stringify(board), before, 'the title is not written when the progress is refused')
+  applyOp(board, { type: 'card.update', card, progress: null, waitingOn: '' }, ctx())
+  assert.equal(board.cards[card].progress, null)
+  assert.equal(board.cards[card].waitingOn, '')
+})
+
+test('flags: waiting on someone, a task asking the person, a lane gone quiet', () => {
+  const board = emptyBoard()
+  const card = applyOp(board, { type: 'card.create', title: 'lane', column: 'doing' }, ctx()).card
+  const c = board.cards[card]
+  const at = Date.parse(c.updatedAt)
+  const none = () => null
+  assert.deepEqual(cardFlags(board, c, none, at + STALE_MS * 2), { waiting: false, asks: false, stale: false, attention: false }, 'no task: never stale')
+  applyOp(board, { type: 'link.add', card, link: { kind: 'task', session: 's1' } }, ctx())
+  assert.equal(cardFlags(board, c, none, at + STALE_MS - 1).stale, false)
+  assert.equal(cardFlags(board, c, none, at + STALE_MS + 1).stale, true)
+  assert.equal(cardFlags(board, c, () => taskState({ status: 'needs_user', detail: 'approval' }), at).asks, true)
+  applyOp(board, { type: 'card.update', card, waitingOn: 'owner' }, ctx())
+  assert.deepEqual(cardFlags(board, c, none, at), { waiting: true, asks: false, stale: false, attention: true })
+  applyOp(board, { type: 'card.move', card, column: 'review' }, ctx())
+  assert.equal(cardFlags(board, c, none, at + STALE_MS * 9).stale, false, 'only cards in progress go stale')
+})

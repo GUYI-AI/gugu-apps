@@ -4,7 +4,7 @@
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { BOARD_VERSION, applyOp, emptyBoard } from './core.js'
+import { BOARD_VERSION, applyOp, emptyBoard, newId } from './core.js'
 
 const FILE = 'board.json'
 
@@ -20,10 +20,10 @@ export async function readBoard() {
     raw = await readFile(path.join(dir(), FILE), 'utf8')
   } catch (error) {
     if (error?.code === 'ENOENT') return emptyBoard()
-    throw new Error(`看板 could not read ${FILE}: ${error.message}`)
+    throw new Error(`协作看板 could not read ${FILE}: ${error.message}`)
   }
   const board = JSON.parse(raw)
-  if (board.version !== BOARD_VERSION) throw new Error(`${FILE} is version ${board.version}; this 看板 reads ${BOARD_VERSION}`)
+  if (board.version !== BOARD_VERSION) throw new Error(`${FILE} is version ${board.version}; this 协作看板 reads ${BOARD_VERSION}`)
   return board
 }
 
@@ -41,8 +41,6 @@ const oneAtATime = (fn) => {
   lane = run.catch(() => {})
   return run
 }
-
-const newId = () => randomUUID().replaceAll('-', '').slice(0, 12)
 
 /** Apply one operation and save; resolves { rev, board, result }. A refused operation saves nothing. */
 export function apply(op, by) {
@@ -64,6 +62,6 @@ export async function readAgentsSnapshot() {
     return JSON.parse(await readFile(path.join(dir(), 'agents.json'), 'utf8'))
   } catch (error) {
     if (error?.code === 'ENOENT') return null
-    throw new Error(`看板 could not read agents.json: ${error.message}`)
+    throw new Error(`协作看板 could not read agents.json: ${error.message}`)
   }
 }
