@@ -95,6 +95,7 @@ function labels() {
   $('tab-about').textContent = t.about
   $('sel-comment-label').textContent = t.comment
   $('sel-ask-label').textContent = t.ask
+  $('sel-new-task-label').textContent = t.askNew
   $('sel-colors').replaceChildren(
     ...COLORS.map((color) => {
       const b = document.createElement('button')
@@ -121,6 +122,7 @@ async function openPaper(file) {
   }
   state.entry = pdfHandle.entry
   state.place = placeOfEntry(state.entry)
+  $('sel-new-task').hidden = !state.place.project
   pdfHandle.onStatus?.(() => { if (pdfHandle.status === 'gone') say(state.t.gone, 'error') })
   const bytes = new Uint8Array(await (await pdfHandle.blob()).arrayBuffer())
   try {
@@ -580,49 +582,46 @@ async function askAgent() {
 /**
  * A passage to an agent, in a composer; the person sends it, or not. A chat's PDF goes as a pill into that chat's (a click
  * opens it there). A session's PDF has no pill — a pill points at a chat's file — so its agent gets the passage's words,
- * page and path in that session's composer, and the person is told why. A project's PDF (one person's library) goes to a
- * task they pick on this computer, or a new one in that project (`askTask`).
+ * page and path in that session's composer, and the person is told why. A project's PDF (one person's library) goes where
+ * the person picks in gugu's own sheet — one of their tasks or a chat — with its project and path (`askTask`).
  */
 function askAbout(id, h, text) {
   if (state.place.chat) return gugu.compose(text, { refs: [refOf(id, h)] })
-  if (state.place.project) return askTask(id, h, text)
+  if (state.place.project) return askTask(h, text)
   say(state.t.sessionNoPill)
   return gugu.compose(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { session: state.place.session })
 }
 
-const ASK_TASKS = 8 // tasks listed to pick from: this project's first, then the latest
-
-/** Which task on this computer gets the passage: its words, page, project and path in its composer, or a new task's first words. */
-async function askTask(id, h, text) {
-  const t = state.t
+/** A project's PDF: the passage's words, page, project and path, with the project's name. */
+async function projectWords(h, text) {
   const project = state.place.project
   const name = (await gugu.projects.list()).projects.find((p) => p.id === project)?.name ?? project
-  const words = fmt(t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote })
-  const tasks = (await gugu.listAgents())
-    .filter((a) => !a.deviceId)
-    .sort((a, b) => (b.projectId === project) - (a.projectId === project) || String(b.updatedAt).localeCompare(String(a.updatedAt)))
-    .slice(0, ASK_TASKS)
-  const pick = $('ask-pick')
-  const button = (label, onclick) => Object.assign(document.createElement('button'), { type: 'button', textContent: label, onclick })
-  const done = (promise, placed) =>
-    promise.then(() => { pick.hidden = true; say(placed) }).catch((error) => say(fmt(t.askFailed, { e: error.message }), 'error'))
-  const title = document.createElement('strong')
-  title.textContent = t.askWhich
-  pick.replaceChildren(
-    title,
-    ...(tasks.length ? [] : [note(t.askNone)]),
-    ...tasks.map((a) => button(a.title || a.agentId, () => done(gugu.compose(words, { session: a.sessionId }), fmt(t.askPlaced, { title: a.title || a.agentId })))),
-    Object.assign(button(t.askNew, () => {
-      // Starting a task takes a while (its agent comes up first): said at once, and no second one started meanwhile.
-      say(t.askStarting)
-      for (const b of pick.querySelectorAll('button')) b.disabled = true
-      done(gugu.spawnAgent(words, { project, title: $('title').textContent }), fmt(t.askStarted, { project: name })).finally(() => {
-        for (const b of pick.querySelectorAll('button')) b.disabled = false
-      })
-    }), { className: 'primary' }),
-    button(t.close, () => { pick.hidden = true }),
-  )
-  pick.hidden = false
+  return { name, words: fmt(state.t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }) }
+}
+
+/** Into the composer the person picks — one of their tasks or a chat (gugu lists the places, not this page). */
+async function askTask(h, text) {
+  const placed = await gugu.compose((await projectWords(h, text)).words)
+  if (!placed.cancelled) say(state.t.askPlaced)
+}
+
+/** A new task in the PDF's project, starting from the passage. Starting takes a while: said at once, and not twice meanwhile. */
+async function askNewTask() {
+  const picked = state.selection
+  const id = await markSelection({ color: 'blue' })
+  if (!id) return
+  const button = $('sel-new-task')
+  button.disabled = true
+  say(state.t.askStarting)
+  try {
+    const { name, words } = await projectWords(state.notes.data.highlights[id], fmt(state.t.askText, { n: picked.page }))
+    await gugu.spawnAgent(words, { project: state.place.project, title: $('title').textContent })
+    say(fmt(state.t.askStarted, { project: name }))
+  } catch (error) {
+    say(fmt(state.t.askFailed, { e: error.message }), 'error')
+  } finally {
+    button.disabled = false
+  }
 }
 
 async function commentSelection() {
@@ -1063,6 +1062,7 @@ for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
   }
 }
 $('sel-ask').onclick = () => askAgent()
+$('sel-new-task').onclick = () => askNewTask()
 $('sel-comment').onclick = () => commentSelection()
 $('sel-copy').onclick = () => {
   const quote = state.selection?.quote
