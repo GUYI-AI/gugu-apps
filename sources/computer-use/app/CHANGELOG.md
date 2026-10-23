@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Add a screenshot of the installed App to the market page.
+
 ## 0.2.1
 
 市场上名字下面加一句副标题；App 协议版本改为 8（只发给支持副标题的咕咕）。

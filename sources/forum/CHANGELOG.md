@@ -1,5 +1,9 @@
 # 更新记录
 
+## 0.1.2
+
+- Add a screenshot of the installed App to the market page.
+
 ## 0.1.1
 
 - 更新 App 图标为对话气泡与金币叠层。
