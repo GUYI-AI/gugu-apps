@@ -260,6 +260,7 @@ function applyLanguage(locale) {
 	t = TEXT[lang];
 	for (const node of document.querySelectorAll('[data-t]')) node.textContent = t[node.dataset.t];
 	document.title = t.title;
+	host.setTabTitle(t.title).catch(showError);
 }
 
 async function main() {
