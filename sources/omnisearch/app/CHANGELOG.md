@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10
+
+Report the localized settings title to the host tab when the page opens or its language changes.
+
 ## 0.2.9
 
 市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
