@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, rm, readFile, writeFile, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { emptyBoard } from '../app/lib/core.js'
 
 let dir
 let tools
@@ -11,9 +12,13 @@ let tools
 // Writes land at once here (saved stays true); what is checked is that the tools go through open → transact.
 const chatFiles = new Map() // id -> { entry, data }
 let openHandles = 0
+let beforeOpen = null
+const openedRefs = []
 let beforeCreate = null // a test's hook: another writer acting between the list and the create
 const fakeFiles = {
   async open(ref) {
+    openedRefs.push({ ...ref })
+    if (beforeOpen) beforeOpen(ref)
     const file = chatFiles.get(ref.id)
     if (!file) throw Object.assign(new Error('not found'), { code: 'not-found' })
     openHandles += 1
@@ -168,5 +173,73 @@ test('two making a chat board at once: the second opens the first, and what it m
   const files2 = [...chatFiles.values()].filter((f) => f.entry.chat === chat2)
   assert.equal(files2.length, 1)
   assert.deepEqual(Object.values(files2[0].data.cards).map((c) => c.title), ['mine too'])
+  assert.equal(openHandles, 0)
+})
+
+
+test('all agent tools work on an explicit board file through the same live handle', async () => {
+  const entry = { id: 'explicit-board', chat: 'shared-source', name: 'Retained.board.json' }
+  chatFiles.set(entry.id, { entry, data: emptyBoard() })
+  const target = { board: entry.id }
+  const localBefore = await board()
+  const start = openedRefs.length
+  await tools.create.run({ ...target, title: 'Keep this board' }, asAgent)
+  const card = Object.values(chatFiles.get(entry.id).data.cards)[0]
+  await tools.claim.run({ ...target, card: card.id }, asAgent)
+  await tools.update.run({ ...target, card: card.id, progress: 60 }, asAgent)
+  await tools.move.run({ ...target, card: card.id, column: 'review' }, asAgent)
+  await tools.comment.run({ ...target, card: card.id, text: 'Ready' }, asAgent)
+  await tools.link.run({ ...target, card: card.id, kind: 'url', url: 'https://example.com/review' }, asAgent)
+  const got = await tools.get.run({ ...target, card: card.id }, asAgent)
+  const listed = await tools.list.run(target, asAgent)
+  assert.equal(got.progress, 60)
+  assert.equal(listed.columns.find(c => c.id === 'review').cards[0].id, card.id)
+  assert.deepEqual(openedRefs.slice(start), Array.from({ length: 8 }, () => ({ id: entry.id })))
+  assert.deepEqual(await board(), localBefore)
+  assert.equal(openHandles, 0)
+})
+
+test('chat and board are passed together to the SDK; a refusal is never a default-board write', async () => {
+  const id = 'explicit-board'
+  const before = structuredClone(chatFiles.get(id).data)
+  const sizeBefore = chatFiles.size
+  const refused = Object.assign(new Error('different source chat'), { code: 'invalid' })
+  beforeOpen = ref => {
+    if (ref.chat === 'other-topic') throw refused
+  }
+  try {
+    // The App passes the topic unchanged. Source resolution and the comparison belong to the shared SDK.
+    await tools.list.run({ chat: 'same-source-topic', board: id }, asAgent)
+    assert.deepEqual(openedRefs.at(-1), { chat: 'same-source-topic', id })
+    await assert.rejects(tools.update.run({ chat: 'other-topic', board: id, card: Object.keys(before.cards)[0], progress: 99 }, asAgent), error => error === refused)
+    assert.deepEqual(openedRefs.at(-1), { chat: 'other-topic', id })
+    assert.deepEqual(chatFiles.get(id).data, before)
+    assert.equal(chatFiles.size, sizeBefore)
+    await assert.rejects(tools.create.run({ board: 'missing-board', title: 'Do not make a default' }, asAgent), { code: 'not-found' })
+    assert.equal(chatFiles.size, sizeBefore)
+  } finally {
+    beforeOpen = null
+  }
+  assert.equal(openHandles, 0)
+})
+
+test('five retained boards are addressed by file id even when their card ids coincide', async () => {
+  const entries = []
+  for (let i = 0; i < 5; i++) {
+    const entry = { id: `retained-${i}`, chat: 'retained-source', name: i ? `协作看板 (${i + 1}).board.json` : '协作看板.board.json' }
+    const data = emptyBoard()
+    data.cards.same = { id: 'same', column: 'todo', title: `Board ${i}`, order: 'V', links: {} }
+    chatFiles.set(entry.id, { entry, data })
+    entries.push(entry)
+  }
+  const initial = entries.map(e => structuredClone(chatFiles.get(e.id).data))
+  for (let i = 0; i < entries.length; i++) {
+    await tools.update.run({ board: entries[i].id, card: 'same', title: `Kept ${i}` }, asAgent)
+    const got = await tools.get.run({ board: entries[i].id, card: 'same' }, asAgent)
+    assert.equal(got.title, `Kept ${i}`)
+    for (let j = i + 1; j < entries.length; j++) assert.deepEqual(chatFiles.get(entries[j].id).data, initial[j])
+  }
+  await tools.create.run({ chat: 'retained-source', title: 'Default only' }, asAgent)
+  assert.deepEqual(entries.slice(1).map(e => Object.keys(chatFiles.get(e.id).data.cards)), Array.from({ length: 4 }, () => ['same']))
   assert.equal(openHandles, 0)
 })

@@ -8,9 +8,11 @@ description: 协作看板 (Teamboard) — the person's board on this computer, a
 Two homes, the same cards and the same tools: `kanban__list`, `kanban__get`, `kanban__create`, `kanban__claim`,
 `kanban__update`, `kanban__move`, `kanban__comment`, `kanban__link` (in `catalog_list` when not in your tool list).
 
-- **Which board**: without `chat`, the person's board on this computer. With `chat` (a chat id from your delivery
-  envelope or `message_conversations`), that chat's board — everyone in the chat sees it. A card handed to you says
-  which chat when it is on one: pass that `chat` to every call.
+- **Which board**: with neither `chat` nor `board`, the person's board on this computer. `chat` (from your delivery
+  envelope or `message_conversations`) selects the source group/private chat's default board; a topic shares its
+  source's board. `board` (a `.board.json` file id) selects that exact board, including a renamed old board. Pass the
+  same `board` to every call for its cards. If you pass both, gugu checks they belong to the same source chat and
+  refuses a mismatch; neither argument overrides the other. Existing boards stay separate, never merge them.
 - **Note something**: `create` with a short title; put details in `note` (markdown). When it comes from a chat
   message, pass that message's id as `message`, so the card links back to it.
 - **Handed a card** (its id is in the request): `claim` it when you start — your task is linked to the card, and
