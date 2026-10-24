@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- Create cards in the host App dialog on desktop and phone. The draft stays open when saving fails; it uses the board's existing save path and can include a note and the current task.
+
 ## 1.0.3
 
 - Show unavailable linked tasks and working copies beside their links instead of raising a board-wide error.

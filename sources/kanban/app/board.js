@@ -9,7 +9,7 @@ const g = window.gugu
 
 const WORDS = {
   zh: {
-    title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
+    newCard: '新建卡片', cardTitle: '标题', title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
     roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
     states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务不可用', none: '无状态' },
     all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
@@ -32,7 +32,7 @@ const WORDS = {
       '开始时用 claim 认领，进展用 update 更新，完成后用 move 移到「待验收」，并用 link 关联产出。',
   },
   en: {
-    title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
+    newCard: 'New card', cardTitle: 'Title', title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
     roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
     states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task unavailable', none: 'No status' },
     all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
@@ -61,6 +61,9 @@ const $ = (id) => document.getElementById(id)
 // is now — its session or chat — is read again on every change, never kept from the first load.
 let ctx = await g.getContext()
 let t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+// The same App page in the host dialog, with its own document and the same board writer.
+const creating = ctx.modal?.data?.newCard
+if (creating) document.body.classList.add('creating-card')
 // This computer's board is read and written only through the background page and the App's program, and a phone has
 // neither (its `gugu` has no onBackgroundMessage — the host's way of saying so). A chat's board needs neither.
 const desktop = typeof g.onBackgroundMessage === 'function'
@@ -75,7 +78,6 @@ let filter = 'all'
 let selected = null
 let visible = ctx.layout?.visible ?? true
 const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
-let adding = null // the open add-card box: { column, root, input, attach }
 const waiting = new Map()
 let stateProblem = ''
 
@@ -185,11 +187,7 @@ function byLabel(by) {
 
 function render() {
   if (!board) return
-  // Typing a card's title in the add box: an IME's half-typed word would be lost if the box were rebuilt under it.
-  if (adding?.composing) {
-    adding.pending = true
-    return
-  }
+  if (creating) { renderNewCard(); return }
   const columns = columnsInOrder(board)
   const cards = Object.values(board.cards)
   const flags = new Map(cards.map((c) => [c.id, flagsOf(c)]))
@@ -205,12 +203,12 @@ function render() {
 
   // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
   $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
-  const hadFocus = adding && document.activeElement === adding.input
+  const focusedAdd = document.hasFocus() ? document.activeElement?.dataset.addCard : null
   $('board').replaceChildren(
     ...columns.map((c) => columnView(c, flags)),
     h('div', { class: 'add-column' }, h('button', { onclick: addColumn, text: t.addColumn })),
   )
-  if (hadFocus) adding.input.focus()
+  if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
   if (selected && !board.cards[selected]) closeCard()
   else if (selected) updateDrawer()
 }
@@ -241,7 +239,7 @@ function columnView(column, flags) {
   return h('section', { class: `col${collapsed.get(column.id) ? ' collapsed' : ''}`, 'data-role': column.role ?? '', 'aria-label': columnTitle(column) },
     h('h2', {}, toggle, title, h('small', { text: String(cards.length) })),
     list,
-    adding?.column === column.id ? adding.root : h('button', { class: 'add', onclick: () => openAdd(column.id) }, icon('plus'), t.addCard),
+    h('button', { class: 'add', 'data-add-card': column.id, onclick: () => openAdd(column.id) }, icon('plus'), t.addCard),
   )
 }
 
@@ -296,36 +294,45 @@ function addColumn(event) {
 
 // ── a new card: at the bottom of its column ─────────────────────────────────
 
-function openAdd(column) {
-  const input = h('input', { type: 'text', placeholder: t.newPlaceholder, 'aria-label': t.newPlaceholder, autocomplete: 'off' })
-  // In a task's tab the new card can carry that task (this computer's board, or a chat's: the task is the person's).
-  const attach = ctx.session ? h('input', { type: 'checkbox', checked: true }) : null
-  const root = h('form', { class: 'adding stack' }, input, attach ? h('label', {}, attach, ` ${t.attach}`) : null)
-  adding = { column, root, input, attach, composing: false, pending: false }
-  input.addEventListener('compositionstart', () => { adding.composing = true })
-  input.addEventListener('compositionend', () => {
-    adding.composing = false
-    if (adding.pending) render()
-  })
-  input.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAdd() })
-  input.addEventListener('blur', () => setTimeout(() => { if (adding?.input === input && !input.value.trim() && !root.contains(document.activeElement)) closeAdd() }, 0))
-  root.addEventListener('submit', (event) => {
-    event.preventDefault()
-    const title = input.value.trim()
-    if (!title) return
-    const links = attach?.checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
-    // Cleared at once, so the next title can be typed while this one is saved.
-    input.value = ''
-    quietly(change({ type: 'card.create', title, links, column }))
-  })
-  if (collapsed.get(column)) collapsed.set(column, false)
-  render()
-  input.focus()
+async function openAdd(column) {
+  const fromPage = document.hasFocus()
+  try {
+    await g.modal.open({ entry: 'board.html', title: t.newCard, data: { newCard: {
+      column, file: home?.kind === 'chat' ? { chat: home.f.entry.chat, id: home.f.entry.id } : null,
+    } } })
+  } catch (error) { showAlert(error?.message ?? String(error)) }
+  finally {
+    // Live board updates can replace the original control while the dialog is open.
+    if (fromPage) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === column)?.focus()
+  }
 }
 
-function closeAdd() {
-  adding = null
-  render()
+function renderNewCard() {
+  if ($('new-card-form')) return // Incoming board/status changes keep the person's draft and IME composition intact.
+  const title = h('input', { id: 'new-card-title', name: 'title', required: true, autofocus: true, placeholder: t.newPlaceholder, autocomplete: 'off' })
+  const column = h('select', { id: 'new-card-column', name: 'column' }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, text: columnTitle(c) })))
+  column.value = creating.column
+  const note = h('textarea', { id: 'new-card-note', name: 'note', rows: 4 })
+  const attach = ctx.session ? h('input', { type: 'checkbox', checked: true }) : null
+  const submit = h('button', { type: 'submit', text: t.addCard })
+  const root = h('form', { id: 'new-card-form', class: 'stack new-card' },
+    h('label', { class: 'stack' }, t.cardTitle, title), h('label', { class: 'stack' }, t.column, column),
+    h('label', { class: 'stack' }, t.noteH, note), attach ? h('label', {}, attach, ` ${t.attach}`) : null,
+    h('footer', {}, h('button', { type: 'button', text: t.cancel, onclick: () => g.modal.close().catch((error) => showAlert(error.message)) }), submit),
+  )
+  root.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!title.value.trim() || submit.disabled) return
+    submit.disabled = true
+    try {
+      const links = attach?.checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
+      const result = await change({ type: 'card.create', title: title.value.trim(), note: note.value, links, column: column.value })
+      await g.modal.close(result)
+    } catch (error) { showAlert(error?.message ?? String(error)) }
+    finally { submit.disabled = false }
+  })
+  $('board').append(root)
+  title.focus()
 }
 
 g.onCommand((id) => {
@@ -833,7 +840,6 @@ function showLocalBoard() {
 function leaveHome() {
   if (home?.kind === 'chat') home.f.close()
   home = null
-  adding = null
 }
 
 let asking = null
@@ -894,7 +900,9 @@ g.onContextChanged(async () => {
 
 placed()
 if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
-if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
+if (creating?.file) await showChatBoard(() => g.files.open(creating.file))
+else if (creating && desktop) showLocalBoard()
+else if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
 else if (ctx.chat) await showChatBoard(() => openChatBoard(g.files, ctx.chat.id))
 else if (desktop) {
   showLocalBoard()
