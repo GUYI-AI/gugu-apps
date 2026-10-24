@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Opened in a chat, Teamboard is that chat's board file (App API 14 `chatFile`): opening it from the chat's Apps and opening `协作看板.board.json` from the folder show the same tab, the folder one with a way back to the folder.
+- Needs a gugu with App API 14 (OpenDCAI/gugu#262). Builds before it, 0.2.58 ones included, know only API 13 and are handed 1.0.6; `engines` stays `>=0.2.58`, the lowest version line that carries #262.
+
 ## 1.0.6
 
 - Let agents address a specific shared board by file ID. Renamed boards stay independent; a supplied chat must match the file’s source chat.

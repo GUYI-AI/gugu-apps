@@ -177,6 +177,16 @@ test('two making a chat board at once: the second opens the first, and what it m
 })
 
 
+test('a board file gugu made empty for the App (chatFile, App API 14) is the empty board on first use', async () => {
+  const entry = { id: 'host-made', chat: 'host-chat', name: '协作看板.board.json' }
+  chatFiles.set(entry.id, { entry, data: {} })
+  await tools.create.run({ board: entry.id, title: 'First card' }, asAgent)
+  const data = chatFiles.get(entry.id).data
+  assert.deepEqual(Object.keys(data.columns).sort(), Object.keys(emptyBoard().columns).sort())
+  assert.equal(Object.values(data.cards).length, 1)
+  assert.equal(openHandles, 0)
+})
+
 test('all agent tools work on an explicit board file through the same live handle', async () => {
   const entry = { id: 'explicit-board', chat: 'shared-source', name: 'Retained.board.json' }
   chatFiles.set(entry.id, { entry, data: emptyBoard() })

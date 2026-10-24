@@ -19,20 +19,30 @@ const findBoard = async (files, chat) =>
  */
 export async function openChatBoard(files, chat) {
   const found = await findBoard(files, chat)
-  if (found) return files.open(found)
+  if (found) return filled(await files.open(found))
   let made
   try {
     made = await files.create({ chat, name: CHAT_BOARD_NAME }, emptyBoard())
   } catch (error) {
     const theirs = await findBoard(files, chat)
     if (!theirs) throw error
-    return files.open(theirs)
+    return filled(await files.open(theirs))
   }
-  if (made.name === CHAT_BOARD_NAME) return files.open(made)
+  if (made.name === CHAT_BOARD_NAME) return filled(await files.open(made))
   await files.remove(made)
   const theirs = await findBoard(files, chat)
   if (!theirs) throw new Error(`${CHAT_BOARD_NAME} was made as ${made.name} and the board it gave way to is gone`)
-  return files.open(theirs)
+  return filled(await files.open(theirs))
+}
+
+/**
+ * An open board file as a board. Opened in a chat, gugu makes the board this App names (`chatFile`, App API 14) before
+ * the page runs, and makes it empty (`{}`): the first to open it writes the empty board, and two doing so at once write
+ * the same one.
+ */
+export function filled(f) {
+  if (!f.data.columns) f.transact(() => Object.assign(f.data, emptyBoard()))
+  return f
 }
 
 /** One operation on a board file, as one change everyone receives whole. Refused: throws, nothing written. */

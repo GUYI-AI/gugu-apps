@@ -3,7 +3,7 @@
 // App's program, its only writer) or a chat's (its board file, opened here live; a change is applied to the file).
 // Everything below the home — cards, columns, the open card — is one page for both.
 import { columnsInOrder, cardsIn, taskState, cardFlags } from './lib/core.js'
-import { openChatBoard, applyToFile, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
+import { openChatBoard, applyToFile, filled, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
 
 const g = window.gugu
 
@@ -807,7 +807,7 @@ const fileLabel = (entry) => [entry.chatName ?? ctx.chat?.name, entry.name === C
 async function showChatBoard(open) {
   leaveHome()
   try {
-    const f = await open()
+    const f = filled(await open())
     const name = ctx.chat?.id === f.entry.chat ? ctx.chat.name : fileLabel(f.entry)
     home = { kind: 'chat', f, name }
     board = f.toJSON()
