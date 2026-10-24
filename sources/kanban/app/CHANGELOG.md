@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+- Let agents address a specific shared board by file ID. Renamed boards stay independent; a supplied chat must match the file’s source chat.
+
 ## 1.0.5
 
 - Declare desktop and phone support for the human interface (App API 12).
