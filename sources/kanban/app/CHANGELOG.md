@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Show unavailable linked tasks and working copies beside their links instead of raising a board-wide error.
+- Let people dismiss other errors.
+
 ## 1.0.2
 
 - Add promotional artwork as the first market image; preserve the existing screenshots.
