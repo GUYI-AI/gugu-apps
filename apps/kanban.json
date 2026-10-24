@@ -110,6 +110,15 @@
       "sha256": "884a817fd0b947e2d9519a40980499ce897c7079f379d94b789c44b51647e916",
       "bytes": 528766,
       "yanked": null
+    },
+    {
+      "version": "1.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "e57798d9acbe5e7f9badf93598c28893e9ff7aa3",
+      "sha256": "d99a6aeecded92f96ac4cba04f3ad3459bbad2e7dae250f92a265501bcbbc43b",
+      "bytes": 529188,
+      "yanked": null
     }
   ]
 }
