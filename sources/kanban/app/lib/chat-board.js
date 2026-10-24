@@ -5,7 +5,7 @@
 import { applyOp, emptyBoard, newId } from './core.js'
 
 export const BOARD_SUFFIX = '.board.json'
-/** The board a chat gets when its 协作看板 is first opened there. Any other *.board.json in a chat opens the same way. */
+/** The default board of a source group/private chat. Gugu resolves topic addresses; other *.board.json stay separate. */
 export const CHAT_BOARD_NAME = `协作看板${BOARD_SUFFIX}`
 
 const findBoard = async (files, chat) =>
