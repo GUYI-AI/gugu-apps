@@ -16,10 +16,10 @@
     }
   },
   "author": "咕咕",
-  "version": "1.0.3",
-  "apiVersion": 8,
+  "version": "1.0.4",
+  "apiVersion": 11,
   "engines": {
-    "gugu": ">=0.2.57"
+    "gugu": ">=0.2.58"
   },
   "entry": "board.html",
   "icon": "icon.png",
