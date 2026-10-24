@@ -208,6 +208,8 @@ test('publication: add-version and verify execute the same pinned platform rule;
   const base = git(index, 'rev-parse', 'HEAD');
   const cases = [
     [{ platforms: undefined }, /declare desktop, phone, or both/],
+    [{ platforms: ['phone', 'phone'] }, /duplicate platform/],
+    [{ platforms: ['tablet'] }, /only desktop and phone are supported/],
     [{ apiVersion: 10 }, /requires apiVersion 11/],
     [{ platforms: ['phone'], permissions: { capabilities: ['notifications'] } }, /phone does not support notifications/],
     [{ platforms: ['phone'], permissions: { capabilities: ['agents:tools'] } }, null],
