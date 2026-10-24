@@ -11,7 +11,7 @@ const WORDS = {
   zh: {
     title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
     roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
-    states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务已移除', none: '无状态' },
+    states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务不可用', none: '无状态' },
     all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
     addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
     column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
@@ -26,6 +26,7 @@ const WORDS = {
     comment: '添加评论', send: '发表', byPerson: '我',
     desktopOnly: '本机看板仅支持在电脑上使用。', phoneHint: '在群或私聊的右栏打开协作看板，可查看该对话的看板。',
     noStatus: (e) => `无法读取任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`, gone: '看板文件已删除，或你已不在该对话中。',
+    taskUnavailable: '任务已不存在，或当前不可用。', taskFilesUnavailable: '这个任务的工作副本或文件不在这台电脑上，或已不存在。',
     handText: (c, chat) => `请处理协作看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
       `${chat ? `这张卡片在对话「${chat.name}」的看板上，调用看板工具时传 chat: "${chat.id}"。` : ''}` +
       '开始时用 claim 认领，进展用 update 更新，完成后用 move 移到「待验收」，并用 link 关联产出。',
@@ -33,7 +34,7 @@ const WORDS = {
   en: {
     title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
     roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
-    states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task removed', none: 'No status' },
+    states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task unavailable', none: 'No status' },
     all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
     addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
     column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
@@ -48,6 +49,7 @@ const WORDS = {
     comment: 'Add a comment', send: 'Post', byPerson: 'Me',
     desktopOnly: "This computer's board is only available on a computer.", phoneHint: "Open Teamboard in a chat's side panel to see that chat's board.",
     noStatus: (e) => `Unable to read task status: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`, gone: 'The board file was deleted, or you are no longer in that chat.',
+    taskUnavailable: 'This task no longer exists or is currently unavailable.', taskFilesUnavailable: 'This task’s working copy or file is not on this computer, or no longer exists.',
     handText: (c, chat) => `Please handle this card from Teamboard (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
       `${chat ? `It is on the board of the chat "${chat.name}": pass chat: "${chat.id}" to the board's tools. ` : ''}` +
       'Claim it with claim when you start, report progress with update; when finished, move it to Review and link the output with link.',
@@ -75,7 +77,7 @@ let visible = ctx.layout?.visible ?? true
 const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
 let adding = null // the open add-card box: { column, root, input, attach }
 const waiting = new Map()
-let stateProblem = false
+let stateProblem = ''
 
 /** Element maker: text goes in as text (others wrote it), never as markup. */
 function h(tag, props = {}, ...kids) {
@@ -94,8 +96,18 @@ const icon = (name) => h('gugu-icon', { name })
 const narrow = () => $('shell').clientWidth <= 640
 
 function showAlert(message) {
-  $('alert').textContent = message ?? ''
+  $('alert').replaceChildren(...(message ? [h('span', { text: message }), h('button', { class: 'plain', 'aria-label': t.close, onclick: () => showAlert(null) }, icon('x'))] : []))
   $('alert').hidden = !message
+}
+
+/** A missing task or working copy is a state of that link, rather than a failure of the board. */
+async function taskAction(run, status, message) {
+  try {
+    await run()
+  } catch (error) {
+    if (error?.code === 'not-found') status.textContent = message
+    else showAlert(error?.message ?? String(error))
+  }
 }
 
 /** Who a change on this board is by: the person on this computer's board; on a chat's, their own id (others see it). */
@@ -137,9 +149,10 @@ if (desktop) g.onBackgroundMessage((message) => {
   agentsKnown = !message.failure?.agents
   // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
   const problems = [home?.kind === 'local' && message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
-  if (problems.length) showAlert(problems.join(' · '))
-  else if (stateProblem && !message.done) showAlert(null)
-  stateProblem = problems.length > 0
+  const problem = problems.join(' · ')
+  if (problem && problem !== stateProblem) showAlert(problem)
+  else if (!problem && stateProblem && !message.done) showAlert(null)
+  stateProblem = problem
   if (message.done) {
     waiting.get(message.done.id)?.resolve(message.done.result)
     waiting.delete(message.done.id)
@@ -495,13 +508,16 @@ async function updateDrawer(force = false) {
   d.links.replaceChildren(
     ...tasks.map(([lid, link]) => {
       const row = agentBySession(link.session)
+      const missing = agentsKnown && !row
+      const status = h('span', { class: 'muted', role: 'status', text: missing ? t.taskUnavailable : '' })
       return h('li', {},
         link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : icon('bot'),
         h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
         stateBadge(link),
+        status,
         h('span', { class: 'acts' },
-          h('button', { class: 'plain', text: t.open, onclick: () => g.showSession(link.session, { peek: true }).catch((e) => showAlert(e.message)) }),
-          h('button', { class: 'plain', text: t.handTo, onclick: () => g.compose(t.handText(card, chatOfBoard()), { session: link.session }).catch((e) => showAlert(e.message)) }),
+          h('button', { class: 'plain', text: t.open, disabled: missing, onclick: () => taskAction(() => g.showSession(link.session, { peek: true }), status, t.taskUnavailable) }),
+          h('button', { class: 'plain', text: t.handTo, disabled: missing, onclick: () => taskAction(() => g.compose(t.handText(card, chatOfBoard()), { session: link.session }), status, t.taskUnavailable) }),
           h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))),
       )
     }),
@@ -541,12 +557,14 @@ function linkRow(card, lid, link) {
     case 'project':
     case 'chatfile': {
       const name = nameOf(link)
+      const status = h('span', { class: 'muted', role: 'status' })
       // Drawn in the card when the App can (md, text, images, video); every file also opens beside the board, in the
       // App that opens it or gugu's own preview.
       return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }),
+        status,
         h('span', { class: 'acts' },
           drawable(name) ? h('button', { class: 'plain', text: t.show, onclick: () => showFile(lid, link) }) : null,
-          h('button', { class: 'plain', text: t.openBeside, onclick: () => g.files.openWith(refOf(link), { peek: true }).catch((e) => showAlert(e.message)) }),
+          h('button', { class: 'plain', text: t.openBeside, onclick: () => taskAction(() => g.files.openWith(refOf(link), { peek: true }), status, link.kind === 'file' ? t.taskFilesUnavailable : t.noFiles) }),
           remove))
     }
     case 'message':
@@ -621,7 +639,7 @@ async function showFile(lid, link) {
     } })
     box.replaceChildren(h('div', { class: 'row' }, edit), shown)
   } catch (error) {
-    box.replaceChildren(h('p', { role: 'alert', text: error?.message ?? String(error) }))
+    box.replaceChildren(h('p', { role: error?.code === 'not-found' ? 'status' : 'alert', text: error?.code === 'not-found' && link.kind === 'file' ? t.taskFilesUnavailable : error?.message ?? String(error) }))
   }
 }
 
@@ -660,7 +678,11 @@ function pickTask(card) {
 function pickTaskFile(card) {
   openPicker(t.chooseTask, async ({ list, filter, done }) => {
     taskRows(list, filter, async (a) => {
-      const entries = await g.files.list({ session: a.sessionId }).catch((error) => { showAlert(error.message); return null })
+      const entries = await g.files.list({ session: a.sessionId }).catch((error) => {
+        if (error?.code === 'not-found') list.replaceChildren(h('li', { class: 'muted', role: 'status', text: t.taskFilesUnavailable }))
+        else showAlert(error?.message ?? String(error))
+        return null
+      })
       if (!entries) return
       const files = entries.filter((e) => e.type !== 'folder')
       // The same box now filters this task's files (a fresh input: the task list's listener goes with the old one).

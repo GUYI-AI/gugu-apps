@@ -7,6 +7,9 @@ body { margin: 0; }
 #where { width: auto; max-width: 240px; }
 #summary { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #filters { display: flex; gap: var(--em-spacing-xs); }
+#alert { display: flex; align-items: center; gap: var(--em-spacing-sm); }
+#alert[hidden] { display: none; }
+#alert > span { flex: 1; }
 #board { flex: 1; min-height: 0; display: grid; gap: var(--em-spacing-md); overflow-x: auto; padding-bottom: var(--em-spacing-md); align-items: start; }
 .add-column { padding-top: var(--em-spacing-xs); }
 .add-column button { white-space: nowrap; }
