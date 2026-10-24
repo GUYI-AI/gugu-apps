@@ -10,7 +10,9 @@
       "commit": "e583bb0898bb6301f78ac05d22bc61d5358bf312",
       "sha256": "b818ab1f5dbd89a133f513e0c8f6c423b910c4300a0b482436b6f38e44c94abf",
       "bytes": 3594,
-      "yanked": null
+      "yanked": {
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
+      }
     },
     {
       "version": "0.1.1",
@@ -19,7 +21,9 @@
       "commit": "773731a18aa0fc97eaceefcb30d1f35ad0e5aba7",
       "sha256": "bc981d88fc17bf40ba0241798b148aec4f4d87374d5c7a0d77d39362092eb914",
       "bytes": 4982,
-      "yanked": null
+      "yanked": {
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
+      }
     },
     {
       "version": "0.1.2",
@@ -28,7 +32,9 @@
       "commit": "9b2836072973e172b9cb99dc4eb44935e457845d",
       "sha256": "aa2244ec239423e00e27658add8f8076422af0733605613548c37e5c15d068fa",
       "bytes": 33907,
-      "yanked": null
+      "yanked": {
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
+      }
     },
     {
       "version": "0.1.3",
@@ -37,7 +43,9 @@
       "commit": "44f00d91c9c85c5ebd477172b5e5d8f9f1b00c66",
       "sha256": "15cccf5f91105b3010340b93193ddb97538132c27c666c5771fe394ae682e523",
       "bytes": 34107,
-      "yanked": null
+      "yanked": {
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
+      }
     },
     {
       "version": "0.2.0",
