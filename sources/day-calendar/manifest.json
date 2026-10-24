@@ -7,8 +7,7 @@
   "version": "0.4.6",
   "apiVersion": 11,
   "platforms": [
-    "desktop",
-    "phone"
+    "desktop"
   ],
   "engines": { "gugu": ">=0.2.57" },
   "localized": {

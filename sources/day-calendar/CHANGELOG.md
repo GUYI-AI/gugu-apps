@@ -2,7 +2,7 @@
 
 ## 0.4.6
 
-- Declare desktop and phone support for the human interface (App API 11).
+- Declare desktop support (App API 11). Adding, checking and removing entries require the App's local program.
 
 ## 0.4.5
 
