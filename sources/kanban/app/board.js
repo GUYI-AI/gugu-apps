@@ -203,10 +203,12 @@ function render() {
 
   // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
   $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
+  const focusedAdd = document.hasFocus() ? document.activeElement?.dataset.addCard : null
   $('board').replaceChildren(
     ...columns.map((c) => columnView(c, flags)),
     h('div', { class: 'add-column' }, h('button', { onclick: addColumn, text: t.addColumn })),
   )
+  if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
   if (selected && !board.cards[selected]) closeCard()
   else if (selected) updateDrawer()
 }
