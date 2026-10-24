@@ -307,7 +307,7 @@ async function openAdd(column) {
 
 function renderNewCard() {
   if ($('new-card-form')) return // Incoming board/status changes keep the person's draft and IME composition intact.
-  const title = h('input', { id: 'new-card-title', name: 'title', required: true, autofocus: true, maxlength: 500, placeholder: t.newPlaceholder, autocomplete: 'off' })
+  const title = h('input', { id: 'new-card-title', name: 'title', required: true, autofocus: true, placeholder: t.newPlaceholder, autocomplete: 'off' })
   const column = h('select', { id: 'new-card-column', name: 'column' }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, text: columnTitle(c) })))
   column.value = creating.column
   const note = h('textarea', { id: 'new-card-note', name: 'note', rows: 4 })
