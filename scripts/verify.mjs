@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { fail, INDEX_REPO, MARKET_BASE_URL, readApps, rebuildVersion, validateApp } from './lib.mjs';
+import { assertPublishedPlatforms, loadAppPlatformContract } from './app-platforms.mjs';
 
 const { values } = parseArgs({ options: { base: { type: 'string' }, dir: { type: 'string', default: 'apps' } } });
 
@@ -24,6 +25,7 @@ const frozen = ({ yanked, ...rest }) => JSON.stringify(rest);
 const apps = readApps(values.dir);
 let checked = 0;
 const problems = [];
+let platformContract;
 for (const app of apps) {
   // 首启默认组咕咕不问人就装:只能是 gugu 自己的 App —— 每一版的代码都在本仓里。客户端自己也照这个判,这里先拦住。
   const elsewhere = app.firstRun ? app.versions.filter((version) => version.repo !== INDEX_REPO) : [];
@@ -40,7 +42,13 @@ for (const app of apps) {
   const known = new Set((before?.versions ?? []).map((version) => version.version));
   for (const version of app.versions.filter((entry) => !known.has(entry.version))) {
     try {
-      await rebuildVersion(app, version, MARKET_BASE_URL);
+      const { inspected } = await rebuildVersion(app, version, MARKET_BASE_URL);
+      // --base identifies the submitted versions. Without it this is a read-only rebuild of the entire archive,
+      // including immutable old packages; a new publication is checked here and unconditionally by add-version.
+      if (values.base) {
+        platformContract ??= await loadAppPlatformContract();
+        assertPublishedPlatforms(inspected.manifest, platformContract);
+      }
       checked += 1;
       console.log(`ok ${app.id}@${version.version} sha256=${version.sha256.slice(0, 12)}… bytes=${version.bytes}`);
     } catch (error) {

@@ -26,6 +26,11 @@
 
 - **上架一版**:`npm ci && node scripts/add-version.mjs <owner/repo> <commit> <目录,仓根写 .>`,
   它照那个提交取源码、打包、算 sha256 与字节数,把这一行追加进 json。提 PR。
+  新版本清单必填 `platforms: ["desktop"]`、`["phone"]` 或两者，且 `apiVersion` 至少为 11。
+  平台声明指人用界面；手机的 agent 功能不运行，但不因此拦 App。手机给不了的人用能力与 phone 声明冲突则拒绝。
+  规则和逐能力分类来自 `.github/gugu-app-contract.json` 钉住的客户端原文；取不到就报错，不维护第二份能力表。
+  add-version 和 verify 的新增版本共用该规则；已发布的历史包和 meta 不改写。
+  提交前用 `node scripts/verify.mjs --base origin/main` 核对新增版本（CI 同样指定 base）；不带 base 只重打历史归档。
 - **撤回一版**:那一行写 `"yanked": { "reason": "…" }`。只能加,不能收回;版本号不复用。
 - **停维**:`"deprecated": { "note": "…", "replacedBy": "<id>" | null }`。
 - **下架**:`"unlisted": true`,目录里就没有它了(文件留在下载站,已装的人收不到更新)。
