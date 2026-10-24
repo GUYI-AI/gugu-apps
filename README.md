@@ -26,10 +26,15 @@
 
 - **上架一版**:`npm ci && node scripts/add-version.mjs <owner/repo> <commit> <目录,仓根写 .>`,
   它照那个提交取源码、打包、算 sha256 与字节数,把这一行追加进 json。提 PR。
+  新版本清单必填 `platforms: ["desktop"]`、`["phone"]` 或两者，且 `apiVersion` 至少为 12。
+  平台声明指人用界面；手机的 agent 功能不运行，但不因此拦 App。手机给不了的人用能力与 phone 声明冲突则拒绝。
+  规则和逐能力分类来自 `.github/gugu-app-contract.json` 钉住的客户端原文；取不到就报错，不维护第二份能力表。
+  add-version 和 verify 的新增版本共用该规则；已发布的历史包和 meta 不改写。
+  提交前用 `node scripts/verify.mjs --base origin/main` 核对新增版本（CI 同样指定 base）；不带 base 只重打历史归档。
 - **撤回一版**:那一行写 `"yanked": { "reason": "…" }`。只能加,不能收回;版本号不复用。
 - **停维**:`"deprecated": { "note": "…", "replacedBy": "<id>" | null }`。
 - **下架**:`"unlisted": true`,目录里就没有它了(文件留在下载站,已装的人收不到更新)。
-- **官方精选**:`"featured": true`(可不写),市场页顶上那一张;同时标了几个,客户端取排在最前的那个。
+- **官方精选**:`"featured": true`(可不写),市场页顶上那一排大卡:客户端先按近期安装量取,不够三张时用标了它的、按目录次序补齐;几张就横着翻几张。
 - **首启默认**:`"firstRun": true`(可不写),新用户第一次启动咕咕时,在后台静默装上的那一组 —— 不问人,和预装时一样。
   名单就写在这里,客户端代码里不点名;已经有 App 的老用户不受影响,装过、卸了的也不会再装回来。
   **只能标在本仓自己的 App 上**(代码在 `sources/` 里,每一版的 `repo` 都是本仓):不问人就装的只能是 gugu 自己的。verify 拦,咕咕客户端也照这一条判。
@@ -40,7 +45,7 @@
 
 ## 本仓自己的 App(`sources/`)
 
-- 工具类 App 可以没有业务 HTML（App API 5）：`browser-use` 使用咕咕宿主的会话浏览器桥；`computer-use` 托管配置的本机 MCP 程序。点击 App 打开宿主的配置与状态页。`browser-use` 标 `firstRun`，新用户首启默认安装，可停用和卸载；`computer-use` 按需安装，调用本机程序需取得相应系统授权。老 profile 不追装，卸载后不自动装回。
+- 工具类 App 可以没有业务 HTML（App API 5）：`browser-use` 使用咕咕宿主的会话浏览器桥；`computer-use` 是咕咕电脑控制的开关（装着、启用着这台电脑才有电脑控制，agent 用咕咕自带的那套动作），它带一个每个任务一份的「电脑」页签（`perSession`），显示 agent 正在操作的窗口与每一步。点击 App 打开宿主的配置与状态页（`computer-use` 的系统授权也在那里办）。两者都标 `firstRun`（`computer-use` 随 0.2.0 上架时标），新用户首启默认安装，可停用和卸载。老 profile 不追装，卸载后不自动装回。
 
 - 一个目录就是整个 App 的(`radar`、`day-calendar`):`path` 写 `sources/<id>`。
 - 带打包脚本、带测试的(`office`、`omnisearch`):`sources/<id>/` 是这个 App 的工程，市场打的包只是其中的 `app/`

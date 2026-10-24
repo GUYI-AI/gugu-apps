@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.12
+
+- Declare desktop support for the human interface (App API 12).
+
+## 0.2.11
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.2.10
+
+Report the localized settings title to the host tab when the page opens or its language changes.
+
+## 0.2.9
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
+## 0.2.8
+
+agent 读网页时不用再选读取方式，直接读到正文；只有读整个网站（crawl）或列出网站的网址（map）时才指定方式。传了别的方式会直接提示正确用法，不再落到容易超时的 AI 抽取。
+
+## 0.2.7
+
+未配置任何搜索服务的 API key 时，向咕咕说明原因：agent 在工具目录里会看到「未配置搜索服务的 API key，请在全能搜索的设置页填写」，不再只是看不到工具。
+
 ## 0.2.6
 
 这是它在市场上的第一版：从市场装上的，可以卸载，有新版时在 App 页更新。

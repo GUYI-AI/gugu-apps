@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.4
+
+- Declare desktop and phone support for the human interface (App API 12).
+
+## 0.2.3
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.2.2
+
+- 更新 App 图标，将演示文稿放在前景。
+
+## 0.2.1
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
+## 0.2.0
+
+- 咕咕办公有了自己的一页：电脑上从左栏或「App」打开，手机上从「App」页或群里的卡片打开。页面列出最近打开的文件和群，可以搜索所有群里的文件，默认包括演示稿、表格和 markdown。点 markdown 时，用群文件夹自己的编辑器打开。最近打开的记录在手机和电脑上是同一份(要咕咕 0.2.57 起)。
+
+## 0.1.2
+
+- 群文件夹里的演示稿和表格各有自己的图标，不再都画成咕咕办公的 App 图标(要咕咕 0.2.57 起)。
+
 ## 0.1.1
 
 - 群文件夹里这份文件有了新版、改了名或被删了，页面当场跟上，不再整张列表重读一遍。

@@ -1,0 +1,63 @@
+/* The host supplies typography, semantic controls and --em-* tokens. */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; }
+#main { max-width: 940px; margin: 0 auto; padding: var(--em-spacing-lg, 20px); color: var(--em-foreground, #252525); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-sm, 8px); }
+.stack { display: flex; flex-direction: column; gap: var(--em-spacing-md, 16px); }
+.bar { margin-bottom: var(--em-spacing-lg, 20px); }
+h1, h2, h3, p { overflow-wrap: anywhere; }
+.bar h1 { margin: 0; }
+.bar p { margin: 4px 0 0; }
+.grow { flex: 1; }
+.end { justify-content: flex-end; }
+.muted, .meta { color: var(--em-foreground-muted, #666); font-size: var(--em-font-caption, 13px); }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+#filters { padding-bottom: var(--em-spacing-md, 16px); }
+#query { flex: 1 1 200px; min-width: 0; }
+#filters select { max-width: 100%; }
+label:not(.inline) { display: flex; flex-direction: column; gap: 6px; }
+label.inline { display: inline-flex; align-items: center; gap: 6px; }
+input, textarea, select { max-width: 100%; }
+textarea { resize: vertical; width: 100%; }
+fieldset { min-width: 0; }
+#draft-amount { width: 120px; }
+.posts, .replies { list-style: none; padding: 0; margin: 0; }
+.posts li { border-bottom: 1px solid var(--em-border, #ddd); }
+.post-link { display: block; width: 100%; text-align: left; white-space: normal; height: auto; padding: var(--em-spacing-md, 16px) 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.post-link strong { display: block; font-size: var(--em-font-body, 16px); }
+.post-link .excerpt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 6px 0; color: var(--em-foreground-muted, #666); }
+.post-link:hover { background: var(--em-hover, #f4f4f4); }
+.panel, .reply { border: 1px solid var(--em-border, #ddd); border-radius: var(--em-radius-control, 10px); padding: var(--em-spacing-md, 16px); margin: var(--em-spacing-md, 16px) 0; }
+.panel h3 { margin-top: 0; }
+.body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; margin: 16px 0; }
+.author { display: inline-flex; gap: 8px; align-items: center; min-width: 0; overflow-wrap: anywhere; }
+.reactions { display: flex; flex-wrap: wrap; gap: 6px; }
+.reactions button[aria-pressed="true"] { border-color: var(--em-accent-9, #555); background: var(--em-hover, #eee); }
+.badge { display: inline-block; border-radius: 6px; padding: 2px 6px; background: var(--em-background-3, #eee); font-size: 12px; }
+.reply-head { justify-content: space-between; align-items: flex-start; }
+.reply-context { border-left: 2px solid var(--em-border, #ddd); padding-left: 10px; margin: 12px 0; }
+.reply-controls { margin-top: 12px; }
+.award-amount { width: 90px; }
+#award-summary { margin-top: 12px; }
+#assignments ul { list-style: none; padding: 0; }
+#assignments li { padding: 8px 0; border-bottom: 1px solid var(--em-border, #ddd); }
+#reply-target { background: var(--em-background-3, #eee); padding: 8px; border-radius: 6px; }
+#error { padding: 12px; color: var(--em-foreground-destructive, #a22626); border: 1px solid currentColor; border-radius: 8px; }
+#notice { padding: 12px; background: var(--em-background-info, #eef4ff); border-radius: 8px; }
+details { position: relative; }
+details summary { cursor: pointer; }
+details .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+dialog { max-width: min(440px, calc(100% - 32px)); border: 1px solid var(--em-border, #ddd); border-radius: 12px; background: var(--em-background, white); color: var(--em-foreground, #252525); }
+dialog::backdrop { background: rgb(0 0 0 / .35); }
+button, summary { touch-action: manipulation; }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--em-accent-9, #555); outline-offset: 3px; }
+@media (max-width: 600px) {
+  #main { padding: var(--em-spacing-md, 12px); }
+  #filters { gap: 8px; }
+  #filters select { flex: 1 1 120px; min-width: 0; }
+  #query { flex-basis: 100%; }
+  .panel, .reply { padding: 12px; }
+  .bar { align-items: flex-start; }
+  .row button { min-height: 40px; }
+}

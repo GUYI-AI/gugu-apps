@@ -11,7 +11,7 @@
       "sha256": "b818ab1f5dbd89a133f513e0c8f6c423b910c4300a0b482436b6f38e44c94abf",
       "bytes": 3594,
       "yanked": {
-        "reason": "默认接法（自动找本机 Codex 的 Computer Use 客户端）在咕咕里一启动就超时：那个客户端只接受 Codex 自己调用。只有在设置里自填其他本机 MCP 程序时才能用。0.2.0 改用咕咕自带的电脑控制，随新版咕咕发布。"
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
       }
     },
     {
@@ -22,7 +22,7 @@
       "sha256": "bc981d88fc17bf40ba0241798b148aec4f4d87374d5c7a0d77d39362092eb914",
       "bytes": 4982,
       "yanked": {
-        "reason": "默认接法（自动找本机 Codex 的 Computer Use 客户端）在咕咕里一启动就超时：那个客户端只接受 Codex 自己调用。只有在设置里自填其他本机 MCP 程序时才能用。0.2.0 改用咕咕自带的电脑控制，随新版咕咕发布。"
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
       }
     },
     {
@@ -33,8 +33,64 @@
       "sha256": "aa2244ec239423e00e27658add8f8076422af0733605613548c37e5c15d068fa",
       "bytes": 33907,
       "yanked": {
-        "reason": "默认接法（自动找本机 Codex 的 Computer Use 客户端）在咕咕里一启动就超时：那个客户端只接受 Codex 自己调用。只有在设置里自填其他本机 MCP 程序时才能用。0.2.0 改用咕咕自带的电脑控制，随新版咕咕发布。"
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
       }
+    },
+    {
+      "version": "0.1.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "44f00d91c9c85c5ebd477172b5e5d8f9f1b00c66",
+      "sha256": "15cccf5f91105b3010340b93193ddb97538132c27c666c5771fe394ae682e523",
+      "bytes": 34107,
+      "yanked": {
+        "reason": "默认接法会自动启动 Codex 专用的 Computer Use 客户端；它在咕咕中首次调用时启动超时。自填其他本机 MCP 程序的接法仍可用。新安装请使用支持咕咕自带电脑控制的 0.2.x 版本。已安装的副本不会被停用。"
+      }
+    },
+    {
+      "version": "0.2.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "4762cefd526f6f7b8d27698ad4f50351c55051e1",
+      "sha256": "a68e6f471fb00a76d6ad377b625de7ba3107d2beead19f4ce7d0a7a41164fe7c",
+      "bytes": 50560,
+      "yanked": null
+    },
+    {
+      "version": "0.2.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "b253434bac00616b1efcc335ec6696c208cff62eff121b7f43de413e302cbc65",
+      "bytes": 50670,
+      "yanked": null
+    },
+    {
+      "version": "0.2.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "783c43a4b905053f7562d5896f4f0c2c12a46aa9",
+      "sha256": "566cb5c071174def2d9ceeda7e9bccebc4cc491a4060640c84ffc5106380915f",
+      "bytes": 76544,
+      "yanked": null
+    },
+    {
+      "version": "0.2.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "6720f240df2050f7bb8eeefe1ce3e6006742317f1f8426163ed2d116abfe03e8",
+      "bytes": 542647,
+      "yanked": null
+    },
+    {
+      "version": "0.2.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "c131d33bc1e4fe996986752f55ead30423fe9b36ddf99eb6de927f3be2855ec6",
+      "bytes": 542720,
+      "yanked": null
     }
   ]
 }

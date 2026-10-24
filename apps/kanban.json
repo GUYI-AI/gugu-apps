@@ -1,0 +1,106 @@
+{
+  "id": "kanban",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "f88ef1daba7bd1209eff9bad249cd5a33cea5564",
+      "sha256": "6c0e9ccd30658baa82a996d798144e457147f7fcad33190366b9a6d107934885",
+      "bytes": 27524,
+      "yanked": null
+    },
+    {
+      "version": "0.1.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "daf4c65e79cdafd98a9e3dbdee631e294fb618f0",
+      "sha256": "e16ec2994821a49c975316d29a6cfbccc69de49fee9e071203d7b396d78a7ea7",
+      "bytes": 27328,
+      "yanked": null
+    },
+    {
+      "version": "0.1.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "e0deab24bc8735f17b6a5bbbb904aa67ef7c1846",
+      "sha256": "480c4f9e5be07de509c51d49fd9b2d860580273f5e125c1b26a9dabcc89d12a6",
+      "bytes": 27722,
+      "yanked": null
+    },
+    {
+      "version": "0.2.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "cbb77b5c224a9133f0ac5baff7b12e4c2acd334c",
+      "sha256": "62c69c30d43efd493bed8735a8039d4cc7a4e2561e32c92b26db7cd1a881c2d4",
+      "bytes": 28096,
+      "yanked": null
+    },
+    {
+      "version": "0.2.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "8c9312d3f0dc00d6e0eca96c877b4a8717f27597022c2ebc85f8d0058bd7fd99",
+      "bytes": 413978,
+      "yanked": null
+    },
+    {
+      "version": "1.0.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "e6b51310484728dc3a7883b4e8f16d7fd8dfd901",
+      "sha256": "0328e2f188ff83519f925fe1ed83468d1edd8fcb3637c91116413b06bdd47f15",
+      "bytes": 124153,
+      "yanked": null
+    },
+    {
+      "version": "1.0.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "a98551d1bae8ff334aa7961b5c6368b54d16c7e6",
+      "sha256": "1eba1af39f5233175d9537c5c0945d840ece7e4ac50e9de41bbe2a5847af106f",
+      "bytes": 119822,
+      "yanked": null
+    },
+    {
+      "version": "1.0.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "f3f02f822ef0d0e5c45ada5eb8d45c0a2f329153e88ffc185e8c949555d75a8a",
+      "bytes": 527045,
+      "yanked": null
+    },
+    {
+      "version": "1.0.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "43a038942dd9f1c80740b6d270e8c4b082169051",
+      "sha256": "e68f36b9d038acdb896830cdd55a25eb38049beb2e8ac561e5aa49bb9c30974b",
+      "bytes": 527617,
+      "yanked": null
+    },
+    {
+      "version": "1.0.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "e084ed1343e1a0e9a1e32fb0097657db3984f462",
+      "sha256": "99a43e7037f058c4e6f07088360e8050df897f8da250b3ff5e0ba7b52aeded3b",
+      "bytes": 528030,
+      "yanked": null
+    },
+    {
+      "version": "1.0.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "f2edfb64b7755af19d165af9541cc81a9a9297a4e1738218310366fdaa7fa241",
+      "bytes": 528100,
+      "yanked": null
+    }
+  ]
+}

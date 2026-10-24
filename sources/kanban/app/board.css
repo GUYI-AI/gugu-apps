@@ -1,0 +1,126 @@
+/* 协作看板: gugu's own look comes first (semantic HTML is styled already); this draws only the board, with gugu's tokens. */
+body { margin: 0; }
+#shell { display: flex; height: 100vh; container-type: inline-size; container-name: shell; }
+#main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: var(--em-spacing-lg) var(--em-spacing-lg) 0; gap: var(--em-spacing-md); }
+#bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-sm) var(--em-spacing-md); }
+#bar h1 { margin: 0; flex: 0 0 auto; }
+#where { width: auto; max-width: 240px; }
+#summary { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#filters { display: flex; gap: var(--em-spacing-xs); }
+#alert { display: flex; align-items: center; gap: var(--em-spacing-sm); }
+#alert[hidden] { display: none; }
+#alert > span { flex: 1; }
+#board { flex: 1; min-height: 0; display: grid; gap: var(--em-spacing-md); overflow-x: auto; padding-bottom: var(--em-spacing-md); align-items: start; }
+.add-column { padding-top: var(--em-spacing-xs); }
+.add-column button { white-space: nowrap; }
+
+.col { display: flex; flex-direction: column; max-height: 100%; min-height: 0; background: var(--em-background-3); border-radius: var(--em-radius-xl); padding: var(--em-spacing-sm); gap: var(--em-spacing-sm); }
+.col > h2 { margin: 0; padding: var(--em-spacing-xs) var(--em-spacing-sm); font-size: var(--em-font-body); display: flex; gap: var(--em-spacing-sm); align-items: center; }
+.col > h2 small { color: var(--em-foreground-muted); font-weight: normal; }
+.col > h2 .toggle { display: none; }
+.cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--em-spacing-sm); overflow-y: auto; min-height: 8px; }
+.cards.over { outline: 2px dashed var(--em-border-1); outline-offset: -2px; border-radius: var(--em-radius-control); min-height: 48px; }
+.col > .add { display: flex; align-items: center; gap: var(--em-spacing-xs); background: none; border: 0; color: var(--em-foreground-muted); padding: var(--em-spacing-xs) var(--em-spacing-sm); justify-content: flex-start; }
+.col > .add:hover { color: var(--em-foreground); background: var(--em-hover); }
+.creating-card #bar, .creating-card #drawer { display: none; }
+.creating-card #main { padding: var(--em-spacing-lg); }
+.creating-card #board { display: flex; flex-direction: column; overflow: auto; }
+.new-card { flex: 1; width: 100%; }
+.new-card footer { display: flex; justify-content: flex-end; gap: var(--em-spacing-sm); margin-top: auto; }
+
+.card { min-width: 0; overflow: hidden; background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-sm) var(--em-spacing-md); cursor: pointer; display: flex; flex-direction: column; gap: 6px; text-align: left; width: 100%; color: inherit; font: inherit; }
+.card:hover { background: var(--em-hover); }
+.card[aria-selected="true"] { outline: 2px solid var(--em-accent-9); outline-offset: -1px; }
+.card.dragging { opacity: .4; }
+.card.stale { opacity: .6; }
+.card.stale gugu-time { color: var(--em-foreground-warning); }
+.card strong { overflow-wrap: anywhere; }
+.card .waiting { display: flex; gap: 4px; align-items: center; font-size: var(--em-font-caption); color: var(--em-foreground-warning); }
+.card .waiting span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { display: block; height: 3px; border-radius: 2px; background: linear-gradient(to right, var(--em-accent-9) var(--p), var(--em-background-3) var(--p)); }
+.card .meta { display: flex; flex-wrap: wrap; gap: var(--em-spacing-xs); align-items: center; color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
+.card .meta .spacer { flex: 1; }
+
+.state { display: inline-flex; align-items: center; gap: 4px; font-size: var(--em-font-caption); padding: 0 6px; border-radius: 6px; background: var(--em-background-3); color: var(--em-foreground-muted); white-space: nowrap; }
+.state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.state.running, .state.parked { color: var(--em-foreground-info); background: var(--em-background-info); }
+.state.approval, .state.answer { color: var(--em-foreground-warning); background: var(--em-background-warning); }
+.state.done { color: var(--em-foreground-success); background: var(--em-background-success); }
+.state.error { color: var(--em-foreground-destructive); background: var(--em-background-destructive); }
+
+/* The open card: a page to read — title, a bar of its properties, note, links, comments; one thing is edited at a time. */
+#drawer { flex: 0 0 min(600px, 55%); border-left: 1px solid var(--em-border); overflow-y: auto; padding: var(--em-spacing-md) var(--em-spacing-lg) var(--em-spacing-lg); box-sizing: border-box; }
+#drawer[hidden] { display: none; }
+.detail { display: flex; flex-direction: column; gap: var(--em-spacing-md); }
+.detail > section { display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+.detail .head { display: flex; gap: var(--em-spacing-sm); align-items: center; }
+.detail .head .spacer { flex: 1; }
+.detail .crumb { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.plain { background: none; border: 0; min-width: 0; height: auto; padding: 2px 6px; color: var(--em-foreground-muted); }
+button.plain:hover { background: var(--em-hover); color: var(--em-foreground); }
+.detail .more, .detail .add-menu { position: relative; }
+.detail .more summary, .detail .add-menu summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: var(--em-radius-control); color: var(--em-foreground-muted); }
+.detail .more summary { justify-content: center; height: var(--em-control-h-md); width: var(--em-control-h-md); }
+.detail .add-menu summary { padding: 2px 6px; font-size: var(--em-font-caption); }
+.detail summary::-webkit-details-marker { display: none; }
+.detail summary::before, .detail summary::after { content: none; display: none; }
+.detail summary:hover { background: var(--em-hover); color: var(--em-foreground); }
+.detail .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 2; background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-xs); white-space: nowrap; display: flex; flex-direction: column; align-items: stretch; }
+.detail .menu button { justify-content: flex-start; text-align: left; }
+.detail h5 { margin: 0; color: var(--em-foreground-muted); }
+.section-head { display: flex; align-items: center; justify-content: space-between; }
+.editable { cursor: text; border-radius: var(--em-radius-control); margin: 0 -6px; padding: 2px 6px; }
+.editable:hover { background: var(--em-hover); }
+.editable:focus-visible { outline: 2px solid var(--em-accent-9); }
+.title-slot h2 { margin: 0 -6px; font-size: var(--em-font-heading); line-height: 1.35; overflow-wrap: anywhere; }
+.title-input { width: 100%; box-sizing: border-box; font-size: var(--em-font-heading); font-weight: 600; }
+.note-view.empty { color: var(--em-foreground-passive); }
+.note-input { width: 100%; box-sizing: border-box; min-height: 160px; }
+.props { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-bottom: var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); }
+.props .prop { display: inline-flex; align-items: center; gap: 4px; margin-right: var(--em-spacing-sm); max-width: 100%; }
+.props dt { margin: 0; font-size: var(--em-font-caption); color: var(--em-foreground-muted); white-space: nowrap; }
+.props dd { margin: 0; display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.props dd input, .props dd select { min-width: 160px; }
+.prop-value { display: inline-flex; align-items: center; gap: 6px; background: none; height: auto; min-height: 26px; margin: 0; padding: 2px 8px; border: 1px solid var(--em-border); border-radius: 999px; text-align: left; color: var(--em-foreground); white-space: normal; overflow-wrap: anywhere; }
+.prop-value .bar { width: 48px; }
+.prop-value:hover { background: var(--em-hover); }
+.prop-value.empty { color: var(--em-foreground-passive); }
+.prop-value.waiting { color: var(--em-foreground-warning); }
+.owners { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.owner { display: inline-flex; align-items: center; gap: 6px; font-size: var(--em-font-caption); }
+.stale-note { display: inline; margin-left: 4px; color: var(--em-foreground-warning); font-size: var(--em-font-caption); }
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.links li { display: flex; flex-wrap: wrap; gap: var(--em-spacing-sm); align-items: center; padding: 6px 0; border-bottom: 1px solid var(--em-border); min-height: 32px; }
+.links li > [role="status"] { flex-basis: 100%; order: 1; }
+.links li > [role="status"]:empty { display: none; }
+.links li .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.links li[aria-current="true"] .what { font-weight: 600; }
+.links li .acts { display: flex; gap: 2px; visibility: hidden; }
+.links li:hover .acts, .links li:focus-within .acts { visibility: visible; }
+@media (hover: none) { .links li .acts { visibility: visible; } }
+.links .empty-row { color: var(--em-foreground-passive); border-bottom: 0; }
+.view { border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-md); max-height: 60vh; overflow: auto; }
+.view img, .view video { max-width: 100%; }
+.view .cm-editor { max-height: 55vh; }
+.picker { display: flex; flex-direction: column; gap: var(--em-spacing-sm); border: 1px solid var(--em-border); border-radius: var(--em-radius-control); padding: var(--em-spacing-sm); }
+.picker ul { max-height: 240px; overflow-y: auto; }
+.comment { display: flex; flex-direction: column; gap: 2px; }
+.comment-head { display: flex; gap: var(--em-spacing-sm); align-items: baseline; }
+.comment-box { display: flex; flex-direction: column; gap: var(--em-spacing-xs); }
+.comments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+
+/* Narrow (a chat's 520 panel, a topic's 340, a phone, a narrow pane): the columns stack, what is in progress first;
+   to do and done start folded. A card opens as a page of its own; it moves with the column picker, not by dragging. */
+@container shell (max-width: 640px) {
+  #main { padding: var(--em-spacing-md) var(--em-spacing-md) 0; }
+  #board { display: flex; flex-direction: column; align-items: stretch; overflow-x: hidden; overflow-y: auto; gap: var(--em-spacing-sm); }
+  .col { max-height: none; flex: none; }
+  .col[data-role="doing"] { order: -2; }
+  .col[data-role="review"] { order: -1; }
+  .add-column { order: 1; }
+  .col > h2 .toggle { display: inline-flex; padding: 0; width: auto; min-width: 0; height: auto; min-height: 0; background: none; border: 0; }
+  .col.collapsed .cards, .col.collapsed > .add { display: none; }
+  .cards { overflow: visible; }
+  #shell.open #main { display: none; }
+  #drawer { flex: 1; border-left: 0; padding: var(--em-spacing-md); }
+}

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.6
+
+- Declare desktop support (App API 12). Adding, checking and removing entries require the App's local program.
+
+## 0.4.5
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.4.4
+
+- 更新 App 图标为正面月历与完成标记。
+
+## 0.4.3
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
 ## 0.4.2
 
 第一次上市场。任务页右侧栏里的日历：上面一个月，下面是选中那天的待办和记事；你自己在页面上加、勾、删，也可以让 agent 用 `record` 帮你记。

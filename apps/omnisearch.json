@@ -12,6 +12,60 @@
       "sha256": "cf68757c8613343e8a67e677ae408065e2f72969ae54663cac90931a11b80395",
       "bytes": 210052,
       "yanked": null
+    },
+    {
+      "version": "0.2.7",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "f1edb98d5fa15a62748660ae058a425c924464ff",
+      "sha256": "83b8d8391b81cdb4ac33f821e1b0c355db42e4ec56493e020674afa4ec00e4f5",
+      "bytes": 210334,
+      "yanked": null
+    },
+    {
+      "version": "0.2.8",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "e7fa3e584f6ed4c85cdded40fb75fe2ab375fccb",
+      "sha256": "3e3087d3972f2cea4bc28768c1fc8dfa9ecab5024e423998a0024723774b5c8a",
+      "bytes": 210922,
+      "yanked": null
+    },
+    {
+      "version": "0.2.9",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "35b51c8564e5c56ed3a355fb1b9ca180b9b7db5c1482b3cd8e85cbea3b8928aa",
+      "bytes": 734573,
+      "yanked": null
+    },
+    {
+      "version": "0.2.10",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "aec5dda0dc442dc2b7ebaf8d3e3227fe5c91fde7",
+      "sha256": "8575522d9689542953a27fc1faf4260b977d3e73d3479320a3be91e31be609af",
+      "bytes": 734669,
+      "yanked": null
+    },
+    {
+      "version": "0.2.11",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "17be95fffd003be782e73a0f71ef8f8d5c7a01cb6521efe1fc39b2b4a1e52d53",
+      "bytes": 1338244,
+      "yanked": null
+    },
+    {
+      "version": "0.2.12",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "4206cc78c58d7fb05bf75722bc82ab56366d3c1391ec5189f445854ce7f87cdd",
+      "bytes": 1338311,
+      "yanked": null
     }
   ]
 }

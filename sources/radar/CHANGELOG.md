@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.8
+
+- Declare desktop support for the human interface (App API 12).
+
+## 0.1.7
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.1.6
+
+- 更新 App 图标，以节点连线与提醒铃铛表示 agent 的关注关系。
+
+## 0.1.5
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
+## 0.1.4
+
+在手机上打开不再出错：手机上没有后台页，也读不到各个 agent 的状态，页面只显示「雷达仅支持在电脑上使用」。
+
 ## 0.1.3
 
 盯着的 agent 不在了、这条关注也随之结束时，那条提醒末尾说「这条关注到此结束」，不再叫人去 unwatch 一条已经没了的关注。「做完了」的提醒里，跑在终端里的 agent 也能带上它最后说的话（要咕咕读得到它那家引擎的记录：claude、codex、opencode）；读不到时用一句中文或英文说清楚是哪种读不到。

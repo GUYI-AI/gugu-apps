@@ -1,0 +1,87 @@
+{
+  "id": "kanban",
+  "name": "协作看板",
+  "description": "人和 agent 共用的看板：本机看板记录这台电脑上的工作，群看板供群成员和各自的 agent 共同推进。卡片可关联任务并显示运行状态、进度和等待事项；agent 通过工具认领、更新和推进卡片。",
+  "subtitle": "人和 agent 共用的看板",
+  "localized": {
+    "zh": {
+      "name": "协作看板",
+      "description": "人和 agent 共用的看板：本机看板记录这台电脑上的工作，群看板供群成员和各自的 agent 共同推进。卡片可关联任务并显示运行状态、进度和等待事项；agent 通过工具认领、更新和推进卡片。",
+      "subtitle": "人和 agent 共用的看板"
+    },
+    "en": {
+      "name": "Teamboard",
+      "description": "A board people and agents share: this computer's board for your own work, and a chat's board everyone in it and their agents move forward together. Cards link tasks and show their status, progress and what they wait on; agents claim, update and move cards with tools.",
+      "subtitle": "A board for people and agents"
+    }
+  },
+  "author": "咕咕",
+  "version": "1.0.5",
+  "apiVersion": 12,
+  "platforms": [
+    "desktop",
+    "phone"
+  ],
+  "engines": {
+    "gugu": ">=0.2.58"
+  },
+  "entry": "board.html",
+  "icon": "icon.png",
+  "categories": [
+    "productivity"
+  ],
+  "background": {
+    "entry": "background.html"
+  },
+  "permissions": {
+    "capabilities": [
+      "files:read",
+      "files:write",
+      "agents:read:all-machines",
+      "agents:control",
+      "agents:tools"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "board",
+        "title": "协作看板",
+        "entry": "board.html",
+        "toolbar": [
+          {
+            "id": "new",
+            "title": "新建卡片"
+          }
+        ]
+      },
+      {
+        "name": "file",
+        "title": "协作看板",
+        "entry": "board.html",
+        "opensFiles": {
+          "chat": [
+            ".board.json"
+          ]
+        },
+        "toolbar": [
+          {
+            "id": "new",
+            "title": "新建卡片"
+          }
+        ]
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "skills": "skills"
+  },
+  "examples": [
+    "把这件事添加到我的看板",
+    "群看板上有哪些卡片在等人处理？"
+  ],
+  "license": "MIT"
+}

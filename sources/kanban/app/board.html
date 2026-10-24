@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>协作看板</title>
+  <link rel="stylesheet" href="board.css">
+</head>
+<body>
+  <div id="shell">
+    <section id="main" aria-labelledby="heading">
+      <header id="bar">
+        <h1 id="heading"></h1>
+        <select id="where" hidden></select>
+        <small id="summary" class="muted"></small>
+        <div id="filters" role="tablist"></div>
+      </header>
+      <p id="alert" role="alert" hidden></p>
+      <div id="board"></div>
+    </section>
+    <aside id="drawer" hidden aria-labelledby="d-title"></aside>
+  </div>
+  <script type="module" src="board.js"></script>
+</body>
+</html>
