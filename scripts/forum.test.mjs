@@ -61,7 +61,8 @@ test('论坛是普通 App,不读取 agent 列表、不申请 capability、没有
   assert.equal(manifest.id, 'forum')
   assert.equal(manifest.name, '论坛')
   assert.equal(manifest.subtitle, '提问、回答与积分悬赏')
-  assert.equal(manifest.apiVersion, 9)
+  // The forum interface was introduced in API 9; the manifest may require newer features too.
+  assert.ok(manifest.apiVersion >= 9, 'the forum requires App API 9 or later')
   assert.deepEqual(manifest.permissions.capabilities, [])
   assert.equal(manifest.contributes.mcpServers, undefined)
   assert.equal(manifest.firstRun, undefined)
