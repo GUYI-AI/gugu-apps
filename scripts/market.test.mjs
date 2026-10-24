@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
-import { CLIENT_CONTRACT_URL } from './app-platforms.mjs';
+import { CLIENT_CONTRACT_URL, loadAppPlatformContract } from './app-platforms.mjs';
 import { packDir, sha256 } from './lib.mjs';
 import { INDEX_KEY, putObject, sync } from './sync.mjs';
 
@@ -18,12 +18,13 @@ const scripts = new URL('.', import.meta.url).pathname;
 const contractTransport = join(work, 'client-contract-transport.mjs');
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
 const PNG_1x1 = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
+let publicationApiVersion;
 
 /** 一个源码仓 owner/probe:App 目录 apps/probe,每次 commit 回 sha。 */
 function commitProbe(version, extra = {}) {
   const dir = join(sources, 'owner', 'probe', 'apps', 'probe');
   mkdirSync(join(dir, 'shots'), { recursive: true });
-  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ apiVersion: 11, platforms: ['desktop'], id: 'probe', name: 'Probe', version, entry: 'index.html', icon: 'icon.png', engines: { gugu: '>=0.2.40' }, contributes: { tabs: [{ name: 'main', title: 'Main' }] }, ...extra }));
+  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ apiVersion: publicationApiVersion, platforms: ['desktop'], id: 'probe', name: 'Probe', version, entry: 'index.html', icon: 'icon.png', engines: { gugu: '>=0.2.40' }, contributes: { tabs: [{ name: 'main', title: 'Main' }] }, ...extra }));
   writeFileSync(join(dir, 'index.html'), `<!doctype html><p>${version}</p>`);
   writeFileSync(join(dir, 'icon.png'), PNG_1x1);
   writeFileSync(join(dir, 'shots', 'main.png'), PNG_1x1);
@@ -98,6 +99,7 @@ before(async () => {
   const response = await fetch(CLIENT_CONTRACT_URL);
   assert.equal(response.ok, true, `pinned client contract: HTTP ${response.status}`);
   const source = await response.text();
+  publicationApiVersion = (await loadAppPlatformContract(async () => new Response(source))).APP_PLATFORMS_API_VERSION;
   writeFileSync(contractTransport, `globalThis.fetch = async (url) => { if (String(url) !== ${JSON.stringify(CLIENT_CONTRACT_URL)}) throw new Error('unexpected contract URL'); return new Response(${JSON.stringify(source)}); };\n`);
   mkdirSync(join(sources, 'owner', 'probe'), { recursive: true });
   git(join(sources, 'owner', 'probe'), 'init', '-q');
@@ -210,7 +212,7 @@ test('publication: add-version and verify execute the same pinned platform rule;
     [{ platforms: undefined }, /declare desktop, phone, or both/],
     [{ platforms: ['phone', 'phone'] }, /duplicate platform/],
     [{ platforms: ['tablet'] }, /only desktop and phone are supported/],
-    [{ apiVersion: 10 }, /requires apiVersion 11/],
+    [{ apiVersion: publicationApiVersion - 1 }, new RegExp(`requires apiVersion ${publicationApiVersion}`)],
     [{ platforms: ['phone'], permissions: { capabilities: ['notifications'] } }, /phone does not support notifications/],
     [{ platforms: ['phone'], permissions: { capabilities: ['agents:tools'] } }, null],
     [{ platforms: ['desktop'], permissions: { capabilities: ['notifications'] } }, null],
