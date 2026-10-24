@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.2.2
 
 - Add a screenshot of the installed App to the market page.

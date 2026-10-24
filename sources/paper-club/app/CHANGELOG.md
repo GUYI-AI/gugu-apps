@@ -1,5 +1,9 @@
 # 论文共读
 
+## 0.3.5
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.3.4
 
 - 项目里的 PDF「问 agent」改由咕咕自己的选择框选发送位置（我的任务或对话），App 不再列出任务；「新建任务」改成划词工具条上「问 agent」旁边的独立按钮（只在项目里的 PDF 上出现）。App 协议版本改为 10，去掉 `agents:read:all` 权限。

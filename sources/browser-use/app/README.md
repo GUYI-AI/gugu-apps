@@ -1,3 +1,5 @@
+![Browser Use：在浏览器中执行网页任务](screenshots/promo.png)
+
 # Browser Use
 
 ![agent 在浏览器页签中查阅 GitHub 发布页，并整理出版本信息](screenshots/1.jpg)

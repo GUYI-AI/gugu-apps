@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.1.6
 
 - 更新 App 图标，以节点连线与提醒铃铛表示 agent 的关注关系。

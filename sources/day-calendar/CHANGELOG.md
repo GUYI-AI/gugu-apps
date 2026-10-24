@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.5
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.4.4
 
 - 更新 App 图标为正面月历与完成标记。

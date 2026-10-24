@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.1.3
 
 市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。

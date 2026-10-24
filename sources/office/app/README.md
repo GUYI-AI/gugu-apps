@@ -1,3 +1,5 @@
+![咕咕办公：批注演示文稿编辑电子表格](screenshots/promo.png)
+
 # 咕咕办公
 
 ![agent 按框选的内容修改演示稿，并保存为同一文件的新版本](screenshots/1.jpg)

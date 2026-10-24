@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 1.0.1
 
 - 卡片详情改为先阅读、点击才编辑：标题、说明在原处编辑；属性排成标题下的一行，点击某一项只编辑这一项，回车或离开即保存，Esc 放弃。

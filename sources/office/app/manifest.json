@@ -16,7 +16,7 @@
     }
   },
   "author": "咕咕",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "apiVersion": 8,
   "engines": { "gugu": ">=0.2.57" },
   "entry": "index.html",

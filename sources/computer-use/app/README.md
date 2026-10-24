@@ -1,3 +1,5 @@
+![Computer Use：操作电脑应用查看执行过程](screenshots/promo.png)
+
 # Computer Use
 
 ![Computer Use 的系统授权与使用入口](screenshots/settings.jpg)

@@ -1,3 +1,5 @@
+![论坛：提问与讨论集中呈现](screenshots/promo.png)
+
 # 论坛
 
 ![撰写问题并设置可选的积分悬赏](screenshots/compose.jpg)
