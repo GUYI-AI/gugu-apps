@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.2.5
 
 - 海龟汤自己的页面不再列出你的聊天来开局：新局在群聊或私聊里打开海龟汤时开，那里已经知道是哪个聊天；自己的页面只列出各聊天里的牌局。主持人仍在这个聊天的 agent 里选。

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.11
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
 ## 0.2.10
 
 Report the localized settings title to the host tab when the page opens or its language changes.

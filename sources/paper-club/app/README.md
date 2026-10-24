@@ -1,3 +1,5 @@
+![论文共读：阅读论文围绕原文讨论](screenshots/promo.png)
+
 # 论文共读
 
 ![群成员划线讨论论文，agent 回答中的每处出处均为可点击的引用](screenshots/1.jpg)

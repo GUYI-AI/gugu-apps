@@ -1,3 +1,5 @@
+![协作看板：让任务进度清晰可见](screenshots/promo.png)
+
 # 协作看板
 
 ![本机看板：agent 认领的卡片显示进度、等待事项和任务状态](screenshots/1.jpg)

@@ -1,3 +1,5 @@
+![日历：集中查看待办与日程记录](screenshots/promo.png)
+
 # 日历
 
 ![在任务中让 agent 用日历记下会议，右侧日历同步显示当天的待办](screenshots/1.jpg)

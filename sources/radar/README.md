@@ -1,3 +1,5 @@
+![雷达：关注 Agent 动态及时接收提醒](screenshots/promo.png)
+
 # 雷达
 
 ![关注关系图：连线上的数字为提醒次数，红色节点为出错的任务](screenshots/1.jpg)

@@ -1,3 +1,5 @@
+![海龟汤：围绕线索提问逐步还原真相](screenshots/promo.png)
+
 # 海龟汤
 
 ![群成员与 agent 一起提问，主持人逐条判定](screenshots/1.jpg)

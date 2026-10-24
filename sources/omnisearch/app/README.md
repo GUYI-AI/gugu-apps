@@ -1,3 +1,5 @@
+![全能搜索：搜索网页查阅编程文档](screenshots/promo.png)
+
 # 全能搜索
 
 ![agent 使用全能搜索查阅资料，回答附带出处链接](screenshots/1.jpg)
