@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.6
+
+- Declare desktop support (App API 12). Adding, checking and removing entries require the App's local program.
+
 ## 0.4.5
 
 - Add promotional artwork as the first market image; preserve the existing screenshots.

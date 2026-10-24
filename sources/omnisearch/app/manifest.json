@@ -5,8 +5,11 @@
   "subtitle": "agent 的网页与文档搜索",
   "localized": { "en": { "subtitle": "Web and docs search for agents" } },
   "author": "咕咕",
-  "version": "0.2.11",
-  "apiVersion": 8,
+  "version": "0.2.12",
+  "apiVersion": 12,
+  "platforms": [
+    "desktop"
+  ],
   "engines": { "gugu": ">=0.2.57" },
   "entry": "settings.html",
   "icon": "icon.png",

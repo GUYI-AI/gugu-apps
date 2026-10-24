@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- Declare desktop and phone support for the human interface (App API 12).
+
 ## 1.0.4
 
 - Create cards in the host App dialog on desktop and phone. The draft stays open when saving fails; it uses the board's existing save path and can include a note and the current task.

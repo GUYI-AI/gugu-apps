@@ -4,8 +4,11 @@
   "description": "The person's calendar: record writes a to-do or a memory on a day. It shows in the task page's side panel as a month with the chosen day's to-dos and memories.",
   "subtitle": "Calendar, to-dos and notes",
   "author": "咕咕",
-  "version": "0.4.5",
-  "apiVersion": 8,
+  "version": "0.4.6",
+  "apiVersion": 12,
+  "platforms": [
+    "desktop"
+  ],
   "engines": { "gugu": ">=0.2.57" },
   "localized": {
     "zh-CN": {

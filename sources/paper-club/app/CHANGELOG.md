@@ -1,5 +1,10 @@
 # 论文共读
 
+## 0.3.6
+
+- Declare desktop and phone support for the human interface (App API 12).
+- Keep touch drags in the PDF region tool so they finish a selection on phones.
+
 ## 0.3.5
 
 - Add promotional artwork as the first market image; preserve the existing screenshots.

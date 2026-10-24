@@ -43,7 +43,7 @@ body { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
 .c-pink { --hl: rgb(249 168 212 / 0.55); --box: rgb(219 39 119); }
 .mark { background: var(--hl); }
 .drawing-box { position: absolute; border: 2px dashed var(--em-foreground); z-index: 3; pointer-events: none; }
-.page.boxing { cursor: crosshair; }
+.page.boxing { cursor: crosshair; touch-action: none; }
 .page.boxing .textLayer { pointer-events: none; }
 
 /* PDF.js text layer (from pdf_viewer.css 5.6.205, what TextLayer needs to place and select its spans). */
