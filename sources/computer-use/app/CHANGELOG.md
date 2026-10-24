@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4
+
+- Declare desktop support for the human interface (App API 11).
+
 ## 0.2.3
 
 - Add promotional artwork as the first market image; preserve the existing screenshots.

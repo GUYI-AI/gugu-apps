@@ -1,5 +1,9 @@
 # 更新记录
 
+## 0.1.4
+
+- Declare desktop and phone support for the human interface (App API 11).
+
 ## 0.1.3
 
 - Add promotional artwork as the first market image; preserve the existing screenshots.

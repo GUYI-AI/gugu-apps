@@ -3,9 +3,12 @@
   "name": "Computer Use",
   "description": "Lets agents operate this computer's apps, and shows what they do. Each task's Computer tab shows the window its agent works in, its cursor and its steps.",
   "subtitle": "Native app control for agents",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "icon": "icon.png",
-  "apiVersion": 8,
+  "apiVersion": 11,
+  "platforms": [
+    "desktop"
+  ],
   "engines": { "gugu": ">=0.2.57" },
   "author": "Gugu",
   "categories": ["productivity"],

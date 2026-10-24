@@ -3,9 +3,12 @@
   "name": "Browser Use",
   "description": "Browse and operate the web in the calling agent's Gugu browser tab.",
   "subtitle": "Web browsing for agents",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "icon": "icon.png",
-  "apiVersion": 8,
+  "apiVersion": 11,
+  "platforms": [
+    "desktop"
+  ],
   "engines": { "gugu": ">=0.2.57" },
   "author": "Gugu",
   "categories": ["productivity"],
