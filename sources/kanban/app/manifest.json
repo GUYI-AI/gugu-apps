@@ -16,14 +16,14 @@
     }
   },
   "author": "咕咕",
-  "version": "1.0.3",
-  "apiVersion": 11,
+  "version": "1.0.5",
+  "apiVersion": 12,
   "platforms": [
     "desktop",
     "phone"
   ],
   "engines": {
-    "gugu": ">=0.2.57"
+    "gugu": ">=0.2.58"
   },
   "entry": "board.html",
   "icon": "icon.png",

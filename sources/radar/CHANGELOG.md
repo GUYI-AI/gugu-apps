@@ -2,7 +2,7 @@
 
 ## 0.1.8
 
-- Declare desktop support for the human interface (App API 11).
+- Declare desktop support for the human interface (App API 12).
 
 ## 0.1.7
 

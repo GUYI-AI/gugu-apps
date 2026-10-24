@@ -5,7 +5,7 @@
   "subtitle": "Web browsing for agents",
   "version": "0.1.5",
   "icon": "icon.png",
-  "apiVersion": 11,
+  "apiVersion": 12,
   "platforms": [
     "desktop"
   ],

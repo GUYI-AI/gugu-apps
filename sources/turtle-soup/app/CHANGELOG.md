@@ -2,7 +2,7 @@
 
 ## 0.2.7
 
-- Declare desktop and phone support for the human interface (App API 11).
+- Declare desktop and phone support for the human interface (App API 12).
 
 ## 0.2.6
 

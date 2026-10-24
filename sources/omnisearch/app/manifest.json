@@ -6,7 +6,7 @@
   "localized": { "en": { "subtitle": "Web and docs search for agents" } },
   "author": "咕咕",
   "version": "0.2.12",
-  "apiVersion": 11,
+  "apiVersion": 12,
   "platforms": [
     "desktop"
   ],
