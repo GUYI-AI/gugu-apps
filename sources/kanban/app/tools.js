@@ -8,7 +8,7 @@
 import path from 'node:path'
 import { apply as applyToBoard, snapshot as readNow } from './lib/store.js'
 import { findColumn } from './lib/core.js'
-import { openChatBoard, applyToFile, whenSaved } from './lib/chat-board.js'
+import { openChatBoard, applyToFile, filled, whenSaved } from './lib/chat-board.js'
 import { agentsBySession, cardView, listView, columnName } from './lib/agent-view.js'
 
 const forAgents = { ui: { visibility: ['model'] } }
@@ -30,7 +30,7 @@ async function withBoard({ chat, board }, fn) {
   if (chat === undefined && board === undefined) return fn({ read: readNow, apply: async (op, who) => (await applyToBoard(op, who)).result })
   const f = board === undefined
     ? await openChatBoard(gugu.files, chat)
-    : await gugu.files.open({ id: board, ...(chat === undefined ? {} : { chat }) })
+    : filled(await gugu.files.open({ id: board, ...(chat === undefined ? {} : { chat }) }))
   try {
     let wrote = false
     const answer = await fn({

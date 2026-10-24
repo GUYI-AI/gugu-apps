@@ -16,8 +16,8 @@
     }
   },
   "author": "咕咕",
-  "version": "1.0.6",
-  "apiVersion": 12,
+  "version": "1.1.0",
+  "apiVersion": 14,
   "platforms": [
     "desktop",
     "phone"
@@ -64,6 +64,7 @@
             ".board.json"
           ]
         },
+        "chatFile": "协作看板.board.json",
         "toolbar": [
           {
             "id": "new",

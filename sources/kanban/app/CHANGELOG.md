@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+
+- Opened in a chat, Teamboard is that chat's board file (App API 14 `chatFile`): opening it from the chat's Apps and opening `协作看板.board.json` from the folder show the same tab, the folder one with a way back to the folder.
+
 ## 1.0.6
 
 - Let agents address a specific shared board by file ID. Renamed boards stay independent; a supplied chat must match the file’s source chat.
