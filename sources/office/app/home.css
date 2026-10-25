@@ -51,7 +51,8 @@ main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) v
 }
 .blank span { font-size: var(--em-font-caption); color: var(--em-foreground); }
 
-/* Narrow (a chat's panel, the phone): 「新建」 is the bar's button; the cards only when the chat has nothing yet. */
+/* By the page's own width, which is its container's (a chat's panel, the panel maximized, the rail, the phone).
+   Narrow (a chat's panel, the phone): 「新建」 is the bar's button; the cards only when the chat has nothing yet. */
 @media (max-width: 639px) {
   body:not(.empty-here) #blanks { display: none; }
   .blank .face { width: 128px; height: 72px; }
@@ -61,6 +62,6 @@ main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) v
   .bar { padding: var(--em-spacing-lg) var(--em-spacing-xl) var(--em-spacing-md); }
   .search { max-width: 640px; margin: 0 auto; }
   main { padding: 0 var(--em-spacing-xl) var(--em-spacing-xl); }
-  body.has-blanks #new { display: none; }
+  body.has-blanks .new { display: none; }
 }
-body.empty-here #new { display: none; }
+body.empty-here .new { display: none; }
