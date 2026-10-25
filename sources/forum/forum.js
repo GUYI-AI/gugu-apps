@@ -314,7 +314,7 @@ function assignAgent(postId, agentId) {
   void runWrite(
     () => agentId ? g.forum.assign(postId, agentId) : g.forum.assign(postId),
     (result) => {
-      if (result?.confirming) say('请在咕咕弹出的选择框中选择要指派的 agent，指派完成后会自动更新。')
+      if (result?.assigned) say('已指派 agent。')
     },
   )
 }
