@@ -6,7 +6,7 @@
 // (skills/office); what is on screen follows the file to its new version. A pill clicked opens the file here at its
 // place (onLink).
 //
-// Built only on the public App API: getContext / onContextChanged, files.open / onChanged, compose, onLink,
+// Built only on the public App API: getContext / onContextChanged, files.open / onChanged, dispatch, onLink,
 // setTabTitle.
 // - Each kind of file is its own view module (KINDS, by the suffix the host handed it for): the page around it is the
 //   same — the file opened, followed to its new versions, the picks put in the composer.
@@ -28,6 +28,7 @@ const STRINGS = {
     pptxFailed: '这份演示稿打不开：{e}',
     picksCount: '{n} 处',
     picksSend: '放进输入框',
+    picksDispatch: '交给 agent',
     picksClear: '全部取消',
     unpick: '去掉这一处',
     placeGone: '这一处在现在这一版里找不到了。',
@@ -61,6 +62,7 @@ const STRINGS = {
     pptxFailed: 'This deck cannot be opened: {e}',
     picksCount: '{n} spot{s}',
     picksSend: 'Put in composer',
+    picksDispatch: 'Hand to agent',
     picksClear: 'Clear all',
     unpick: 'Take this one back',
     placeGone: 'That place is not in the version shown now.',
@@ -363,6 +365,7 @@ async function redraw(current) {
 // The bar: shown only while something is picked, by the last pick — never over it, never moving the file under it.
 function labelBar() {
   $('pick-send-label').textContent = state.t.picksSend
+  $('pick-dispatch').textContent = state.t.picksDispatch
   $('pick-clear').title = state.t.picksClear
   $('pick-clear').setAttribute('aria-label', state.t.picksClear)
   renderPicks(state.current?.view?.picks() ?? [])
@@ -411,16 +414,15 @@ function placeBar() {
   Object.assign(bar.style, { top: `${Math.round(top)}px`, left: `${Math.round(left)}px` })
 }
 
-// Every waiting pick, in order, into the file's chat's composer as a pill (gugu.compose refs, inside the click or the
-// Enter that asked for it): the file, the version drawn — what it was picked on, the newest or not — and where, as the
-// view says it. The person says what to do with them, @s an agent and sends it, or not.
-async function sendPicks() {
+// The same file, version and places go either into the composer or to the host's dispatch sheet.
+async function sendPicks(draft = true) {
   const current = state.current
   const picks = current?.view?.picks() ?? []
   if (!picks.length) return
   const refs = picks.map((pick) => ({ file: current.entry, ...(current.drawn ? { version: current.drawn } : {}), ...current.kind.refOf(pick, state.t) }))
   try {
-    await gugu.compose('', { refs })
+    const result = await gugu.dispatch('', { ...(draft ? { draft: true } : {}), refs })
+    if (result?.cancelled) return
     current.view.clear()
   } catch (error) {
     showBanner(fmt(state.t.failed, { e: error.message }), 'error')
@@ -493,6 +495,7 @@ function start() {
     applyLayout()
   }, { capture: true })
   $('pick-send').onclick = () => sendPicks()
+  $('pick-dispatch').onclick = () => sendPicks(false)
   $('pick-clear').onclick = () => state.current?.view?.clear()
   // The keys are the page's, for every kind of file: Enter puts what is picked in the composer, Esc (a desktop's) lets
   // it go. Not while typing somewhere, and nothing else is taken (a view keeps its own arrows and Shift).

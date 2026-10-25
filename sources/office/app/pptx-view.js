@@ -13,7 +13,7 @@
 //   replaces what is picked and Shift / ⌘ / Ctrl adds (a picked one clicked so takes it back); a click on nothing clears.
 //   With a finger a tap adds or takes back, one finger dragging scrolls, and holding still ~0.35 s then dragging draws.
 // - Picks wait here until the person puts them in the composer at once (the bar the page floats by the last of them,
-//   app.js): gugu.compose closes the panel on a phone, so a pick each would mean opening it again for each.
+//   app.js): draft dispatch closes the panel on a phone, so a pick each would mean opening it again for each.
 // - Each waiting pick stays visible on its slide, numbered in the order its pill goes; its number takes it back.
 // - A pill clicked opens the file here at its place (`reveal`, from the page's onLink): its slide scrolled to and the
 //   place framed until the next press.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10
+
+- Hand selected places to an agent through the host dispatch sheet, or put them in the composer. Ask an agent for a file by making a blank file first and handing it over (App API 15).
+
 ## 0.2.9
 
 - Gugu Office's own page is laid out as Office's start page: one bar at the top (the search, and 「新建」 with its menu of blank files), and the list below it, its head saying what it lists (本群 / 所有群, or which chat) and which kind it keeps. A chat with nothing yet, and a wide page, show the blank deck and workbook as cards to start from.

@@ -55,7 +55,7 @@ body[data-state="doc"] .doc-message { display: none; }
 }
 .pick-clear:hover { opacity: 1; background: rgba(127, 127, 127, 0.25); }
 body.fingers .pick-bar { padding: 6px 6px 6px 16px; }
-body.fingers .pick-send { padding: 8px 16px; }
+body.fingers .pick-send { padding: 8px 10px; }
 body.fingers .pick-send kbd { display: none; }
 body.fingers .pick-clear { width: 36px; height: 36px; }
 

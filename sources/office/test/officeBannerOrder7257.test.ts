@@ -39,7 +39,7 @@ const gugu = {
     contextChanged = fn
     return () => {}
   }),
-  compose: vi.fn(async () => {}),
+  dispatch: vi.fn(async () => {}),
   files: {
     list: vi.fn(async () => []),
     onChanged: vi.fn((_place: unknown, fn: typeof heard) => {
