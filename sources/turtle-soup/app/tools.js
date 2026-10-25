@@ -115,7 +115,7 @@ async function whisper(f, lines) {
   const notTold = []
   for (const [to, text] of lines) {
     try {
-      await gugu.send(to, text, { refs: [{ file: f.entry }] })
+      await gugu.dispatch(text, { to: { chat: f.entry.chat, member: to }, refs: [{ file: f.entry }] })
     } catch (e) {
       notTold.push(`${to}: ${e.code ?? 'failed'} — ${e.message}`)
     }

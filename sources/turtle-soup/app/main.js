@@ -1,6 +1,6 @@
 // 海龟汤's page. In a chat's side panel it is the lobby (this chat's rounds, and a new one); opened for a round file
 // (`.turtle-soup.json`) it is that round. Players act here — ask, guess the story, ask for a hint, give up — and talk
-// in the chat as usual. The host is an agent in the chat with this App's tools, woken by a whisper (gugu.send) when
+// in the chat as usual. The host is an agent in the chat with this App's tools, woken by a whisper (gugu.dispatch) when
 // something waits for it; the round file is what everyone sees, live.
 import {
   FILE_SUFFIX, VERDICT_LABEL, DIFFICULTY_LABEL, MAX_QUESTION, MAX_GUESS,
@@ -127,7 +127,6 @@ async function showEveryRound(lobby) {
 
 /** A new round in this chat, hosted by an agent in it. */
 function newRoundForm(puzzles) {
-  const agents = members().filter((m) => m.kind === 'agent')
   const form = h('form', { className: 'card stack', ariaLabel: '新开一局' })
   form.append(h('h3', { textContent: '新开一局' }))
   const language = h('select', { name: 'lang' }, Object.entries(LANGS).map(([value, label]) => h('option', { value, textContent: label, selected: value === defaultLang() })))
@@ -144,20 +143,10 @@ function newRoundForm(puzzles) {
   level.onchange = fill
   language.onchange = fill
   fill()
-  const hostPick = h('select', { name: 'host' })
   const go = h('button', { type: 'submit', className: 'primary', textContent: '开汤' })
-  const noHost = h('p', { className: 'muted', textContent: '需要一个 agent 当主持人：把装了海龟汤的 agent 拉进群，或者在和你自己的 agent 的私聊里玩。' })
-  const drawHosts = () => {
-    put(hostPick, agents.map((a) => h('option', { value: a.id, textContent: a.name })))
-    noHost.hidden = agents.length > 0
-    go.disabled = !agents.length
-  }
-  drawHosts()
   form.append(...kids([
     h('div', { className: 'row' }, h('label', {}, '语言', language), h('label', {}, '难度', level)),
     h('label', {}, '题目', pick),
-    h('label', {}, '主持人', hostPick),
-    noHost,
     h('p', { className: 'muted', textContent: '主持人的主人看得到汤底：别让要一起猜的人的 agent 主持。' }),
     h('div', { className: 'row' }, go),
   ]))
@@ -168,24 +157,30 @@ function newRoundForm(puzzles) {
       const shown = shownNow()
       const puzzle = pick.value ? puzzles.find((p) => p.id === pick.value) : shown[Math.floor(Math.random() * shown.length)]
       if (!puzzle) throw new Error('没有这个难度的题')
-      await startRound(puzzle, hostPick.value)
+      await startRound(puzzle)
     } catch (e) {
       fail('没开成', e)
     } finally {
-      go.disabled = !agents.length
+      go.disabled = false
     }
   }
   return form
 }
 
 /** The round file in this chat, its host woken; it opens here. */
-async function startRound(puzzle, hostId) {
+async function startRound(puzzle) {
   const at = Date.now()
   const d = new Date(at)
   const stamp = `${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`
-  const entry = await window.gugu.files.create({ chat: ctx.chat.id, name: `${puzzle.title} ${stamp}${FILE_SUFFIX}` }, newRound({ puzzle, host: hostId, at }))
-  await window.gugu.send(hostId, `请主持这局海龟汤「${puzzle.title}」。`, { refs: [{ file: entry }] })
+  const entry = await window.gugu.files.create({ chat: ctx.chat.id, name: `${puzzle.title} ${stamp}${FILE_SUFFIX}` }, newRound({ puzzle, host: null, at }))
+  const result = await window.gugu.dispatch(`请主持这局海龟汤「${puzzle.title}」。`, { refs: [{ file: entry }], offer: ['agent-in-chat'] })
+  if (result.cancelled) {
+    await window.gugu.files.remove(entry)
+    return
+  }
   await openRound(entry)
+  current.data.host = result.to.member
+  drawRound()
 }
 
 // ── a round ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -319,7 +314,7 @@ function drawActions() {
 /** Wake the host — unless something already waits for it: it handles everything waiting before it stops. */
 async function tellHost(round, before, text) {
   if (round.status !== 'playing' || before) return
-  await window.gugu.send(round.host, text, { refs: [{ file: current.entry }] })
+  await window.gugu.dispatch(text, { to: { chat: current.entry.chat, member: round.host }, refs: [{ file: current.entry }] })
 }
 
 async function submit(kind) {
@@ -361,7 +356,7 @@ async function toggleGiveUp() {
     }
     f.data.giveUp[me] = Date.now()
     if (Object.keys(f.data.giveUp).length >= giveUpNeeded(f.data) && f.data.status === 'playing') {
-      await window.gugu.send(f.data.host, `海龟汤「${f.data.puzzle.title}」的玩家投票放弃了，请揭晓汤底。`, { refs: [{ file: f.entry }] })
+      await window.gugu.dispatch(`海龟汤「${f.data.puzzle.title}」的玩家投票放弃了，请揭晓汤底。`, { to: { chat: f.entry.chat, member: f.data.host }, refs: [{ file: f.entry }] })
     }
   } catch (e) {
     fail('没投成', e)
