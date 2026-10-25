@@ -59,7 +59,8 @@ beforeAll(async () => {
   document.body.innerHTML = new DOMParser().parseFromString(html, 'text/html').body.innerHTML
   Object.assign(globalThis, { gugu, fetch: vi.fn(async (url: URL) => {
     fetched.push(String(url))
-    return { arrayBuffer: async () => readFileSync(resolve(appDir, String(url).slice(String(url).lastIndexOf('/') + 1))).buffer }
+    // A copy of the file's bytes alone: a Buffer's `.buffer` may be a bigger ArrayBuffer it is only a view into.
+    return { arrayBuffer: async () => new Uint8Array(readFileSync(resolve(appDir, String(url).slice(String(url).lastIndexOf('/') + 1)))).buffer }
   }) })
   Object.assign(window, { gugu })
   // @ts-expect-error — 内置 App 是不经构建的纯 ES module,没有类型;运行时 import 可用。
