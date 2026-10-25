@@ -18,7 +18,8 @@ const oneAtATime = (fn) => {
 
 export const watch = {
   description:
-    'Be told when another agent on this computer needs attention. level says how much you want to hear: ' +
+    'Radar (雷达): watch/关注 another agent on this computer and receive status notifications. ' +
+    'For done/completion/完成提醒, set level to "everything". level says how much you want to hear: ' +
     '"trouble" — when it stops with an error, when it is gone (its engine quit, or its task was archived or deleted), ' +
     'or when it seems stuck (working, with no new tool call for stuck_minutes; judged only for chat-panel agents that ' +
     'are open — a terminal agent is never called stuck); "needs_you" — all of that, and also when it waits for a person ' +
