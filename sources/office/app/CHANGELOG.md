@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7
+
+- Opened in a chat (its panel), Gugu Office's own page is that chat's: it lists and searches the chat's decks, workbooks and markdown, and one tab switches to every chat (opened lately, and a search over all of them). A chat with none of the kind picked offers 「让 agent 做一份」: a draft in that chat's composer. Moved to another chat, the page follows it. Opened from the rail, it is as before.
+
 ## 0.2.6
 
 - The skill also applies to an Office file received as a chat attachment (every attachment is a file of the chat's folder), shows a saved version in the chat with message_send_file `file`, and sends no converted copy beside it.
