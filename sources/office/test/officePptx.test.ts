@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeAll, describe, expect, test, vi } from 'vitest'
+import { until } from './support/awaitCondition'
 
 const appDir = resolve(__dirname, '../app')
 const bytes = new Uint8Array(readFileSync(resolve(__dirname, 'fixtures/two-slides.pptx')))
@@ -357,6 +358,23 @@ describe('咕咕办公 · .pptx', () => {
     ]
     expect(view.refOf({ slide: 1, box: [400.4, 120, 200, 100.6], shapes } as never, t)).toEqual({ at: { slide: 1, box: '400,120,200,101' }, label: '第 1 页 · 框选的 2 个形状' })
     expect(view.refOf({ slide: 1, box: [0, 0, 10, 10], shapes: [] } as never, t)).toEqual({ at: { slide: 1, box: '0,0,10,10' }, label: '第 1 页 · 框选的空白处' })
+  })
+})
+
+describe('咕咕办公 · .pptx 先画第一屏(owner 10-25)', () => {
+  test('五页的稿:每页的位置和可点选的形状一开始就都在,图先画前三页,其余的随后补上', async () => {
+    const host = document.createElement('div')
+    const five = new Uint8Array(readFileSync(resolve(__dirname, 'fixtures/five-slides.pptx')))
+    const deck = await view.mountPptx(host, five, { t, onPicks: () => {} })
+    expect(deck.slides).toBe(5)
+    const imgs = () => [...host.querySelectorAll('.pptx-slide img')].map((img) => !!img.getAttribute('src'))
+    expect(host.querySelectorAll('.pptx-slide')).toHaveLength(5)
+    expect(imgs()).toEqual([true, true, true, false, false])
+    // Pickable before its picture: the shapes are read from the deck, not from what pptx-glimpse drew.
+    expect(host.querySelectorAll('.pptx-slide[data-n="5"] .pptx-hit').length).toBeGreaterThan(0)
+    expect(deck.reveal({ slide: '5' })).toBe(true)
+    await until('the slides after the first screen are drawn', imgs, (drawn) => drawn.every(Boolean))
+    deck.destroy()
   })
 })
 

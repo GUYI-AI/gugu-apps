@@ -30,6 +30,69 @@
       "sha256": "791f1176672ef368c8888b8cfdd1104267be3d7c9c0eafae5c747616fda7a5fe",
       "bytes": 1110535,
       "yanked": null
+    },
+    {
+      "version": "0.2.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "9d256587c5c8e6d64156caeacd68f6c93a7a1df879fb2a7e3f4919e248ea08b8",
+      "bytes": 1669284,
+      "yanked": null
+    },
+    {
+      "version": "0.2.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "f972c44c28705baf193307c03b1c7418f38b1b60",
+      "sha256": "3f217a0bf32e10f791b5175a625415d150e3042b35b902d5ce578776955f6720",
+      "bytes": 1682794,
+      "yanked": null
+    },
+    {
+      "version": "0.2.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "7186449a86becea707a26e9c5e38ac4c847ec15091a48f180049cb25e3202751",
+      "bytes": 2270401,
+      "yanked": null
+    },
+    {
+      "version": "0.2.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "f3bfbcc9de6bf1b7de364794413ef3b58625628dda28241cf68a9ee0436d7094",
+      "bytes": 2270490,
+      "yanked": null
+    },
+    {
+      "version": "0.2.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "528c63c7c28c7bb9ba7cc6ec468b23cb91c09eee",
+      "sha256": "2a9a43f5892a032ee882e25d4c2df99a3c6fbc4a1f2fc4c20f6e830bc718481f",
+      "bytes": 2271248,
+      "yanked": null
+    },
+    {
+      "version": "0.2.6",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "115a817077dbcdf2a82d0aa8ad17ef6155b7b662",
+      "sha256": "5e9b550dc829cf33dbfe5066b8b9b19ac6187bf851e70a676efb891c9e0dad9a",
+      "bytes": 2271561,
+      "yanked": null
+    },
+    {
+      "version": "0.2.7",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "12cd7a16c92e5080e0a00be2ff1461aa4ea7c02c",
+      "sha256": "c828f352fddff164167f5ecee3404b10943710f92402ec32b305065569630e0b",
+      "bytes": 2272990,
+      "yanked": null
     }
   ]
 }

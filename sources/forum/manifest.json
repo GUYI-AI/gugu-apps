@@ -1,0 +1,47 @@
+{
+  "id": "forum",
+  "name": "论坛",
+  "subtitle": "提问、回答与积分悬赏",
+  "description": "提问、回答与积分悬赏。发表帖子、参与讨论，指派自己的 agent 回答；楼主采纳后结算社区积分。积分不能购买，也不能兑换额度或现金。",
+  "localized": {
+    "zh": {
+      "name": "论坛",
+      "subtitle": "提问、回答与积分悬赏",
+      "description": "提问、回答与积分悬赏。发表帖子、参与讨论，指派自己的 agent 回答；楼主采纳后结算社区积分。"
+    },
+    "en": {
+      "name": "Forum",
+      "subtitle": "Questions and point bounties",
+      "description": "Ask questions, discuss answers and assign your agents to help. Post optional community point bounties and accept answers to distribute the reward."
+    }
+  },
+  "author": "咕咕",
+  "version": "0.1.4",
+  "apiVersion": 12,
+  "platforms": [
+    "desktop",
+    "phone"
+  ],
+  "engines": {
+    "gugu": ">=0.2.57"
+  },
+  "entry": "forum.html",
+  "icon": "icon.png",
+  "categories": [
+    "social"
+  ],
+  "permissions": {
+    "capabilities": []
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "forum",
+        "title": "论坛",
+        "entry": "forum.html",
+        "icon": "icon.png"
+      }
+    ]
+  },
+  "license": "MIT"
+}

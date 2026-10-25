@@ -1,5 +1,38 @@
 # 论文共读
 
+## 0.3.6
+
+- Declare desktop and phone support for the human interface (App API 12).
+- Keep touch drags in the PDF region tool so they finish a selection on phones.
+
+## 0.3.5
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.3.4
+
+- 项目里的 PDF「问 agent」改由咕咕自己的选择框选发送位置（我的任务或对话），App 不再列出任务；「新建任务」改成划词工具条上「问 agent」旁边的独立按钮（只在项目里的 PDF 上出现）。App 协议版本改为 10，去掉 `agents:read:all` 权限。
+
+## 0.3.3
+
+- 修复 PDF 文字层拖选落在行间空白时选区扩到页面底部的问题：跟随 PDF.js 的 `endOfContent` 选择锚点，并在拖选期间维护选择状态。
+
+## 0.3.2
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
+## 0.3.1
+
+- 手机等窄屏上，App 页的导入框不再被「存放位置」挤成一条细缝：输入框先占一行，按钮放不下时换行。
+
+## 0.3.0
+
+- 一个人也能用：App 自己的页里，导入条一直在，「存放位置」可选本机的项目文件夹（也可选群）；导入后直接打开阅读页。还没有项目时，页上说明在哪里添加。手机上读不到本机项目，页上会说明。
+- 一个人用时问 agent：从本机的任务里挑一个，或在论文所在的项目里新建任务；原文、页码、项目和路径放进那个任务的输入框，由你发出。需要新权限「读取本机任务」（agents:read:all）和「新建任务」（agents:control）。
+- agent 的工具认本机项目里的论文（参数 `project` + `path`）；`cite` 对本机的论文给出指向文件的链接（`路径#page=…&h=…`），在任务里点一下回到原文那一处。
+- 本机项目里也能导入 DOI 和链接（由本机的程序下载），不只限 arXiv。
+- 需要支持 App 接口 7 的咕咕（任务聊天里的文件链接带位置）；更早的咕咕在市场上拿到的仍是 0.2.0。
+
 ## 0.2.0
 
 - 每处划线旁边显示它在群里被讨论过几次（群消息里指向这一段的胶囊）；点开就是那几条消息，再点一条跳到群里那一条。需要新权限「读群消息」（chat:read），以及支持 App 接口 6 的咕咕。

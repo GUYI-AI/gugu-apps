@@ -12,7 +12,7 @@
 // (gugu.messages.search by file), kept per highlight by its pill's `at.h`. Nothing is pushed, so it is read again when
 // the page opens, shows again or gets the focus back (from the chat's composer), and when a thread or the side opens.
 import { openPdf, pdfjs } from './lib/pdf.js'
-import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes } from './lib/paper.js'
+import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry } from './lib/paper.js'
 import { fmt, stringsFor } from './lib/strings.js'
 import { createReview } from './lib/review.js'
 import { importFailure, importInto, uploadInto } from './lib/import-box.js'
@@ -24,7 +24,7 @@ const state = {
   t: stringsFor(navigator.language),
   ctx: null,
   entry: null, // the PDF's entry
-  place: null, // { chat } or { session }
+  place: null, // { chat }, { project } or { session }
   doc: null,
   notes: null, // the notes file's live handle, once there is one
   notesBusy: null, // the create in flight
@@ -73,9 +73,10 @@ async function start() {
   }
 }
 
-/** The library page's link: `?file=<id>&chat=<id>` (or `&session=<id>`) — the entry, found in its place's list. */
+/** The library page's link: `?file=<id>&chat=<id>` (or `&project=` / `&session=`) — the entry, found in its place's list. */
 async function fileFromAddress(asked) {
-  const place = asked.get('chat') ? { chat: asked.get('chat') } : { session: asked.get('session') }
+  const key = ['chat', 'project', 'session'].find((k) => asked.get(k))
+  const place = { [key]: asked.get(key) }
   const entry = (await gugu.files.list(place)).find((e) => e.id === asked.get('file'))
   if (!entry) throw new Error(state.t.gone)
   return entry
@@ -94,6 +95,7 @@ function labels() {
   $('tab-about').textContent = t.about
   $('sel-comment-label').textContent = t.comment
   $('sel-ask-label').textContent = t.ask
+  $('sel-new-task-label').textContent = t.askNew
   $('sel-colors').replaceChildren(
     ...COLORS.map((color) => {
       const b = document.createElement('button')
@@ -120,6 +122,7 @@ async function openPaper(file) {
   }
   state.entry = pdfHandle.entry
   state.place = placeOfEntry(state.entry)
+  $('sel-new-task').hidden = !state.place.project
   pdfHandle.onStatus?.(() => { if (pdfHandle.status === 'gone') say(state.t.gone, 'error') })
   const bytes = new Uint8Array(await (await pdfHandle.blob()).arrayBuffer())
   try {
@@ -174,8 +177,6 @@ async function readDiscussions() {
 
 /** A message's words without its pills' links: 「@[A.pdf · p.4 · …](gugu-file://…)」 reads 「‹A.pdf · p.4 · …›」. */
 const plainText = (text) => String(text ?? '').replace(/@\[([^\]]*)\]\([^)]*\)/g, '‹$1›').replace(/\s+/g, ' ').trim()
-
-const placeOfEntry = (entry) => (entry.chat ? { chat: entry.chat } : { session: entry.session })
 
 function notesName() {
   const folder = folderOf(state.entry)
@@ -237,6 +238,70 @@ function attachNotes(notes) {
 // ─── pages ─────────────────────────────────────────────────────────────────
 
 let observer = null
+const textLayers = new Map()
+let previousSelectionRange = null
+let pointerDown = false
+
+function resetTextLayer(end, text) {
+  text.append(end)
+  end.style.width = ''
+  end.style.height = ''
+  end.style.userSelect = ''
+  text.classList.remove('selecting')
+}
+
+/**
+ * Keep PDF.js's end marker beside the active selection so an empty line cannot select the whole layer.
+ * Ported from pdfjs-dist 5.6.205 `web/text_layer_builder.js` #enableGlobalSelectionListener (lines 210-361):
+ * https://github.com/mozilla/pdf.js/blob/v5.6.205/web/text_layer_builder.js#L210-L361
+ */
+function updateTextLayerSelection() {
+  const selection = getSelection()
+  if (!selection?.rangeCount) {
+    textLayers.forEach(resetTextLayer)
+    previousSelectionRange = null
+    return
+  }
+
+  const active = new Set()
+  for (let i = 0; i < selection.rangeCount; i++) {
+    const range = selection.getRangeAt(i)
+    for (const text of textLayers.keys()) if (range.intersectsNode(text)) active.add(text)
+  }
+  for (const [text, end] of textLayers) {
+    if (active.has(text)) text.classList.add('selecting')
+    else resetTextLayer(end, text)
+  }
+
+  const range = selection.getRangeAt(0)
+  const modifyStart = previousSelectionRange && (
+    range.compareBoundaryPoints(Range.END_TO_END, previousSelectionRange) === 0 ||
+    range.compareBoundaryPoints(Range.START_TO_END, previousSelectionRange) === 0
+  )
+  let anchor = modifyStart ? range.startContainer : range.endContainer
+  if (anchor.nodeType === Node.TEXT_NODE) anchor = anchor.parentNode
+  const parentTextLayer = anchor.parentElement?.closest('.textLayer')
+  const end = textLayers.get(parentTextLayer)
+  if (end && anchor.parentElement) {
+    if (!modifyStart && range.endOffset === 0) {
+      do {
+        while (!anchor.previousSibling) anchor = anchor.parentNode
+        anchor = anchor.previousSibling
+      } while (!anchor.childNodes.length)
+    }
+    end.style.width = parentTextLayer.style.width
+    end.style.height = parentTextLayer.style.height
+    end.style.userSelect = 'text'
+    anchor.parentElement.insertBefore(end, modifyStart ? anchor : anchor.nextSibling)
+  }
+  previousSelectionRange = range.cloneRange()
+}
+
+function bindTextLayer(text, end) {
+  textLayers.set(text, end)
+  text.addEventListener('pointerdown', () => text.classList.add('selecting'))
+  return () => textLayers.delete(text)
+}
 
 async function layoutPages() {
   const doc = state.doc
@@ -262,7 +327,7 @@ async function layoutPages() {
     counts.className = 'counts'
     el.append(marks, counts)
     holder.append(el)
-    const page = { n, el, marks, counts, canvas: null, text: null, vp1: n === 1 ? vp1 : null, rendered: false, task: null }
+    const page = { n, el, marks, counts, canvas: null, text: null, textSelectionCleanup: null, vp1: n === 1 ? vp1 : null, rendered: false, task: null }
     state.pages.push(page)
     sizePage(page)
     observer.observe(el)
@@ -315,6 +380,8 @@ async function renderPage(page) {
     page.text?.remove()
     page.canvas = canvas
     page.text = text
+    page.textSelectionCleanup?.()
+    page.textSelectionCleanup = bindTextLayer(text, end)
     page.el.prepend(canvas)
     page.el.append(text)
     page.rendered = true
@@ -330,6 +397,8 @@ async function renderPage(page) {
 }
 
 function unrenderPage(page) {
+  page.textSelectionCleanup?.()
+  page.textSelectionCleanup = null
   page.canvas?.remove()
   page.text?.remove()
   page.canvas = page.text = null
@@ -339,11 +408,21 @@ function unrenderPage(page) {
 async function rezoom(index) {
   const next = Math.max(0, Math.min(ZOOMS.length - 1, index))
   if (next === state.zoom || !state.doc) return
-  const at = state.current
   state.zoom = next
+  refit()
+}
+
+/**
+ * Every page drawn again at the scale now (a zoom, a new width), the page read kept in view. A page the observer already
+ * saw on screen is observed afresh: it would not be told again while it stays on screen, and would stay blank.
+ */
+function refit() {
+  const at = state.current
   for (const page of state.pages) {
     unrenderPage(page)
     sizePage(page)
+    observer.unobserve(page.el)
+    observer.observe(page.el)
   }
   scrollToPage(at)
 }
@@ -436,6 +515,7 @@ function readSelection() {
 
 let selTimer = 0
 function onSelectionChange() {
+  updateTextLayerSelection()
   clearTimeout(selTimer)
   selTimer = setTimeout(() => {
     const picked = readSelection()
@@ -500,14 +580,48 @@ async function askAgent() {
 }
 
 /**
- * A passage to an agent, in the composer of where the paper is; the person @s whom they mean and sends it, or not.
- * A chat's PDF goes as a pill (a click opens it there). A session's PDF has no pill — a pill points at a chat's file —
- * so its agent gets the passage's words, page and path in that session's composer, and the person is told why.
+ * A passage to an agent, in a composer; the person sends it, or not. A chat's PDF goes as a pill into that chat's (a click
+ * opens it there). A session's PDF has no pill — a pill points at a chat's file — so its agent gets the passage's words,
+ * page and path in that session's composer, and the person is told why. A project's PDF (one person's library) goes where
+ * the person picks in gugu's own sheet — one of their tasks or a chat — with its project and path (`askTask`).
  */
 function askAbout(id, h, text) {
   if (state.place.chat) return gugu.compose(text, { refs: [refOf(id, h)] })
+  if (state.place.project) return askTask(h, text)
   say(state.t.sessionNoPill)
   return gugu.compose(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { session: state.place.session })
+}
+
+/** A project's PDF: the passage's words, page, project and path, with the project's name. */
+async function projectWords(h, text) {
+  const project = state.place.project
+  const name = (await gugu.projects.list()).projects.find((p) => p.id === project)?.name ?? project
+  return { name, words: fmt(state.t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }) }
+}
+
+/** Into the composer the person picks — one of their tasks or a chat (gugu lists the places, not this page). */
+async function askTask(h, text) {
+  const placed = await gugu.compose((await projectWords(h, text)).words)
+  if (!placed.cancelled) say(state.t.askPlaced)
+}
+
+/** A new task in the PDF's project, starting from the passage. Starting takes a while: said at once, and not twice meanwhile. */
+async function askNewTask() {
+  const picked = state.selection
+  const id = await markSelection({ color: 'blue' })
+  if (!id) return
+  const button = $('sel-new-task')
+  button.disabled = true
+  say(state.t.askStarting)
+  try {
+    const { name, words } = await projectWords(state.notes.data.highlights[id], fmt(state.t.askText, { n: picked.page }))
+    await gugu.spawnAgent(words, { project: state.place.project, title: $('title').textContent })
+    say(fmt(state.t.askStarted, { project: name }))
+  } catch (error) {
+    say(fmt(state.t.askFailed, { e: error.message }), 'error')
+  } finally {
+    button.disabled = false
+  }
 }
 
 async function commentSelection() {
@@ -731,7 +845,7 @@ function drawHighlights(body) {
       }
       const said = state.discussed.get(id) ?? []
       if (said.length) card.append(discussionOf(id, said))
-      else if (state.focus === id && state.place?.session) card.append(note(t.noChatInSession))
+      else if (state.focus === id && !state.place?.chat) card.append(note(t.noChatInSession))
       else if (state.focus === id && !messagesReadable()) card.append(note(t.noMessagesHere))
       if (state.focus === id && canWrite()) card.append(replyBox(id, h))
       return card
@@ -948,6 +1062,7 @@ for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
   }
 }
 $('sel-ask').onclick = () => askAgent()
+$('sel-new-task').onclick = () => askNewTask()
 $('sel-comment').onclick = () => commentSelection()
 $('sel-copy').onclick = () => {
   const quote = state.selection?.quote
@@ -957,6 +1072,22 @@ $('sel-copy').onclick = () => {
 $('pages').addEventListener('scroll', onScroll, { passive: true })
 $('pages').addEventListener('click', onPageClick)
 document.addEventListener('selectionchange', onSelectionChange)
+document.addEventListener('pointerdown', () => { pointerDown = true })
+document.addEventListener('pointerup', () => {
+  pointerDown = false
+  textLayers.forEach(resetTextLayer)
+  previousSelectionRange = null
+})
+window.addEventListener('blur', () => {
+  pointerDown = false
+  textLayers.forEach(resetTextLayer)
+  previousSelectionRange = null
+})
+document.addEventListener('keyup', () => {
+  if (pointerDown) return
+  textLayers.forEach(resetTextLayer)
+  previousSelectionRange = null
+})
 document.addEventListener('keydown', (event) => {
   if (event.target.closest?.('input, textarea')) return
   if ((event.metaKey || event.ctrlKey) && (event.key === '=' || event.key === '+')) { event.preventDefault(); rezoom(state.zoom + 1) }
@@ -975,13 +1106,8 @@ new ResizeObserver(() => {
     if (!vp1) return
     const fit = Math.max(0.3, ($('pages').clientWidth - 24) / vp1.width)
     if (Math.abs(fit - state.fitScale) < 0.01) return
-    const at = state.current
     state.fitScale = fit
-    for (const page of state.pages) {
-      unrenderPage(page)
-      sizePage(page)
-    }
-    scrollToPage(at)
+    refit()
   }, 200)
 }).observe($('pages'))
 

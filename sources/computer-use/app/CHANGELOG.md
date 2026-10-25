@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.4
+
+- Declare desktop support for the human interface (App API 12).
+
+## 0.2.3
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.2.2
+
+- Add a screenshot of the installed App to the market page.
+
+## 0.2.1
+
+市场上名字下面加一句副标题；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
+## 0.2.0
+
+本 App 成为电脑控制的开关：装着、启用着，Agent 才能经咕咕自带的电脑控制操作这台电脑；停用或卸载就没有。系统授权在本 App 的页面里办。不再托管外部 Computer Use 程序，「MCP 程序」「启动参数」两项设置随之去掉。新增「电脑」页签：每个任务一份，agent 第一次操作电脑时自动出现在那个任务旁边，显示它正在操作的窗口的真实画面、它的光标和每一步。
+
 ## 0.1.3
 
 找不到 Computer Use 客户端时，说明缺的是哪个客户端、去哪里安装，以及如何改填本机其他 MCP 程序。

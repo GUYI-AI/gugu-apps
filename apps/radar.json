@@ -39,6 +39,51 @@
       "sha256": "69d2a3a8219600ea650add264db81e0701f2384d19930e2759bd56b62d9d5f1e",
       "bytes": 49737,
       "yanked": null
+    },
+    {
+      "version": "0.1.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/radar",
+      "commit": "ec0d471f678e8ee7dd132d35dae1c9fba108ea6b",
+      "sha256": "5f5a22ea00500f9c8f35c885cbe8de7b14ebbbd6fe7870c4e057b492ae99fdae",
+      "bytes": 50149,
+      "yanked": null
+    },
+    {
+      "version": "0.1.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/radar",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "b95352f54f1910ce1743f639ace7bc6d5d0c890475279559a71b7837c760fb29",
+      "bytes": 475813,
+      "yanked": null
+    },
+    {
+      "version": "0.1.6",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/radar",
+      "commit": "f972c44c28705baf193307c03b1c7418f38b1b60",
+      "sha256": "287febede8168429d78177d8198bfb58fd79651401832a06d2bcb69aca5953a4",
+      "bytes": 492447,
+      "yanked": null
+    },
+    {
+      "version": "0.1.7",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/radar",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "bb1167d49b489d1944a4529533833f2d2b464262a7508c2ed897df7a7ab8e3c8",
+      "bytes": 961723,
+      "yanked": null
+    },
+    {
+      "version": "0.1.8",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/radar",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "5f2ff433d1dae44ea77bf040380c516b78d494c9d5821769c87ac5db248c6fe3",
+      "bytes": 961806,
+      "yanked": null
     }
   ]
 }

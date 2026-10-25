@@ -13,16 +13,33 @@ import { bundleKey, fail, MARKET_BASE_URL, metaKey, readApps, rebuildVersion } f
 export const MARKET_PREFIX = 'market/';
 export const INDEX_KEY = `${MARKET_PREFIX}index.json`;
 
+function sameObject(key, bytes, head) {
+  const etag = String(head.res.headers.etag ?? '').replace(/"/g, '').toLowerCase();
+  const md5 = createHash('md5').update(bytes).digest('hex');
+  if (etag !== md5) fail(`${key} 已经在下载站上,而且字节不同(ETag ${etag} ≠ ${md5})。已发布的文件不可变,❌ 覆盖`);
+  return 'same';
+}
+
 /**
  * 写一个对象。唯一的写口。
  * - key 不在 market/ 下 → 拒绝;
- * - 除 index.json 外一律 forbid-overwrite;已存在时比 MD5(OSS 简单上传的 ETag 就是内容 MD5),同字节算写过,不同字节报红。
+ * - 除 index.json 外先 HEAD 比 MD5(OSS 简单上传的 ETag 就是内容 MD5),已存在同字节跳过,不同字节报红。
+ * - 不存在才 PUT,仍带 forbid-overwrite 防并发写入;撞上同名时再核 ETag。
  * 回 'written' | 'same'。
  */
 export async function putObject(client, key, bytes, contentType, dryRun = false) {
   if (!key.startsWith(MARKET_PREFIX) || key.includes('..')) fail(`拒绝写 market/ 以外的路径: ${key}`);
   const mutable = key === INDEX_KEY;
   if (dryRun) return 'written';
+  if (!mutable) {
+    let head;
+    try {
+      head = await client.head(key);
+    } catch (error) {
+      if (error.code !== 'NoSuchKey' && error.status !== 404) throw error;
+    }
+    if (head) return sameObject(key, bytes, head);
+  }
   const headers = {
     'Content-Type': contentType,
     'Cache-Control': mutable ? 'public, max-age=60' : 'public, max-age=2592000, immutable',
@@ -33,11 +50,7 @@ export async function putObject(client, key, bytes, contentType, dryRun = false)
     return 'written';
   } catch (error) {
     if (mutable || error.code !== 'FileAlreadyExists') throw error;
-    const head = await client.head(key);
-    const etag = String(head.res.headers.etag ?? '').replace(/"/g, '').toLowerCase();
-    const md5 = createHash('md5').update(bytes).digest('hex');
-    if (etag !== md5) fail(`${key} 已经在下载站上,而且字节不同(ETag ${etag} ≠ ${md5})。已发布的文件不可变,❌ 覆盖`);
-    return 'same';
+    return sameObject(key, bytes, await client.head(key));
   }
 }
 

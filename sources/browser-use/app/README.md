@@ -1,4 +1,10 @@
+![Browser Use：在浏览器中执行网页任务](screenshots/promo.png)
+
 # Browser Use
+
+![agent 在浏览器页签中查阅 GitHub 发布页，并整理出版本信息](screenshots/1.jpg)
+![agent 正在浏览器页签中执行搜索](screenshots/2.jpg)
+![agent 打开 Node.js 文档的指定章节并汇总要点](screenshots/3.jpg)
 
 让 Agent 在自己会话的咕咕浏览器页签里浏览、点击、填写和截图。复用该页签的浏览器配置和登录，不启动独立浏览器。
 

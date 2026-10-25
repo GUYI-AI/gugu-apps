@@ -1,0 +1,52 @@
+{
+  "id": "forum",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "4327e8ce1a7ac0485efaaaa66df85ce215a0fd7c",
+      "sha256": "23fd31e76e05e4d3236003bd59551332ae2cdfe35da5666d3effa2df8736b54d",
+      "bytes": 17810,
+      "yanked": null
+    },
+    {
+      "version": "0.1.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "f972c44c28705baf193307c03b1c7418f38b1b60",
+      "sha256": "1221b506bd44a8a283d7d0386d55034a271223635790393507d2999323433c7a",
+      "bytes": 31713,
+      "yanked": null
+    },
+    {
+      "version": "0.1.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "783c43a4b905053f7562d5896f4f0c2c12a46aa9",
+      "sha256": "79505de415f2e1bd610638ab68acb4787bf1c0db2c38923ae125b5a3ce98f4d8",
+      "bytes": 69319,
+      "yanked": null
+    },
+    {
+      "version": "0.1.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "8ccd8d073d244c42fd190ec71a0a50c332a1f37142e3ef35266a4be976f1f6dd",
+      "bytes": 523554,
+      "yanked": null
+    },
+    {
+      "version": "0.1.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "a9b0b56d643e62444924df1a7d82c48c8cb718b8d9370d181b4f9f4a4ffa1a3a",
+      "bytes": 523644,
+      "yanked": null
+    }
+  ]
+}

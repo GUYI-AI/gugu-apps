@@ -1,6 +1,7 @@
 {
   "id": "paper-club",
   "unlisted": false,
+  "featured": true,
   "deprecated": null,
   "versions": [
     {
@@ -37,6 +38,69 @@
       "commit": "e2475cf216f0790ff17ebf1fdf0a2bfbcf58f28f",
       "sha256": "86ff54483dcdf74dc0e231f376443b6df183d5b73c55f5b5d7f132abd8a2e269",
       "bytes": 2265806,
+      "yanked": null
+    },
+    {
+      "version": "0.3.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "1e11688106a51394c00c657357057c4be5fa4381",
+      "sha256": "8572a72d105c0f659479021b7ca9cf1e8fe87e083e2d42e72484a779d1189c0d",
+      "bytes": 2269818,
+      "yanked": null
+    },
+    {
+      "version": "0.3.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "a4e96d8955970fa98615d8ee7a52ce63c9b6d6fa",
+      "sha256": "c2772c47ce92791c284703bcecc8a7a42595d03dc642d8651f5eef905ca45873",
+      "bytes": 2269889,
+      "yanked": null
+    },
+    {
+      "version": "0.3.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "2a470e0bb4d4c9e80284fb64ea91e63c2a3c161f073f1f0d6a50159aec163d85",
+      "bytes": 3185610,
+      "yanked": null
+    },
+    {
+      "version": "0.3.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "fe5c8fa057cd946b3c2047e55d84b901158f7c7f",
+      "sha256": "040381c63072ecd3ebbb153318416081476367b2cb5e30c114e92dbbb3e82ef4",
+      "bytes": 3186543,
+      "yanked": null
+    },
+    {
+      "version": "0.3.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "34b64c1f00924e55165b7d90d104b2b23777a323",
+      "sha256": "0cb594a54088f01e14b06b5cd521557d9c4165ddb63ae6995a85ee0c9dc17404",
+      "bytes": 3186309,
+      "yanked": null
+    },
+    {
+      "version": "0.3.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "c57b68cc496a22927e770e8e1d83cc91defb35f7be4beb183f9b853dbed19b71",
+      "bytes": 3848552,
+      "yanked": null
+    },
+    {
+      "version": "0.3.6",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "d9d55bda7e57ec2bd88d52bbdf73256a293b77b7ff98c9218ec3b4a3e10078a9",
+      "bytes": 3848704,
       "yanked": null
     }
   ]

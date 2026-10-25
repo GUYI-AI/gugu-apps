@@ -1,6 +1,7 @@
 {
   "id": "spexcode",
   "unlisted": false,
+  "featured": true,
   "deprecated": null,
   "versions": [
     {
@@ -10,6 +11,33 @@
       "commit": "604926ef4295227ca64390d3ca829a1ae9d13f97",
       "sha256": "4c70731333684ca7c1b870fa280221f9ba1d281a957fb68b177959ef322e141d",
       "bytes": 353082,
+      "yanked": null
+    },
+    {
+      "version": "0.7.1",
+      "repo": "shuxueshuxue/Spexcode",
+      "path": "distribution/gugu/spexcode",
+      "commit": "e49ba3e7e551b952a8e4be7319e141607ebca619",
+      "sha256": "4f75946cab1f1a79a1deceef2cea1a4addd59deaab52246ebf515734688b87cf",
+      "bytes": 515969,
+      "yanked": null
+    },
+    {
+      "version": "0.7.2",
+      "repo": "shuxueshuxue/Spexcode",
+      "path": "distribution/gugu/spexcode",
+      "commit": "3703869251fc95c06b9bb025db2cbc49c08682ec",
+      "sha256": "471b77b6d9d77e963f1251b22af4b7e3bb5ae34c4b52add48e0d6f8c9fe578ab",
+      "bytes": 1150368,
+      "yanked": null
+    },
+    {
+      "version": "0.7.3",
+      "repo": "shuxueshuxue/Spexcode",
+      "path": "distribution/gugu/spexcode",
+      "commit": "408cb72977e2d4fe9aac4190514cec6500371240",
+      "sha256": "e5196f544e113f9591d48b89d1e5133e82b2b931b250e7c86b54a6cbaa0f56db",
+      "bytes": 1150429,
       "yanked": null
     }
   ]

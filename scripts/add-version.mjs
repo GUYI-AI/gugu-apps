@@ -4,6 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fetchSource, inspectAppDir, MARKET_BASE_URL, packDir, sha256, validateApp } from './lib.mjs';
+import { assertPublishedPlatforms, loadAppPlatformContract } from './app-platforms.mjs';
 
 const { values, positionals } = parseArgs({ options: { dir: { type: 'string', default: 'apps' } }, allowPositionals: true });
 const [repo, commit, path] = positionals;
@@ -14,6 +15,7 @@ try {
   const bytes = await packDir(source.dir);
   const manifest = JSON.parse(readFileSync(join(source.dir, 'manifest.json'), 'utf8'));
   inspectAppDir(source.dir, manifest.id, manifest.version, MARKET_BASE_URL);
+  assertPublishedPlatforms(manifest, await loadAppPlatformContract());
   const file = join(values.dir, `${manifest.id}.json`);
   const app = existsSync(file)
     ? JSON.parse(readFileSync(file, 'utf8'))

@@ -27,6 +27,14 @@ let glimpse = null
 const loadGlimpse = () => (glimpse ??= import('./skills/office/vendor/pptx-glimpse.js'))
 
 const VIEWBOX = /viewBox="\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)\s*"/
+/** The deck's slide size (presentation.xml), in EMU: every slide's frame before it is drawn. */
+const SLIDE_SIZE = /<p:sldSz\b[^>]*?\bcx="(\d+)"[^>]*?\bcy="(\d+)"/
+/**
+ * How many slides are drawn before the deck shows — about the panel's first screen; the rest are drawn right after it is
+ * up (owner 10-25: a 30-slide deck with pictures, drawn whole, kept 「正在打开」 up ~0.35 s longer).
+ */
+const FIRST_SCREEN = 3
+const DRAW = { textOutput: 'text', skipSystemFonts: true, logLevel: 'off' }
 /** How long a finger holds still before its drag draws a box instead of scrolling (选区交互设计 §1: about 0.35 s). */
 export const LONG_PRESS_MS = 350
 
@@ -88,8 +96,14 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
   // Read first: a part whose zip lies about its size is refused here, said as such — pptx-glimpse would inflate it cut
   // to that size and fail on the cut XML. Then drawn with the options the editor session drew with (text as text).
   const text = await partTexts(bytes, XML_PARTS)
-  const drawn = await convertPptxToSvg(bytes, { textOutput: 'text', skipSystemFonts: true, logLevel: 'off' })
   const parts = slideParts(text)
+  const numbers = parts.map((_, i) => i + 1)
+  const first = await convertPptxToSvg(bytes, { ...DRAW, slides: numbers.slice(0, FIRST_SCREEN) })
+  const sized = text('ppt/presentation.xml')?.match(SLIDE_SIZE)
+  const viewBox = first.slides[0]?.svg.match(VIEWBOX)
+  const [w, h] = sized ? [Number(sized[1]) / EMU_PER_PX, Number(sized[2]) / EMU_PER_PX] : viewBox ? [Number(viewBox[1]), Number(viewBox[2])] : [960, 540]
+  /** Destroyed (a newer version, another file): what is still being drawn is not put on it. */
+  let gone = false
   const layouts = new Map()
   const urls = []
   const cards = new Map()
@@ -198,18 +212,12 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
     found = null
   }
   deck.addEventListener('pointerdown', unfind, { capture: true })
-  for (const slide of drawn.slides) {
-    const n = slide.slideNumber
-    const size = slide.svg.match(VIEWBOX)
-    const [w, h] = size ? [Number(size[1]), Number(size[2])] : [960, 540]
+  for (const n of numbers) {
     const card = document.createElement('figure')
     card.className = 'pptx-slide'
     card.dataset.n = String(n)
     card.style.aspectRatio = `${w} / ${h}`
     const img = document.createElement('img')
-    const url = URL.createObjectURL(new Blob([slide.svg], { type: 'image/svg+xml' }))
-    urls.push(url)
-    img.src = url
     img.alt = t.pptxSlide.replace('{n}', String(n))
     img.draggable = false
     card.append(img)
@@ -362,17 +370,46 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
     card.addEventListener('contextmenu', (e) => {
       if (touch) e.preventDefault()
     })
-    cards.set(n, { card, w, h })
+    cards.set(n, { card, img, w, h })
     deck.append(card)
   }
+  /** A slide's picture on its card; a slide pptx-glimpse could not draw has no card, as it never had. */
+  const draw = (report) => {
+    for (const slide of report.slides) {
+      const url = URL.createObjectURL(new Blob([slide.svg], { type: 'image/svg+xml' }))
+      urls.push(url)
+      cards.get(slide.slideNumber).img.src = url
+    }
+  }
+  const dropUndrawn = () => {
+    for (const [n, { card, img }] of cards) {
+      if (img.src) continue
+      card.remove()
+      cards.delete(n)
+    }
+  }
+  draw(first)
   if (!wanted()) {
     for (const url of urls) URL.revokeObjectURL(url)
     return null
   }
   host.replaceChildren(deck)
+  // The rest once the first screen is painted: one more conversion (it reads the deck's zip again, ~0.16 s for 16 MB).
+  const rest = numbers.slice(FIRST_SCREEN)
+  if (!rest.length) dropUndrawn()
+  else {
+    requestAnimationFrame(() => setTimeout(async () => {
+      if (gone) return
+      // The first screen already read this deck, so a failure here is a slide's: those slides go, as an undrawn one does.
+      const report = await convertPptxToSvg(bytes, { ...DRAW, slides: rest }).catch(() => ({ slides: [] }))
+      if (gone) return
+      draw(report)
+      dropUndrawn()
+    }))
+  }
 
   return {
-    slides: drawn.slides.length,
+    slides: numbers.length,
     picks: () => picks.slice(),
     clear,
     /** The last waiting pick's mark (a picked shape's box, a box's frame): what the page floats its bar by. */
@@ -411,6 +448,7 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
     },
     // Its own slides only: a deck a newer version replaced must not take the new one with it.
     destroy() {
+      gone = true
       for (const url of urls) URL.revokeObjectURL(url)
       deck.remove()
     },

@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.8
+
+- Opened in a chat, Gugu Office's own page makes a blank deck (one empty 16:9 slide) or workbook (one empty sheet) in the chat's folder with 「新建演示稿 / 新建表格」 and opens it; the name says when it was made and never takes one already in the folder. It asks for `files:write` to put the file there.
+
+## 0.2.7
+
+- Opened in a chat (its panel), Gugu Office's own page is that chat's: it lists and searches the chat's decks, workbooks and markdown, and one tab switches to every chat (opened lately, and a search over all of them). A chat with none of the kind picked offers 「让 agent 做一份」: a draft in that chat's composer. Moved to another chat, the page follows it. Opened from the rail, it is as before.
+
+## 0.2.6
+
+- The skill also applies to an Office file received as a chat attachment (every attachment is a file of the chat's folder), shows a saved version in the chat with message_send_file `file`, and sends no converted copy beside it.
+
+## 0.2.5
+
+- A deck shows its first three slides as soon as they are drawn; the rest are drawn right after, instead of waiting for every slide before the deck appears.
+
+## 0.2.4
+
+- Declare desktop and phone support for the human interface (App API 12).
+
+## 0.2.3
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.2.2
+
+- 更新 App 图标，将演示文稿放在前景。
+
+## 0.2.1
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
 ## 0.2.0
 
 - 咕咕办公有了自己的一页：电脑上从左栏或「App」打开，手机上从「App」页或群里的卡片打开。页面列出最近打开的文件和群，可以搜索所有群里的文件，默认包括演示稿、表格和 markdown。点 markdown 时，用群文件夹自己的编辑器打开。最近打开的记录在手机和电脑上是同一份(要咕咕 0.2.57 起)。

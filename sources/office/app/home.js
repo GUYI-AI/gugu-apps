@@ -1,10 +1,12 @@
 /* global gugu */ // window.gugu: the platform runtime puts it on the page before this module runs.
 // 咕咕办公's own page (the `home` tab: it claims no file, so it is the App's page — the desktop's rail, the phone's 「App」
-// page, 「在本群打开」 in a chat): the files this person opened last across all their chats, the chats they were in, and a
-// search over every chat's files — decks, workbooks and markdown by default. A file opens where it lives, with the App the
+// page, 「在本群打开」 in a chat). Drawn for a chat (`getContext().chat`: its panel), it is that chat's page first: its
+// files and a search in them, switched to every chat by one tab; in a chat with none, a draft in its composer asks an agent
+// for one, and a blank deck or workbook is made there in one press. Drawn for no chat (the rail): the files this person opened last across all their chats, the chats they were in,
+// and a search over every chat's files — decks, workbooks and markdown by default. A file opens where it lives, with the App the
 // person uses for it (`gugu.files.openWith`): a deck or a workbook here, on its own page; markdown in the folder's editor.
 //
-// Built only on the public App API: getContext / onContextChanged, files.recent / search / list / openWith.
+// Built only on the public App API: getContext / onContextChanged, files.recent / search / list / upload / openWith, compose.
 
 const $ = (id) => document.getElementById(id)
 
@@ -12,6 +14,13 @@ const STRINGS = {
   zh: {
     title: '咕咕办公',
     search: '搜索所有群文件',
+    searchHere: '搜索本群文件',
+    here: '本群',
+    everywhere: '所有群',
+    noneHere: '本群文件夹里还没有这类文件',
+    noneHereHint: '让 agent 做一份，做好的文件放在本群文件夹里。',
+    askAgent: '让 agent 做一份',
+    asks: { office: '用咕咕办公做一份演示稿或表格，放进本群文件夹：', pptx: '用咕咕办公做一份演示稿，放进本群文件夹：', xlsx: '用咕咕办公做一份表格，放进本群文件夹：', md: '写一份 markdown 文档，放进本群文件夹：', all: '用咕咕办公做一份演示稿或表格，放进本群文件夹：' },
     kinds: { office: '常用', pptx: '演示稿', xlsx: '表格', md: 'Markdown', all: '全部' },
     recent: '最近打开',
     groups: '最近打开过的群',
@@ -26,10 +35,19 @@ const STRINGS = {
     failed: '出错了：{e}',
     dm: '私聊',
     back: '返回最近',
+    create: { pptx: '新建演示稿', xlsx: '新建表格' },
+    untitled: { pptx: '未命名演示稿', xlsx: '未命名表格' },
   },
   en: {
     title: 'Gugu Office',
     search: 'Search every chat\'s files',
+    searchHere: 'Search this chat\'s files',
+    here: 'This chat',
+    everywhere: 'All chats',
+    noneHere: 'No such file in this chat\'s folder yet',
+    noneHereHint: 'Ask an agent for one: what it makes is kept in this chat\'s folder.',
+    askAgent: 'Ask an agent for one',
+    asks: { office: 'With Gugu Office, make a deck or a workbook in this chat\'s folder: ', pptx: 'With Gugu Office, make a deck in this chat\'s folder: ', xlsx: 'With Gugu Office, make a workbook in this chat\'s folder: ', md: 'Write a markdown document in this chat\'s folder: ', all: 'With Gugu Office, make a deck or a workbook in this chat\'s folder: ' },
     kinds: { office: 'Usual', pptx: 'Decks', xlsx: 'Workbooks', md: 'Markdown', all: 'All' },
     recent: 'Opened lately',
     groups: 'Chats opened lately',
@@ -44,6 +62,8 @@ const STRINGS = {
     failed: 'Something went wrong: {e}',
     dm: 'Private chat',
     back: 'Back to lately',
+    create: { pptx: 'New deck', xlsx: 'New workbook' },
+    untitled: { pptx: 'Untitled deck', xlsx: 'Untitled workbook' },
   },
 }
 
@@ -56,9 +76,19 @@ const KINDS = {
   all: null,
 }
 const ICONS = { '.pptx': 'pptx.png', '.xlsx': 'xlsx.png', '.xlsm': 'xlsx.png' }
+/** What 「新建」 makes: a copy of the App's own blank file (one empty 16:9 slide; one empty sheet), as the folder's next file. */
+const BLANKS = {
+  pptx: { file: 'blank.pptx', type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
+  xlsx: { file: 'blank.xlsx', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+}
 
-/** `able`: this gugu and this App's grant can list the chats' files — until then nothing is asked, only said why. */
-const state = { t: STRINGS.zh, kind: 'office', query: '', group: null, asked: 0, recent: [], able: false }
+/**
+ * `able`: this gugu and this App's grant can list the chats' files — until then nothing is asked, only said why.
+ * `here`: the chat the page is drawn for (`{ chat, name }`), null on the rail; `everywhere`: its 「所有群」 tab is picked.
+ */
+const state = { t: STRINGS.zh, kind: 'office', query: '', group: null, here: null, everywhere: false, asked: 0, recent: [], able: false, writable: false, names: new Set() }
+/** The page lists and searches its own chat's files: drawn for a chat, and not switched to every chat. */
+const inHere = () => state.here !== null && !state.everywhere
 
 const fmt = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
 const suffixOf = (entry) => (entry.suffix || entry.name.match(/\.[^.]+$/)?.[0] || '').toLowerCase()
@@ -80,12 +110,20 @@ async function applyContext(ctx) {
   state.t = zh ? STRINGS.zh : STRINGS.en
   document.documentElement.lang = zh ? 'zh-CN' : 'en'
   document.title = state.t.title
-  $('query').placeholder = state.t.search
-  $('query').setAttribute('aria-label', state.t.search)
+  // Another chat (the tab moved, or another chat's panel): its own files first, nothing carried over from the last one.
+  const here = ctx.chat ? { chat: ctx.chat.id, name: ctx.chat.name } : null
+  if (here?.chat !== state.here?.chat) {
+    state.everywhere = false
+    state.group = null
+  }
+  state.here = here
   $('back').setAttribute('aria-label', state.t.back)
   $('groups-title').textContent = state.t.groups
+  drawScope()
   drawKinds()
   state.able = false
+  state.writable = !!ctx.capabilities?.includes('files:write')
+  drawCreate()
   if (!ctx.capabilities?.includes('files:read')) return say(state.t.noRead)
   // An older gugu has no files.search / files.recent: said, not an empty list.
   if (typeof gugu.files.search !== 'function' || typeof gugu.files.recent !== 'function') return say(state.t.oldGugu)
@@ -97,6 +135,69 @@ async function applyContext(ctx) {
 function say(text) {
   $('note').textContent = text ?? ''
   show('note', !!text)
+}
+
+/** 「本群 / 所有群」: only on a page drawn for a chat; the search box says which it searches. */
+function drawScope() {
+  const label = inHere() ? state.t.searchHere : state.t.search
+  $('query').placeholder = label
+  $('query').setAttribute('aria-label', label)
+  show('scope', state.here !== null)
+  if (!state.here) return $('scope').replaceChildren()
+  $('scope').replaceChildren(
+    ...[[false, `${state.t.here} · ${state.here.name}`], [true, state.t.everywhere]].map(([everywhere, text]) => {
+      const tab = Object.assign(document.createElement('button'), { type: 'button', textContent: text })
+      tab.setAttribute('role', 'tab')
+      tab.setAttribute('aria-selected', String(everywhere === state.everywhere))
+      tab.dataset.scope = everywhere ? 'everywhere' : 'here'
+      tab.onclick = () => {
+        state.everywhere = everywhere
+        state.group = null
+        drawScope()
+        drawCreate()
+        void refresh()
+      }
+      return tab
+    }),
+  )
+}
+
+/** 「新建演示稿 / 新建表格」: on a page drawn for a chat, listing that chat's files, when this App may write them. */
+function drawCreate() {
+  const on = inHere() && state.writable
+  show('create', on)
+  $('create').replaceChildren(...(!on ? [] : Object.keys(BLANKS).map((kind) => {
+    const button = Object.assign(document.createElement('button'), { type: 'button', textContent: state.t.create[kind] })
+    button.dataset.create = kind
+    button.onclick = () => void createBlank(kind, button)
+    return button
+  })))
+}
+
+/**
+ * A blank file of the kind, made in this chat's folder (its top) under a name no file there has yet, then opened as any
+ * listed file is: 「未命名演示稿 10-25 2207.pptx」, then 「… 2.pptx」.
+ */
+async function createBlank(kind, button) {
+  const here = state.here
+  show('error', false)
+  button.disabled = true
+  try {
+    const blank = BLANKS[kind]
+    const bytes = await (await fetch(new URL(blank.file, import.meta.url))).arrayBuffer()
+    const d = new Date()
+    const pad = (n) => String(n).padStart(2, '0')
+    const base = `${state.t.untitled[kind]} ${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}${pad(d.getMinutes())}`
+    let name = `${base}.${kind}`
+    for (let n = 2; state.names.has(name.toLowerCase()); n++) name = `${base} ${n}.${kind}`
+    const [entry] = await gugu.files.upload({ chat: here.chat }, new File([bytes], name, { type: blank.type }))
+    void refresh()
+    await gugu.files.openWith(entry)
+  } catch (error) {
+    sayError(error)
+  } finally {
+    button.disabled = false
+  }
 }
 
 function drawKinds() {
@@ -117,12 +218,30 @@ function drawKinds() {
 
 // ─── what is listed ─────────────────────────────────────────────────────────
 
-/** What the page shows now: a search, a chat's files, or what was opened last. The answer to the latest ask wins. */
+/**
+ * What the page shows now: its own chat's files (searched by name), a search, a chat's files, or what was opened last.
+ * The answer to the latest ask wins.
+ */
 async function refresh() {
   if (!state.able) return
   const asked = ++state.asked
   show('error', false)
   try {
+    if (inHere()) {
+      // The chat's own folder, as listed for it (a topic's is its group's): kept by name, not by each entry's chat.
+      const here = state.here
+      const query = state.query.toLowerCase()
+      const all = await gugu.files.list({ chat: here.chat })
+      // The names at the folder's top, where 「新建」 puts a file: a new one takes none of them.
+      if (asked === state.asked) state.names = new Set(all.filter((entry) => !entry.path.includes('/')).map((entry) => entry.name.toLowerCase()))
+      const listed = all.filter((entry) => kept(entry) && (!query || entry.path.toLowerCase().includes(query)))
+      listed.sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))
+      if (asked !== state.asked) return
+      const rows = listed.map((entry) => ({ ...entry, chatName: here.name }))
+      if (state.query) drawFiles(state.t.results, rows, state.t.noResults, state.t.noResultsHint, false)
+      else drawFiles(here.name, rows, state.t.noneHere, state.t.noneHereHint, false, askAgent(here))
+      return
+    }
     if (state.query) {
       const found = await gugu.files.search({ query: state.query, ...(KINDS[state.kind] ? { suffixes: KINDS[state.kind] } : {}), limit: 100 })
       if (asked === state.asked) drawFiles(state.t.results, found, state.t.noResults, state.t.noResultsHint, false)
@@ -164,10 +283,21 @@ function drawGroups(recent) {
   )
 }
 
-function drawFiles(title, entries, emptyTitle, emptyHint, inGroup) {
+/** A draft in the chat's own composer asking an agent for a file of the kind picked; the person sends it, or not. */
+function askAgent(here) {
+  const button = Object.assign(document.createElement('button'), { type: 'button', textContent: state.t.askAgent })
+  button.dataset.ask = ''
+  button.onclick = () => {
+    show('error', false)
+    gugu.compose(state.t.asks[state.kind], { chat: here.chat }).catch(sayError)
+  }
+  return button
+}
+
+function drawFiles(title, entries, emptyTitle, emptyHint, inGroup, emptyAction = null) {
   $('files-title').textContent = title
   show('back', inGroup)
-  show('groups', !inGroup && !state.query && $('group-list').childElementCount > 0)
+  show('groups', !inGroup && !inHere() && !state.query && $('group-list').childElementCount > 0)
   $('files').replaceChildren(...entries.map(row))
   show('files', entries.length > 0)
   const empty = $('empty')
@@ -177,6 +307,7 @@ function drawFiles(title, entries, emptyTitle, emptyHint, inGroup) {
     box.setAttribute('icon', state.query ? 'search' : 'history')
     box.append(Object.assign(document.createElement('strong'), { textContent: emptyTitle }))
     if (emptyHint) box.append(Object.assign(document.createElement('small'), { textContent: emptyHint }))
+    if (emptyAction) box.append(emptyAction)
     empty.append(box)
   }
   show('empty', entries.length === 0)
@@ -234,14 +365,16 @@ $('back').onclick = () => {
   void refresh()
 }
 
-// Back on screen (the person opened a file and came back), what was opened last has changed: read again. Another language:
-// drawn again in it.
+// Each context is the whole of where the page is now, never merged into the last one. Another chat (the tab moved), its new
+// name, another language or grant: drawn again for it. Back on screen (the person opened a file and came back), what was
+// opened last has changed: read again.
 let last = null
 gugu.onContextChanged((next) => {
   const back = next.layout?.visible !== false && last?.layout?.visible === false
-  const relabel = next.locale !== last?.locale
+  const redraw = next.locale !== last?.locale || next.chat?.id !== last?.chat?.id || next.chat?.name !== last?.chat?.name
+    || String(next.capabilities ?? '') !== String(last?.capabilities ?? '')
   last = next
-  if (relabel) applyContext(next).catch(sayError)
+  if (redraw) applyContext(next).catch(sayError)
   else if (back) void refresh()
 })
 gugu.getContext().then((ctx) => {

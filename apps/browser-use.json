@@ -30,6 +30,33 @@
       "sha256": "20a874e52b8b79c619d5666aa6b5a36ce89917f8abfd39acac200f758e765a3a",
       "bytes": 32706,
       "yanked": null
+    },
+    {
+      "version": "0.1.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "dde32f231ceb39551ede4902fca1ade806043931",
+      "sha256": "6da89e07c5ebb4ccdc8f8abe01c26119b6eeed5fb680e6081d70a8d285a1811b",
+      "bytes": 658695,
+      "yanked": null
+    },
+    {
+      "version": "0.1.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "3dc630e4dc4739443a86017ebd22c76361adac5a",
+      "sha256": "0879697c5e727ca23541a5f5441250b1be3fd4071982e6893cb2ff4f627d9da7",
+      "bytes": 1237942,
+      "yanked": null
+    },
+    {
+      "version": "0.1.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
+      "sha256": "60e8f3e2e450b44db4b79039b31e0c2de9de8f15febb76b40f0a7a01991e7956",
+      "bytes": 1238019,
+      "yanked": null
     }
   ]
 }

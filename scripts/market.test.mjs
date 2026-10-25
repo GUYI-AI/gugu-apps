@@ -6,6 +6,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
+import { pathToFileURL } from 'node:url';
+import { CLIENT_CONTRACT_URL, loadAppPlatformContract } from './app-platforms.mjs';
 import { packDir, sha256 } from './lib.mjs';
 import { INDEX_KEY, putObject, sync } from './sync.mjs';
 
@@ -13,14 +15,16 @@ const work = mkdtempSync(join(tmpdir(), 'gugu-apps-test-'));
 const sources = join(work, 'sources');
 const index = join(work, 'index');
 const scripts = new URL('.', import.meta.url).pathname;
+const contractTransport = join(work, 'client-contract-transport.mjs');
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
 const PNG_1x1 = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
+let publicationApiVersion;
 
 /** 一个源码仓 owner/probe:App 目录 apps/probe,每次 commit 回 sha。 */
 function commitProbe(version, extra = {}) {
   const dir = join(sources, 'owner', 'probe', 'apps', 'probe');
   mkdirSync(join(dir, 'shots'), { recursive: true });
-  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ apiVersion: 3, id: 'probe', name: 'Probe', version, entry: 'index.html', icon: 'icon.png', engines: { gugu: '>=0.2.40' }, contributes: { tabs: [{ name: 'main', title: 'Main' }] }, ...extra }));
+  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ apiVersion: publicationApiVersion, platforms: ['desktop'], id: 'probe', name: 'Probe', version, entry: 'index.html', icon: 'icon.png', engines: { gugu: '>=0.2.40' }, contributes: { tabs: [{ name: 'main', title: 'Main' }] }, ...extra }));
   writeFileSync(join(dir, 'index.html'), `<!doctype html><p>${version}</p>`);
   writeFileSync(join(dir, 'icon.png'), PNG_1x1);
   writeFileSync(join(dir, 'shots', 'main.png'), PNG_1x1);
@@ -50,11 +54,11 @@ function commitIndex(message) {
   git(index, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', message);
   return git(index, 'rev-parse', 'HEAD');
 }
-function verify(base) {
+function runScript(name, args) {
   try {
-    const out = execFileSync('node', [join(scripts, 'verify.mjs'), ...(base ? ['--base', base] : [])], {
+    const out = execFileSync('node', [join(scripts, name), ...args], {
       cwd: index,
-      env: { ...process.env, GUGU_APPS_GIT_BASE: sources },
+      env: { ...process.env, GUGU_APPS_GIT_BASE: sources, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(contractTransport).href}`.trim() },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     return { ok: true, out: out.toString() };
@@ -62,12 +66,15 @@ function verify(base) {
     return { ok: false, out: `${error.stdout}${error.stderr}` };
   }
 }
+const verify = (base) => runScript('verify.mjs', base ? ['--base', base] : []);
 
 /** 内存里的 OSS:只认 forbid-overwrite 与 ETag(=MD5)这两件 sync 依赖的事。 */
 class FakeOss {
   objects = new Map();
   puts = [];
+  requests = [];
   async put(key, bytes, { headers }) {
+    this.requests.push(['PUT', key]);
     if (headers['x-oss-forbid-overwrite'] === 'true' && this.objects.has(key)) {
       throw Object.assign(new Error('exists'), { code: 'FileAlreadyExists', status: 409 });
     }
@@ -75,6 +82,8 @@ class FakeOss {
     this.objects.set(key, Buffer.from(bytes));
   }
   async head(key) {
+    this.requests.push(['HEAD', key]);
+    if (!this.objects.has(key)) throw Object.assign(new Error('no'), { code: 'NoSuchKey', status: 404 });
     return { res: { headers: { etag: `"${createHash('md5').update(this.objects.get(key)).digest('hex').toUpperCase()}"` } } };
   }
   async get(key) {
@@ -86,9 +95,15 @@ class FakeOss {
 let v1;
 let v2;
 before(async () => {
+  // Fetch the pinned client source once. Every CLI process executes those exact bytes; there is no test capability table.
+  const response = await fetch(CLIENT_CONTRACT_URL);
+  assert.equal(response.ok, true, `pinned client contract: HTTP ${response.status}`);
+  const source = await response.text();
+  publicationApiVersion = (await loadAppPlatformContract(async () => new Response(source))).APP_PLATFORMS_API_VERSION;
+  writeFileSync(contractTransport, `globalThis.fetch = async (url) => { if (String(url) !== ${JSON.stringify(CLIENT_CONTRACT_URL)}) throw new Error('unexpected contract URL'); return new Response(${JSON.stringify(source)}); };\n`);
   mkdirSync(join(sources, 'owner', 'probe'), { recursive: true });
   git(join(sources, 'owner', 'probe'), 'init', '-q');
-  v1 = await recordFor(commitProbe('0.1.0'), '0.1.0');
+  v1 = await recordFor(commitProbe('0.1.0', { apiVersion: 3, platforms: undefined }), '0.1.0');
   v2 = await recordFor(commitProbe('0.2.0'), '0.2.0');
   mkdirSync(join(index, 'apps'), { recursive: true });
   git(index, 'init', '-q');
@@ -162,6 +177,23 @@ test('verify:description 的第一句在 <gugu_apps> 里会被截成半句就红
   writeIndex(app);
 });
 
+test('verify:subtitle(含 localized 里的)超过 30 字就红,说出是哪一处;没写 apiVersion 8 也红;30 字整绿', async () => {
+  const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
+  const base = git(index, 'rev-parse', 'HEAD');
+  const old = await recordFor(commitProbe('0.4.9', { apiVersion: 7, subtitle: '一句话' }), '0.4.9');
+  writeIndex({ ...app, versions: [...app.versions, old] });
+  assert.match(verify(base).out, /写了 subtitle 就要 apiVersion 8/);
+  const long = await recordFor(commitProbe('0.5.0', { apiVersion: 8, subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(31) } } }), '0.5.0');
+  writeIndex({ ...app, versions: [...app.versions, long] });
+  const red = verify(base);
+  assert.equal(red.ok, false);
+  assert.match(red.out, /localized\.en\.subtitle 要是 1–30 字的一句话/);
+  const fits = await recordFor(commitProbe('0.5.1', { subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(30) } } }), '0.5.1');
+  writeIndex({ ...app, versions: [...app.versions, fits] });
+  assert.equal(verify(base).ok, true, '对照:30 字整');
+  writeIndex(app);
+});
+
 test('verify:firstRun 标在代码不在本仓里的 App 上就红;不标绿', () => {
   const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
   const base = git(index, 'rev-parse', 'HEAD');
@@ -171,6 +203,38 @@ test('verify:firstRun 标在代码不在本仓里的 App 上就红;不标绿', (
   assert.match(red.out, /probe: firstRun 只能标在代码就在本仓\(shuxueshuxue\/gugu-apps\)里的 App 上;0\.1\.0 在 owner\/probe/);
   writeIndex(app);
   assert.equal(verify(base).ok, true);
+});
+
+test('publication: add-version and verify execute the same pinned platform rule; historical packages stay valid', async () => {
+  const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
+  const base = git(index, 'rev-parse', 'HEAD');
+  const cases = [
+    [{ platforms: undefined }, /declare desktop, phone, or both/],
+    [{ platforms: ['phone', 'phone'] }, /duplicate platform/],
+    [{ platforms: ['tablet'] }, /only desktop and phone are supported/],
+    [{ apiVersion: publicationApiVersion - 1 }, new RegExp(`requires apiVersion ${publicationApiVersion}`)],
+    [{ platforms: ['phone'], permissions: { capabilities: ['notifications'] } }, /phone does not support notifications/],
+    [{ platforms: ['phone'], permissions: { capabilities: ['agents:tools'] } }, null],
+    [{ platforms: ['desktop'], permissions: { capabilities: ['notifications'] } }, null],
+  ];
+  try {
+    for (const [i, [extra, refusal]] of cases.entries()) {
+      const version = `0.6.${i}`;
+      const record = await recordFor(commitProbe(version, extra), version);
+      writeIndex({ ...app, versions: [...app.versions, record] });
+      const checked = verify(base);
+      writeIndex(app);
+      const added = runScript('add-version.mjs', ['owner/probe', record.commit, 'apps/probe']);
+      for (const result of [checked, added]) {
+        assert.equal(result.ok, refusal === null, result.out);
+        if (refusal) assert.match(result.out, refusal);
+      }
+      writeIndex(app);
+    }
+    assert.equal(verify(base).ok, true, 'the immutable API 3 package has no platforms and is still accepted as history');
+  } finally {
+    writeIndex(app);
+  }
 });
 
 test('putObject:market/ 以外一律拒绝,一个字节都不写', async () => {
@@ -190,6 +254,65 @@ test('putObject:同名同字节算写过;同名不同字节报红,❌ 覆盖;只
   await putObject(oss, INDEX_KEY, Buffer.from('{"apps":[]}'), 'application/json');
   await putObject(oss, INDEX_KEY, Buffer.from('{"apps":[1]}'), 'application/json');
   assert.equal(oss.objects.get(INDEX_KEY).toString(), '{"apps":[1]}');
+});
+
+test('putObject:已存在的共享图片先 HEAD 核 ETag,同字节跳过、不同字节拒绝,都不发 PUT', async () => {
+  const oss = new FakeOss();
+  const key = 'market/media/office/shared.jpg';
+  oss.objects.set(key, Buffer.from('shared image'));
+  assert.equal(await putObject(oss, key, Buffer.from('shared image'), 'image/jpeg'), 'same');
+  await assert.rejects(putObject(oss, key, Buffer.from('changed image'), 'image/jpeg'), /字节不同/);
+  assert.deepEqual(oss.requests, [['HEAD', key], ['HEAD', key]]);
+  assert.equal(oss.objects.get(key).toString(), 'shared image');
+});
+
+test('putObject:HEAD 404 才 PUT;index.json 直接 PUT;dry-run 不访问 OSS', async () => {
+  const oss = new FakeOss();
+  const key = 'market/media/office/new.jpg';
+  // HEAD 的 404 响应没有错误正文,不一定带 NoSuchKey。
+  oss.head = async (name) => {
+    oss.requests.push(['HEAD', name]);
+    throw Object.assign(new Error('missing'), { status: 404 });
+  };
+  assert.equal(await putObject(oss, key, Buffer.from('new image'), 'image/jpeg'), 'written');
+  assert.equal(await putObject(oss, INDEX_KEY, Buffer.from('{}'), 'application/json'), 'written');
+  assert.equal(await putObject(oss, 'market/dry-run', Buffer.from('x'), 'text/plain', true), 'written');
+  assert.deepEqual(oss.requests, [['HEAD', key], ['PUT', key], ['PUT', INDEX_KEY]]);
+});
+
+test('putObject:HEAD 后才被别人写入时,PUT 仍禁止覆盖,再核 ETag 判断同字节或冲突', async () => {
+  for (const racedBytes of ['same', 'different']) {
+    const oss = new FakeOss();
+    const key = 'market/media/office/race.jpg';
+    const head = oss.head.bind(oss);
+    oss.head = async (name) => {
+      try {
+        return await head(name);
+      } catch (error) {
+        oss.objects.set(name, Buffer.from(racedBytes));
+        throw error;
+      }
+    };
+    const result = putObject(oss, key, Buffer.from('same'), 'image/jpeg');
+    if (racedBytes === 'same') assert.equal(await result, 'same');
+    else await assert.rejects(result, /字节不同/);
+    assert.deepEqual(oss.requests, [['HEAD', key], ['PUT', key], ['HEAD', key]]);
+    assert.equal(oss.objects.get(key).toString(), racedBytes);
+    assert.deepEqual(oss.puts, []);
+  }
+});
+
+test('putObject:HEAD 权限 / 网络错误直接报错,不 PUT、不重试', async () => {
+  for (const error of [Object.assign(new Error('forbidden'), { status: 403 }), new Error('socket hang up')]) {
+    const oss = new FakeOss();
+    const key = 'market/media/office/shared.jpg';
+    oss.head = async (name) => {
+      oss.requests.push(['HEAD', name]);
+      throw error;
+    };
+    await assert.rejects(putObject(oss, key, Buffer.from('image'), 'image/jpeg'), (actual) => actual === error);
+    assert.deepEqual(oss.requests, [['HEAD', key]]);
+  }
 });
 
 test('sync:写齐包 / 图标 / README 与图 / meta / index;重跑除 index 外 0 次写入;下架的不进 index', async () => {

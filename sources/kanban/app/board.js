@@ -1,41 +1,58 @@
-// 看板 — the board page. The same page wherever it opens (the dock, a chat's panel, a task's tab): the board comes from
-// the background page, and every change goes back through it to the App's program, the board's only writer.
-import { columnsInOrder, cardsIn, taskState } from './lib/core.js'
+// 协作看板 — the board page. The same page wherever it opens (the dock, a task's tab, a chat's panel, a board file), on
+// one of two homes of a board: this computer's (from the background page; every change goes back through it to the
+// App's program, its only writer) or a chat's (its board file, opened here live; a change is applied to the file).
+// Everything below the home — cards, columns, the open card — is one page for both.
+import { columnsInOrder, cardsIn, taskState, cardFlags } from './lib/core.js'
+import { openChatBoard, applyToFile, filled, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
 
 const g = window.gugu
 
 const WORDS = {
   zh: {
-    title: '看板', newPlaceholder: '新卡片，回车添加', add: '添加', attach: '关联当前任务',
+    newCard: '新建卡片', cardTitle: '标题', title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
     roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
-    states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务已移除', none: '无状态' },
-    note: 'agent 通过工具所做的修改，在任务状态变化或重新打开看板时显示。',
-    addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', del: '删除卡片', delAgain: '再次点击确认删除',
+    states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务不可用', none: '无状态' },
+    all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
+    addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
+    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
+    addNote: '添加说明…', editNote: '编辑说明', addLink: '添加', noLinks: '暂无关联', messageLink: '群消息', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
+    updated: '更新时间', toggle: '展开或收起',
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
     noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
     attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
     pickFile: '关联任务文件…', pickChatFile: '关联群文件…', addUrl: '添加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
-    filter: '筛选', chooseTask: '选择任务', noTasks: '本机暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
-    show: '查看', openIn: '用 App 打开', peekLater: '此类文件暂不支持在卡片内预览', browser: '打开', message: '查看消息',
-    comment: '添加评论', send: '发表', byAgent: (n) => `⚡ ${n}`, byPerson: '我',
-    noStatus: (e) => `无法读取本机任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`,
-    handText: (c) => `请处理看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n开始时用看板的 claim 工具认领，完成后用 move 移到「待验收」，并用 link 关联产出。`,
+    filter: '筛选', chooseTask: '选择任务', noTasks: '暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
+    show: '查看', openBeside: '在旁边打开', pickProjectFile: '关联项目文件…', chooseProject: '选择项目', noProjects: '暂无项目', browser: '打开', message: '查看消息',
+    comment: '添加评论', send: '发表', byPerson: '我',
+    desktopOnly: '本机看板仅支持在电脑上使用。', phoneHint: '在群或私聊的右栏打开协作看板，可查看该对话的看板。',
+    noStatus: (e) => `无法读取任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`, gone: '看板文件已删除，或你已不在该对话中。',
+    taskUnavailable: '任务已不存在，或当前不可用。', taskFilesUnavailable: '这个任务的工作副本或文件不在这台电脑上，或已不存在。',
+    handText: (c, chat) => `请处理协作看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
+      `${chat ? `这张卡片在对话「${chat.name}」的看板上，调用看板工具时传 chat: "${chat.id}"。` : ''}` +
+      '开始时用 claim 认领，进展用 update 更新，完成后用 move 移到「待验收」，并用 link 关联产出。',
   },
   en: {
-    title: 'Board', newPlaceholder: 'New card, press Enter to add', add: 'Add', attach: 'Link current task',
+    newCard: 'New card', cardTitle: 'Title', title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
     roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
-    states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task removed', none: 'No status' },
-    note: "Changes made by agents through tools appear when a task's status changes or when the board is reopened.",
-    addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', del: 'Delete card', delAgain: 'Click again to confirm',
+    states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task unavailable', none: 'No status' },
+    all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
+    addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
+    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
+    addNote: 'Add a note…', editNote: 'Edit note', addLink: 'Add', noLinks: 'Nothing linked yet', messageLink: 'Chat message', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
+    updated: 'Updated', toggle: 'Expand or collapse',
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
     noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
     attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
     pickFile: 'Link task file…', pickChatFile: 'Link chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
-    filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks on this device', noFiles: 'No files found. Enter a file name to search all chats.',
-    show: 'View', openIn: 'Open in App', peekLater: 'Preview in the card is not available for this file type', browser: 'Open', message: 'View message',
-    comment: 'Add a comment', send: 'Post', byAgent: (n) => `⚡ ${n}`, byPerson: 'Me',
-    noStatus: (e) => `Unable to read task status on this device: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`,
-    handText: (c) => `Please handle this card from the board (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\nClaim it with the board's claim tool when you start; when finished, move it to Review and link the output with link.`,
+    filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks', noFiles: 'No files found. Enter a file name to search all chats.',
+    show: 'View', openBeside: 'Open beside', pickProjectFile: 'Link project file…', chooseProject: 'Select project', noProjects: 'No projects', browser: 'Open', message: 'View message',
+    comment: 'Add a comment', send: 'Post', byPerson: 'Me',
+    desktopOnly: "This computer's board is only available on a computer.", phoneHint: "Open Teamboard in a chat's side panel to see that chat's board.",
+    noStatus: (e) => `Unable to read task status: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`, gone: 'The board file was deleted, or you are no longer in that chat.',
+    taskUnavailable: 'This task no longer exists or is currently unavailable.', taskFilesUnavailable: 'This task’s working copy or file is not on this computer, or no longer exists.',
+    handText: (c, chat) => `Please handle this card from Teamboard (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
+      `${chat ? `It is on the board of the chat "${chat.name}": pass chat: "${chat.id}" to the board's tools. ` : ''}` +
+      'Claim it with claim when you start, report progress with update; when finished, move it to Review and link the output with link.',
   },
 }
 
@@ -44,13 +61,25 @@ const $ = (id) => document.getElementById(id)
 // is now — its session or chat — is read again on every change, never kept from the first load.
 let ctx = await g.getContext()
 let t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+// The same App page in the host dialog, with its own document and the same board writer.
+const creating = ctx.modal?.data?.newCard
+if (creating) document.body.classList.add('creating-card')
+// This computer's board is read and written only through the background page and the App's program, and a phone has
+// neither (its `gugu` has no onBackgroundMessage — the host's way of saying so). A chat's board needs neither.
+const desktop = typeof g.onBackgroundMessage === 'function'
 
+/** Where the board shown is kept: this computer (`{ kind: 'local' }`) or a chat's board file (`{ kind: 'chat', f }`). */
+let home = null
 let board = null
+let localBoard = null
 let agents = []
-let shownColumn = null
+let agentsKnown = false // false on a phone, and until the background page has listed them: no status is drawn then
+let filter = 'all'
 let selected = null
 let visible = ctx.layout?.visible ?? true
+const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
 const waiting = new Map()
+let stateProblem = ''
 
 /** Element maker: text goes in as text (others wrote it), never as markup. */
 function h(tag, props = {}, ...kids) {
@@ -69,20 +98,39 @@ const icon = (name) => h('gugu-icon', { name })
 const narrow = () => $('shell').clientWidth <= 640
 
 function showAlert(message) {
-  $('alert').textContent = message ?? ''
+  $('alert').replaceChildren(...(message ? [h('span', { text: message }), h('button', { class: 'plain', 'aria-label': t.close, onclick: () => showAlert(null) }, icon('x'))] : []))
   $('alert').hidden = !message
 }
 
-/** One change to the board, through the background page; resolves the program's result, rejects with its reason. */
+/** A missing task or working copy is a state of that link, rather than a failure of the board. */
+async function taskAction(run, status, message) {
+  try {
+    await run()
+  } catch (error) {
+    if (error?.code === 'not-found') status.textContent = message
+    else showAlert(error?.message ?? String(error))
+  }
+}
+
+/** Who a change on this board is by: the person on this computer's board; on a chat's, their own id (others see it). */
+const me = () => (home?.kind === 'chat' ? home.f.presence.self.userId : 'person')
+
+/** One change to the board shown; resolves the result, rejects with the reason (already said in #alert). */
 function change(op) {
-  const id = crypto.randomUUID()
-  return new Promise((resolve, reject) => {
-    waiting.set(id, { resolve, reject })
-    g.sendToBackground({ type: 'op', id, op }).catch((error) => {
-      waiting.delete(id)
-      reject(error)
+  let done
+  if (home?.kind === 'chat') {
+    done = new Promise((resolve) => resolve(applyToFile(home.f, op, me())))
+  } else {
+    const id = crypto.randomUUID()
+    done = new Promise((resolve, reject) => {
+      waiting.set(id, { resolve, reject })
+      g.sendToBackground({ type: 'op', id, op }).catch((error) => {
+        waiting.delete(id)
+        reject(error)
+      })
     })
-  }).catch((error) => {
+  }
+  return done.catch((error) => {
     showAlert(error?.message ?? String(error))
     throw error
   })
@@ -91,68 +139,86 @@ function change(op) {
 // A change refused is already said in #alert; the click that asked for it has nothing more to do.
 const quietly = (promise) => promise.catch(() => {})
 
-g.onBackgroundMessage((message) => {
+if (desktop) g.onBackgroundMessage((message) => {
   if (message?.type === 'refused') {
     waiting.get(message.id)?.reject(new Error(message.message))
     waiting.delete(message.id)
     return
   }
   if (message?.type !== 'state') return
-  board = message.board
+  localBoard = message.board
   agents = message.agents ?? []
-  const problems = [message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
-  if (problems.length) showAlert(problems.join(' · '))
-  else if (!message.done) showAlert(null)
+  agentsKnown = !message.failure?.agents
+  // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
+  const problems = [home?.kind === 'local' && message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
+  const problem = problems.join(' · ')
+  if (problem && problem !== stateProblem) showAlert(problem)
+  else if (!problem && stateProblem && !message.done) showAlert(null)
+  stateProblem = problem
   if (message.done) {
     waiting.get(message.done.id)?.resolve(message.done.result)
     waiting.delete(message.done.id)
   }
+  if (home?.kind === 'local') board = localBoard
   render()
 })
 
 const agentBySession = (session) => agents.find((a) => a.sessionId === session) ?? null
 const agentById = (id) => agents.find((a) => a.agentId === id) ?? null
+const stateOf = (session) => (agentsKnown ? taskState(agentBySession(session)) : null)
 const columnTitle = (column) => column.title ?? t.roles[column.role] ?? column.id
 const taskLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind === 'task')
 const otherLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind !== 'task')
+const flagsOf = (card) => cardFlags(board, card, stateOf, Date.now())
+const chatOfBoard = () => (home?.kind === 'chat' ? { id: home.f.entry.chat, name: home.name } : null)
 
+/** A task's status, as gugu states it; nothing where the statuses are not known (a phone). */
 function stateBadge(link) {
-  const { key } = taskState(agentBySession(link.session))
-  return h('span', { class: `state ${key}`, text: t.states[key] })
+  const state = stateOf(link.session)
+  return state ? h('span', { class: `state ${state.key}`, text: t.states[state.key] }) : null
 }
 
 function byLabel(by) {
-  if (by === 'person') return t.byPerson
-  return t.byAgent(agentById(by)?.title ?? by.slice(5, 13))
+  if (by === 'person' || by === me()) return t.byPerson
+  return ctx.chat?.members?.find((m) => m.id === by)?.name ?? agentById(by)?.title ?? by.slice(5, 13)
 }
 
 // ── the board ────────────────────────────────────────────────────────────────
 
 function render() {
   if (!board) return
+  if (creating) { renderNewCard(); return }
   const columns = columnsInOrder(board)
-  if (!shownColumn || !board.columns[shownColumn]) shownColumn = columns[0]?.id ?? null
+  const cards = Object.values(board.cards)
+  const flags = new Map(cards.map((c) => [c.id, flagsOf(c)]))
+  const attention = cards.filter((c) => flags.get(c.id).attention).length
+  g.setTabBadge(attention || null).catch((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
 
-  let waitingCount = 0
-  for (const card of Object.values(board.cards)) {
-    if (taskLinks(card).some(([, l]) => taskState(agentBySession(l.session)).waiting)) waitingCount += 1
-  }
-  g.setTabBadge(waitingCount || null).catch((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
-
-  $('tabs').replaceChildren(
-    ...columns.map((c) =>
-      h('button', { role: 'tab', 'aria-selected': c.id === shownColumn ? 'true' : 'false', onclick: () => { shownColumn = c.id; render() } }, `${columnTitle(c)} ${cardsIn(board, c.id).length}`),
-    ),
+  const waitingCount = cards.filter((c) => flags.get(c.id).waiting).length
+  $('summary').textContent = [t.count(cards.length), waitingCount ? t.waitingCount(waitingCount) : null].filter(Boolean).join(' · ')
+  $('filters').replaceChildren(
+    ...[['all', t.all], ['attention', attention ? `${t.attention} ${attention}` : t.attention]].map(([key, label]) =>
+      h('button', { role: 'tab', 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } }, label)),
   )
-  $('board').replaceChildren(...columns.map(columnView), h('div', {}, h('button', { onclick: addColumn, text: t.addColumn })))
+
+  // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
+  $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
+  const focusedAdd = document.hasFocus() ? document.activeElement?.dataset.addCard : null
+  $('board').replaceChildren(
+    ...columns.map((c) => columnView(c, flags)),
+    h('div', { class: 'add-column' }, h('button', { onclick: addColumn, text: t.addColumn })),
+  )
+  if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
   if (selected && !board.cards[selected]) closeCard()
   else if (selected) updateDrawer()
 }
 
-function columnView(column) {
-  const cards = cardsIn(board, column.id)
+function columnView(column, flags) {
+  const all = cardsIn(board, column.id)
+  const cards = filter === 'attention' ? all.filter((c) => flags.get(c.id).attention) : all
+  if (!collapsed.has(column.id)) collapsed.set(column.id, column.role === 'todo' || column.role === 'done')
   const list = h('ul', { class: 'cards', 'data-col': column.id })
-  list.append(...cards.map((card) => h('li', {}, cardView(card))))
+  list.append(...cards.map((card) => h('li', {}, cardView(card, flags.get(card.id)))))
   list.addEventListener('dragover', (event) => {
     event.preventDefault()
     list.classList.add('over')
@@ -168,23 +234,31 @@ function columnView(column) {
     quietly(change({ type: 'card.move', card: id, column: column.id, ...(below ? { before: below.dataset.card } : {}) }))
   })
   const title = h('span', { text: columnTitle(column), title: t.columnName, ondblclick: () => renameColumn(column, title) })
-  return h('section', { class: `col${column.id === shownColumn ? ' shown' : ''}`, 'aria-label': columnTitle(column) },
-    h('h2', {}, title, h('small', { text: String(cards.length) })),
+  const toggle = h('button', { class: 'toggle', 'aria-label': `${columnTitle(column)} · ${t.toggle}`, 'aria-expanded': collapsed.get(column.id) ? 'false' : 'true', onclick: () => { collapsed.set(column.id, !collapsed.get(column.id)); render() } },
+    icon(collapsed.get(column.id) ? 'chevron-right' : 'chevron-down'))
+  return h('section', { class: `col${collapsed.get(column.id) ? ' collapsed' : ''}`, 'data-role': column.role ?? '', 'aria-label': columnTitle(column) },
+    h('h2', {}, toggle, title, h('small', { text: String(cards.length) })),
     list,
+    h('button', { class: 'add', 'data-add-card': column.id, onclick: () => openAdd(column.id) }, icon('plus'), t.addCard),
   )
 }
 
-function cardView(card) {
+function cardView(card, flags) {
   const tasks = taskLinks(card)
   const others = otherLinks(card).length
-  const el = h('button', { class: 'card', draggable: 'true', 'data-card': card.id, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => openCard(card.id) },
-    h('strong', { text: card.title }),
-    (tasks.length || others || card.by !== 'person')
-      ? h('span', { class: 'meta' },
-          tasks.map(([, l]) => stateBadge(l)),
-          others ? h('span', {}, icon('paperclip'), ` ${others}`) : null,
-          card.by !== 'person' ? h('span', { text: byLabel(card.by) }) : null)
-      : null,
+  const machines = [...new Set(tasks.map(([, l]) => agentBySession(l.session)?.deviceLabel).filter(Boolean))]
+  const titleId = `c-${card.id}`
+  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}`, draggable: 'true', 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => openCard(card.id) },
+    h('strong', { id: titleId, text: card.title }),
+    card.waitingOn ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn) })) : null,
+    typeof card.progress === 'number' ? h('span', { class: 'bar', role: 'img', 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
+    h('span', { class: 'meta' },
+      tasks.map(([, l]) => (l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null)),
+      tasks.map(([, l]) => stateBadge(l)),
+      machines.map((m) => h('span', { text: m })),
+      others ? h('span', {}, icon('paperclip'), ` ${others}`) : null,
+      h('span', { class: 'spacer' }),
+      card.updatedAt ? h('gugu-time', { datetime: card.updatedAt, title: flags.stale ? t.stale : undefined }) : null),
   )
   el.addEventListener('dragstart', (event) => {
     event.dataTransfer.setData('text/plain', card.id)
@@ -218,28 +292,59 @@ function addColumn(event) {
   input.focus()
 }
 
-// ── a new card ───────────────────────────────────────────────────────────────
+// ── a new card: at the bottom of its column ─────────────────────────────────
 
-$('heading').textContent = t.title
-$('new-title').placeholder = t.newPlaceholder
-$('new-title').setAttribute('aria-label', t.newPlaceholder)
-$('new-add').textContent = t.add
-$('note').textContent = t.note
-$('attach-label').textContent = t.attach
-$('new-card').addEventListener('submit', async (event) => {
-  event.preventDefault()
-  const title = $('new-title').value.trim()
-  if (!title) return
-  const links = ctx.session && $('attach-task').checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
-  const column = narrow() ? shownColumn : undefined
-  await quietly(change({ type: 'card.create', title, links, ...(column ? { column } : {}) }).then(() => { $('new-title').value = '' }))
+async function openAdd(column) {
+  const fromPage = document.hasFocus()
+  try {
+    await g.modal.open({ entry: 'board.html', title: t.newCard, data: { newCard: {
+      column, file: home?.kind === 'chat' ? { chat: home.f.entry.chat, id: home.f.entry.id } : null,
+    } } })
+  } catch (error) { showAlert(error?.message ?? String(error)) }
+  finally {
+    // Live board updates can replace the original control while the dialog is open.
+    if (fromPage) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === column)?.focus()
+  }
+}
+
+function renderNewCard() {
+  if ($('new-card-form')) return // Incoming board/status changes keep the person's draft and IME composition intact.
+  const title = h('input', { id: 'new-card-title', name: 'title', required: true, autofocus: true, placeholder: t.newPlaceholder, autocomplete: 'off' })
+  const column = h('select', { id: 'new-card-column', name: 'column' }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, text: columnTitle(c) })))
+  column.value = creating.column
+  const note = h('textarea', { id: 'new-card-note', name: 'note', rows: 4 })
+  const attach = ctx.session ? h('input', { type: 'checkbox', checked: true }) : null
+  const submit = h('button', { type: 'submit', text: t.addCard })
+  const root = h('form', { id: 'new-card-form', class: 'stack new-card' },
+    h('label', { class: 'stack' }, t.cardTitle, title), h('label', { class: 'stack' }, t.column, column),
+    h('label', { class: 'stack' }, t.noteH, note), attach ? h('label', {}, attach, ` ${t.attach}`) : null,
+    h('footer', {}, h('button', { type: 'button', text: t.cancel, onclick: () => g.modal.close().catch((error) => showAlert(error.message)) }), submit),
+  )
+  root.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!title.value.trim() || submit.disabled) return
+    submit.disabled = true
+    try {
+      const links = attach?.checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
+      const result = await change({ type: 'card.create', title: title.value.trim(), note: note.value, links, column: column.value })
+      await g.modal.close(result)
+    } catch (error) { showAlert(error?.message ?? String(error)) }
+    finally { submit.disabled = false }
+  })
+  $('board').append(root)
+  title.focus()
+}
+
+g.onCommand((id) => {
+  if (id !== 'new' || !board) return
+  const columns = columnsInOrder(board)
+  // Narrow, the first column that is open; wide, the first.
+  openAdd((narrow() && columns.find((c) => !collapsed.get(c.id))?.id) || columns[0].id)
 })
-
-g.onCommand((id) => { if (id === 'new') $('new-title').focus() })
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
-let drawer = null // the open card's live parts: { card, title, noteView, noteEdit, viewing, ... }
+let drawer = null // the open card's live parts: { card, title, fields, noteView, noteEdit, viewing, ... }
 
 function openCard(id) {
   selected = id
@@ -265,46 +370,60 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && selected && !event.target.closest?.('input, textarea, .cm-editor')) closeCard()
 })
 
+/**
+ * The open card reads as a page, and changes one thing at a time (owner 10-22, after Linear's issue view): the title and
+ * the note are edited where they stand once clicked; each property is a value until clicked, then its own editor, saved
+ * on Enter or leaving it, put back on Esc. Nothing is an input until it is asked to be one.
+ */
+function inlineEditor(d, key, start, make, save) {
+  if (d.editing && d.editing !== key) d.finish?.()
+  d.editing = key
+  const editor = make()
+  const done = (keep) => {
+    if (d.editing !== key) return
+    d.editing = null
+    d.finish = null
+    if (keep) save(editor.value)
+    updateDrawer(true)
+  }
+  d.finish = () => done(true)
+  editor.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !(editor.tagName === 'TEXTAREA' && !(event.metaKey || event.ctrlKey))) { event.preventDefault(); done(true) }
+    if (event.key === 'Escape') { event.stopPropagation(); done(false) }
+  })
+  editor.addEventListener('blur', () => done(true))
+  if (editor.tagName === 'SELECT') editor.addEventListener('change', () => done(true))
+  start.replaceWith(editor)
+  editor.focus()
+  if (editor.select && editor.tagName === 'INPUT') editor.select()
+}
+
+const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due']
+
+/** A property's value as text, or null when it has none. */
+function propText(card, key) {
+  if (key === 'column') return columnTitle(board.columns[card.column])
+  if (key === 'progress') return typeof card.progress === 'number' ? `${card.progress}%` : null
+  return card[key] || null
+}
+
 function buildDrawer(id) {
-  const card = board.cards[id]
-  const column = h('select', { 'aria-label': t.roles.doing, onchange: (e) => quietly(change({ type: 'card.move', card: id, column: e.target.value })) })
   let armed = false
   const del = h('button', { class: 'danger', text: t.del, onclick: () => {
     if (!armed) { armed = true; del.textContent = t.delAgain; return }
     quietly(change({ type: 'card.delete', card: id }))
   } })
-  const title = h('input', { id: 'd-title', type: 'text', value: card.title, 'aria-label': t.title })
-  title.addEventListener('change', () => quietly(change({ type: 'card.update', card: id, title: title.value })))
+  const more = h('details', { class: 'more' }, h('summary', { 'aria-label': t.more }, icon('ellipsis')), h('div', { class: 'menu' }, del))
+  const back = h('button', { class: 'plain', 'aria-label': narrow() ? t.back : t.close, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
+  const crumb = h('small', { class: 'muted crumb' })
 
-  const tasks = h('ul', { class: 'links' })
-  const taskActions = h('div', { class: 'row' })
+  const title = h('div', { class: 'title-slot' })
+  const props = h('dl', { class: 'props', 'aria-label': t.props })
+  const note = h('div', { class: 'note-slot' })
   const links = h('ul', { class: 'links' })
-  const linkActions = h('div', { class: 'row' })
+  const addMenu = h('details', { class: 'add-menu' }, h('summary', {}, icon('plus'), ` ${t.addLink}`), h('div', { class: 'menu' }))
   const picker = h('div')
   const view = h('div')
-
-  const noteView = h('div', { class: 'note-view', 'data-empty': t.noteEmpty })
-  const noteEdit = h('textarea', { rows: '8', hidden: true, 'aria-label': t.noteH })
-  const noteButton = h('button', { text: t.edit })
-  noteButton.addEventListener('click', () => {
-    if (noteEdit.hidden) {
-      noteEdit.value = board.cards[id]?.note ?? ''
-      noteEdit.hidden = false
-      noteView.hidden = true
-      noteButton.textContent = t.done
-      noteEdit.focus()
-    } else {
-      saveNote()
-    }
-  })
-  const saveNote = () => {
-    const text = noteEdit.value
-    noteEdit.hidden = true
-    noteView.hidden = false
-    noteButton.textContent = t.edit
-    if (text !== (board.cards[id]?.note ?? '')) quietly(change({ type: 'card.update', card: id, note: text }))
-  }
-
   const comments = h('ul', { class: 'comments' })
   const commentBox = h('textarea', { rows: '2', placeholder: t.comment, 'aria-label': t.comment })
   const commentSend = h('button', { text: t.send, onclick: () => {
@@ -312,82 +431,155 @@ function buildDrawer(id) {
     if (text) quietly(change({ type: 'comment.add', card: id, text }).then(() => { commentBox.value = '' }))
   } })
 
-  const back = h('button', { 'aria-label': t.back, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
-  const root = h('div', { class: 'stack' },
-    h('div', { class: 'head' }, back, column, del),
+  const root = h('div', { class: 'detail' },
+    h('div', { class: 'head' }, back, crumb, h('span', { class: 'spacer' }), more),
     title,
-    h('section', {}, h('h5', { text: t.tasks }), tasks, taskActions),
-    h('section', {}, h('h5', { text: t.links }), links, linkActions, picker, view),
-    h('section', {}, h('div', { class: 'row' }, h('h5', { text: t.noteH }), noteButton), noteView, noteEdit),
-    h('section', {}, h('h5', { text: t.comments }), comments, commentBox, h('div', {}, commentSend)),
+    props,
+    h('section', {}, h('h5', { text: t.noteH }), note),
+    h('section', {}, h('div', { class: 'section-head' }, h('h5', { text: t.links }), addMenu), links, picker, view),
+    h('section', {}, h('h5', { text: t.comments }), comments, h('div', { class: 'comment-box' }, commentBox, h('div', {}, commentSend))),
   )
-  return { id, root, column, title, tasks, taskActions, links, linkActions, picker, view, noteView, noteEdit, comments, viewing: null, file: null, shownNote: null }
+  return { id, root, crumb, title, props, note, links, addMenu, picker, view, comments, editing: null, finish: null, viewing: null, file: null, shownNote: null }
 }
 
-async function updateDrawer() {
+async function updateDrawer(force = false) {
   const d = drawer
   const card = d && board.cards[d.id]
   if (!card) return
-  d.column.replaceChildren(...columnsInOrder(board).map((c) => h('option', { value: c.id, selected: c.id === card.column, text: columnTitle(c) })))
-  if (document.activeElement !== d.title) d.title.value = card.title
+  d.crumb.textContent = home?.kind === 'chat' ? home.name : t.local
 
-  d.tasks.replaceChildren(...taskLinks(card).map(([lid, link]) => {
-    const row = agentBySession(link.session)
-    return h('li', {},
-      stateBadge(link),
-      h('span', { class: 'what', text: row?.title ?? link.title ?? link.session }),
-      h('button', { text: t.open, onclick: () => g.showSession(link.session).catch((e) => showAlert(e.message)) }),
-      h('button', { text: t.handTo, onclick: () => g.compose(t.handText(card), { session: link.session }).catch((e) => showAlert(e.message)) }),
-      h('button', { 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x')),
-    )
-  }))
-  const appState = await g.getAppState().catch(() => null) // the current task is a convenience: without it the button is not offered
-  if (drawer !== d) return
-  const current = appState?.activeSessionId
-  const linked = new Set(taskLinks(card).map(([, l]) => l.session))
-  // replaceChildren writes a null as the text "null": leave the absent button out.
-  d.taskActions.replaceChildren(...[
-    current && !linked.has(current)
-      ? h('button', { text: t.attachCurrent, onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })) })
-      : null,
-    h('button', { text: t.pickTask, onclick: () => pickTask(card) }),
-    h('button', { text: t.start, onclick: (e) => startTask(card, e.currentTarget, appState?.activeProjectId) }),
-  ].filter(Boolean))
+  // The title: a heading until clicked.
+  if (d.editing !== 'title') {
+    const heading = h('h2', { class: 'editable', tabindex: '0', role: 'button', 'aria-label': `${t.title}: ${card.title}`, text: card.title })
+    const edit = () => inlineEditor(d, 'title', heading, () => h('input', { type: 'text', class: 'title-input', value: card.title, 'aria-label': t.title }),
+      (value) => { if (value.trim() && value !== card.title) quietly(change({ type: 'card.update', card: card.id, title: value })) })
+    heading.addEventListener('click', edit)
+    heading.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit() })
+    d.title.replaceChildren(heading)
+  }
 
-  d.links.replaceChildren(...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)))
-  d.linkActions.replaceChildren(
-    h('button', { text: t.pickFile, onclick: () => pickTaskFile(card) }),
-    h('button', { text: t.pickChatFile, onclick: () => pickChatFile(card) }),
-    h('button', { text: t.addUrl, onclick: () => addUrl(card) }),
-  )
+  // The properties: values; one of them an editor while it is being changed.
+  const rows = []
+  const tasks = taskLinks(card)
+  const propRow = (key, valueNode, editable) => {
+    rows.push(h('div', { class: 'prop' }, h('dt', { text: t[key] }), h('dd', { 'data-prop': key }, valueNode)))
+    if (!editable || d.editing === key) return
+    valueNode.addEventListener('click', () => {
+      inlineEditor(d, key, valueNode, () => {
+        if (key === 'column') return h('select', { 'aria-label': t.column }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, selected: c.id === card.column, text: columnTitle(c) })))
+        if (key === 'progress') return h('input', { type: 'number', min: '0', max: '100', step: '1', inputmode: 'numeric', value: card.progress ?? '', 'aria-label': t.progress })
+        return h('input', { type: 'text', value: card[key] ?? '', 'aria-label': t[key] })
+      }, (value) => {
+        if (key === 'column') { if (value !== card.column) quietly(change({ type: 'card.move', card: card.id, column: value })); return }
+        const next = key === 'progress' ? (value === '' ? null : Number(value)) : value
+        if ((card[key] ?? (key === 'progress' ? null : '')) !== next) quietly(change({ type: 'card.update', card: card.id, [key]: next }))
+      })
+    })
+  }
+  const valueButton = (key) => {
+    const text = propText(card, key)
+    return h('button', { class: `prop-value${text ? '' : ' empty'}${key === 'waitingOn' && text ? ' waiting' : ''}`, 'aria-label': `${t[key]}: ${text ?? t.unset}` },
+      key === 'progress' && text ? h('span', { class: 'bar', style: `--p:${card.progress}%` }) : null,
+      text ?? t.unset)
+  }
+  propRow('column', valueButton('column'), true)
+  propRow('owner', h('div', { class: 'owners' }, ...(tasks.length ? tasks.map(([, l]) => h('span', { class: 'owner' },
+    l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null,
+    stateBadge(l),
+    h('span', { class: 'muted', text: agentBySession(l.session)?.deviceLabel ?? '' }))) : [h('span', { class: 'muted', text: t.unset })])), false)
+  for (const key of ['progress', 'waitingOn', 'next', 'due']) propRow(key, valueButton(key), true)
+  if (card.updatedAt) rows.push(h('div', { class: 'prop' }, h('dt', { text: t.updated }), h('dd', { class: 'muted' }, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? h('div', { class: 'stale-note', text: t.stale }) : null)))
+  // A property being edited keeps its editor (and its half-typed value): the properties are drawn again after it.
+  if (!PROPS.includes(d.editing)) d.props.replaceChildren(...rows)
 
-  if (d.noteEdit.hidden && d.shownNote !== card.note) {
+  // The note: rendered; clicked, a textarea that saves when left.
+  if (d.editing !== 'note' && (force || d.shownNote !== card.note || !d.note.firstChild)) {
     d.shownNote = card.note
+    const shown = h('div', { class: `note-view editable${card.note ? '' : ' empty'}`, tabindex: '0', role: 'button', 'aria-label': t.editNote })
     if (card.note) {
       const md = await g.markdown()
       if (drawer !== d) return
-      md.render(d.noteView, card.note, { density: 'comfortable' })
-    } else {
-      d.noteView.replaceChildren()
+      md.render(shown, card.note, { density: 'comfortable' })
+    } else shown.textContent = t.addNote
+    const edit = (event) => {
+      if (event.target.closest?.('a')) return // a link in the note opens; it does not start editing
+      inlineEditor(d, 'note', shown, () => h('textarea', { rows: '10', class: 'note-input', 'aria-label': t.noteH }, card.note ?? ''),
+        (value) => { if (value !== (card.note ?? '')) quietly(change({ type: 'card.update', card: card.id, note: value })) })
     }
+    shown.addEventListener('click', edit)
+    shown.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit(e) })
+    d.note.replaceChildren(shown)
   }
+
+  // Links: the card's tasks first, then its files and pages; what can be done to one shows on the row it is about.
+  d.links.replaceChildren(
+    ...tasks.map(([lid, link]) => {
+      const row = agentBySession(link.session)
+      const missing = agentsKnown && !row
+      const status = h('span', { class: 'muted', role: 'status', text: missing ? t.taskUnavailable : '' })
+      return h('li', {},
+        link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : icon('bot'),
+        h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
+        stateBadge(link),
+        status,
+        h('span', { class: 'acts' },
+          h('button', { class: 'plain', text: t.open, disabled: missing, onclick: () => taskAction(() => g.showSession(link.session, { peek: true }), status, t.taskUnavailable) }),
+          h('button', { class: 'plain', text: t.handTo, disabled: missing, onclick: () => taskAction(() => g.compose(t.handText(card, chatOfBoard()), { session: link.session }), status, t.taskUnavailable) }),
+          h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))),
+      )
+    }),
+    ...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)),
+  )
+  if (!d.links.childElementCount) d.links.append(h('li', { class: 'muted empty-row', text: t.noLinks }))
+
+  const appState = await g.getAppState().catch(() => null) // the current task is a convenience: without it the item is not offered
+  if (drawer !== d) return
+  const current = appState?.activeSessionId
+  const linked = new Set(tasks.map(([, l]) => l.session))
+  const item = (text, run) => h('button', { class: 'plain', text, onclick: (e) => { d.addMenu.open = false; run(e) } })
+  d.addMenu.querySelector('.menu').replaceChildren(...[
+    current && !linked.has(current)
+      ? item(t.attachCurrent, () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })))
+      : null,
+    desktop ? item(t.pickTask, () => pickTask(card)) : null,
+    desktop ? item(t.start, (e) => startTask(card, e.currentTarget, appState?.activeProjectId)) : null,
+    desktop ? item(t.pickFile, () => pickTaskFile(card)) : null,
+    item(t.pickChatFile, () => pickChatFile(card)),
+    // A gugu without project folders for Apps has no gugu.projects: the item is not offered there.
+    typeof g.projects?.list === 'function' ? item(t.pickProjectFile, () => pickProjectFile(card)) : null,
+    item(t.addUrl, () => addUrl(card)),
+  ].filter(Boolean))
+
   const said = Object.values(board.comments).filter((c) => c.card === card.id).sort((a, b) => a.at.localeCompare(b.at))
-  d.comments.replaceChildren(...said.map((c) => h('li', { class: 'stack' }, h('small', { class: 'muted' }, byLabel(c.by), ' · ', h('gugu-time', { datetime: c.at })), h('span', { text: c.text }))))
+  d.comments.replaceChildren(...said.map((c) => h('li', { class: 'comment' },
+    h('div', { class: 'comment-head' }, h('strong', { text: byLabel(c.by) }), h('small', { class: 'muted' }, h('gugu-time', { datetime: c.at }))),
+    h('div', { text: c.text }))))
 }
 
 function linkRow(card, lid, link) {
-  const remove = h('button', { 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))
+  const remove = h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))
   const current = drawer.viewing === lid ? 'true' : 'false'
   switch (link.kind) {
     case 'file':
+    case 'project':
     case 'chatfile': {
-      const name = link.kind === 'file' ? link.path : (link.name ?? link.file)
-      return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }), h('button', { text: t.show, onclick: () => showFile(lid, link) }), remove)
+      const name = nameOf(link)
+      const status = h('span', { class: 'muted', role: 'status' })
+      // Drawn in the card when the App can (md, text, images, video); every file also opens beside the board, in the
+      // App that opens it or gugu's own preview.
+      return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }),
+        status,
+        h('span', { class: 'acts' },
+          drawable(name) ? h('button', { class: 'plain', text: t.show, onclick: () => showFile(lid, link) }) : null,
+          h('button', { class: 'plain', text: t.openBeside, onclick: () => taskAction(() => g.files.openWith(refOf(link), { peek: true }), status, link.kind === 'file' ? t.taskFilesUnavailable : t.noFiles) }),
+          remove))
     }
     case 'message':
-      return h('li', {}, icon('message-square'), h('span', { class: 'what', text: link.excerpt ?? link.message }), h('button', { text: t.message, onclick: () => g.showMessage(link.message).catch((e) => showAlert(e.message)) }), remove)
+      return h('li', {}, icon('message-square'), h('span', { class: 'what', text: link.excerpt ?? t.messageLink }),
+        h('span', { class: 'acts' }, h('button', { class: 'plain', text: t.message, onclick: () => g.showMessage(link.message).catch((e) => showAlert(e.message)) }), remove))
     default:
-      return h('li', {}, icon(link.kind === 'pr' ? 'git-pull-request' : 'link'), h('span', { class: 'what', text: `${link.title ?? link.url}${link.state ? ` · ${link.state}` : ''}`, title: link.url }), h('button', { text: t.browser, onclick: () => g.openBrowserTab(link.url).catch((e) => showAlert(e.message)) }), remove)
+      return h('li', {}, icon(link.kind === 'pr' ? 'git-pull-request' : 'link'), h('span', { class: 'what', text: `${link.title ?? link.url}${link.state ? ` · ${link.state}` : ''}`, title: link.url }),
+        h('span', { class: 'acts' }, h('button', { class: 'plain', text: t.browser, onclick: () => g.openBrowserTab(link.url).catch((e) => showAlert(e.message)) }), remove))
   }
 }
 
@@ -397,6 +589,14 @@ const IMAGE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i
 const VIDEO = /\.(mp4|webm|mov|m4v)$/i
 const MARKDOWN = /\.(md|markdown|mdx)$/i
 const TEXT = /\.(txt|json|jsonc|ya?ml|toml|csv|tsv|log|ini|env|xml|js|mjs|cjs|ts|tsx|jsx|css|scss|py|rb|go|rs|java|kt|swift|c|h|cc|cpp|hpp|sh|zsh|bash|sql|vue|svelte)$/i
+
+const drawable = (name) => IMAGE.test(name) || VIDEO.test(name) || MARKDOWN.test(name) || TEXT.test(name)
+const nameOf = (link) => (link.kind === 'chatfile' ? (link.name ?? link.file) : link.path)
+function refOf(link) {
+  if (link.kind === 'file') return { session: link.session, id: link.path }
+  if (link.kind === 'project') return { project: link.project, id: link.path }
+  return { id: link.file }
+}
 
 function closeView() {
   if (!drawer) return
@@ -413,18 +613,10 @@ async function showFile(lid, link) {
   closeView()
   d.viewing = lid
   updateDrawer()
-  const ref = link.kind === 'file' ? { session: link.session, id: link.path } : { id: link.file }
-  const name = link.kind === 'file' ? link.path : (link.name ?? '')
+  const ref = refOf(link)
+  const name = nameOf(link)
   const box = h('div', { class: 'view' })
   d.view.replaceChildren(box)
-  // What the App cannot draw itself (html, pdf, office, other Apps' files) opens where it lives, for now.
-  if (!IMAGE.test(name) && !VIDEO.test(name) && !MARKDOWN.test(name) && !TEXT.test(name)) {
-    box.replaceChildren(
-      h('div', { class: 'row' }, h('button', { text: t.openIn, onclick: () => g.files.openWith(ref).catch((e) => showAlert(e.message)) })),
-      h('small', { class: 'muted', text: t.peekLater }),
-    )
-    return
-  }
   try {
     const f = await g.files.open(ref)
     if (drawer !== d || d.viewing !== lid) return f.close()
@@ -454,7 +646,7 @@ async function showFile(lid, link) {
     } })
     box.replaceChildren(h('div', { class: 'row' }, edit), shown)
   } catch (error) {
-    box.replaceChildren(h('p', { role: 'alert', text: error?.message ?? String(error) }))
+    box.replaceChildren(h('p', { role: error?.code === 'not-found' ? 'status' : 'alert', text: error?.code === 'not-found' && link.kind === 'file' ? t.taskFilesUnavailable : error?.message ?? String(error) }))
   }
 }
 
@@ -493,7 +685,11 @@ function pickTask(card) {
 function pickTaskFile(card) {
   openPicker(t.chooseTask, async ({ list, filter, done }) => {
     taskRows(list, filter, async (a) => {
-      const entries = await g.files.list({ session: a.sessionId }).catch((error) => { showAlert(error.message); return null })
+      const entries = await g.files.list({ session: a.sessionId }).catch((error) => {
+        if (error?.code === 'not-found') list.replaceChildren(h('li', { class: 'muted', role: 'status', text: t.taskFilesUnavailable }))
+        else showAlert(error?.message ?? String(error))
+        return null
+      })
       if (!entries) return
       const files = entries.filter((e) => e.type !== 'folder')
       // The same box now filters this task's files (a fresh input: the task list's listener goes with the old one).
@@ -510,6 +706,39 @@ function pickTaskFile(card) {
       fileFilter.addEventListener('input', draw)
       draw()
     })
+  })
+}
+
+function pickProjectFile(card) {
+  openPicker(t.chooseProject, async ({ list, filter, done }) => {
+    const { projects } = await g.projects.list()
+    const drawProjects = () => {
+      const q = filter.value.trim().toLowerCase()
+      const rows = projects.filter((p) => !q || p.name.toLowerCase().includes(q))
+      list.replaceChildren(...(rows.length
+        ? rows.map((p) => h('li', {}, h('button', { class: 'card', onclick: () => pickIn(p) }, h('strong', { text: p.name }))))
+        : [h('li', { class: 'muted', text: t.noProjects })]))
+    }
+    filter.addEventListener('input', drawProjects)
+    drawProjects()
+    const pickIn = async (project) => {
+      const entries = await g.files.list({ project: project.id }).catch((error) => { showAlert(error.message); return null })
+      if (!entries) return
+      const files = entries.filter((e) => e.type !== 'folder')
+      // The same box now filters this project's files (a fresh input: the project list's listener goes with the old one).
+      const fileFilter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
+      filter.replaceWith(fileFilter)
+      fileFilter.focus()
+      const draw = () => {
+        const q = fileFilter.value.trim().toLowerCase()
+        const rows = files.filter((e) => !q || e.path.toLowerCase().includes(q)).slice(0, 80)
+        list.replaceChildren(...(rows.length
+          ? rows.map((e) => h('li', {}, h('button', { class: 'card', onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'project', project: project.id, path: e.path, title: project.name } }).then(done)) }, h('span', { text: `${project.name} / ${e.path}` }))))
+          : [h('li', { class: 'muted', text: t.noFiles })]))
+      }
+      fileFilter.addEventListener('input', draw)
+      draw()
+    }
   })
 }
 
@@ -556,7 +785,7 @@ async function startTask(card, button, project) {
   button.disabled = true
   button.textContent = t.starting
   try {
-    const { agentId } = await g.spawnAgent(t.handText(card), { title: card.title, ...(project ? { project } : {}) })
+    const { agentId } = await g.spawnAgent(t.handText(card, chatOfBoard()), { title: card.title, ...(project ? { project } : {}) })
     const row = (await g.listAgents()).find((a) => a.agentId === agentId)
     if (!row) throw new Error(`the new task (${agentId}) is not in the task list`)
     await change({ type: 'link.add', card: card.id, link: { kind: 'task', session: row.sessionId, agent: agentId, title: card.title } })
@@ -570,21 +799,116 @@ async function startTask(card, button, project) {
   }
 }
 
-// ── where the page is ────────────────────────────────────────────────────────
+// ── which board: this computer's, or a chat's board file ─────────────────────
+
+/** A board file's name, shown next to its chat's name when it is not the chat's own board. */
+const fileLabel = (entry) => [entry.chatName ?? ctx.chat?.name, entry.name === CHAT_BOARD_NAME ? null : entry.name.slice(0, -BOARD_SUFFIX.length)].filter(Boolean).join(' · ')
+
+async function showChatBoard(open) {
+  leaveHome()
+  try {
+    const f = filled(await open())
+    const name = ctx.chat?.id === f.entry.chat ? ctx.chat.name : fileLabel(f.entry)
+    home = { kind: 'chat', f, name }
+    board = f.toJSON()
+    f.onChange(({ local }) => {
+      board = f.toJSON()
+      render()
+      // Someone else's change — an agent's on another computer, say — may come with that agent moving: ask for the
+      // statuses again (the background page hears only this computer's agents move).
+      if (!local && desktop) askAgents()
+    })
+    f.onStatus((status) => { if (status === 'gone') showAlert(t.gone) })
+    showAlert(null)
+  } catch (error) {
+    home = null
+    board = null
+    showAlert(t.noBoard(error?.message ?? String(error)))
+  }
+  if (selected) closeCard()
+  render()
+}
+
+function showLocalBoard() {
+  leaveHome()
+  home = { kind: 'local' }
+  board = localBoard
+  if (selected) closeCard()
+  render()
+}
+
+function leaveHome() {
+  if (home?.kind === 'chat') home.f.close()
+  home = null
+}
+
+let asking = null
+function askAgents() {
+  if (asking) return
+  asking = g.sendToBackground({ type: 'agents' }).catch((e) => showAlert(e.message)).finally(() => { asking = null })
+}
+
+/**
+ * Opened in a chat (its panel, or one of its board files): that chat's board, nothing to pick. Anywhere else (the dock,
+ * a task's tab): this computer's board, and the chats' boards the person can reach, to switch to.
+ */
+async function fillSwitcher() {
+  const select = $('where')
+  // A suffix is one extension (.json): the board's double one is matched by the path instead.
+  const found = await g.files.search({ query: BOARD_SUFFIX, suffixes: ['.json'], limit: 50 }).catch((error) => {
+    showAlert(error?.message ?? String(error))
+    return []
+  })
+  const boards = found.filter((e) => e.type !== 'folder' && e.name.endsWith(BOARD_SUFFIX))
+  select.replaceChildren(
+    h('option', { value: '', text: t.local }),
+    ...boards.map((e) => h('option', { value: e.id, text: fileLabel(e) })),
+  )
+  select.value = home?.kind === 'chat' ? home.f.entry.id : ''
+  select.hidden = boards.length === 0
+  select.onchange = () => {
+    const entry = boards.find((e) => e.id === select.value)
+    if (entry) showChatBoard(() => g.files.open(entry))
+    else showLocalBoard()
+  }
+}
 
 function placed() {
-  $('attach-box').hidden = !ctx.session
+  $('heading').textContent = t.title
+  $('where').setAttribute('aria-label', t.where)
 }
-placed()
 
 g.onContextChanged(async () => {
   ctx = await g.getContext()
-  t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+  const words = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
+  // The language changed: the open card's fixed parts (headings, buttons) were worded once, when it was built.
+  if (words !== t && selected) {
+    t = words
+    openCard(selected)
+  }
+  t = words
   placed()
   const now = ctx.layout?.visible ?? visible
-  // Back on screen: read the board again (an agent's tool call may have changed it meanwhile).
-  if (now && !visible) g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+  // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere, a chat's new board).
+  if (desktop && now && !visible) {
+    g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+    if (!ctx.chat && !ctx.file) fillSwitcher()
+  }
   visible = now
+  render()
 })
 
-g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
+placed()
+if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
+if (creating?.file) await showChatBoard(() => g.files.open(creating.file))
+else if (creating && desktop) showLocalBoard()
+else if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
+else if (ctx.chat) await showChatBoard(() => openChatBoard(g.files, ctx.chat.id))
+else if (desktop) {
+  showLocalBoard()
+  fillSwitcher()
+} else {
+  // style, not `hidden`: the page's own rules give #bar a display, and that wins over the attribute.
+  for (const el of $('main').children) el.style.display = 'none'
+  $('main').append(h('gugu-empty', { id: 'desktop-only', icon: 'layout-grid' }, h('strong', { text: t.desktopOnly }), h('small', { text: t.phoneHint })))
+}

@@ -97,11 +97,11 @@ async function showLobby() {
 }
 
 /**
- * Outside a chat (the App's own page): a new round in a chat the person picks, and the rounds of every chat they are
- * in. A round opens in its own chat, as one opened there.
+ * Outside a chat (the App's own page): the rounds of every chat the person is in, each opening in its own chat. A new round
+ * starts in a chat — the App opened there, where the chat is already known — not from a list of chats drawn here.
  */
 async function showEveryRound(lobby) {
-  put(lobby, h('p', { className: 'muted', textContent: '正在找你的聊天和牌局…' }))
+  put(lobby, h('p', { className: 'muted', textContent: '正在找你的牌局…' }))
   let rounds = []
   try {
     rounds = await window.gugu.files.search({ query: FILE_SUFFIX, suffixes: ['.json'], limit: 50 })
@@ -109,22 +109,9 @@ async function showEveryRound(lobby) {
   } catch (e) {
     fail('找不到牌局', e)
   }
-  let chats = []
-  try {
-    chats = (await window.gugu.chats.list()).chats
-  } catch (e) {
-    fail('读不到你的聊天', e)
-  }
-  let puzzles = []
-  try {
-    puzzles = (await loadBank()).puzzles
-  } catch (e) {
-    fail('题库读不到', e)
-  }
   put(lobby,
     h('h2', { textContent: '海龟汤' }),
-    h('p', { className: 'muted', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。在哪个聊天里开局，大家就在那里一起猜。' }),
-    newRoundForm(puzzles, chats),
+    h('p', { className: 'muted', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。在群聊或私聊里打开海龟汤开新局，大家就在那里一起猜。' }),
     rounds.length ? h('h5', { textContent: '我的牌局' }) : null,
     rounds.length
       ? h('ul', { className: 'list', ariaLabel: '我的牌局' }, rounds.map((entry) => {
@@ -138,16 +125,11 @@ async function showEveryRound(lobby) {
   )
 }
 
-/** A new round: in this chat, or — given `chats`, on the App's own page — in the one picked, hosted by an agent in it. */
-function newRoundForm(puzzles, chats = null) {
-  let chatId = ctx.chat?.id ?? chats?.[0]?.id ?? null
-  let agents = members().filter((m) => m.kind === 'agent')
+/** A new round in this chat, hosted by an agent in it. */
+function newRoundForm(puzzles) {
+  const agents = members().filter((m) => m.kind === 'agent')
   const form = h('form', { className: 'card stack', ariaLabel: '新开一局' })
   form.append(h('h3', { textContent: '新开一局' }))
-  if (chats && !chats.length) {
-    form.append(h('p', { className: 'muted', textContent: '你还不在任何聊天里：先建一个群，或者和你的 agent 开一个私聊。' }))
-    return form
-  }
   const language = h('select', { name: 'lang' }, Object.entries(LANGS).map(([value, label]) => h('option', { value, textContent: label, selected: value === defaultLang() })))
   const level = h('select', { name: 'difficulty' },
     h('option', { value: '', textContent: '全部难度' }),
@@ -171,25 +153,7 @@ function newRoundForm(puzzles, chats = null) {
     go.disabled = !agents.length
   }
   drawHosts()
-  // The App's own page: the chat to play in, last spoken first, and its agents as hosts.
-  const chatPick = chats && h('select', { name: 'chat' }, chats.map((c) => h('option', { value: c.id, textContent: c.kind === 'dm' ? `和 ${c.name} 的私聊` : c.name })))
-  if (chatPick) {
-    const loadHosts = async () => {
-      chatId = chatPick.value
-      agents = []
-      drawHosts()
-      try {
-        agents = (await window.gugu.chats.members({ chat: chatId })).members.filter((m) => m.kind === 'agent')
-      } catch (e) {
-        fail('读不到这个聊天的成员', e)
-      }
-      if (chatId === chatPick.value) drawHosts()
-    }
-    chatPick.onchange = loadHosts
-    loadHosts()
-  }
   form.append(...kids([
-    chatPick ? h('label', {}, '在哪个聊天里', chatPick) : null,
     h('div', { className: 'row' }, h('label', {}, '语言', language), h('label', {}, '难度', level)),
     h('label', {}, '题目', pick),
     h('label', {}, '主持人', hostPick),
@@ -204,7 +168,7 @@ function newRoundForm(puzzles, chats = null) {
       const shown = shownNow()
       const puzzle = pick.value ? puzzles.find((p) => p.id === pick.value) : shown[Math.floor(Math.random() * shown.length)]
       if (!puzzle) throw new Error('没有这个难度的题')
-      await startRound(puzzle, hostPick.value, chatId)
+      await startRound(puzzle, hostPick.value)
     } catch (e) {
       fail('没开成', e)
     } finally {
@@ -214,15 +178,14 @@ function newRoundForm(puzzles, chats = null) {
   return form
 }
 
-/** The round file in that chat, its host woken; it opens here in a chat, and in its chat from the App's own page. */
-async function startRound(puzzle, hostId, chatId) {
+/** The round file in this chat, its host woken; it opens here. */
+async function startRound(puzzle, hostId) {
   const at = Date.now()
   const d = new Date(at)
   const stamp = `${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`
-  const entry = await window.gugu.files.create({ chat: chatId, name: `${puzzle.title} ${stamp}${FILE_SUFFIX}` }, newRound({ puzzle, host: hostId, at }))
+  const entry = await window.gugu.files.create({ chat: ctx.chat.id, name: `${puzzle.title} ${stamp}${FILE_SUFFIX}` }, newRound({ puzzle, host: hostId, at }))
   await window.gugu.send(hostId, `请主持这局海龟汤「${puzzle.title}」。`, { refs: [{ file: entry }] })
-  if (ctx.chat) await openRound(entry)
-  else await window.gugu.files.openWith(entry)
+  await openRound(entry)
 }
 
 // ── a round ──────────────────────────────────────────────────────────────────────────────────────────────────────

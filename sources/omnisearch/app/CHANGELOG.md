@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.12
+
+- Declare desktop support for the human interface (App API 12).
+
+## 0.2.11
+
+- Add promotional artwork as the first market image; preserve the existing screenshots.
+
+## 0.2.10
+
+Report the localized settings title to the host tab when the page opens or its language changes.
+
+## 0.2.9
+
+市场上名字下面加一句副标题，产品页加三张真实使用截图；App 协议版本改为 8（只发给支持副标题的咕咕）。
+
 ## 0.2.8
 
 agent 读网页时不用再选读取方式，直接读到正文；只有读整个网站（crawl）或列出网站的网址（map）时才指定方式。传了别的方式会直接提示正确用法，不再落到容易超时的 AI 抽取。
