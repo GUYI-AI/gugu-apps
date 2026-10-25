@@ -2,7 +2,8 @@
 // 咕咕办公自己的一页(home.js):画在一个群里(getContext().chat,群右栏)时先是这个群的页 —— 列本群文件夹里的文件、
 // 搜本群,一枚「所有群」切回跨群的最近打开与搜索;本群没有这类文件时「让 agent 做一份」把草稿放进本群输入框;
 // 换到另一个群(onContextChanged 整份替换)就画那个群;画在没有群的地方(左栏)照旧是最近打开。
-// 运行时是假的(getContext / onContextChanged / files.list / recent / search / openWith / compose)。
+// 有 files:write 时「新建演示稿 / 新建表格」在本群文件夹里放一份 App 自带的空白文件(名字不撞本群已有的),再打开它。
+// 运行时是假的(getContext / onContextChanged / files.list / recent / search / upload / openWith / compose)。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -22,7 +23,7 @@ const folders: Record<string, ReturnType<typeof entryOf>[]> = {
 }
 const recent = [folders['group-b'][0], folders['group-a'][0]]
 
-const ctxOf = (chat: typeof A | null) => ({ ...(chat ? { chat } : {}), locale: 'zh-CN', capabilities: ['files:read', 'agents:tools'], layout: { visible: true, width: 500, height: 800, fullscreen: false } })
+const ctxOf = (chat: typeof A | null, capabilities = ['files:read', 'agents:tools']) => ({ ...(chat ? { chat } : {}), locale: 'zh-CN', capabilities, layout: { visible: true, width: 500, height: 800, fullscreen: false } })
 let handTo: (ctx: unknown) => void = () => {}
 const gugu = {
   getContext: vi.fn(async () => ctxOf(A)),
@@ -36,8 +37,12 @@ const gugu = {
     recent: vi.fn(async () => recent),
     search: vi.fn(async () => [folders['group-b'][0]]),
     openWith: vi.fn(async () => {}),
+    upload: vi.fn(async (_place: unknown, file: File) => [entryOf('new', file.name, 'group-a', 'A群', '2026-10-25T12:00:00Z')]),
   },
 }
+const fetched: string[] = []
+/** 「新建」 names a file by the minute it was made: the case pins the date (only Date is faked, the waits still run). */
+const stamp = () => '10-25 1407'
 
 const $ = (id: string) => document.getElementById(id) as HTMLElement
 const until = (check: () => void) => vi.waitFor(check, { timeout: 15000 })
@@ -52,7 +57,10 @@ const search = (text: string) => {
 beforeAll(async () => {
   const html = readFileSync(resolve(appDir, 'home.html'), 'utf8')
   document.body.innerHTML = new DOMParser().parseFromString(html, 'text/html').body.innerHTML
-  Object.assign(globalThis, { gugu })
+  Object.assign(globalThis, { gugu, fetch: vi.fn(async (url: URL) => {
+    fetched.push(String(url))
+    return { arrayBuffer: async () => readFileSync(resolve(appDir, String(url).slice(String(url).lastIndexOf('/') + 1))).buffer }
+  }) })
   Object.assign(window, { gugu })
   // @ts-expect-error — 内置 App 是不经构建的纯 ES module,没有类型;运行时 import 可用。
   await import('../app/home.js')
@@ -121,6 +129,38 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     })
     ask.click()
     expect(gugu.compose).toHaveBeenCalledWith('用咕咕办公做一份演示稿，放进本群文件夹：', { chat: 'group-e' })
+  })
+
+  test('没有 files:write:不给「新建」', async () => {
+    handTo(ctxOf(A))
+    await until(() => expect($('files-title').textContent).toBe('A群'))
+    expect($('create').hidden).toBe(true)
+  })
+
+  test('有 files:write:「新建演示稿」把 App 自带的空白演示稿放进本群文件夹,名字不撞已有的,放好就打开;切到「所有群」时不给', async () => {
+    const WRITE = ['files:read', 'files:write', 'agents:tools']
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 25, 14, 7))
+    folders['group-a'].push(entryOf('a4', `未命名演示稿 ${stamp()}.pptx`, 'group-a', 'A群', '2026-10-25T08:00:00Z'))
+    handTo(ctxOf(A, WRITE))
+    await until(() => expect($('create').hidden).toBe(false))
+    await until(() => expect(names()).toContain(`未命名演示稿 ${stamp()}.pptx`))
+    expect([...$('create').querySelectorAll('button')].map((b) => b.textContent)).toEqual(['新建演示稿', '新建表格'])
+    ;($('create').querySelector('[data-create="pptx"]') as HTMLButtonElement).click()
+    await until(() => expect(gugu.files.openWith).toHaveBeenCalled())
+    expect(fetched.at(-1)).toMatch(/\/blank\.pptx$/)
+    const [place, file] = gugu.files.upload.mock.calls.at(-1)!
+    expect(place).toEqual({ chat: 'group-a' })
+    expect(file.name).toBe(`未命名演示稿 ${stamp()} 2.pptx`)
+    expect(file.type).toBe('application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(new Uint8Array(readFileSync(resolve(appDir, 'blank.pptx'))))
+    expect(gugu.files.openWith).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'new', name: file.name }))
+    ;($('create').querySelector('[data-create="xlsx"]') as HTMLButtonElement).click()
+    await until(() => expect(gugu.files.upload.mock.calls.at(-1)![1].name).toBe(`未命名表格 ${stamp()}.xlsx`))
+    folders['group-a'].pop()
+    scopeTab('everywhere').click()
+    await until(() => expect($('create').hidden).toBe(true))
+    vi.useRealTimers()
   })
 
   test('挪到没有群的地方(左栏):没有「本群/所有群」,照旧是最近打开和最近打开过的群', async () => {

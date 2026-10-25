@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.8
+
+- Opened in a chat, Gugu Office's own page makes a blank deck (one empty 16:9 slide) or workbook (one empty sheet) in the chat's folder with 「新建演示稿 / 新建表格」 and opens it; the name says when it was made and never takes one already in the folder. It asks for `files:write` to put the file there.
+
 ## 0.2.7
 
 - Opened in a chat (its panel), Gugu Office's own page is that chat's: it lists and searches the chat's decks, workbooks and markdown, and one tab switches to every chat (opened lately, and a search over all of them). A chat with none of the kind picked offers 「让 agent 做一份」: a draft in that chat's composer. Moved to another chat, the page follows it. Opened from the rail, it is as before.
