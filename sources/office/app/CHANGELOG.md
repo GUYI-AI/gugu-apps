@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- A deck shows its first three slides as soon as they are drawn; the rest are drawn right after, instead of waiting for every slide before the deck appears.
+
 ## 0.2.4
 
 - Declare desktop and phone support for the human interface (App API 12).
