@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6
+
+- The skill also applies to an Office file received as a chat attachment (every attachment is a file of the chat's folder), shows a saved version in the chat with message_send_file `file`, and sends no converted copy beside it.
+
 ## 0.2.5
 
 - A deck shows its first three slides as soon as they are drawn; the rest are drawn right after, instead of waiting for every slide before the deck appears.
