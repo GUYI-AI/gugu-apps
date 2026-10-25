@@ -16,8 +16,8 @@
     }
   },
   "author": "咕咕",
-  "version": "1.1.0",
-  "apiVersion": 14,
+  "version": "1.1.1",
+  "apiVersion": 15,
   "platforms": [
     "desktop",
     "phone"
