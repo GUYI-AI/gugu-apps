@@ -1,5 +1,9 @@
 # 论文共读
 
+## 0.3.7
+
+- Hand passages to a composer or a new task through the unified dispatch API (App API 15).
+
 ## 0.3.6
 
 - Declare desktop and phone support for the human interface (App API 12).
