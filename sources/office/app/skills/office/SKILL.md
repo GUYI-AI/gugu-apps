@@ -1,6 +1,6 @@
 ---
 name: office
-description: "Before reading or changing an Office file in a chat's folder (群文件夹), a .pptx or .xlsx: download it, read and change it with this skill's script for its kind, save it back as the same file's next version."
+description: "Before reading or changing an Office file in a chat's folder (群文件夹), a .pptx or .xlsx — every attachment in a chat is one: download it, read and change it with this skill's script for its kind, save it back as the same file's next version."
 ---
 
 # Office files in a chat's folder (咕咕办公)
@@ -15,7 +15,8 @@ When you save a new version, the file they have open shows it.
 2. Read and change it with the script for its kind, in your shell: `gugu-node <this folder>/scripts/pptx.mjs …`
    (pptx.md says how), `gugu-node <this folder>/scripts/xlsx.mjs …` (xlsx.md). `gugu-node` is gugu's own Node, on
    your PATH; where there is none, `node` 22.2 or later.
-3. Save it back (below) as the same file's next version — never a new attachment.
+3. Save it back (below) as the same file's next version — never a new attachment, and no converted copy (a PDF) beside
+   it: people open the file itself.
 4. Say in the chat what you changed: by slide and shape, by cell address.
 
 Another tool (python-pptx, openpyxl, say) may do it too: pptx.md and xlsx.md say what each keeps.
@@ -23,9 +24,12 @@ Another tool (python-pptx, openpyxl, say) may do it too: pptx.md and xlsx.md say
 ## Download and save back
 
 - Download: `workspace__read({ item_id, save: true })` saves the whole file on this computer and gives `saved_to` (its
-  path) and `version` N. `item_id` is in the pill's link, or `workspace__list({ chat_id })` gives it. That folder
+  path) and `version` N. `item_id` is in the pill's link or in the attachment's `gugu-file://<item_id>?v=N` (its delivery, message_history,
+  message_download_file), or `workspace__list({ chat_id })` gives it. That folder
   is yours alone (one per agent, file and version): change the file there, in place, and keep your other files of this
   change beside it — the current directory is shared with other agents.
 - Save back: `workspace__edit({ item_id, path, expected_version: N })`: the file at `path` becomes its next version.
+  To show it in the chat as well, one call does both instead: `message_send_file({ chat_id, file: "gugu-file://<item_id>?v=N",
+  file_path: path })` — the card shows the new version. A version already saved is shown with `file` alone.
 - Refused because someone saved a newer one since: read it again and make your change on that (the same edits apply
   again; a shape they changed is refused, read it again).
