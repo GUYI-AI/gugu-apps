@@ -2,7 +2,8 @@
 // 咕咕办公自己的一页(home.js):画在一个群里(getContext().chat,群右栏)时先是这个群的页 —— 列本群文件夹里的文件、
 // 搜本群,一枚「所有群」切回跨群的最近打开与搜索;本群没有这类文件时「让 agent 做一份」把草稿放进本群输入框;
 // 换到另一个群(onContextChanged 整份替换)就画那个群;画在没有群的地方(左栏)照旧是最近打开。
-// 有 files:write 时「新建演示稿 / 新建表格」在本群文件夹里放一份 App 自带的空白文件(名字不撞本群已有的),再打开它。
+// 有 files:write 时「新建」(一行里的按钮与它的菜单,宽页面与空群里是卡片)在本群文件夹里放一份 App 自带的空白文件
+// (名字不撞本群已有的),再打开它。页面照 Office 首页排:一行搜索 + 新建,列表头里是「本群 / 所有群」与类型。
 // 运行时是假的(getContext / onContextChanged / files.list / recent / search / upload / openWith / compose)。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -75,14 +76,14 @@ beforeEach(() => {
 })
 
 describe('咕咕办公自己的一页 · 画在群里', () => {
-  test('从群右栏打开:列本群的演示稿和表格(新改的在前),标题是群名;「本群 · A群」选中,不列最近打开过的群', async () => {
+  test('从群右栏打开:列本群的演示稿和表格(新改的在前);列表头里「本群」选中、不另写标题,不列最近打开过的群', async () => {
     await until(() => expect(names()).toEqual(['预算.xlsx', '季度汇报.pptx']))
-    expect($('files-title').textContent).toBe('A群')
+    expect($('files-title').textContent).toBe('')
     expect($('scope').hidden).toBe(false)
-    expect(scopeTab('here').textContent).toBe('本群 · A群')
+    expect(scopeTab('here').textContent).toBe('本群')
     expect(scopeTab('here').getAttribute('aria-selected')).toBe('true')
     expect(($('query') as HTMLInputElement).placeholder).toBe('搜索本群文件')
-    expect($('groups').hidden).toBe(true)
+    expect($('group-pick').hidden).toBe(true)
   })
 
   test('在本群里搜:按名字筛本群的文件,不去搜所有群', async () => {
@@ -100,7 +101,16 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     await until(() => expect(names()).toEqual(['产品路线.pptx', '季度汇报.pptx']))
     expect(scopeTab('everywhere').getAttribute('aria-selected')).toBe('true')
     expect(($('query') as HTMLInputElement).placeholder).toBe('搜索所有群文件')
-    expect($('groups').hidden).toBe(false)
+    expect($('group-pick').hidden).toBe(false)
+    const group = $('group') as HTMLSelectElement
+    expect([...group.options].map((o) => o.textContent)).toEqual(['所有群', 'B群', 'A群'])
+    group.value = 'group-b'
+    group.dispatchEvent(new Event('change'))
+    await until(() => expect(names()).toEqual(['产品路线.pptx']))
+    expect($('files-title').textContent).toBe('B群')
+    group.value = ''
+    group.dispatchEvent(new Event('change'))
+    await until(() => expect(names()).toEqual(['产品路线.pptx', '季度汇报.pptx']))
     search('路线')
     await until(() => expect(gugu.files.search).toHaveBeenCalled())
     search('')
@@ -113,8 +123,7 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     await until(() => expect(gugu.files.recent).toHaveBeenCalled())
     handTo(ctxOf(B))
     await until(() => expect(names()).toEqual(['产品路线.pptx']))
-    expect($('files-title').textContent).toBe('B群')
-    expect(scopeTab('here').textContent).toBe('本群 · B群')
+    expect(scopeTab('here').textContent).toBe('本群')
     expect(scopeTab('here').getAttribute('aria-selected')).toBe('true')
   })
 
@@ -122,7 +131,10 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     handTo(ctxOf(EMPTY))
     await until(() => expect($('empty').hidden).toBe(false))
     expect($('empty').textContent).toContain('本群文件夹里还没有这类文件')
-    ;[...$('kinds').querySelectorAll('button')].find((b) => b.textContent === '演示稿')!.click()
+    const kind = $('kind') as HTMLSelectElement
+    expect([...kind.options].map((o) => o.textContent)).toEqual(['常用', '演示稿', '表格', 'Markdown', '全部'])
+    kind.value = 'pptx'
+    kind.dispatchEvent(new Event('change'))
     const ask = await vi.waitFor(() => {
       const button = $('empty').querySelector('[data-ask]') as HTMLButtonElement | null
       expect(button).not.toBeNull()
@@ -134,20 +146,27 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
 
   test('没有 files:write:不给「新建」', async () => {
     handTo(ctxOf(A))
-    await until(() => expect($('files-title').textContent).toBe('A群'))
-    expect($('create').hidden).toBe(true)
+    await until(() => expect(names()).toContain('季度汇报.pptx'))
+    expect($('new').hidden).toBe(true)
+    expect($('blanks').hidden).toBe(true)
   })
 
-  test('有 files:write:「新建演示稿」把 App 自带的空白演示稿放进本群文件夹,名字不撞已有的,放好就打开;切到「所有群」时不给', async () => {
+  test('有 files:write:「新建」菜单里的空白演示稿放进本群文件夹,名字不撞已有的,放好就打开;卡片同样;切到「所有群」时不给', async () => {
     const WRITE = ['files:read', 'files:write', 'agents:tools']
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 9, 25, 14, 7))
     folders['group-a'].push(entryOf('a4', `未命名演示稿 ${stamp()}.pptx`, 'group-a', 'A群', '2026-10-25T08:00:00Z'))
     handTo(ctxOf(A, WRITE))
-    await until(() => expect($('create').hidden).toBe(false))
+    await until(() => expect($('new').hidden).toBe(false))
     await until(() => expect(names()).toContain(`未命名演示稿 ${stamp()}.pptx`))
-    expect([...$('create').querySelectorAll('button')].map((b) => b.textContent)).toEqual(['新建演示稿', '新建表格'])
+    expect($('new').textContent).toBe('新建')
+    expect($('create').hidden).toBe(true)
+    $('new').click()
+    expect($('create').hidden).toBe(false)
+    expect([...$('create').querySelectorAll('button')].map((b) => b.textContent)).toEqual(['空白演示稿', '空白表格'])
+    expect([...$('blanks').querySelectorAll('button')].map((b) => b.textContent)).toEqual(['空白演示稿', '空白表格'])
     ;($('create').querySelector('[data-create="pptx"]') as HTMLButtonElement).click()
+    expect($('create').hidden).toBe(true)
     await until(() => expect(gugu.files.openWith).toHaveBeenCalled())
     expect(fetched.at(-1)).toMatch(/\/blank\.pptx$/)
     const [place, file] = gugu.files.upload.mock.calls.at(-1)!
@@ -156,18 +175,29 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     expect(file.type).toBe('application/vnd.openxmlformats-officedocument.presentationml.presentation')
     expect(new Uint8Array(await file.arrayBuffer())).toEqual(new Uint8Array(readFileSync(resolve(appDir, 'blank.pptx'))))
     expect(gugu.files.openWith).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'new', name: file.name }))
-    ;($('create').querySelector('[data-create="xlsx"]') as HTMLButtonElement).click()
+    ;($('blanks').querySelector('[data-create="xlsx"]') as HTMLButtonElement).click()
     await until(() => expect(gugu.files.upload.mock.calls.at(-1)![1].name).toBe(`未命名表格 ${stamp()}.xlsx`))
     folders['group-a'].pop()
     scopeTab('everywhere').click()
-    await until(() => expect($('create').hidden).toBe(true))
+    await until(() => expect($('new').hidden).toBe(true))
+    expect($('blanks').hidden).toBe(true)
     vi.useRealTimers()
+  })
+
+  test('空群、有 files:write:空白卡片就是开头(窄页面也给),说「从一份空白文件开始」', async () => {
+    handTo(ctxOf(EMPTY, ['files:read', 'files:write', 'agents:tools']))
+    await until(() => expect($('empty').hidden).toBe(false))
+    expect(document.body.classList.contains('empty-here')).toBe(true)
+    expect($('blanks').hidden).toBe(false)
+    expect($('empty').textContent).toContain('从一份空白文件开始')
+    handTo(ctxOf(A, ['files:read', 'files:write', 'agents:tools']))
+    await until(() => expect(document.body.classList.contains('empty-here')).toBe(false))
   })
 
   test('挪到没有群的地方(左栏):没有「本群/所有群」,照旧是最近打开和最近打开过的群', async () => {
     handTo(ctxOf(null))
     await until(() => expect($('scope').hidden).toBe(true))
-    await until(() => expect($('groups').hidden).toBe(false))
+    await until(() => expect($('group-pick').hidden).toBe(false))
     expect($('files-title').textContent).toBe('最近打开')
     expect(($('query') as HTMLInputElement).placeholder).toBe('搜索所有群文件')
   })

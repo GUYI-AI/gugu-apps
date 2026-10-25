@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.9
+
+- Gugu Office's own page is laid out as Office's start page: one bar at the top (the search, and 「新建」 with its menu of blank files), and the list below it, its head saying what it lists (本群 / 所有群, or which chat) and which kind it keeps. A chat with nothing yet, and a wide page, show the blank deck and workbook as cards to start from.
+
 ## 0.2.8
 
 - Opened in a chat, Gugu Office's own page makes a blank deck (one empty 16:9 slide) or workbook (one empty sheet) in the chat's folder with 「新建演示稿 / 新建表格」 and opens it; the name says when it was made and never takes one already in the folder. It asks for `files:write` to put the file there.
