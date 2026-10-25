@@ -1,12 +1,66 @@
-/* The home page: gugu's look is on the page already (semantic HTML, .row / .stack / .list); only the layout is here. */
+/* The home page: gugu's look is on the page already (semantic HTML, .row / .stack / .list); only the layout is here.
+   Plain colours only (no color-mix / oklch, no popover): the phone's WebView 113 draws this page too. */
 html, body { height: 100%; }
 body { margin: 0; display: flex; flex-direction: column; }
-header { flex: none; padding: var(--em-spacing-lg) var(--em-spacing-lg) var(--em-spacing-sm); gap: var(--em-spacing-sm); }
-header input[type="search"] { width: 100%; }
+
+/* The one bar: the search takes the room, 「新建」 sits at its end. */
+.bar { flex: none; display: flex; align-items: center; gap: var(--em-spacing-sm); padding: var(--em-spacing-md) var(--em-spacing-lg); }
+.search { position: relative; flex: 1; min-width: 0; margin: 0; }
+.search gugu-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--em-foreground-muted); pointer-events: none; }
+.search input { width: 100%; padding-left: 32px; }
+.new { position: relative; flex: none; }
+#new { display: inline-flex; align-items: center; gap: 4px; }
+#new[hidden] { display: none; }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 2; min-width: 168px; padding: 4px;
+  border-radius: var(--em-radius-surface); background: var(--em-background-1); box-shadow: var(--em-shadow-lift);
+}
+.menu[hidden] { display: none; }
+.menu button { display: flex; width: 100%; align-items: center; gap: var(--em-spacing-sm); border: 0; background: none; justify-content: flex-start; }
+.menu img { width: 20px; height: 20px; }
+
 main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) var(--em-spacing-xl); }
-.heading { align-items: center; gap: var(--em-spacing-xs); }
-#group-list { gap: var(--em-spacing-xs); }
-.list img.kind { width: 20px; height: 20px; flex: none; }
+
+/* The list's own head: what is listed (本群 / 所有群, or its title) on the left, the kind kept on the right. */
+.list-head { display: flex; align-items: center; gap: var(--em-spacing-xs); min-height: 32px; margin: var(--em-spacing-xs) 0; }
+.list-head #scope { margin: 0; flex-wrap: nowrap; min-width: 0; }
+.list-head #scope [role='tab'] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-head h5 { flex: 1; margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick { position: relative; margin: 0; flex: none; display: flex; align-items: center; }
+.pick[hidden] { display: none; }
+.pick gugu-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--em-foreground-muted); pointer-events: none; }
+.pick select { width: auto; max-width: 160px; padding-left: 28px; min-height: 30px; border-color: transparent; background-color: transparent; }
+
+.list img.kind-icon { width: 20px; height: 20px; flex: none; }
 .list .where { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#groups { margin-bottom: var(--em-spacing-lg); }
-#create { gap: var(--em-spacing-xs); }
+
+/* Blank files as cards: a page of a deck, a grid of a workbook, the name under it. */
+#blanks { display: flex; gap: var(--em-spacing-md); margin: var(--em-spacing-sm) 0 var(--em-spacing-lg); }
+#blanks[hidden] { display: none; }
+.blank { display: flex; flex-direction: column; align-items: flex-start; gap: var(--em-spacing-xs); padding: 0; border: 0; background: none; cursor: pointer; }
+.blank .face {
+  width: 152px; height: 86px; border-radius: var(--em-radius-control); border: 1px solid var(--em-border-1); background: var(--em-color-white);
+  display: flex; align-items: center; justify-content: center;
+}
+.blank:hover .face { border-color: var(--em-accent-9); }
+.blank .face img { width: 28px; height: 28px; }
+.blank[data-create='xlsx'] .face {
+  background-color: var(--em-color-white);
+  background-image: linear-gradient(#e3e3e3 1px, transparent 1px), linear-gradient(90deg, #e3e3e3 1px, transparent 1px);
+  background-size: 100% 14px, 30px 100%;
+}
+.blank span { font-size: var(--em-font-caption); color: var(--em-foreground); }
+
+/* Narrow (a chat's panel, the phone): 「新建」 is the bar's button; the cards only when the chat has nothing yet. */
+@media (max-width: 639px) {
+  body:not(.empty-here) #blanks { display: none; }
+  .blank .face { width: 128px; height: 72px; }
+}
+/* Wide (the rail, a full window): the cards are the way to start, as on Office's start page; the bar's button goes. */
+@media (min-width: 640px) {
+  .bar { padding: var(--em-spacing-lg) var(--em-spacing-xl) var(--em-spacing-md); }
+  .search { max-width: 640px; margin: 0 auto; }
+  main { padding: 0 var(--em-spacing-xl) var(--em-spacing-xl); }
+  body.has-blanks #new { display: none; }
+}
+body.empty-here #new { display: none; }

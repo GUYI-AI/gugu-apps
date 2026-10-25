@@ -7,27 +7,27 @@
 <link rel="stylesheet" href="home.css" />
 </head>
 <body>
-  <header class="stack">
-    <div id="scope" role="tablist" hidden></div>
-    <input id="query" type="search" autocomplete="off" />
-    <div id="kinds" role="tablist"></div>
-    <div id="create" class="row" hidden></div>
+  <!-- One bar, as Office's start page has: the search, and 「新建」 where a blank file can be made (a page drawn for a chat). -->
+  <header class="bar">
+    <label class="search"><gugu-icon name="search"></gugu-icon><input id="query" type="search" autocomplete="off" /></label>
+    <div class="new">
+      <button id="new" type="button" class="primary" aria-haspopup="menu" aria-expanded="false" hidden><gugu-icon name="plus"></gugu-icon><span id="new-label"></span></button>
+      <div id="create" class="menu" role="menu" hidden></div>
+    </div>
   </header>
   <main id="main">
     <p id="note" role="status" class="muted" hidden></p>
     <p id="error" role="alert" hidden></p>
-    <section id="groups" hidden>
-      <h5 id="groups-title"></h5>
-      <div id="group-list" class="row"></div>
-    </section>
-    <section>
-      <div class="row heading">
-        <button id="back" type="button" hidden><gugu-icon name="chevron-left"></gugu-icon></button>
-        <h5 id="files-title"></h5>
-      </div>
-      <ul id="files" class="list"></ul>
-      <div id="empty" hidden></div>
-    </section>
+    <!-- Blank files to start from, as cards (Office's 「新建」 row): on a wide page, and in a chat with nothing yet. -->
+    <section id="blanks" hidden></section>
+    <div class="list-head">
+      <div id="scope" role="tablist" hidden></div>
+      <h5 id="files-title"></h5>
+      <label id="group-pick" class="pick" hidden><gugu-icon name="users"></gugu-icon><select id="group"></select></label>
+      <label class="pick"><gugu-icon name="list-filter"></gugu-icon><select id="kind"></select></label>
+    </div>
+    <ul id="files" class="list"></ul>
+    <div id="empty" hidden></div>
   </main>
   <script type="module" src="home.js"></script>
 </body>

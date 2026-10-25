@@ -1,6 +1,7 @@
 /* global gugu */ // window.gugu: the platform runtime puts it on the page before this module runs.
 // 咕咕办公's own page (the `home` tab: it claims no file, so it is the App's page — the desktop's rail, the phone's 「App」
-// page, 「在本群打开」 in a chat). Drawn for a chat (`getContext().chat`: its panel), it is that chat's page first: its
+// page, 「在本群打开」 in a chat). Laid out as Office's start page is: one bar (the search, and 「新建」), blank files as
+// cards where there is room, then the list — what it lists and which kind it keeps said in the list's own head. Drawn for a chat (`getContext().chat`: its panel), it is that chat's page first: its
 // files and a search in them, switched to every chat by one tab; in a chat with none, a draft in its composer asks an agent
 // for one, and a blank deck or workbook is made there in one press. Drawn for no chat (the rail): the files this person opened last across all their chats, the chats they were in,
 // and a search over every chat's files — decks, workbooks and markdown by default. A file opens where it lives, with the App the
@@ -19,11 +20,14 @@ const STRINGS = {
     everywhere: '所有群',
     noneHere: '本群文件夹里还没有这类文件',
     noneHereHint: '让 agent 做一份，做好的文件放在本群文件夹里。',
+    noneHereStart: '从一份空白文件开始，或者让 agent 做一份。',
     askAgent: '让 agent 做一份',
     asks: { office: '用咕咕办公做一份演示稿或表格，放进本群文件夹：', pptx: '用咕咕办公做一份演示稿，放进本群文件夹：', xlsx: '用咕咕办公做一份表格，放进本群文件夹：', md: '写一份 markdown 文档，放进本群文件夹：', all: '用咕咕办公做一份演示稿或表格，放进本群文件夹：' },
     kinds: { office: '常用', pptx: '演示稿', xlsx: '表格', md: 'Markdown', all: '全部' },
+    kind: '类型',
     recent: '最近打开',
     groups: '最近打开过的群',
+    allChats: '所有群',
     results: '搜索结果',
     noRecent: '还没有打开过文件',
     noRecentHint: '在群文件夹里打开的演示稿、表格和 markdown 会出现在这里，手机和电脑上是同一份。',
@@ -34,8 +38,8 @@ const STRINGS = {
     oldGugu: '这个版本的咕咕还不能列出全部群的文件，请更新咕咕。',
     failed: '出错了：{e}',
     dm: '私聊',
-    back: '返回最近',
-    create: { pptx: '新建演示稿', xlsx: '新建表格' },
+    new: '新建',
+    create: { pptx: '空白演示稿', xlsx: '空白表格' },
     untitled: { pptx: '未命名演示稿', xlsx: '未命名表格' },
   },
   en: {
@@ -46,11 +50,14 @@ const STRINGS = {
     everywhere: 'All chats',
     noneHere: 'No such file in this chat\'s folder yet',
     noneHereHint: 'Ask an agent for one: what it makes is kept in this chat\'s folder.',
+    noneHereStart: 'Start from a blank file, or ask an agent for one.',
     askAgent: 'Ask an agent for one',
     asks: { office: 'With Gugu Office, make a deck or a workbook in this chat\'s folder: ', pptx: 'With Gugu Office, make a deck in this chat\'s folder: ', xlsx: 'With Gugu Office, make a workbook in this chat\'s folder: ', md: 'Write a markdown document in this chat\'s folder: ', all: 'With Gugu Office, make a deck or a workbook in this chat\'s folder: ' },
     kinds: { office: 'Usual', pptx: 'Decks', xlsx: 'Workbooks', md: 'Markdown', all: 'All' },
+    kind: 'Kind',
     recent: 'Opened lately',
     groups: 'Chats opened lately',
+    allChats: 'All chats',
     results: 'Found',
     noRecent: 'No file opened yet',
     noRecentHint: 'Decks, workbooks and markdown opened from a chat\'s folder show here — the same on your phone and computer.',
@@ -61,8 +68,8 @@ const STRINGS = {
     oldGugu: 'This gugu cannot list every chat\'s files yet: update gugu.',
     failed: 'Something went wrong: {e}',
     dm: 'Private chat',
-    back: 'Back to lately',
-    create: { pptx: 'New deck', xlsx: 'New workbook' },
+    new: 'New',
+    create: { pptx: 'Blank deck', xlsx: 'Blank workbook' },
     untitled: { pptx: 'Untitled deck', xlsx: 'Untitled workbook' },
   },
 }
@@ -117,8 +124,7 @@ async function applyContext(ctx) {
     state.group = null
   }
   state.here = here
-  $('back').setAttribute('aria-label', state.t.back)
-  $('groups-title').textContent = state.t.groups
+  $('group').setAttribute('aria-label', state.t.groups)
   drawScope()
   drawKinds()
   state.able = false
@@ -145,7 +151,7 @@ function drawScope() {
   show('scope', state.here !== null)
   if (!state.here) return $('scope').replaceChildren()
   $('scope').replaceChildren(
-    ...[[false, `${state.t.here} · ${state.here.name}`], [true, state.t.everywhere]].map(([everywhere, text]) => {
+    ...[[false, state.t.here], [true, state.t.everywhere]].map(([everywhere, text]) => {
       const tab = Object.assign(document.createElement('button'), { type: 'button', textContent: text })
       tab.setAttribute('role', 'tab')
       tab.setAttribute('aria-selected', String(everywhere === state.everywhere))
@@ -162,16 +168,44 @@ function drawScope() {
   )
 }
 
-/** 「新建演示稿 / 新建表格」: on a page drawn for a chat, listing that chat's files, when this App may write them. */
+/**
+ * 「新建」: on a page drawn for a chat, listing that chat's files, when this App may write them — the bar's button and its
+ * menu (a narrow page), and the same choices as cards (a wide page, or a chat with nothing yet: home.css says which).
+ */
 function drawCreate() {
   const on = inHere() && state.writable
-  show('create', on)
-  $('create').replaceChildren(...(!on ? [] : Object.keys(BLANKS).map((kind) => {
-    const button = Object.assign(document.createElement('button'), { type: 'button', textContent: state.t.create[kind] })
+  const choice = (kind, className) => {
+    const button = Object.assign(document.createElement('button'), { type: 'button', className })
     button.dataset.create = kind
-    button.onclick = () => void createBlank(kind, button)
+    button.onclick = () => {
+      closeMenu()
+      void createBlank(kind, button)
+    }
     return button
+  }
+  show('new', on)
+  $('new-label').textContent = state.t.new
+  document.body.classList.toggle('has-blanks', on)
+  closeMenu()
+  $('create').replaceChildren(...(!on ? [] : Object.keys(BLANKS).map((kind) => {
+    const item = choice(kind, 'plain')
+    item.setAttribute('role', 'menuitem')
+    item.append(Object.assign(document.createElement('img'), { src: ICONS[`.${kind}`], alt: '' }), state.t.create[kind])
+    return item
   })))
+  show('blanks', on)
+  $('blanks').replaceChildren(...(!on ? [] : Object.keys(BLANKS).map((kind) => {
+    const card = choice(kind, 'blank')
+    const face = Object.assign(document.createElement('div'), { className: 'face' })
+    if (kind === 'pptx') face.append(Object.assign(document.createElement('img'), { src: ICONS['.pptx'], alt: '' }))
+    card.append(face, Object.assign(document.createElement('span'), { textContent: state.t.create[kind] }))
+    return card
+  })))
+}
+
+function closeMenu() {
+  show('create', false)
+  $('new').setAttribute('aria-expanded', 'false')
 }
 
 /**
@@ -200,20 +234,11 @@ async function createBlank(kind, button) {
   }
 }
 
+/** The kind kept, in the list's head: one choice, as a select (the phone opens its own picker for it). */
 function drawKinds() {
-  $('kinds').replaceChildren(
-    ...Object.keys(KINDS).map((kind) => {
-      const tab = Object.assign(document.createElement('button'), { type: 'button', textContent: state.t.kinds[kind] })
-      tab.setAttribute('role', 'tab')
-      tab.setAttribute('aria-selected', String(kind === state.kind))
-      tab.onclick = () => {
-        state.kind = kind
-        drawKinds()
-        void refresh()
-      }
-      return tab
-    }),
-  )
+  const select = $('kind')
+  select.setAttribute('aria-label', state.t.kind)
+  select.replaceChildren(...Object.keys(KINDS).map((kind) => Object.assign(document.createElement('option'), { value: kind, textContent: state.t.kinds[kind], selected: kind === state.kind })))
 }
 
 // ─── what is listed ─────────────────────────────────────────────────────────
@@ -238,49 +263,43 @@ async function refresh() {
       listed.sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))
       if (asked !== state.asked) return
       const rows = listed.map((entry) => ({ ...entry, chatName: here.name }))
-      if (state.query) drawFiles(state.t.results, rows, state.t.noResults, state.t.noResultsHint, false)
-      else drawFiles(here.name, rows, state.t.noneHere, state.t.noneHereHint, false, askAgent(here))
+      if (state.query) drawFiles('', rows, state.t.noResults, state.t.noResultsHint)
+      else drawFiles('', rows, state.t.noneHere, state.writable ? state.t.noneHereStart : state.t.noneHereHint, askAgent(here))
       return
     }
     if (state.query) {
       const found = await gugu.files.search({ query: state.query, ...(KINDS[state.kind] ? { suffixes: KINDS[state.kind] } : {}), limit: 100 })
-      if (asked === state.asked) drawFiles(state.t.results, found, state.t.noResults, state.t.noResultsHint, false)
+      if (asked === state.asked) drawFiles(state.t.results, found, state.t.noResults, state.t.noResultsHint)
       return
     }
     if (state.group) {
       const group = state.group
       const listed = (await gugu.files.list({ chat: group.chat })).filter(kept)
       listed.sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))
-      if (asked === state.asked) drawFiles(group.name, listed.map((entry) => ({ ...entry, chatName: group.name })), state.t.noFiles, '', true)
+      if (asked === state.asked) drawFiles(group.name, listed.map((entry) => ({ ...entry, chatName: group.name })), state.t.noFiles, '')
       return
     }
     const recent = await gugu.files.recent({ limit: 200 })
     if (asked !== state.asked) return
     state.recent = recent
-    drawGroups(recent)
-    drawFiles(state.t.recent, recent.filter(kept), state.t.noRecent, state.t.noRecentHint, false)
+    drawFiles(state.t.recent, recent.filter(kept), state.t.noRecent, state.t.noRecentHint)
   } catch (error) {
     if (asked === state.asked) sayError(error)
   }
 }
 
-/** The chats of the files opened last, the latest first: a chat is opened lately when a file in it was. */
-function drawGroups(recent) {
+/**
+ * Which chat's files, in the list's head beside the kind (every chat's opened lately, or one chat's): the chats of the files
+ * opened last, the latest first — a chat is opened lately when a file in it was. Not on a page listing its own chat's.
+ */
+function drawGroups() {
   const seen = new Map()
-  for (const entry of recent) if (!seen.has(entry.chat)) seen.set(entry.chat, entry.chatName || state.t.dm)
+  for (const entry of state.recent) if (!seen.has(entry.chat)) seen.set(entry.chat, entry.chatName || state.t.dm)
   const groups = [...seen].slice(0, 12)
-  show('groups', groups.length > 0 && !state.query && !state.group)
-  $('group-list').replaceChildren(
-    ...groups.map(([chat, name]) => {
-      const button = Object.assign(document.createElement('button'), { type: 'button', textContent: name })
-      button.dataset.chat = chat
-      button.onclick = () => {
-        state.group = { chat, name }
-        void refresh()
-      }
-      return button
-    }),
-  )
+  const select = $('group')
+  select.replaceChildren(...[['', state.t.allChats], ...groups].map(([chat, name]) =>
+    Object.assign(document.createElement('option'), { value: chat, textContent: name, selected: chat === (state.group?.chat ?? '') })))
+  show('group-pick', groups.length > 0 && !inHere() && !state.query)
 }
 
 /** A draft in the chat's own composer asking an agent for a file of the kind picked; the person sends it, or not. */
@@ -294,10 +313,9 @@ function askAgent(here) {
   return button
 }
 
-function drawFiles(title, entries, emptyTitle, emptyHint, inGroup, emptyAction = null) {
+function drawFiles(title, entries, emptyTitle, emptyHint, emptyAction = null) {
   $('files-title').textContent = title
-  show('back', inGroup)
-  show('groups', !inGroup && !inHere() && !state.query && $('group-list').childElementCount > 0)
+  drawGroups()
   $('files').replaceChildren(...entries.map(row))
   show('files', entries.length > 0)
   const empty = $('empty')
@@ -311,6 +329,8 @@ function drawFiles(title, entries, emptyTitle, emptyHint, inGroup, emptyAction =
     empty.append(box)
   }
   show('empty', entries.length === 0)
+  // A chat with nothing yet: the blank cards are the way to start, narrow page or not (home.css).
+  document.body.classList.toggle('empty-here', entries.length === 0 && inHere() && !state.query)
 }
 
 /** A file's row: what it is, where it is (its chat, its folder), when — opened, or changed. A click opens it where it lives. */
@@ -319,7 +339,7 @@ function row(entry) {
   li.tabIndex = 0
   li.dataset.item = entry.id
   const image = ICONS[suffixOf(entry)]
-  if (image) li.append(Object.assign(document.createElement('img'), { className: 'kind', src: image, alt: '' }))
+  if (image) li.append(Object.assign(document.createElement('img'), { className: 'kind-icon', src: image, alt: '' }))
   else {
     const icon = document.createElement('gugu-icon')
     icon.setAttribute('name', suffixOf(entry) === '.md' ? 'file-text' : 'file')
@@ -360,10 +380,27 @@ $('query').addEventListener('input', () => {
     void refresh()
   }, 250)
 })
-$('back').onclick = () => {
-  state.group = null
+$('kind').addEventListener('change', () => {
+  state.kind = $('kind').value
   void refresh()
+})
+$('new').onclick = (event) => {
+  event.stopPropagation()
+  const open = $('create').hidden
+  show('create', open)
+  $('new').setAttribute('aria-expanded', String(open))
 }
+document.addEventListener('click', (event) => {
+  if (!$('create').hidden && !$('create').contains(event.target)) closeMenu()
+})
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeMenu()
+})
+$('group').addEventListener('change', () => {
+  const chat = $('group').value
+  state.group = chat ? { chat, name: $('group').selectedOptions[0].textContent } : null
+  void refresh()
+})
 
 // Each context is the whole of where the page is now, never merged into the last one. Another chat (the tab moved), its new
 // name, another language or grant: drawn again for it. Back on screen (the person opened a file and came back), what was
