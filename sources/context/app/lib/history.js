@@ -17,12 +17,12 @@ export async function sessionIndex(host) {
 
 export async function observe(host, rows, { sample = 300, now = Date.now() } = {}) {
   if (!host?.sessions?.read) return { complete: false, reason: '宿主尚未提供上下文读数（需要 App API 17）', sessions: [], hot: null }
-  const selected = rows.toSorted((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+  const selected = rows.toSorted((a, b) => b.updatedAt - a.updatedAt)
   const observations = [], starts = [], unknownStarts = []
   for (let i = 0; i < selected.length; i++) {
     const row = selected[i]
     if (i < sample) observations.push({ ...row, ...await host.sessions.read({ source: row.source, filePath: row.filePath, view: 'context' }) })
-    if (Date.parse(row.updatedAt) >= now - 7 * DAY) {
+    if (row.updatedAt >= now - 7 * DAY) {
       const page = await host.sessions.read({ source: row.source, filePath: row.filePath, offset: 0, limit: 1 })
       const start = page.turns[0]?.createdAt
       if (start && Number.isFinite(Date.parse(start))) starts.push({ id: `${row.source}:${row.providerSessionId}`, source: row.source, at: start })
@@ -32,7 +32,7 @@ export async function observe(host, rows, { sample = 300, now = Date.now() } = {
   const hot = starts.filter((s) => Date.parse(s.at) >= now - 7 * DAY && Date.parse(s.at) <= now)
   return {
     complete: true, sessions: observations, sample: observations.length, total: rows.length,
-    since: selected[Math.min(selected.length, sample) - 1]?.updatedAt || null,
+    since: selected.length ? new Date(selected[Math.min(selected.length, sample) - 1].updatedAt).toISOString() : null,
     hot: unknownStarts.length ? null : hot.length, unknownStarts,
     hotTasks: hot.map((s) => s.id),
     sources: Object.fromEntries(['claude-code', 'codex'].map((source) => [source, hot.filter((s) => s.source === source).length])),
@@ -65,5 +65,7 @@ export function summarizeHistory(history, files, now = Date.now()) {
   const denominator = points.reduce((s, p) => s + (p.x - meanX) ** 2, 0)
   const growthPerDay = denominator ? points.reduce((s, p) => s + (p.x - meanX) * (p.y - meanY), 0) / denominator : null
   const sortedInitial = initial.toSorted((a, b) => a - b)
-  return { mentions, loaded, nested, growthPerDay, days: points.length, initialMedian: sortedInitial.length ? sortedInitial[Math.floor(sortedInitial.length / 2)] : null, now }
+  const middle = Math.floor(sortedInitial.length / 2)
+  const initialMedian = sortedInitial.length ? sortedInitial.length % 2 ? sortedInitial[middle] : (sortedInitial[middle - 1] + sortedInitial[middle]) / 2 : null
+  return { mentions, loaded, nested, growthPerDay, days: points.length, initialMedian, now }
 }

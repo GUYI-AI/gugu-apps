@@ -34,7 +34,7 @@ export function stats(bars, big = false) {
   const values = [
     ['热度', 'hot', hot.cells, hot.count === null ? '待计算' : `${hot.count} / 7天`, hot.count === null],
     ['健康', 'health', health.complete ? health.value : null, health.complete ? `${health.value}/10` : '未全测', !health.complete],
-    ['容量', 'capacity', capacity.cells, `${capacity.percent}%`, false],
+    ['容量', 'capacity', capacity.cells, capacity.percent === null ? '待计算' : `${capacity.percent}%`, capacity.percent === null],
   ]
   return el('dl', { class: 'px-stats' }, values.flatMap(([label, kind, cells, value, unknown]) => [el('dt', { class: 'px-label' }, label), el('dd', {}, bar(kind, cells, { big, unknown })), el('dd', { class: 'px-stat-value px-mono' }, value)]))
 }

@@ -5,7 +5,7 @@ export function tokens(text) {
   for (const run of s.match(/[一-鿿]+/g) || []) for (let i = 0; i < run.length - 1; i++) out.push(run.slice(i, i + 2))
   return out
 }
-const stop = new Set('the and for with not that this from are was but its into via when have has use then than only owner lane md how apply why'.split(' '))
+const stop = new Set('the and for with not that this from are was but its into via when have has use then than only owner lane md how apply why a about above after again against all also am an any as at be because been before being below between both by can could did do does doing down during each either else few further had he her here hers herself him himself his i if in is it itself just me more most much my myself nor of off on once or other our ours ourselves out over own same she should so some such their theirs them themselves there these they those through too under until up very we were what where which while who whom will would you your yours yourself yourselves'.split(' '))
 const count = (values) => { const m = new Map(); for (const v of values) m.set(v, (m.get(v) || 0) + 1); return m }
 const grams = (s, n) => { const t = s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''), out = new Set(); for (let i = 0; i <= t.length - n; i++) out.add(t.slice(i, i + n)); return out }
 
@@ -18,30 +18,31 @@ function inverted(vectors) {
 function literalDuplicates(docs) {
   const shingles = docs.map((f) => grams(f.body, 5)), frequency = new Map()
   for (const set of shingles) for (const gram of set) frequency.set(gram, (frequency.get(gram) || 0) + 1)
-  const posting = new Map(), result = [], n = docs.length
-  // Query a rare-first half-prefix against complete earlier sets. A Jaccard > .5 pair must share this prefix.
-  // The prefix match count also bounds the entire intersection, avoiding all-pairs body comparisons.
-  for (let a = 0; a < n; a++) {
-    const set = shingles[a], prefixLength = set.size - Math.ceil(set.size * .5) + 1
-    // Frequency buckets give the rare-first subset in linear time; no global or per-document shingle sort.
-    const buckets = Array(n + 1), sorted = []
-    for (const gram of set) { const count = frequency.get(gram); (buckets[count] ||= []).push(gram) }
-    for (const bucket of buckets) if (bucket) for (const gram of bucket) sorted.push(gram)
-    const matches = new Uint32Array(n)
-    for (let position = 0; position < Math.min(prefixLength, sorted.length); position++) {
-      for (const b of posting.get(sorted[position]) || []) matches[b]++
+  // One global rare-first order is required for exact prefix-prefix filtering.
+  const buckets = Array(docs.length + 1), ranks = new Map()
+  for (const [gram, count] of frequency) (buckets[count] ||= []).push(gram)
+  for (const bucket of buckets) if (bucket) for (const gram of bucket) ranks.set(gram, ranks.size)
+  const sets = shingles.map((set) => Uint32Array.from(set, (gram) => ranks.get(gram)).sort())
+  const posting = new Map(), result = []
+  for (const a of sets.map((_, i) => i).sort((a, b) => sets[a].length - sets[b].length || a - b)) {
+    const x = sets[a], prefix = x.length - Math.ceil(x.length * .5) + 1, candidates = new Set()
+    for (let i = 0; i < Math.min(prefix, x.length); i++) for (const b of posting.get(x[i]) || []) if (sets[b].length > x.length * .5) candidates.add(b)
+    for (const b of candidates) {
+      const y = sets[b], need = (x.length + y.length) / 3
+      let i = 0, j = 0, intersection = 0
+      while (i < x.length && j < y.length) {
+        if (intersection + Math.min(x.length - i, y.length - j) <= need) break
+        if (x[i] === y[j]) { intersection++; i++; j++ }
+        else if (x[i] < y[j]) i++
+        else j++
+      }
+      const jaccard = intersection / (x.length + y.length - intersection)
+      if (jaccard > .5) {
+        const first = Math.min(a, b), second = Math.max(a, b)
+        result.push({ a: docs[first].path, b: docs[second].path, jaccard, identical: normalize(docs[a].body) === normalize(docs[b].body) })
+      }
     }
-    for (let b = 0; b < a; b++) {
-      const overlap = matches[b]
-      if (!overlap || Math.min(set.size, shingles[b].size) / Math.max(set.size, shingles[b].size) <= .5) continue
-      const need = (set.size + shingles[b].size) / 3
-      let intersection = overlap, remaining = set.size - prefixLength
-      if (intersection + remaining <= need) continue
-      for (let i = prefixLength; i < sorted.length; i++) { if (shingles[b].has(sorted[i])) intersection++; if (intersection + --remaining <= need) break }
-      const jaccard = intersection / (set.size + shingles[b].size - intersection)
-      if (jaccard > .5) result.push({ a: docs[b].path, b: docs[a].path, jaccard, identical: normalize(docs[a].body) === normalize(docs[b].body) })
-    }
-    for (const gram of sorted) { if (!posting.has(gram)) posting.set(gram, []); posting.get(gram).push(a) }
+    for (let i = 0; i < Math.min(prefix, x.length); i++) { if (!posting.has(x[i])) posting.set(x[i], []); posting.get(x[i]).push(a) }
   }
   return result
 }
@@ -52,34 +53,19 @@ function scatteredRules(files, docs) {
   // Topic candidates use only the index the agent sees, never a hand-maintained topic vocabulary.
   // Split hyphenated identifiers so filenames do not become opaque, unique "keywords".
   const terms = indexed.map((f) => new Set(tokens(entries.filter((e) => e.target === f.file).map((e) => e.text.replace(/\]\([^)]*\)/g, ']').replace(/-/g, ' ')).join(' ')).filter((t) => !stop.has(t))))
-  const df = count(terms.flatMap((set) => [...set])), maximum = Math.max(3, Math.ceil(indexed.length * .3))
-  const vectors = terms.map((set) => new Map([...set].filter((term) => df.get(term) > 1 && df.get(term) <= maximum).map((term) => [term, 1])))
-  const overlap = new Map(), n = indexed.length
-  for (const [term, posting] of inverted(vectors)) for (let a = 0; a < posting.length; a++) for (let b = a + 1; b < posting.length; b++) {
-    const key = posting[a][0] * n + posting[b][0]
-    if (!overlap.has(key)) overlap.set(key, [])
-    overlap.get(key).push(term)
+  const df = count(terms.flatMap((set) => [...set])), maximum = Math.max(3, Math.min(8, Math.floor(indexed.length * .1)))
+  const groups = new Map()
+  // Anchor each candidate to a rare shared term; never transitively union topics.
+  // The frequency ceiling also bounds a cluster to at most eight index entries.
+  for (const [term, posting] of inverted(terms.map((set) => new Map([...set].map((term) => [term, 1]))))) {
+    if (stop.has(term) || df.get(term) < 3 || df.get(term) > maximum) continue
+    const members = posting.map(([i]) => indexed[i].path).sort(), key = members.join('\0')
+    if (!groups.has(key)) groups.set(key, { keywords: [], members })
+    groups.get(key).keywords.push(term)
   }
-  const neighbors = Array.from({ length: n }, () => [])
-  for (const [key, shared] of overlap) if (shared.length >= 2) {
-    const a = Math.floor(key / n), b = key % n
-    neighbors[a].push(b); neighbors[b].push(a)
-  }
-  const visited = new Set(), groups = []
-  for (let i = 0; i < n; i++) {
-    if (visited.has(i)) continue
-    const members = [], stack = [i], keywords = new Set()
-    visited.add(i)
-    while (stack.length) {
-      const a = stack.pop(); members.push(indexed[a].path)
-      for (const b of neighbors[a]) {
-        for (const term of overlap.get(Math.min(a, b) * n + Math.max(a, b))) keywords.add(term)
-        if (!visited.has(b)) { visited.add(b); stack.push(b) }
-      }
-    }
-    if (members.length >= 3) groups.push({ keywords: [...keywords].sort().join(' · '), members })
-  }
-  return groups
+  // A lone natural-language word ("build", "check") is not a topic. Require a
+  // co-occurring rare-term set; a precise code identifier can anchor a group alone.
+  return [...groups.values()].filter((group) => group.keywords.length >= 2 || group.keywords.some((term) => /[_./]/.test(term))).map((group) => ({ ...group, keywords: group.keywords.sort().join(' · ') }))
 }
 
 export function candidates(files) {

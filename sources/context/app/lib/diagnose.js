@@ -3,7 +3,7 @@ import path from 'node:path'
 import { readMemory, normalize, reachable, slug, lines, links } from './markdown.js'
 import { exists, expand, instructionFiles, projectSections, canonicalPath } from './discovery.js'
 import { summarizeHistory } from './history.js'
-import { candidates } from './semantic.js'
+import { candidates, tokens } from './semantic.js'
 import { missingPaths } from './path-check.js'
 
 const DAY = 86400000
@@ -50,7 +50,9 @@ function superseded(files, entries) {
   const byName = new Map(files.map((f) => [f.file, f])), rows = [], seen = new Set()
   for (const current of files.filter((f) => f.file !== 'MEMORY.md' && !f.file.endsWith('-hub.md'))) for (const line of lines(current.body)) {
     const refs = links(line)
-    for (const word of line.matchAll(/覆盖|取代|替代|作废|推翻|已过时|已并入|supersed\w*|overrid\w*|replaces/gi)) for (const link of refs) {
+    // "merged into" / 已并入 describe the current file as obsolete, not its link target.
+    // They already declare the destination, so they are handled as R8 merged stubs.
+    for (const word of line.matchAll(/覆盖|取代|替代|作废|推翻|已过时|supersed\w*|overrid\w*|replaces/gi)) for (const link of refs) {
       const gap = link.offset >= word.index + word[0].length ? link.offset - word.index - word[0].length : word.index - link.offset - link.text.length
       const obsolete = byName.get(link.target)
       if (!obsolete || obsolete.file === current.file || gap < 0 || gap > 25) continue
@@ -69,6 +71,7 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
   const add = (id, finding) => rule(id).findings.push(finding)
   const memorySets = await Promise.all(project.memories.map(readMemory))
   const instructions = await instructionFiles(project)
+  const instructionTerms = instructions.map((f) => ({ path: f.path, terms: new Set(tokens(f.raw.replace(/-/g, ' '))) }))
   const capacities = []
   const files = memorySets.flatMap((m) => m.files)
   const observed = summarizeHistory(history, files, now)
@@ -126,7 +129,11 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
     for (const f of memory.files.filter((f) => !f.file.endsWith('.md'))) add('R21', { path: f.path, bytes: f.bytes, repair: 'archive' })
     const semantic = candidates(md)
     for (const pair of semantic.duplicates) add('R18', { ...pair, repair: pair.identical ? 'duplicate' : null })
-    for (const group of semantic.scattered) add('R19', group)
+    for (const group of semantic.scattered) {
+      const anchors = group.keywords.split(' · ')
+      const relatedInstructions = instructionTerms.filter((f) => anchors.some((term) => f.terms.has(term))).map((f) => f.path)
+      add('R19', { ...group, relatedInstructions })
+    }
     memory.semantic = semantic
   }
   for (const cwd of project.locations) {
@@ -188,6 +195,7 @@ export function promptFor(report, id) {
   const definition = agentDefinitions.find((r) => r.id === id) || report.rules.find((r) => r.id === id)
   if (!definition) throw new Error(`Unknown rule: ${id}`)
   const pairs = report._memories.flatMap((m) => m.semantic?.pairs || [])
-  const goal = { A1: '逐对判断规则意思是否相反；没有明确取代关系时给出理由。', A2: '判断中英文或改写后的规则是否表达同一件事；列出重复及各自独有内容。', A3: '去当前项目源码核对记忆里的命令、文件名和做法是否仍成立；给出源码位置。' }[id] || `处理「${definition.title}」，保持规则原意，给出最小改动。`
-  return `项目：${report.project.root}\n检查：${definition.title}\n${goal}\n只读取下面这些候选和它们直接引用的证据；只报结论、理由和最小 diff 建议，先不要修改文件。不要派 agent。\n\n${id.startsWith('A') ? pairs.map((p) => `${p.a}\n${p.b}\ncos=${p.cosine}；共享标识符：${p.shared.join(', ')}`).join('\n\n') || '没有词法候选；请从项目规矩与记忆索引开始，明确说明检查范围。' : JSON.stringify(definition.findings, null, 2)}`
+  const goal = { A1: '先对照常驻规矩和当前记忆索引，再逐对判断候选规则是否意思相反；没有明确取代关系时给出理由。', A2: '判断中英文或改写后的规则是否表达同一件事；列出重复及各自独有内容。', A3: '去当前项目源码核对记忆里的命令、文件名和做法是否仍成立；给出源码位置。' }[id] || `处理「${definition.title}」，保持规则原意，给出最小改动。`
+  const context = [...report._instructions.map((f) => f.path), ...report._memories.map((m) => path.join(m.root, 'MEMORY.md'))]
+  return `项目：${report.project.root}\n检查：${definition.title}\n${goal}\n只读取下面的常驻规矩、索引、候选和它们直接引用的证据；只报结论、理由和最小 diff 建议，先不要修改文件。不要派 agent。\n\n常驻规矩与索引：\n${context.join('\n')}\n\n${id.startsWith('A') ? pairs.map((p) => `${p.a}\n${p.b}\ncos=${p.cosine}；共享标识符：${p.shared.join(', ')}`).join('\n\n') || '没有词法候选；请从项目规矩与记忆索引开始，明确说明检查范围。' : JSON.stringify(definition.findings, null, 2)}`
 }

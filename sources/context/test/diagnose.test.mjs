@@ -104,7 +104,7 @@ test('host pagination and hydration are not interpreted as complete zero', async
 
 test('activity counts starts, not recent updates; context reads are projections only', async () => {
   const args = []
-  const result = await observe({ sessions: { read: async (arg) => { args.push(arg); return arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: arg.filePath === 'new' ? '2026-10-25T10:00:00Z' : '2026-10-01T10:00:00Z' }] } } } }, ['new', 'old'].map((filePath) => ({ source: 'codex', providerSessionId: filePath, filePath, updatedAt: '2026-10-26T01:00:00Z' })), { now: NOW })
+  const result = await observe({ sessions: { read: async (arg) => { args.push(arg); return arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: arg.filePath === 'new' ? '2026-10-25T10:00:00Z' : '2026-10-01T10:00:00Z' }] } } } }, ['new', 'old'].map((filePath) => ({ source: 'codex', providerSessionId: filePath, filePath, updatedAt: Date.parse('2026-10-26T01:00:00Z') })), { now: NOW })
   assert.equal(result.hot, 1)
   assert.equal(args.filter((a) => a.view === 'context').length, 2)
 })
@@ -157,16 +157,40 @@ test('a supersession warning in the old index entry prevents R4', async (t) => {
   await fs.writeFile(path.join(root, 'new.md'), fm('new', '覆盖 10-22 [[old]]'))
   const report = await diagnose({ root, locations: [], memories: [root] })
   assert.equal(report.rules.find((r) => r.id === 'R4').findings.length, 0)
+  await fs.writeFile(path.join(root, 'old.md'), fm('old', '已并入 [[new]]'))
+  await fs.writeFile(path.join(root, 'new.md'), fm('new'))
+  const merged = await diagnose({ root, locations: [], memories: [root] })
+  assert.equal(merged.rules.find((r) => r.id === 'R4').findings.length, 0, 'a merged stub never reverses old and new')
 })
 
-test('R19 connects index keyword pairs across four feedback entries, excluding hub-only rules', () => {
-  const descriptions = ['lanes move to ThinkPad harness opus', 'new lanes ThinkPad session_spawn', 'hard tasks ThinkPad session_spawn harness claude', 'simple tasks session_spawn harness codex', 'unrelated garden water', 'lanes ThinkPad session_spawn']
+test('R19 anchors bounded groups to rare index words without transitive topic chaining', () => {
+  const descriptions = ['lanes move to ThinkPad harness opus', 'new lanes ThinkPad session_spawn', 'hard tasks ThinkPad session_spawn harness claude', 'simple tasks session_spawn harness codex', 'unrelated garden water', 'lanes ThinkPad session_spawn', 'build a compiler pipeline', 'build deployment staging', 'build preview styles']
   const docs = descriptions.map((description, i) => ({ file: `${i}.md`, path: String(i), body: description, fields: { description, type: 'feedback' } }))
-  const raw = docs.slice(0, 5).map((f) => `- [${f.file}](${f.file}) — ${f.fields.description}`).join('\n')
+  const raw = docs.filter((_, i) => i !== 5).map((f) => `- [${f.file}](${f.file}) — ${f.fields.description}`).join('\n')
   docs.push({ file: 'MEMORY.md', path: 'index', body: raw, fields: {}, entries: indexEntries('MEMORY.md', raw) })
   const result = candidates(docs).scattered
-  assert.equal(result.length, 1)
-  assert.deepEqual(result[0].members.sort(), ['0', '1', '2', '3'])
+  assert.ok(result.some((group) => group.keywords.includes('session_spawn') && group.members.join() === '1,2,3'))
+  assert.ok(result.every((group) => group.members.length === 3 && !group.members.includes('5')))
+  assert.ok(result.every((group) => group.keywords !== 'build'))
+})
+
+test('path checks exclude prose, model names, branches, PRs and repository slugs', async (t) => {
+  const root = await fixture(t)
+  await fs.mkdir(path.join(root, 'docs'))
+  await fs.mkdir(path.join(root, 'src')); await fs.mkdir(path.join(root, '100'))
+  const machine = os.hostname().toLowerCase().includes('chole') ? 'mac1' : 'Chole'
+  const body = ['tools/list GREEN/MERGEABLE/behind Claude/Codex 100/100 try/catch Asia/Shanghai feat/project-page fix/small-batch-1006 shuxueshuxue/gugu-apps 6532/#6531 s/62.5k src/truncated-', '`docs/removed-folder` and `src/deleted.ts`', `${machine}: ~/Codebase/context-removed/file.ts`].join('\n')
+  const result = await missingPaths([{ file: 'one.md', path: path.join(root, 'one.md'), body }], { root })
+  assert.deepEqual(result.findings.filter((row) => row.kind !== 'unverifiable').map((row) => row.target), ['docs/removed-folder', 'src/deleted.ts'])
+  assert.equal(result.findings.find((row) => row.target.startsWith('~/')).kind, 'unverifiable')
+})
+
+test('global card diagnoses stale Codex project and hook state', async (t) => {
+  const root = await fixture(t), missing = path.join(root, 'missing')
+  await fs.writeFile(path.join(root, 'config.toml'), `[projects.${JSON.stringify(missing)}]\ntrust_level = "trusted"\n`)
+  await fs.writeFile(path.join(root, 'hooks.json'), JSON.stringify({ [missing]: {} }))
+  const report = await diagnose({ key: 'global', global: true, root, locations: [], memories: [], codexRoots: [root] }, { complete: true, sessions: [], hot: 0 })
+  assert.equal(report.rules.find((r) => r.id === 'R20').findings.length, 2)
 })
 
 test('CLI emits JSONL ending in summary, with R17 counts only', async (t) => {
@@ -181,7 +205,7 @@ test('CLI emits JSONL ending in summary, with R17 counts only', async (t) => {
 })
 
 test('literal prefix filtering agrees with exhaustive Jaccard, including common-vocabulary pairs', () => {
-  const bodies = ['alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu', 'alpha beta gamma delta epsilon zeta eta theta iota kappa lambda nu', '完全相同的中文规矩，第二次。', '完全相同的中文规矩，第二次。']
+  const bodies = ['alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu', 'alpha beta gamma delta epsilon zeta eta theta iota kappa lambda nu', '完全相同的中文规矩，第二次。', '完全相同的中文规矩，第二次。', '0123456789abcdefghijklmnop', '0123456789abcdefghijklmnopqrstuvwxyz', '0123456789abcdefghijklmnopXYZ', 'XYZ0123456789abcdefghijklmnop']
   let seed = 7
   for (let i = 0; i < 30; i++) { let text = ''; for (let j = 0; j < 150; j++) { seed = Math.imul(seed, 1664525) + 1013904223; text += String.fromCharCode(97 + ((seed >>> 0) % 26)) } bodies.push(text) }
   const docs = bodies.map((body, i) => ({ file: `${i}.md`, path: String(i), body, fields: { description: body, type: 'feedback' } }))

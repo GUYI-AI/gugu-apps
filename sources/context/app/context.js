@@ -13,12 +13,12 @@ let problem = ''
 const address = (id) => id ? `device:${id.replace(/^device:/, '')}` : undefined
 async function call(machine, tool, args = {}) {
   // Same MCP result contract and error handling as Teamboard's program calls.
-  const answer = await g.callProgram(tool, args, { ...(machine.id ? { device: address(machine.id) } : {}) })
+  const answer = await g.callProgram(tool, args, { device: address(machine.id) })
   const text = answer.content?.find((part) => part.type === 'text')?.text || ''
   if (answer.isError) throw new Error(text || '上下文程序执行失败')
   return JSON.parse(text)
 }
-const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...Object.entries(entry.report?.history?.sources || {}).filter(([, n]) => n > 0).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
+const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.report?.history?.sources || {}).filter(([, n]) => n > 0).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
 const tags = (items) => el('div', { class: 'px-tags' }, items.map((e) => badge(e.machine.name, harnesses(e))))
 const groupKey = (entry) => entry.project.remote ? entry.project.key : `${entry.machine.id || 'local'}:${entry.project.key}`
 
@@ -32,8 +32,8 @@ function groups() {
     const all = reports.length === items.length && reports.every((r) => r.bars.health.complete)
     const hotKnown = reports.length === items.length && reports.every((r) => r.bars.hot.count !== null)
     const hot = hotKnown ? new Set(reports.flatMap((r) => r.history.hotTasks)).size : null
-    const capacity = Math.max(0, ...reports.map((r) => r.bars.capacity.ratio))
-    return { key, items, project: items[0].project, bars: { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - red * 3 - yellow), red, yellow, complete: all }, capacity: { ratio: capacity, percent: Math.round(capacity * 100), cells: Math.min(10, Math.max(capacity > 0 ? 1 : 0, Math.round(capacity * 10))) } } }
+    const capacity = reports.length === items.length ? Math.max(0, ...reports.map((r) => r.bars.capacity.ratio)) : null
+    return { key, items, project: items[0].project, bars: { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - red * 3 - yellow), red, yellow, complete: all }, capacity: { ratio: capacity, percent: capacity === null ? null : Math.round(capacity * 100), cells: capacity === null ? null : Math.min(10, Math.max(capacity > 0 ? 1 : 0, Math.round(capacity * 10))) } } }
   }).toSorted((a, b) => (b.bars.hot.count ?? -1) - (a.bars.hot.count ?? -1) || a.project.name.localeCompare(b.project.name))
 }
 
@@ -98,7 +98,7 @@ function explanation(rule) {
     R15: 'description 超过 250 个字符。', R16: '单个记忆超过 20 KB；归档预览同时处理相关索引和引用。',
     R17: '核对本地文件和当前 git tree；外机绝对路径不算失效。已删 worktree 与临时路径单列。',
     R18: '正文 5 字符 shingle Jaccard 大于 0.5；只有正文完全相同的候选可直接合并。',
-    R19: '只检查 MEMORY.md 直接收录的 feedback：索引词按语料频率筛选，共享至少两个词的条目相连，至少三条形成一组候选。是否同一主题、是否合并由 agent 判断。',
+    R19: '只检查 MEMORY.md 直接收录的 feedback：去停用词和高频词，3–8 条共同出现的稀有词组，或一个明确代码标识符；不跨组传递合并。相关常驻指令同时列为证据，是否合并由 agent 判断。',
     R20: 'Codex config.toml 的项目信任或 hooks 状态指向已不存在的目录。', R21: '记忆目录里出现非 .md 文件；可移进 archive/。',
   }
   return text[rule.id] || ''
@@ -206,17 +206,18 @@ function render() {
 async function reloadEntry(entry) { entry.report = await call(entry.machine, 'diagnose', { project: entry.project.global ? '@global' : entry.project.root }); entry.error = null }
 async function refresh() {
   if (loading) return
-  loading = true; problem = ''; entries = []; machines = [{ id: ctx.session?.deviceId || null, name: ctx.session?.deviceLabel || '这台电脑' }]; render()
+  loading = true; problem = ''; entries = []; machines = []; render()
   try {
     // The host owns device discovery. No App network client or second device directory.
-    try {
-      const agents = await g.listAgents()
-      for (const agent of agents) if (agent.deviceId && !machines.some((m) => m.id === agent.deviceId)) machines.push({ id: agent.deviceId, name: agent.deviceLabel || agent.deviceId })
-    } catch (e) { problem = `无法读取机器清单：${e.message || e}` }
+    const report = await g.listAgents({ report: true })
+    if (!Array.isArray(report.devices)) throw new Error('宿主尚未提供完整机器目录，请更新支持 App API 17 的宿主。')
+    machines = report.devices.map((device) => ({ id: device.deviceId, name: device.label, online: device.online, thisMachine: device.thisMachine, checkedAt: device.checkedAt }))
+    render()
     for (const machine of machines) {
+      if (!machine.online && !machine.thisMachine) { machine.error = '机器离线，尚未读取上下文'; render(); continue }
       try {
         const found = await call(machine, 'discover')
-        machine.name = found.machine.name
+        machine.name ||= found.machine.name
         machine.unmapped = found.unmappedMemories.length
         for (const project of found.projects) entries.push({ machine, project, report: null })
         entries.push({ machine, project: { key: 'global', name: '全局规矩', root: '@global', global: true }, report: null })
