@@ -110,8 +110,9 @@ async function fire(sub, event, row, extra, { ended = false } = {}) {
   if (fired[event]) return
   fired[event] = true
   const W = wordsFor((await g.getContext())?.locale)
-  const text = W.reminder(await describe(W, event, row, extra), row.sessionId, sub.id, ended)
-  const entry = { at: nowIso(), sub: sub.id, target: sub.target, targetTitle: row.title, event, to: sub.to, ok: false, error: null }
+  const body = await describe(W, event, row, extra)
+  const text = W.reminder(body + (row.deviceId ? ` ${W.observed(row.deviceLabel ?? row.deviceId, row.statusAt)}` : ''), row.sessionId, sub.id, ended)
+  const entry = { statusAt: row.statusAt ?? null, deviceId: row.deviceId ?? null, at: nowIso(), sub: sub.id, target: sub.target, targetTitle: row.title, event, to: sub.to, ok: false, error: null }
   // A path is where reminders travel: from the agent they are about to the one they go to. Its count is kept (only the
   // ones that arrived), all subscriptions on it together; its last failure stays until one arrives again.
   const key = `${sub.target}>${sub.to}`
@@ -139,12 +140,15 @@ function workingSince(row, before) {
 
 /** One look at every agent here: what moved since the last look, against every subscription. */
 async function check() {
-  const list = await g.listAgents()
+  const reading = await g.listAgents({ report: true })
+  if (!Array.isArray(reading?.agents) || !Array.isArray(reading.unreached)) throw new Error('Radar needs a gugu host with listAgents({ report: true }) support')
+  const list = reading.agents
+  const unreachable = (deviceId) => deviceId != null && reading.unreached.some((m) => m.deviceId === null || m.deviceId === deviceId)
   const subs = await readSubs()
   const byId = new Map(list.map((row) => [row.agentId, row]))
   const now = Date.now()
 
-  const snapshot = JSON.stringify({ agents: list.map(({ agentId, sessionId, title, status, detail }) => ({ agentId, sessionId, title, status, detail: detail ?? null })) })
+  const snapshot = JSON.stringify({ agents: list.map(({ agentId, sessionId, title, status, detail, deviceId, deviceLabel, statusFrom, statusAt }) => ({ agentId, sessionId, title, status, detail: detail ?? null, deviceId, deviceLabel, statusFrom, statusAt })), unreached: reading.unreached })
   if (snapshot !== agentsJson) {
     agentsJson = snapshot
     await g.writeData('agents.json', JSON.stringify({ at: nowIso(), ...JSON.parse(snapshot) }))
@@ -164,6 +168,7 @@ async function check() {
       await endSub(sub, `这条订阅没有雷达认得的 level（${sub.level ?? '没写'}），是旧格式`, { loud: true })
       continue
     }
+    if (unreachable(byId.get(sub.to)?.deviceId ?? state.last[sub.to]?.deviceId ?? sub.devices?.to)) continue
     if (!byId.has(sub.to)) {
       // 收提醒的那个不在了:和被关注的不在了一样,这条到此为止(这条路的次数留在 state.paths 里)。
       await endSub(sub, '收提醒的任务不在了')
@@ -171,6 +176,7 @@ async function check() {
     }
     const row = byId.get(sub.target)
     const before = state.last[sub.target]
+    if (unreachable(row?.deviceId ?? before?.deviceId ?? sub.devices?.target)) continue
     if (!row) {
       // 不在清单里了:会话被归档或删除。这条订阅到此为止。
       const title = before?.title ?? sub.titles?.target ?? sub.target
@@ -203,10 +209,10 @@ async function check() {
     }
   }
 
-  state.last = Object.fromEntries(list.map((row) => [row.agentId, {
-    status: row.status, detail: row.detail ?? null, title: row.title,
+  state.last = { ...Object.fromEntries(Object.entries(state.last).filter(([, row]) => unreachable(row.deviceId))), ...Object.fromEntries(list.map((row) => [row.agentId, {
+    status: row.status, detail: row.detail ?? null, title: row.title, deviceId: row.deviceId ?? null, statusAt: row.statusAt ?? null,
     workingSince: row.status === 'working' ? workingSince(row, state.last[row.agentId]) : null,
-  }]))
+  }])) }
   for (const id of Object.keys(state.fired)) if (!subs[id]) delete state.fired[id]
   firstLook = false
   state.checkedAt = nowIso()

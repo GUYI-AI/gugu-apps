@@ -1,26 +1,49 @@
 {
   "id": "radar",
   "name": "雷达",
-  "description": "让 agent 关注别的 agent:它出问题、需要人、或者做完的时候,雷达发一条提醒过去。agent 自己用 watch / unwatch / watching 关注;页签上是一张图,看得到谁在关注谁、每条路提醒过几次、有没有送到。只看这台电脑上的 agent。",
+  "description": "让 agent 关注别的 agent:它出问题、需要人、或者做完的时候,雷达发一条提醒过去。agent 自己用 watch / unwatch / watching 关注;页签上是一张图,看得到谁在关注谁、每条路提醒过几次、有没有送到。可关注同一账号各台电脑上的 agent。",
   "subtitle": "关注 agent 的运行状态",
-  "localized": { "en": { "subtitle": "Watch agents and get alerts" } },
+  "localized": {
+    "en": {
+      "subtitle": "Watch agents and get alerts"
+    }
+  },
   "author": "咕咕",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "apiVersion": 15,
   "platforms": [
     "desktop"
   ],
-  "engines": { "gugu": ">=0.2.57" },
+  "engines": {
+    "gugu": ">=0.2.58"
+  },
   "entry": "radar.html",
   "icon": "icon.png",
-  "background": { "entry": "background.html" },
+  "background": {
+    "entry": "background.html"
+  },
   "permissions": {
-    "capabilities": ["agents:read:all", "agents:control:all", "agents:history:all", "agents:tools"],
+    "capabilities": [
+      "agents:read:all-machines",
+      "agents:control:all-machines",
+      "agents:history:all",
+      "agents:tools"
+    ],
     "network": []
   },
   "contributes": {
-    "tabs": [{ "name": "radar", "title": "雷达", "entry": "radar.html" }],
-    "mcpServers": [{ "tools": "tools.js" }]
+    "tabs": [
+      {
+        "name": "radar",
+        "title": "雷达",
+        "entry": "radar.html"
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ]
   },
   "license": "MIT"
 }

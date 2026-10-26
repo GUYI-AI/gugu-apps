@@ -5,6 +5,7 @@
 export const WORDS = {
   zh: {
     title: '雷达', thisTask: '这个任务', all: '全部', depth: '看几层', desktopOnly: '雷达仅支持在电脑上使用。',
+    observed: (device, at) => `读自 ${device}，读数时间：${at ?? '未知'}。`,
     checked: '后台上次查看', notYet: '后台还没查看过',
     late: (m) => `后台已经 ${m} 分钟没查看了，可能没在运行。`, notRunning: '后台还没运行起来。', lastLookFailed: (m) => `后台上一次查看没成功：${m}`,
     legendWorking: '在干活', legendWaiting: '等你批准', legendIdle: '闲着', legendTrouble: '出问题了', legendPath: '提醒的方向，数字是已提醒的次数',
@@ -47,6 +48,7 @@ export const WORDS = {
   },
   en: {
     title: 'Radar', thisTask: 'This task', all: 'Everyone', depth: 'Reach', desktopOnly: 'Radar is only available on a computer.',
+    observed: (device, at) => `Read from ${device} at ${at ?? 'an unknown time'}.`,
     checked: 'Last looked', notYet: 'Not looked yet',
     late: (m) => `It has not looked for ${m} minutes; it may not be running.`, notRunning: 'It is not running yet.', lastLookFailed: (m) => `Its last look did not work: ${m}`,
     legendWorking: 'Working', legendWaiting: 'Waiting for you', legendIdle: 'Idle', legendTrouble: 'In trouble', legendPath: 'Where reminders go; the number is how many went',

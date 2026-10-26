@@ -18,7 +18,7 @@ const oneAtATime = (fn) => {
 
 export const watch = {
   description:
-    'Radar (雷达): watch/关注 another agent on this computer and receive status notifications. ' +
+    'Radar (雷达): watch/关注 another agent on any of your computers and receive status notifications. ' +
     'For done/completion/完成提醒, set level to "everything". level says how much you want to hear: ' +
     '"trouble" — when it stops with an error, when it is gone (its engine quit, or its task was archived or deleted), ' +
     'or when it seems stuck (working, with no new tool call for stuck_minutes; judged only for chat-panel agents that ' +
@@ -28,7 +28,7 @@ export const watch = {
     'agent and the same receiver changes that one subscription. The message arrives in the receiver\'s session from ' +
     '雷达, written in the language gugu shows right now; there is nothing to reply to, and the receiver can unwatch it. ' +
     'When the watched agent or the receiver is gone (archived or deleted), the subscription ends by itself. ' +
-    'Agents on other computers cannot be watched yet.',
+    'Remote status is read through gugu; reminders include the computer and observation time. Unreachable computers do not end a watch.',
   inputSchema: {
     type: 'object',
     required: ['target'],
@@ -48,16 +48,16 @@ async function watchOnce(args, { agent }) {
   if (!agent) throw new Error('watch is for agents: gugu did not say which agent is calling')
   const { target, level, stuckMinutes, to } = watchArgs(args)
   const snapshot = await readJson('agents.json', null)
-  if (!snapshot) throw new Error("雷达's background page has not listed this computer's agents yet; is 雷达 enabled? Try again in a moment.")
+  if (!snapshot) throw new Error("雷达's background page has not listed your agents yet; is 雷达 enabled? Try again in a moment.")
   const watched = resolveAgent(snapshot, target)
   if (!watched) {
     throw new Error(
-      `${target} is not an agent on this computer (list from ${snapshot.at}). 雷达 only sees this computer's agents for now; ` +
-        'agents on other computers come with gugu\'s cross-machine work (PR-5).',
+      `${target} is not in gugu's agent list (checked ${snapshot.at}). ` +
+        `Computers not reached: ${snapshot.unreached?.map((m) => m.label ?? m.detail).join('; ') || 'none'}.`,
     )
   }
   const receiver = to ? resolveAgent(snapshot, to) : { agentId: agent }
-  if (!receiver) throw new Error(`${to} is not an agent on this computer, so 雷达 cannot tell it anything.`)
+  if (!receiver) throw new Error(`${to} is not in gugu's agent list, so 雷达 cannot tell it anything.`)
   if (watched.agentId === receiver.agentId) throw new Error('an agent cannot watch itself: when it fails it cannot be told')
   const titleOf = (agentId) => snapshot.agents.find((a) => a.agentId === agentId)?.title ?? null
   const told = receiver.agentId === agent ? 'you' : receiver.agentId
@@ -76,6 +76,7 @@ async function watchOnce(args, { agent }) {
   await writeSub({
     id, by: agent, target: watched.agentId, to: receiver.agentId, level, stuckMinutes, createdAt: new Date().toISOString(),
     titles: { by: titleOf(agent), target: watched.title, to: titleOf(receiver.agentId) },
+    devices: { target: watched.deviceId ?? null, to: snapshot.agents.find((a) => a.agentId === receiver.agentId)?.deviceId ?? null },
   })
   return { id, watching: `${watched.title} (session:${watched.sessionId})`, level, told }
 }
@@ -108,7 +109,7 @@ export const watching = {
     const snapshot = await readJson('agents.json', { agents: [] })
     const name = (id, saved) => {
       const a = snapshot.agents.find((row) => row.agentId === id)
-      return a ? `${a.title} (session:${a.sessionId})` : `${saved ?? id} (no longer on this computer)`
+      return a ? `${a.title} (session:${a.sessionId})` : `${saved ?? id} (not currently reachable)`
     }
     const row = (s) => ({ id: s.id, by: s.by === agent ? 'you' : name(s.by, s.titles?.by), target: name(s.target, s.titles?.target), to: s.to === agent ? 'you' : name(s.to, s.titles?.to), level: s.level })
     const mine = all.filter((s) => s.by === agent)
@@ -120,6 +121,7 @@ export const watching = {
       watching_me: all.filter((s) => s.target === agent).map((s) => ({ id: s.id, by: name(s.by, s.titles?.by), level: s.level })),
       recent: (state.log ?? []).filter((e) => ids.has(e.sub)).slice(-10),
       background_checked_at: state.checkedAt ?? null,
+      not_reached: snapshot.unreached ?? [],
     }
   },
 }
