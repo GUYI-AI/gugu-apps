@@ -179,10 +179,11 @@ test('path checks exclude prose, model names, branches, PRs and repository slugs
   await fs.mkdir(path.join(root, 'docs'))
   await fs.mkdir(path.join(root, 'src')); await fs.mkdir(path.join(root, '100'))
   const machine = os.hostname().toLowerCase().includes('chole') ? 'mac1' : 'Chole'
-  const body = ['tools/list GREEN/MERGEABLE/behind Claude/Codex 100/100 try/catch Asia/Shanghai feat/project-page fix/small-batch-1006 shuxueshuxue/gugu-apps 6532/#6531 s/62.5k src/truncated-', '`docs/removed-folder` and `src/deleted.ts`', `${machine}: ~/Codebase/context-removed/file.ts`].join('\n')
-  const result = await missingPaths([{ file: 'one.md', path: path.join(root, 'one.md'), body }], { root })
+  const body = ['tools/list GREEN/MERGEABLE/behind Claude/Codex 100/100 try/catch Asia/Shanghai feat/project-page fix/small-batch-1006 shuxueshuxue/gugu-apps 6532/#6531 s/62.5k src/truncated- 2/.worktrees docs/never-made/item', '`docs/removed-folder` and `src/deleted.ts`', '~/Codebase/context-removed/file.ts', '~/gugu-context-profile'].join('\n')
+  const result = await missingPaths([{ file: 'one.md', path: path.join(root, 'one.md'), body, raw: fm('one', body, 'feedback', `Tests on ${machine}`) }], { root })
   assert.deepEqual(result.findings.filter((row) => row.kind !== 'unverifiable').map((row) => row.target), ['docs/removed-folder', 'src/deleted.ts'])
   assert.equal(result.findings.find((row) => row.target.startsWith('~/')).kind, 'unverifiable')
+  assert.equal(result.findings.find((row) => row.target === '~/gugu-context-profile').kind, 'unverifiable')
 })
 
 test('global card diagnoses stale Codex project and hook state', async (t) => {

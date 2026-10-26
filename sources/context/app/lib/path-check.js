@@ -35,12 +35,21 @@ export async function missingPaths(files, project) {
     if (!found.has(p)) found.set(p, treeEntries.some(([root, tree]) => p.startsWith(`${root}/`) && tree.has(p.slice(root.length + 1))) ? Promise.resolve('present') : pathStatus(p))
     return found.get(p)
   }
+  const directory = async (p) => {
+    const key = `directory:${p}`
+    if (!found.has(key)) found.set(key, pathStatus(p, async () => { if (!(await fs.stat(p)).isDirectory()) throw Object.assign(new Error('Not a directory'), { code: 'ENOTDIR' }) }))
+    return found.get(key)
+  }
   const classified = new Map()
   const classify = async (token) => {
     if (classified.has(token)) return classified.get(token)
     const result = (async () => {
       const absolute = token.startsWith('~') || path.isAbsolute(token)
       const choices = absolute ? [expand(token)] : repoChoices.flatMap(({ root, name, parent }) => [path.join(root, token), ...(token.startsWith(`${name}/`) ? [path.join(parent, token)] : [])])
+      if (!absolute && !path.extname(token)) {
+        const parents = await Promise.all(choices.map((p) => directory(path.dirname(p))))
+        if (!parents.includes('present')) return parents.includes('unverifiable') ? { kind: 'unverifiable', reason: '父目录无法读取，不能核实路径' } : false
+      }
       const statuses = await Promise.all(choices.map(check))
       if (statuses.includes('present')) return null
       if (statuses.includes('unverifiable')) return { kind: 'unverifiable', reason: '路径存在但当前用户无法核实', repair: null }
@@ -55,19 +64,20 @@ export async function missingPaths(files, project) {
   const localName = os.hostname().toLowerCase().replace(/[ .-]/g, '')
   for (const file of files.filter((f) => f.file.endsWith('.md'))) {
     const firstLine = file.raw ? lines(file.raw.slice(0, file.raw.length - file.body.length)).length : 1
+    const otherMachine = [...(file.raw ?? file.body).matchAll(/\b(?:mac1|juma(?:oyun)?|Chole|mac[ -]?mini|Mac Studio|ThinkPad)\b/gi)].some((hint) => !localName.includes(hint[0].toLowerCase().replace(/[ .-]/g, '')))
     for (const [i, line] of lines(file.body).entries()) {
-      const otherMachine = [...line.matchAll(/\b(?:mac1|juma(?:oyun)?|Chole|mac[ -]?mini|Mac Studio|ThinkPad)\b/gi)].some((hint) => !localName.includes(hint[0].toLowerCase().replace(/[ .-]/g, '')))
       for (const m of line.matchAll(/(?<![\w/.~:-])(?:~\/|\/(?!\/)|(?:[\w.-]+\/)+)[^\s`'"()\[\]<>，。、；：）（「」|*{}$,;]+/g)) {
         const token = m[0].replace(/(?::\d+(?:-\d+)?)+$/, '').replace(/[.,;:!?]+$/, '').replace(/\/$/, '')
         if (token.length < 6 || token.endsWith('-') || /[<>…*#]|\.\.\./.test(token) || /^(?:feat|fix|chore)\//i.test(token) || /^\d+(?:\/\d+)+$/.test(token)) continue
         const absolute = token.startsWith('~/') || path.isAbsolute(token)
-        if (!absolute && !topDirectories.has(token.split('/')[0]) && !/\.[a-z][a-z0-9]{0,9}$/i.test(path.basename(token))) continue
+        if (!absolute && !topDirectories.has(token.split('/')[0]) && !/^\.[a-z][a-z0-9]{0,9}$/i.test(path.extname(token))) continue
         const key = `${file.path}\0${token}`
         if (seen.has(key)) continue
         seen.add(key)
         const lineNumber = firstLine + i
-        const foreign = token.startsWith('~/') && /^~\/(?:Codebase|work|gugu-ops-scripts)(?:\/|$)/.test(token) && otherMachine
-        results.push((foreign ? Promise.resolve({ kind: 'unverifiable', reason: '同一行注明了另一台机器，无法在本机核实' }) : classify(token)).then((result) => {
+        const foreign = /^~\/(?:Codebase(?:\/|$)|work(?:\/|$)|gugu-)/.test(token) && otherMachine
+        results.push((foreign ? Promise.resolve({ kind: 'unverifiable', reason: '同一文件注明了另一台机器，无法在本机核实' }) : classify(token)).then((result) => {
+          if (result === false) return null
           if (result?.kind !== 'unverifiable') checked.add(token)
           if (!result) return null
           const repair = result.kind === 'deleted-worktree' && /^\s*[-*]?\s*`?[^\s`]+`?\s*$/.test(line) ? 'remove-path-line' : null
