@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 // 咕咕办公自己的一页(home.js):画在一个群里(getContext().chat,群右栏)时先是这个群的页 —— 列本群文件夹里的文件、
-// 搜本群,一枚「所有群」切回跨群的最近打开与搜索;本群没有这类文件时「让 agent 做一份」把草稿放进本群输入框;
+// 搜本群,一枚「所有群」切回跨群的最近打开与搜索;本群没有这类文件时先建空白再交给 agent;
 // 换到另一个群(onContextChanged 整份替换)就画那个群;画在没有群的地方(左栏)照旧是最近打开。
 // 有 files:write 时「新建」(一行里的按钮与它的菜单,宽页面与空群里是卡片)在本群文件夹里放一份 App 自带的空白文件
 // (名字不撞本群已有的),再打开它。页面照 Office 首页排:一行搜索 + 新建,列表头里是「本群 / 所有群」与类型。
-// 运行时是假的(getContext / onContextChanged / files.list / recent / search / upload / openWith / compose)。
+// 运行时是假的(getContext / onContextChanged / files.list / recent / search / upload / openWith / dispatch)。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -32,13 +32,13 @@ const gugu = {
     handTo = handler
     return () => {}
   }),
-  compose: vi.fn(async () => ({})),
+  dispatch: vi.fn(async (): Promise<{ cancelled?: true }> => ({})),
   files: {
     list: vi.fn(async ({ chat }: { chat: string }) => folders[chat] ?? []),
     recent: vi.fn(async () => recent),
     search: vi.fn(async () => [folders['group-b'][0]]),
     openWith: vi.fn(async () => {}),
-    upload: vi.fn(async (_place: unknown, file: File) => [entryOf('new', file.name, 'group-a', 'A群', '2026-10-25T12:00:00Z')]),
+    upload: vi.fn(async ({ chat }: { chat: string }, file: File) => [entryOf('new', file.name, chat, chat, '2026-10-25T12:00:00Z')]),
   },
 }
 const fetched: string[] = []
@@ -72,7 +72,9 @@ beforeEach(() => {
   gugu.files.list.mockClear()
   gugu.files.recent.mockClear()
   gugu.files.search.mockClear()
-  gugu.compose.mockClear()
+  gugu.dispatch.mockClear()
+  gugu.files.upload.mockClear()
+  gugu.files.openWith.mockClear()
 })
 
 describe('咕咕办公自己的一页 · 画在群里', () => {
@@ -127,8 +129,8 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     expect(scopeTab('here').getAttribute('aria-selected')).toBe('true')
   })
 
-  test('本群没有这类文件:说没有,「让 agent 做一份」把草稿放进本群的输入框(选了演示稿就要演示稿)', async () => {
-    handTo(ctxOf(EMPTY))
+  test('本群没有这类文件:先建空白演示稿,交宿主派给 agent,再打开同一文件', async () => {
+    handTo(ctxOf(EMPTY, ['files:read', 'files:write', 'agents:tools']))
     await until(() => expect($('empty').hidden).toBe(false))
     expect($('empty').textContent).toContain('本群文件夹里还没有这类文件')
     const kind = $('kind') as HTMLSelectElement
@@ -141,7 +143,53 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
       return button!
     })
     ask.click()
-    expect(gugu.compose).toHaveBeenCalledWith('用咕咕办公做一份演示稿，放进本群文件夹：', { chat: 'group-e' })
+    await until(() => expect(gugu.files.openWith).toHaveBeenCalledTimes(1))
+    expect(gugu.files.upload.mock.calls[0]![0]).toEqual({ chat: 'group-e' })
+    expect(gugu.files.upload.mock.calls[0]![1].name).toMatch(/\.pptx$/)
+    const entry = await gugu.files.upload.mock.results[0]!.value
+    expect(gugu.dispatch).toHaveBeenCalledWith('用咕咕办公做这份演示稿，内容：', { refs: [{ file: entry[0] }] })
+    expect(gugu.files.openWith).toHaveBeenCalledWith(entry[0])
+    expect(gugu.files.upload.mock.invocationCallOrder[0]).toBeLessThan(gugu.dispatch.mock.invocationCallOrder[0]!)
+    expect(gugu.dispatch.mock.invocationCallOrder[0]).toBeLessThan(gugu.files.openWith.mock.invocationCallOrder[0]!)
+  })
+
+  test.each(['xlsx', 'md'])('空态选择 %s:创建相同类型,取消派发仍打开已建文件', async (kind) => {
+    handTo(ctxOf(EMPTY, ['files:read', 'files:write', 'agents:tools']))
+    const select = $('kind') as HTMLSelectElement
+    select.value = kind
+    select.dispatchEvent(new Event('change'))
+    const ask = await vi.waitFor(() => {
+      const button = $('empty').querySelector('[data-ask]') as HTMLButtonElement | null
+      expect(button).not.toBeNull()
+      return button!
+    })
+    gugu.dispatch.mockResolvedValueOnce({ cancelled: true })
+    ask.click()
+    await until(() => expect(gugu.files.openWith).toHaveBeenCalledTimes(1))
+    const [place, file] = gugu.files.upload.mock.calls[0]!
+    expect(place).toEqual({ chat: 'group-e' })
+    expect(file.name).toMatch(new RegExp(`\\.${kind}$`))
+    expect(gugu.dispatch).toHaveBeenCalledWith(expect.any(String), { refs: [{ file: expect.objectContaining({ id: 'new', chat: 'group-e' }) }] })
+    select.value = 'office'
+    select.dispatchEvent(new Event('change'))
+  })
+
+  test('等待人选择派发对象时就打开新文件,不等原来的点击手势过期', async () => {
+    handTo(ctxOf(EMPTY, ['files:read', 'files:write', 'agents:tools']))
+    let finish!: (value: { cancelled: true }) => void
+    gugu.dispatch.mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
+    const ask = await vi.waitFor(() => {
+      const button = $('empty').querySelector('[data-ask]') as HTMLButtonElement | null
+      expect(button).not.toBeNull()
+      return button!
+    })
+    ask.click()
+    try {
+      await until(() => expect(gugu.dispatch).toHaveBeenCalledTimes(1))
+      await until(() => expect(gugu.files.openWith).toHaveBeenCalledTimes(1))
+    } finally {
+      finish({ cancelled: true })
+    }
   })
 
   test('没有 files:write:不给「新建」', async () => {

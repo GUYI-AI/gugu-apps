@@ -117,7 +117,7 @@ async function fire(sub, event, row, extra, { ended = false } = {}) {
   const key = `${sub.target}>${sub.to}`
   const path = (state.paths[key] ??= { sent: 0, lastAt: null, failed: null })
   try {
-    await g.messageAgent(sub.to, text)
+    await g.dispatch(text, { to: { agent: sub.to } })
     entry.ok = true
     path.sent += 1
     path.lastAt = entry.at

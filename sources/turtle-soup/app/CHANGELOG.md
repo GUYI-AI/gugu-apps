@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.8
+
+- Use the host dispatch sheet to choose the round's agent host; dispatch every host and player message through App API 15.
+
 ## 0.2.7
 
 - Declare desktop and phone support for the human interface (App API 12).

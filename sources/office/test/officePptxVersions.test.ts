@@ -2,7 +2,7 @@
 // 咕咕办公开着一份 .pptx,agent 把它改成了新的一版(第 ② 次实测:真机上人这边一直停在第 1 版,库里已是第 5 版):
 // 列表因 workspace_changed 刷新、版本变大 ⇒ 原地重画成新版(旧的留在屏上直到新的一步换上);人手上还攒着没放进输入框的选区时不自动重画,
 // 提示「有新的一版」+「打开新的一版」,这时放进输入框的引用写明是哪一版上选的。
-// 运行时是假的(files.open / list / onChanged / compose);稿子是真的:fixtures/two-slides.pptx,新版本用 A2 的写回
+// 运行时是假的(files.open / list / onChanged / dispatch);稿子是真的:fixtures/two-slides.pptx,新版本用 A2 的写回
 // (pptx-ooxml.mjs applyEdits)改出来,所以重画读到的是真的新字节。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -38,7 +38,7 @@ const gugu = {
   getContext: vi.fn(async () => ({ chat: { id: 'chat-1', name: 'G', kind: 'group', groupId: 'chat-1' }, file: { chat: 'chat-1', id: 'deck' }, locale: 'zh-CN', capabilities: ['files:read'] })),
   onLink: vi.fn(),
   onContextChanged: vi.fn(() => () => {}),
-  compose: vi.fn(async (_text: string) => {}),
+  dispatch: vi.fn(async (_text: string) => {}),
   files: {
     list: vi.fn(async () => [{ ...entry, version: listed }]),
     onChanged: vi.fn((_place: unknown, handler: (change: unknown) => void) => {
@@ -78,10 +78,10 @@ async function listSays(version: number) {
 /** Pick slide `n`'s first shape and put the picks in the composer: the pills the App made (App 引用 pill). */
 async function pickAndSend(n: number) {
   $('preview').querySelector<HTMLButtonElement>(`.pptx-slide[data-n="${n}"] .pptx-hit`)!.click()
-  const before = gugu.compose.mock.calls.length
+  const before = gugu.dispatch.mock.calls.length
   $('pick-send').click()
-  await vi.waitFor(() => expect(gugu.compose).toHaveBeenCalledTimes(before + 1))
-  return (gugu.compose.mock.calls.at(-1) as unknown as [string, { refs: { version?: number; at: Record<string, unknown>; label: string }[] }])[1].refs
+  await vi.waitFor(() => expect(gugu.dispatch).toHaveBeenCalledTimes(before + 1))
+  return (gugu.dispatch.mock.calls.at(-1) as unknown as [string, { refs: { version?: number; at: Record<string, unknown>; label: string }[] }])[1].refs
 }
 
 beforeAll(async () => {

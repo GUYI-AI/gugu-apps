@@ -28,7 +28,7 @@ const gugu = {
   setTabTitle: vi.fn(async (_title: string) => {}),
   getContext: vi.fn(() => firstContext),
   onContextChanged: vi.fn((handler: (ctx: unknown) => void) => { contextChanged = handler; return () => {} }),
-  compose: vi.fn(async () => {}),
+  dispatch: vi.fn(async () => {}),
   onLink: vi.fn((handler: (link: { query: Record<string, string>; file: string | null }) => void) => { linked = handler }),
   files: {
     list: vi.fn(async () => Object.values(files)),

@@ -5,7 +5,7 @@
 // with the paper open is in the notes file's presence: who reads which page, and following one of them.
 //
 // Every mark is evidence an agent can be sent back to: the PDF's entry id, the page, the quote and its rects. "Ask an
-// agent" puts the passage in the chat's composer as a pill (gugu.compose refs, `at` = page and highlight); a pill clicked
+// agent" puts the passage in the chat's composer as a pill (gugu.dispatch draft refs, `at` = page and highlight); a pill clicked
 // opens the paper here at that place (onLink). Agents read the same notes with the App's tools (tools.js).
 //
 // How often each passage was discussed in the chat comes from the chat itself (chat:read): every message citing this PDF
@@ -586,10 +586,11 @@ async function askAgent() {
  * the person picks in gugu's own sheet — one of their tasks or a chat — with its project and path (`askTask`).
  */
 function askAbout(id, h, text) {
-  if (state.place.chat) return gugu.compose(text, { refs: [refOf(id, h)] })
+  if (state.place.chat) return gugu.dispatch(text, { draft: true, refs: [refOf(id, h)] })
   if (state.place.project) return askTask(h, text)
   say(state.t.sessionNoPill)
-  return gugu.compose(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { session: state.place.session })
+  const agent = state.ctx.session?.agentId
+  return gugu.dispatch(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { draft: true, ...(agent ? { to: { agent } } : {}) })
 }
 
 /** A project's PDF: the passage's words, page, project and path, with the project's name. */
@@ -601,7 +602,7 @@ async function projectWords(h, text) {
 
 /** Into the composer the person picks — one of their tasks or a chat (gugu lists the places, not this page). */
 async function askTask(h, text) {
-  const placed = await gugu.compose((await projectWords(h, text)).words)
+  const placed = await gugu.dispatch((await projectWords(h, text)).words, { draft: true })
   if (!placed.cancelled) say(state.t.askPlaced)
 }
 
@@ -615,7 +616,7 @@ async function askNewTask() {
   say(state.t.askStarting)
   try {
     const { name, words } = await projectWords(state.notes.data.highlights[id], fmt(state.t.askText, { n: picked.page }))
-    await gugu.spawnAgent(words, { project: state.place.project, title: $('title').textContent })
+    await gugu.dispatch(words, { to: { new: true }, spawn: { project: state.place.project, title: $('title').textContent } })
     say(fmt(state.t.askStarted, { project: name }))
   } catch (error) {
     say(fmt(state.t.askFailed, { e: error.message }), 'error')

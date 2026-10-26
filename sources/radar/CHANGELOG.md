@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.9
+
+- Dispatch background reminders to the subscribing agent through App API 15.
+- Make watch discoverable as Radar/雷达 and explain how to subscribe to completion reminders.
+
 ## 0.1.8
 
 - Declare desktop support for the human interface (App API 12).

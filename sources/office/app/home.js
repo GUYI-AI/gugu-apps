@@ -2,12 +2,12 @@
 // 咕咕办公's own page (the `home` tab: it claims no file, so it is the App's page — the desktop's rail, the phone's 「App」
 // page, 「在本群打开」 in a chat). Laid out as Office's start page is: one bar (the search, and 「新建」), blank files as
 // cards where there is room, then the list — what it lists and which kind it keeps said in the list's own head. Drawn for a chat (`getContext().chat`: its panel), it is that chat's page first: its
-// files and a search in them, switched to every chat by one tab; in a chat with none, a draft in its composer asks an agent
-// for one, and a blank deck or workbook is made there in one press. Drawn for no chat (the rail): the files this person opened last across all their chats, the chats they were in,
+// files and a search in them, switched to every chat by one tab; in a chat with none, a blank file is made there and
+// handed to an agent through the host's sheet. Drawn for no chat (the rail): the files this person opened last across all their chats, the chats they were in,
 // and a search over every chat's files — decks, workbooks and markdown by default. A file opens where it lives, with the App the
 // person uses for it (`gugu.files.openWith`): a deck or a workbook here, on its own page; markdown in the folder's editor.
 //
-// Built only on the public App API: getContext / onContextChanged, files.recent / search / list / upload / openWith, compose.
+// Built only on the public App API: getContext / onContextChanged, files.recent / search / list / upload / openWith, dispatch.
 
 const $ = (id) => document.getElementById(id)
 
@@ -22,7 +22,7 @@ const STRINGS = {
     noneHereHint: '让 agent 做一份，做好的文件放在本群文件夹里。',
     noneHereStart: '从一份空白文件开始，或者让 agent 做一份。',
     askAgent: '让 agent 做一份',
-    asks: { office: '用咕咕办公做一份演示稿或表格，放进本群文件夹：', pptx: '用咕咕办公做一份演示稿，放进本群文件夹：', xlsx: '用咕咕办公做一份表格，放进本群文件夹：', md: '写一份 markdown 文档，放进本群文件夹：', all: '用咕咕办公做一份演示稿或表格，放进本群文件夹：' },
+    asks: { pptx: '用咕咕办公做这份演示稿，内容：', xlsx: '用咕咕办公做这份表格，内容：', md: '写这份 markdown 文档，内容：' },
     kinds: { office: '常用', pptx: '演示稿', xlsx: '表格', md: 'Markdown', all: '全部' },
     kind: '类型',
     recent: '最近打开',
@@ -40,7 +40,7 @@ const STRINGS = {
     dm: '私聊',
     new: '新建',
     create: { pptx: '空白演示稿', xlsx: '空白表格' },
-    untitled: { pptx: '未命名演示稿', xlsx: '未命名表格' },
+    untitled: { pptx: '未命名演示稿', xlsx: '未命名表格', md: '未命名文档' },
   },
   en: {
     title: 'Gugu Office',
@@ -52,7 +52,7 @@ const STRINGS = {
     noneHereHint: 'Ask an agent for one: what it makes is kept in this chat\'s folder.',
     noneHereStart: 'Start from a blank file, or ask an agent for one.',
     askAgent: 'Ask an agent for one',
-    asks: { office: 'With Gugu Office, make a deck or a workbook in this chat\'s folder: ', pptx: 'With Gugu Office, make a deck in this chat\'s folder: ', xlsx: 'With Gugu Office, make a workbook in this chat\'s folder: ', md: 'Write a markdown document in this chat\'s folder: ', all: 'With Gugu Office, make a deck or a workbook in this chat\'s folder: ' },
+    asks: { pptx: 'With Gugu Office, make this deck. Content: ', xlsx: 'With Gugu Office, make this workbook. Content: ', md: 'Write this markdown document. Content: ' },
     kinds: { office: 'Usual', pptx: 'Decks', xlsx: 'Workbooks', md: 'Markdown', all: 'All' },
     kind: 'Kind',
     recent: 'Opened lately',
@@ -70,7 +70,7 @@ const STRINGS = {
     dm: 'Private chat',
     new: 'New',
     create: { pptx: 'Blank deck', xlsx: 'Blank workbook' },
-    untitled: { pptx: 'Untitled deck', xlsx: 'Untitled workbook' },
+    untitled: { pptx: 'Untitled deck', xlsx: 'Untitled workbook', md: 'Untitled document' },
   },
 }
 
@@ -212,13 +212,14 @@ function closeMenu() {
  * A blank file of the kind, made in this chat's folder (its top) under a name no file there has yet, then opened as any
  * listed file is: 「未命名演示稿 10-25 2207.pptx」, then 「… 2.pptx」.
  */
-async function createBlank(kind, button) {
+async function createBlank(kind, button, ask = false) {
   const here = state.here
+  const text = state.t.asks[kind]
   show('error', false)
   button.disabled = true
   try {
-    const blank = BLANKS[kind]
-    const bytes = await (await fetch(new URL(blank.file, import.meta.url))).arrayBuffer()
+    const blank = kind === 'md' ? { type: 'text/markdown' } : BLANKS[kind]
+    const bytes = kind === 'md' ? '' : await (await fetch(new URL(blank.file, import.meta.url))).arrayBuffer()
     const d = new Date()
     const pad = (n) => String(n).padStart(2, '0')
     const base = `${state.t.untitled[kind]} ${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}${pad(d.getMinutes())}`
@@ -226,7 +227,8 @@ async function createBlank(kind, button) {
     for (let n = 2; state.names.has(name.toLowerCase()); n++) name = `${base} ${n}.${kind}`
     const [entry] = await gugu.files.upload({ chat: here.chat }, new File([bytes], name, { type: blank.type }))
     void refresh()
-    await gugu.files.openWith(entry)
+    // Open while the click is still active; the dispatch sheet may wait on the person for much longer.
+    await Promise.all([ask ? gugu.dispatch(text, { refs: [{ file: entry }] }) : undefined, gugu.files.openWith(entry)])
   } catch (error) {
     sayError(error)
   } finally {
@@ -264,7 +266,7 @@ async function refresh() {
       if (asked !== state.asked) return
       const rows = listed.map((entry) => ({ ...entry, chatName: here.name }))
       if (state.query) drawFiles('', rows, state.t.noResults, state.t.noResultsHint)
-      else drawFiles('', rows, state.t.noneHere, state.writable ? state.t.noneHereStart : state.t.noneHereHint, askAgent(here))
+      else drawFiles('', rows, state.t.noneHere, state.writable ? state.t.noneHereStart : state.t.noneHereHint, state.writable ? askAgent() : null)
       return
     }
     if (state.query) {
@@ -302,13 +304,12 @@ function drawGroups() {
   show('group-pick', groups.length > 0 && !inHere() && !state.query)
 }
 
-/** A draft in the chat's own composer asking an agent for a file of the kind picked; the person sends it, or not. */
-function askAgent(here) {
+/** Make the file first, then let the person hand that file to an agent in the host's sheet. */
+function askAgent() {
   const button = Object.assign(document.createElement('button'), { type: 'button', textContent: state.t.askAgent })
   button.dataset.ask = ''
   button.onclick = () => {
-    show('error', false)
-    gugu.compose(state.t.asks[state.kind], { chat: here.chat }).catch(sayError)
+    void createBlank(state.kind === 'office' || state.kind === 'all' ? 'pptx' : state.kind, button, true)
   }
   return button
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Hand cards to linked agents and start new tasks through the unified dispatch API (App API 15).
+- Tasks started from a shared board join its chat so the new agent can claim and update the card.
+- Show the host's refusal reason when a linked file cannot be opened beside the board.
+
 ## 1.1.0
 
 - Opened in a chat, Teamboard is that chat's board file (App API 14 `chatFile`): opening it from the chat's Apps and opening `协作看板.board.json` from the folder show the same tab, the folder one with a way back to the folder.

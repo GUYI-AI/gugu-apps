@@ -350,7 +350,7 @@ function openCard(id) {
   selected = id
   closeView()
   drawer = buildDrawer(id)
-  $('drawer').replaceChildren(drawer.root)
+  $('drawer').replaceChildren($('alert'), drawer.root)
   $('drawer').hidden = false
   $('shell').classList.add('open')
   render()
@@ -360,6 +360,7 @@ function closeCard() {
   closeView()
   selected = null
   drawer = null
+  $('board').before($('alert'))
   $('drawer').hidden = true
   $('drawer').replaceChildren()
   $('shell').classList.remove('open')
@@ -524,7 +525,7 @@ async function updateDrawer(force = false) {
         status,
         h('span', { class: 'acts' },
           h('button', { class: 'plain', text: t.open, disabled: missing, onclick: () => taskAction(() => g.showSession(link.session, { peek: true }), status, t.taskUnavailable) }),
-          h('button', { class: 'plain', text: t.handTo, disabled: missing, onclick: () => taskAction(() => g.compose(t.handText(card, chatOfBoard()), { session: link.session }), status, t.taskUnavailable) }),
+          h('button', { class: 'plain', text: t.handTo, disabled: missing || !row?.agentId, onclick: () => taskAction(() => g.dispatch(t.handText(card, chatOfBoard()), { draft: true, to: { agent: row.agentId } }), status, t.taskUnavailable) }),
           h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))),
       )
     }),
@@ -564,14 +565,12 @@ function linkRow(card, lid, link) {
     case 'project':
     case 'chatfile': {
       const name = nameOf(link)
-      const status = h('span', { class: 'muted', role: 'status' })
       // Drawn in the card when the App can (md, text, images, video); every file also opens beside the board, in the
       // App that opens it or gugu's own preview.
       return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }),
-        status,
         h('span', { class: 'acts' },
           drawable(name) ? h('button', { class: 'plain', text: t.show, onclick: () => showFile(lid, link) }) : null,
-          h('button', { class: 'plain', text: t.openBeside, onclick: () => taskAction(() => g.files.openWith(refOf(link), { peek: true }), status, link.kind === 'file' ? t.taskFilesUnavailable : t.noFiles) }),
+          h('button', { class: 'plain', text: t.openBeside, onclick: () => g.files.openWith(refOf(link), { peek: true }).catch((error) => showAlert(error?.message ?? String(error))) }),
           remove))
     }
     case 'message':
@@ -785,7 +784,9 @@ async function startTask(card, button, project) {
   button.disabled = true
   button.textContent = t.starting
   try {
-    const { agentId } = await g.spawnAgent(t.handText(card, chatOfBoard()), { title: card.title, ...(project ? { project } : {}) })
+    const chat = chatOfBoard()
+    const { to } = await g.dispatch(t.handText(card, chat), { to: { new: true }, spawn: { title: card.title, ...(project ? { project } : {}), ...(chat ? { chat: chat.id } : {}) } })
+    const agentId = to.agent
     const row = (await g.listAgents()).find((a) => a.agentId === agentId)
     if (!row) throw new Error(`the new task (${agentId}) is not in the task list`)
     await change({ type: 'link.add', card: card.id, link: { kind: 'task', session: row.sessionId, agent: agentId, title: card.title } })

@@ -30,7 +30,7 @@ const gugu = {
   getContext: vi.fn(async () => ({ chat: { id: 'chat-1', name: 'G', kind: 'group', groupId: 'chat-1' }, file: { chat: 'chat-1', id: 'book' }, locale: 'zh-CN', capabilities: ['files:read'] })),
   onLink: vi.fn(),
   onContextChanged: vi.fn(() => () => {}),
-  compose: vi.fn(async () => {}),
+  dispatch: vi.fn(async () => {}),
   files: {
     list: vi.fn(async () => [{ ...entry, version: listed }]),
     onChanged: vi.fn((_place: unknown, handler: (change: unknown) => void) => {

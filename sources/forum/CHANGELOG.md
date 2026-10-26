@@ -1,5 +1,9 @@
 # 更新记录
 
+## 0.1.5
+
+- Require App API 15; agent assignment uses the host's unified target sheet.
+
 ## 0.1.4
 
 - Declare desktop and phone support for the human interface (App API 12).

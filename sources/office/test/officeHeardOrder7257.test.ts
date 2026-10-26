@@ -33,7 +33,7 @@ const gugu = {
     contextChanged = fn
     return () => {}
   }),
-  compose: vi.fn(async (_text: string, _options: unknown) => {}),
+  dispatch: vi.fn(async (_text: string, _options: unknown) => {}),
   files: {
     list: vi.fn(async () => []),
     onChanged: vi.fn((_place: unknown, fn: typeof heard) => {
@@ -53,10 +53,10 @@ const drawn = (step: string) => until(step, () => document.body.dataset.state ==
 /** Slide 1's first shape picked and put in the composer: the name on the pill. */
 async function pillName() {
   $('preview').querySelector<HTMLButtonElement>('.pptx-slide[data-n="1"] .pptx-hit')!.click()
-  const before = gugu.compose.mock.calls.length
+  const before = gugu.dispatch.mock.calls.length
   $('pick-send').click()
-  await until('the pick is in the composer', () => gugu.compose.mock.calls.length === before + 1)
-  const [, options] = gugu.compose.mock.calls.at(-1) as unknown as [string, { refs: { file: { name: string } }[] }]
+  await until('the pick is in the composer', () => gugu.dispatch.mock.calls.length === before + 1)
+  const [, options] = gugu.dispatch.mock.calls.at(-1) as unknown as [string, { refs: { file: { name: string } }[] }]
   return options.refs[0]!.file.name
 }
 async function openFile(id: string) {
