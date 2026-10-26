@@ -2,8 +2,8 @@
 //
 // Who calls is `agent` (user:<uuid>), stamped by gugu — never an argument; a call with no agent is the person, from
 // 雷达's own tab (callProgram). Each subscription is its own file (subs/<id>.json); the background page reads them and
-// does the watching. Which agents are on this computer comes from agents.json, which the background page rewrites
-// whenever an agent moves: a target that is not in it is not here.
+// does the watching. Which agents gugu can currently read comes from agents.json, which the background page rewrites
+// whenever an agent moves: unreachable computers are reported with that snapshot.
 import { createHash } from 'node:crypto'
 import { watchArgs, readJson, resolveAgent, listSubs, readSub, writeSub, removeSub, LEVELS, DEFAULT_LEVEL } from './store.js'
 
@@ -111,14 +111,14 @@ export const watching = {
       const a = snapshot.agents.find((row) => row.agentId === id)
       return a ? `${a.title} (session:${a.sessionId})` : `${saved ?? id} (not currently reachable)`
     }
-    const row = (s) => ({ id: s.id, by: s.by === agent ? 'you' : name(s.by, s.titles?.by), target: name(s.target, s.titles?.target), to: s.to === agent ? 'you' : name(s.to, s.titles?.to), level: s.level })
+    const row = (s) => ({ id: s.id, by: s.by === agent ? 'you' : name(s.by, s.titles?.by), target: name(s.target, s.titles?.target), to: s.to === agent ? 'you' : name(s.to, s.titles?.to), level: s.level, target_reading: snapshot.agents.find((a) => a.agentId === s.target) ?? null })
     const mine = all.filter((s) => s.by === agent)
     const toMe = all.filter((s) => s.to === agent && s.by !== agent)
     const ids = new Set([...mine, ...toMe].map((s) => s.id))
     return {
       mine: mine.map(row),
       sent_to_me: toMe.map(row),
-      watching_me: all.filter((s) => s.target === agent).map((s) => ({ id: s.id, by: name(s.by, s.titles?.by), level: s.level })),
+      watching_me: all.filter((s) => s.target === agent).map((s) => ({ id: s.id, by: name(s.by, s.titles?.by), level: s.level, target_reading: snapshot.agents.find((a) => a.agentId === s.target) ?? null })),
       recent: (state.log ?? []).filter((e) => ids.has(e.sub)).slice(-10),
       background_checked_at: state.checkedAt ?? null,
       not_reached: snapshot.unreached ?? [],

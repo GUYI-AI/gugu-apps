@@ -210,7 +210,7 @@ async function check() {
   }
 
   state.last = { ...Object.fromEntries(Object.entries(state.last).filter(([, row]) => unreachable(row.deviceId))), ...Object.fromEntries(list.map((row) => [row.agentId, {
-    status: row.status, detail: row.detail ?? null, title: row.title, deviceId: row.deviceId ?? null, statusAt: row.statusAt ?? null,
+    status: row.status, detail: row.detail ?? null, title: row.title, deviceId: row.deviceId ?? null, deviceLabel: row.deviceLabel ?? null, statusAt: row.statusAt ?? null,
     workingSince: row.status === 'working' ? workingSince(row, state.last[row.agentId]) : null,
   }])) }
   for (const id of Object.keys(state.fired)) if (!subs[id]) delete state.fired[id]
