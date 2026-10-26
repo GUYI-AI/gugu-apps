@@ -19,6 +19,8 @@ node tools.js --diagnose /absolute/path/to/project
 node tools.js --diagnose /absolute/path/to/memory --context-export /absolute/path/to/context-export.json
 ```
 
-CLI 不解析 transcript。导出文件是一组宿主 `sessions.read({view:'context'})` 的投影，数组或 `{sessions:[…]}`；没有导出时只报告静态检查，历史检查显示待测。热度还需要导出带宿主首条消息时间计算出的 `hot` / `sources`；未提供则显示未知。
+CLI 不解析 transcript。导出文件支持宿主 `sessions.read({view:'context'})` 的单份投影、投影数组或 `{sessions:[…]}`；没有导出时只报告静态检查，历史检查显示待测。热度还需要导出带宿主首条消息时间计算出的 `hot` / `sources`；未提供则显示未知。输出全部为 JSONL，最后一行是 `type: "summary"`。R17 仅输出唯一路径、涉及文件及分类计数，逐项证据在 App 的分页工具中读取。
+
+Codex 容量只累计仓库根到工作目录的项目指令（每层优先 AGENTS.override.md），全局指令单独列出，不占项目的 32 KiB。R19 从 MEMORY.md 直接收录的 feedback 索引文字提词，拆分连字符标识符，以语料频率过滤；共享至少两个词的条目相连，三条以上给出待判断的一组，不预置主题词表。
 
 程序不读取凭据或认证文件，不发送消息，不派 agent。修复快照保存在 App 数据夹 `snapshots/`，保留原始字节、路径和时间；同一项目的诊断报告刷新覆盖，原始 transcript 始终由宿主管理。

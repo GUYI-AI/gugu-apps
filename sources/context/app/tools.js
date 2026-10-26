@@ -114,11 +114,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     try {
       const historyIndex = process.argv.indexOf('--context-export')
       const exported = historyIndex < 0 ? null : JSON.parse(await fs.readFile(process.argv[historyIndex + 1], 'utf8'))
-      const history = exported ? { ...(Array.isArray(exported) ? { sessions: exported } : exported), complete: true, hot: exported.hot ?? null, sample: (Array.isArray(exported) ? exported : exported.sessions).length } : null
+      const sessions = exported ? Array.isArray(exported) ? exported : exported.sessions || [exported] : []
+      const history = exported ? { ...(!Array.isArray(exported) ? exported : {}), sessions, complete: true, hot: exported.hot ?? null, sample: sessions.length } : null
       const project = await projectFor(process.argv[3], history?.sessions || [])
       const report = await measure(project, history)
-      for (const rule of report.rules) { for (const finding of rule.findings) console.log(JSON.stringify({ rule: rule.id, ...finding })); console.log(JSON.stringify({ rule: rule.id, title: rule.title, count: rule.findings.length, pending: rule.pending })) }
-      console.log(JSON.stringify({ project: report.project, bars: report.bars, capacities: report.capacities }, null, 2))
+      for (const rule of report.rules) {
+        if (rule.id !== 'R17') for (const finding of rule.findings) console.log(JSON.stringify({ type: 'finding', rule: rule.id, ...finding }))
+        console.log(JSON.stringify({ type: 'rule', rule: rule.id, title: rule.title, count: rule.findings.length, pending: rule.pending, ...(rule.metrics ? { metrics: rule.metrics } : {}) }))
+      }
+      console.log(JSON.stringify({ type: 'summary', project: report.project, bars: report.bars, capacities: report.capacities }))
     } catch (e) { console.error(e.message); process.exitCode = 1 }
   } else { console.error('Usage: node tools.js --diagnose <memory-directory|project-root> [--context-export <host-context-summary.json>]'); process.exitCode = 1 }
 }

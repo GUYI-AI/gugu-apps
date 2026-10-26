@@ -76,8 +76,15 @@ export async function discover({ settings = {}, sessions = [], extraPaths = [], 
     for (const s of projectSections(await fs.readFile(path.join(root, 'config.toml'), 'utf8'))) candidates.add(expand(s.path, home))
   }
   const projects = new Map()
-  for (const cwd of [...candidates].sort()) {
-    const identity = await projectIdentity(cwd)
+  // Filesystem and Git subprocess waits are independent. Avoid serially paying the
+  // process-start cost for every historical project before diagnosing one project.
+  const paths = [...candidates].sort(), identities = new Map()
+  let next = 0
+  await Promise.all(Array.from({ length: Math.min(8, paths.length) }, async () => {
+    while (next < paths.length) { const cwd = paths[next++]; identities.set(cwd, await projectIdentity(cwd)) }
+  }))
+  for (const cwd of paths) {
+    const identity = identities.get(cwd)
     if (!identity) continue
     const project = projects.get(identity.key) || { ...identity, locations: [], instructionRoots: {}, memories: [], codexRoots: roots.codex, claudeRoots: roots.claude }
     if (!project.locations.includes(identity.cwd)) project.locations.push(identity.cwd)

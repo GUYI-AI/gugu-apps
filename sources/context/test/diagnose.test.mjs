@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { capacity, bars, diagnose } from '../app/lib/diagnose.js'
-import { frontmatter, links } from '../app/lib/markdown.js'
+import { frontmatter, links, indexEntries } from '../app/lib/markdown.js'
 import { discover, projectIdentity, remoteIdentity, pathStatus } from '../app/lib/discovery.js'
 import { missingPaths } from '../app/lib/path-check.js'
 import { candidates } from '../app/lib/semantic.js'
@@ -40,6 +40,9 @@ test('health deducts once per rule and cleanup does not deduct', () => {
   assert.equal(result.health.value, 3)
   assert.equal(result.hot.cells, 8)
   assert.equal(bars([], [], null).hot.cells, null)
+  assert.equal(bars([], [{ ratio: .804 }], 0).capacity.cells, 8)
+  assert.equal(bars([], [{ ratio: .001 }], 0).capacity.cells, 1)
+  assert.equal(bars([], [{ ratio: 0 }], 0).capacity.cells, 0)
 })
 
 test('memory links ignore shell/JSON expressions and parse frontmatter metadata', () => {
@@ -117,9 +120,64 @@ test('EACCES and EPERM remain unverifiable rather than missing', async (t) => {
   await fs.mkdir(locked)
   await fs.chmod(locked, 0o000)
   try {
-    const rows = await missingPaths([{ file: 'one.md', path: path.join(root, 'one.md'), body: `${locked}/file.md` }], { root })
+    const { findings: rows } = await missingPaths([{ file: 'one.md', path: path.join(root, 'one.md'), body: `${locked}/file.md` }], { root })
     if (process.getuid?.() !== 0) assert.equal(rows[0].kind, 'unverifiable')
   } finally { await fs.chmod(locked, 0o700) }
+})
+
+test('path evidence deduplicates file × path and does not repeat long source lines', async (t) => {
+  const root = await fixture(t), body = `${'long output '.repeat(2000)} src/gone.ts src/gone.ts\nagain src/gone.ts\n`
+  const raw = fm('one', body)
+  const result = await missingPaths([{ file: 'one.md', path: path.join(root, 'one.md'), body, raw }, { file: 'two.md', path: path.join(root, 'two.md'), body: 'src/gone.ts\nsrc/other.ts' }], { root })
+  assert.equal(result.findings.length, 3)
+  assert.equal(result.metrics.missingPaths, 2)
+  assert.equal(result.metrics.affectedFiles, 2)
+  assert.equal(result.metrics.classes.missing.paths, 2)
+  assert.ok(result.findings.every((row) => row.evidence === undefined))
+  assert.equal(result.findings[0].line, 7)
+})
+
+test('Codex project budget excludes global instructions and selects project override', async (t) => {
+  const root = await fixture(t), codex = path.join(root, 'codex')
+  await fs.mkdir(path.join(root, 'project')); await fs.mkdir(codex)
+  const project = await fs.realpath(path.join(root, 'project'))
+  await fs.writeFile(path.join(codex, 'AGENTS.md'), 'global'.repeat(6000))
+  await fs.writeFile(path.join(project, 'AGENTS.md'), 'default')
+  await fs.writeFile(path.join(project, 'AGENTS.override.md'), 'override')
+  const report = await diagnose({ root: project, locations: [project], memories: [], codexRoots: [codex] })
+  assert.equal(report.capacities[0].bytes, 8)
+  assert.deepEqual(report.capacities[0].files, [path.join(project, 'AGENTS.override.md')])
+  assert.ok(report._instructions.some((f) => f.path === path.join(project, '../codex/AGENTS.md')))
+})
+
+test('a supersession warning in the old index entry prevents R4', async (t) => {
+  const root = await fixture(t)
+  await fs.writeFile(path.join(root, 'MEMORY.md'), '- [old](old.md) — ⚠️已被 10-25 new 取代\n- [new](new.md) — new\n')
+  await fs.writeFile(path.join(root, 'old.md'), fm('old'))
+  await fs.writeFile(path.join(root, 'new.md'), fm('new', '覆盖 10-22 [[old]]'))
+  const report = await diagnose({ root, locations: [], memories: [root] })
+  assert.equal(report.rules.find((r) => r.id === 'R4').findings.length, 0)
+})
+
+test('R19 connects index keyword pairs across four feedback entries, excluding hub-only rules', () => {
+  const descriptions = ['lanes move to ThinkPad harness opus', 'new lanes ThinkPad session_spawn', 'hard tasks ThinkPad session_spawn harness claude', 'simple tasks session_spawn harness codex', 'unrelated garden water', 'lanes ThinkPad session_spawn']
+  const docs = descriptions.map((description, i) => ({ file: `${i}.md`, path: String(i), body: description, fields: { description, type: 'feedback' } }))
+  const raw = docs.slice(0, 5).map((f) => `- [${f.file}](${f.file}) — ${f.fields.description}`).join('\n')
+  docs.push({ file: 'MEMORY.md', path: 'index', body: raw, fields: {}, entries: indexEntries('MEMORY.md', raw) })
+  const result = candidates(docs).scattered
+  assert.equal(result.length, 1)
+  assert.deepEqual(result[0].members.sort(), ['0', '1', '2', '3'])
+})
+
+test('CLI emits JSONL ending in summary, with R17 counts only', async (t) => {
+  const root = await fixture(t)
+  await fs.writeFile(path.join(root, 'MEMORY.md'), '- [one](one.md) — one\n')
+  await fs.writeFile(path.join(root, 'one.md'), fm('one', 'src/deleted.ts src/deleted.ts'))
+  const output = execFileSync(process.execPath, [path.resolve('app/tools.js'), '--diagnose', root], { encoding: 'utf8', env: { ...process.env, HOME: root, CLAUDE_CONFIG_DIR: root, CODEX_HOME: root, GUGU_APP_SETTINGS: '{}' } })
+  const rows = output.trim().split('\n').map((line) => JSON.parse(line))
+  assert.equal(rows.at(-1).type, 'summary')
+  assert.equal(rows.filter((row) => row.rule === 'R17').length, 1)
+  assert.equal(rows.find((row) => row.rule === 'R17').metrics.missingPaths, 1)
 })
 
 test('literal prefix filtering agrees with exhaustive Jaccard, including common-vocabulary pairs', () => {

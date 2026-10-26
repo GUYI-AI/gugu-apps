@@ -31,7 +31,7 @@ export function bars(rules, capacities, hot) {
   const yellow = rules.filter((r) => r.severity === 'yellow' && r.findings.length).length
   const pending = rules.filter((r) => r.pending).map((r) => r.id)
   const ratio = Math.max(0, ...capacities.map((c) => c.ratio))
-  return { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - 3 * red - yellow), red, yellow, complete: !pending.length, pending }, capacity: { ratio, percent: Math.round(ratio * 100), cells: Math.min(10, Math.ceil(ratio * 10)) } }
+  return { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - 3 * red - yellow), red, yellow, complete: !pending.length, pending }, capacity: { ratio, percent: Math.round(ratio * 100), cells: Math.min(10, Math.max(ratio > 0 ? 1 : 0, Math.round(ratio * 10))) } }
 }
 
 async function imports(filePath, seen = new Set()) {
@@ -50,12 +50,12 @@ function superseded(files, entries) {
   const byName = new Map(files.map((f) => [f.file, f])), rows = [], seen = new Set()
   for (const current of files.filter((f) => f.file !== 'MEMORY.md' && !f.file.endsWith('-hub.md'))) for (const line of lines(current.body)) {
     const refs = links(line)
-    for (const word of line.matchAll(/覆盖|取代|替代|作废|推翻|已过时|supersed\w*|overrid\w*|replaces/gi)) for (const link of refs) {
+    for (const word of line.matchAll(/覆盖|取代|替代|作废|推翻|已过时|已并入|supersed\w*|overrid\w*|replaces/gi)) for (const link of refs) {
       const gap = link.offset >= word.index + word[0].length ? link.offset - word.index - word[0].length : word.index - link.offset - link.text.length
       const obsolete = byName.get(link.target)
       if (!obsolete || obsolete.file === current.file || gap < 0 || gap > 25) continue
       const indexedBy = entries.filter((e) => e.target === obsolete.file)
-      if (!indexedBy.length || obsolete.links.some((l) => l.target === current.file)) continue
+      if (!indexedBy.length || obsolete.links.some((l) => l.target === current.file) || indexedBy.some((e) => /已被.*(?:取代|替代|覆盖)|已(?:过时|并入)|superseded/i.test(e.text) || links(e.text).some((l) => l.target === current.file))) continue
       const key = `${current.path}:${obsolete.path}`
       if (!seen.has(key)) { seen.add(key); rows.push({ path: obsolete.path, current: current.path, indexedBy, evidence: line, repair: 'supersede' }) }
     }
@@ -141,9 +141,15 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
       if (!imported.has(await fs.realpath(ag))) add('R5', { path: present[0], agentsPath: ag, repair: 'import' })
     }
   }
-  // Codex loads one instruction per level, override before AGENTS, plus one global file.
+  // Codex project_doc_max_bytes applies only to root-to-cwd entries. Global user_instructions
+  // are separate and never consume `remaining` in load_project_instructions:
+  // https://github.com/openai/codex/blob/970111f6cb62cc02fe36a82ea7d71b37a2889c97/codex-rs/core/src/agents_md.rs#L55
   for (const cwd of project.locations) {
-    const relevant = instructions.filter((f) => /^AGENTS(?:\.override)?\.md$/.test(path.basename(f.path)) && ((cwd === path.dirname(f.path) || cwd.startsWith(`${path.dirname(f.path)}/`)) || project.codexRoots?.some((r) => path.dirname(f.path) === r)))
+    const root = project.instructionRoots?.[cwd] || project.root
+    const relevant = instructions.filter((f) => {
+      const parent = path.dirname(f.path)
+      return /^AGENTS(?:\.override)?\.md$/.test(path.basename(f.path)) && (parent === root || parent.startsWith(`${root}/`)) && (parent === cwd || cwd.startsWith(`${parent}/`))
+    })
     const selected = [...Map.groupBy(relevant, (f) => path.dirname(f.path)).values()].map((group) => group.find((f) => f.path.endsWith('AGENTS.override.md')) || group[0])
     if (selected.length) capacities.push({ ...capacity(selected.map((f) => f.raw).join(''), 'codex'), path: cwd, files: selected.map((f) => f.path) })
   }
@@ -171,7 +177,9 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
       for (const key of Object.keys(state)) if (path.isAbsolute(key) && !await exists(key)) add('R20', { path: hooksPath, target: key, repair: 'hook-state' })
     }
   }
-  for (const missing of await missingPaths(files, project)) add('R17', missing)
+  const paths = await missingPaths(files, project)
+  rule('R17').findings = paths.findings
+  rule('R17').metrics = paths.metrics
   const stats = bars(rules, capacities, completeHistory ? history.hot : null)
   return { project, rules, capacities, bars: stats, history: history ? { complete: history.complete, sample: history.sample, total: history.total, since: history.since, sources: history.sources, hotTasks: history.hotTasks, reason: history.reason, unknownStarts: history.unknownStarts } : null, agents: agentDefinitions, measuredAt: new Date(now).toISOString(), _memories: memorySets, _instructions: instructions }
 }

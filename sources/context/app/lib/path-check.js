@@ -47,13 +47,31 @@ export async function missingPaths(files, project) {
     classified.set(token, result)
     return result
   }
-  const results = []
-  for (const file of files.filter((f) => f.file.endsWith('.md'))) for (const [i, line] of lines(file.body).entries()) {
-    for (const m of line.matchAll(/(?<![\w/.~:-])(?:~\/|\/(?!\/)|(?:[\w.-]+\/)+)[^\s`'"()\[\]<>，。、；：）（「」|*{}$,;]+/g)) {
-      const token = m[0].replace(/(?::\d+(?:-\d+)?)+$/, '').replace(/[.,;:!?]+$/, '').replace(/\/$/, '')
-      if (token.length < 6 || /[<>…*]|\.\.\./.test(token)) continue
-      results.push(classify(token).then((result) => result ? { path: file.path, target: token, ...result, line: i + 1, evidence: line, repair: result.kind === 'deleted-worktree' && /^\s*[-*]?\s*`?[^\s`]+`?\s*$/.test(line) ? 'remove-path-line' : null } : null))
-    }
+  const results = [], seen = new Set()
+  for (const file of files.filter((f) => f.file.endsWith('.md'))) {
+    const firstLine = file.raw ? lines(file.raw.slice(0, file.raw.length - file.body.length)).length : 1
+    for (const [i, line] of lines(file.body).entries()) {
+      for (const m of line.matchAll(/(?<![\w/.~:-])(?:~\/|\/(?!\/)|(?:[\w.-]+\/)+)[^\s`'"()\[\]<>，。、；：）（「」|*{}$,;]+/g)) {
+        const token = m[0].replace(/(?::\d+(?:-\d+)?)+$/, '').replace(/[.,;:!?]+$/, '').replace(/\/$/, '')
+        if (token.length < 6 || /[<>…*]|\.\.\./.test(token)) continue
+        const key = `${file.path}\0${token}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const lineNumber = firstLine + i
+        results.push(classify(token).then((result) => {
+          if (!result) return null
+          const repair = result.kind === 'deleted-worktree' && /^\s*[-*]?\s*`?[^\s`]+`?\s*$/.test(line) ? 'remove-path-line' : null
+          // Evidence is a source location, not a copy of an arbitrarily large log line.
+          return { path: file.path, target: token, ...result, line: lineNumber, column: m.index + 1, ...(repair ? { evidence: line } : {}), repair }
+        }))
+      }
   }
-  return (await Promise.all(results)).filter(Boolean)
+  }
+  const findings = (await Promise.all(results)).filter(Boolean)
+  const classes = Object.fromEntries(['deleted-worktree', 'temporary', 'moved-or-shorthand', 'missing', 'unverifiable'].map((kind) => {
+    const rows = findings.filter((row) => row.kind === kind)
+    return [kind, { paths: new Set(rows.map((row) => row.target)).size, files: new Set(rows.map((row) => row.path)).size }]
+  }))
+  const missing = findings.filter((row) => row.kind !== 'unverifiable')
+  return { findings, metrics: { checkedPaths: classified.size - classes.unverifiable.paths, missingPaths: new Set(missing.map((row) => row.target)).size, affectedFiles: new Set(missing.map((row) => row.path)).size, nonTemporaryFiles: new Set(missing.filter((row) => !['temporary', 'deleted-worktree'].includes(row.kind)).map((row) => row.path)).size, classes } }
 }

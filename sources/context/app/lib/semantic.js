@@ -46,6 +46,42 @@ function literalDuplicates(docs) {
   return result
 }
 
+function scatteredRules(files, docs) {
+  const entries = files.find((f) => f.file === 'MEMORY.md')?.entries || []
+  const indexed = docs.filter((f) => f.fields.type === 'feedback' && entries.some((e) => e.target === f.file))
+  // Topic candidates use only the index the agent sees, never a hand-maintained topic vocabulary.
+  // Split hyphenated identifiers so filenames do not become opaque, unique "keywords".
+  const terms = indexed.map((f) => new Set(tokens(entries.filter((e) => e.target === f.file).map((e) => e.text.replace(/\]\([^)]*\)/g, ']').replace(/-/g, ' ')).join(' ')).filter((t) => !stop.has(t))))
+  const df = count(terms.flatMap((set) => [...set])), maximum = Math.max(3, Math.ceil(indexed.length * .3))
+  const vectors = terms.map((set) => new Map([...set].filter((term) => df.get(term) > 1 && df.get(term) <= maximum).map((term) => [term, 1])))
+  const overlap = new Map(), n = indexed.length
+  for (const [term, posting] of inverted(vectors)) for (let a = 0; a < posting.length; a++) for (let b = a + 1; b < posting.length; b++) {
+    const key = posting[a][0] * n + posting[b][0]
+    if (!overlap.has(key)) overlap.set(key, [])
+    overlap.get(key).push(term)
+  }
+  const neighbors = Array.from({ length: n }, () => [])
+  for (const [key, shared] of overlap) if (shared.length >= 2) {
+    const a = Math.floor(key / n), b = key % n
+    neighbors[a].push(b); neighbors[b].push(a)
+  }
+  const visited = new Set(), groups = []
+  for (let i = 0; i < n; i++) {
+    if (visited.has(i)) continue
+    const members = [], stack = [i], keywords = new Set()
+    visited.add(i)
+    while (stack.length) {
+      const a = stack.pop(); members.push(indexed[a].path)
+      for (const b of neighbors[a]) {
+        for (const term of overlap.get(Math.min(a, b) * n + Math.max(a, b))) keywords.add(term)
+        if (!visited.has(b)) { visited.add(b); stack.push(b) }
+      }
+    }
+    if (members.length >= 3) groups.push({ keywords: [...keywords].sort().join(' · '), members })
+  }
+  return groups
+}
+
 export function candidates(files) {
   const docs = files.filter((f) => f.file.endsWith('.md') && f.file !== 'MEMORY.md' && !f.file.endsWith('-hub.md'))
   const tf = docs.map((f) => count(tokens((f.fields.description || '').repeat(3) + ' ' + f.body.slice(0, 6000)).filter((t) => !stop.has(t))))
@@ -73,16 +109,5 @@ export function candidates(files) {
     const cos = scores.get(key) || 0, shared = sharedIds.get(key) || []
     if (cos > .3 || shared.length >= 2) pairs.push({ a: docs[Math.floor(key / n)].path, b: docs[key % n].path, cosine: Math.round(cos * 1000) / 1000, shared })
   }
-  const groups = new Map()
-  for (let i = 0; i < docs.length; i++) {
-    if (docs[i].fields.type !== 'feedback') continue
-    const descriptionTokens = new Set(tokens(docs[i].fields.description || ''))
-    const terms = [...vectors[i]].filter(([term]) => descriptionTokens.has(term)).toSorted((a, b) => b[1] - a[1]).slice(0, 6).map(([term]) => term).sort()
-    for (let a = 0; a < terms.length; a++) for (let b = a + 1; b < terms.length; b++) {
-      const key = `${terms[a]} + ${terms[b]}`
-      if (!groups.has(key)) groups.set(key, [])
-      groups.get(key).push(docs[i].path)
-    }
-  }
-  return { pairs: pairs.toSorted((a, b) => b.cosine - a.cosine), duplicates: literalDuplicates(docs), scattered: [...groups].filter(([, members]) => members.length >= 3).map(([keywords, members]) => ({ keywords, members })) }
+  return { pairs: pairs.toSorted((a, b) => b.cosine - a.cosine), duplicates: literalDuplicates(docs), scattered: scatteredRules(files, docs) }
 }

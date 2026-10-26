@@ -33,7 +33,7 @@ function groups() {
     const hotKnown = reports.length === items.length && reports.every((r) => r.bars.hot.count !== null)
     const hot = hotKnown ? new Set(reports.flatMap((r) => r.history.hotTasks)).size : null
     const capacity = Math.max(0, ...reports.map((r) => r.bars.capacity.ratio))
-    return { key, items, project: items[0].project, bars: { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - red * 3 - yellow), red, yellow, complete: all }, capacity: { ratio: capacity, percent: Math.round(capacity * 100), cells: Math.min(10, Math.ceil(capacity * 10)) } } }
+    return { key, items, project: items[0].project, bars: { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - red * 3 - yellow), red, yellow, complete: all }, capacity: { ratio: capacity, percent: Math.round(capacity * 100), cells: Math.min(10, Math.max(capacity > 0 ? 1 : 0, Math.round(capacity * 10))) } } }
   }).toSorted((a, b) => (b.bars.hot.count ?? -1) - (a.bars.hot.count ?? -1) || a.project.name.localeCompare(b.project.name))
 }
 
@@ -79,10 +79,15 @@ function listView() {
 }
 
 function explanation(rule) {
+  if (rule.id === 'R17' && rule.metrics) {
+    const m = rule.metrics
+    const names = { 'deleted-worktree': '已删 worktree', temporary: '临时', 'moved-or-shorthand': '改名或简写', missing: '缺失', unverifiable: '无法核实' }
+    return `检查 ${m.checkedPaths} 条唯一路径，缺失 ${m.missingPaths} 条，涉及 ${m.affectedFiles} 个文件；非临时类涉及 ${m.nonTemporaryFiles} 个文件。` + Object.entries(m.classes).map(([kind, count]) => `${names[kind]} ${count.paths} 路径 / ${count.files} 文件`).join('；') + '。证据按文件和路径去重，展开后分页读取。'
+  }
   const text = {
-    R1: '按 UTF-16 字符数 / 25,000 和行数 / 200 取较大值；Codex 按 AGENTS.md 合计 / 32 KiB。',
+    R1: '按 UTF-16 字符数 / 25,000 和行数 / 200 取较大值；Codex 按项目 AGENTS.md 合计 / 32 KiB，全局指令不占项目预算。',
     R2: '当前已到加载上限，或最近一次宿主注入记录有截断警告。', R3: '根据每日注入长度的增长预测，提示并入容量，不另扣健康。',
-    R4: '新记忆明确取代旧记忆，旧的仍挂在索引里且没有回链。记忆侧可修；人写的规矩请交给 agent。',
+    R4: '新记忆明确取代旧记忆，旧的仍挂在索引里；旧正文有回链或索引行已标明取代时不命中。',
     R5: '存在 CLAUDE.md / CLAUDE.local.md，但 @import 链没有引入同目录 AGENTS.md。',
     R6: '至少 5 个任务用过，但 MEMORY.md 和一层 hub 里没有链接。', R7: '宿主记录显示，声明为只读、不作依据的目录仍注入了规矩。',
     R8: '链接指向不存在的记忆；孤儿不在索引里；不可达指从 MEMORY.md 出发走不到。',
@@ -93,7 +98,7 @@ function explanation(rule) {
     R15: 'description 超过 250 个字符。', R16: '单个记忆超过 20 KB；归档预览同时处理相关索引和引用。',
     R17: '核对本地文件和当前 git tree；外机绝对路径不算失效。已删 worktree 与临时路径单列。',
     R18: '正文 5 字符 shingle Jaccard 大于 0.5；只有正文完全相同的候选可直接合并。',
-    R19: '从描述提取的同组关键词在至少 3 条 feedback 里出现；是否合并由 agent 判断。',
+    R19: '只检查 MEMORY.md 直接收录的 feedback：索引词按语料频率筛选，共享至少两个词的条目相连，至少三条形成一组候选。是否同一主题、是否合并由 agent 判断。',
     R20: 'Codex config.toml 的项目信任或 hooks 状态指向已不存在的目录。', R21: '记忆目录里出现非 .md 文件；可移进 archive/。',
   }
   return text[rule.id] || ''
@@ -176,7 +181,7 @@ function detailView(group) {
       const cap = (entry.report?.capacities || []).filter((c) => c.harness === (harness === 'Claude' ? 'claude' : 'codex')).toSorted((a, b) => b.ratio - a.ratio)[0]
       const paths = entry.report?.instructions?.filter((p) => harness === 'Codex' ? /AGENTS(?:\.override)?\.md$/.test(p) : /CLAUDE(?:\.local)?\.md$/.test(p)) || []
       const count = entry.report?.history?.sources?.[harness === 'Claude' ? 'claude-code' : 'codex']
-      body.append(el('tr', {}, el('td', {}, badge(entry.machine.name, [harness])), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'px-path px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.ceil(cap.ratio * 10))) : '—')))
+      body.append(el('tr', {}, el('td', {}, badge(entry.machine.name, [harness])), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'px-path px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
     }
   }
   root.append(el('div', { class: 'table-scroll' }, el('table', { class: 'px-table machine-table' }, el('thead', {}, el('tr', {}, ['机器 · harness', '开工时拿到的规矩', '热度', '容量'].map((t) => el('th', { class: 'px-label' }, t)))), body)))
