@@ -120,6 +120,17 @@ test('host grouping merges worktrees, zero-task context and realpath aliases; te
   assert.equal(await projectIdentity(await fixture(t)), null)
 })
 
+test('a removed worktree still discovers its existing host-grouped main project', async (t) => {
+  const root = await fixture(t, true), cwd = path.join(root, 'removed-worktree')
+  await fs.writeFile(path.join(root, 'AGENTS.md'), 'project context')
+  const group = { key: root, label: 'Host main project' }
+  const found = await discover({ home: root, env: {}, sessions: [{ cwd, group }], groupPaths: async paths => paths.map(path => ({ path, group })) })
+  assert.equal(found.projects.length, 1)
+  assert.equal(found.projects[0].key, root)
+  assert.equal(found.projects[0].name, 'Host main project')
+  assert.equal(found.projects[0].hasContext, true)
+})
+
 test('host default-task grouping belongs to global activity and never creates a project or orphan memory', async (t) => {
   const root = await fixture(t, true), cwd = path.join(root, 'arbitrary-host-default'), config = path.join(root, 'claude')
   const memory = path.join(config, 'projects', cwd.replace(/[^a-zA-Z0-9]/g, '-'), 'memory')

@@ -53,7 +53,7 @@ export async function discoverRoots(settings = {}, env = process.env, home = os.
 
 export async function discover({ settings = {}, sessions = [], extraPaths = [], groupPaths, env, home = os.homedir() } = {}) {
   const roots = await discoverRoots(settings, env, home)
-  const candidates = new Set([...split(settings.projects), ...extraPaths, ...sessions.map((s) => s.cwd).filter(Boolean)].map((p) => expand(p, home)))
+  const candidates = new Set([...split(settings.projects), ...extraPaths, ...sessions.flatMap((s) => [s.cwd, path.isAbsolute(s.group?.key || '') ? s.group.key : null]).filter(Boolean)].map((p) => expand(p, home)))
   for (const root of roots.claude) {
     for (const config of new Set([path.join(root, '.claude.json'), path.join(root, '..', '.claude.json')])) {
       if (await exists(config)) {
