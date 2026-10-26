@@ -21,7 +21,7 @@
 .px-card, .px-sheet, .px-rows, .px-table, .px-panel { border: 1.5px solid var(--px-ink); background: var(--em-background-1); border-radius: 0; }
 .px-card, .px-sheet { position: relative; box-shadow: var(--px-hard); padding: 20px 18px 16px; color: var(--em-foreground); }
 .px-card::before, .px-sheet::before { content: ''; position: absolute; left: -1.5px; right: -1.5px; top: -1.5px; height: 6px; background: var(--px-strip, var(--em-background-3)); border: 1.5px solid var(--px-ink); }
-.px-card { display: block; text-align: left; width: 100%; font: inherit; cursor: pointer; transition: transform 100ms, box-shadow 100ms; }
+.px-card { display: block; text-align: left; white-space: normal; width: 100%; font: inherit; cursor: pointer; transition: transform 100ms, box-shadow 100ms; }
 .px-card:hover, .px-button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--px-shadow); background: var(--em-background-1); }
 .px-card:active, .px-button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--px-shadow); }
 .px-card:focus-visible, .px-button:focus-visible, .px-back:focus-visible { outline: 2px solid var(--em-foreground); outline-offset: 5px; }
@@ -29,6 +29,7 @@
 .px-card-top { display: flex; gap: 12px; align-items: center; margin-top: 4px; }
 .px-name { font-size: var(--em-font-heading); line-height: var(--em-lh-heading); font-weight: 700; margin: 0; }
 .px-card .px-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.px-card-top .px-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .px-path { color: var(--em-foreground-passive); font-size: var(--em-font-caption); overflow-wrap: anywhere; }
 .px-rank { margin-left: auto; align-self: flex-start; color: var(--em-foreground-passive); }
 .px-say { margin: 12px 0; min-height: 20px; }
