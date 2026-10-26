@@ -113,7 +113,7 @@ function explanation(rule) {
     R6: '至少 5 个任务用过，但 MEMORY.md 和一层 hub 里没有链接。', R7: '宿主记录显示，声明为只读、不作依据的目录仍注入了规矩。',
     R8: '链接指向不存在的记忆；孤儿不在索引里；不可达指从 MEMORY.md 出发走不到。',
     R9: '补 name 可直接修；description 和 type 缺失仍需判断。', R10: 'Claude 首份渲染总长；Codex 首份 base-instructions 加 Project 指令文本；不累计后续快照。',
-    R11: '只处理超过 14 天、近期任务摘要没有引用过的 project 类记忆。规则类不会按年龄归档。',
+    R11: '列出近期任务样本未引用的记忆；只有超过 14 天且 type=project 的项可归档。规则类不会按年龄归档。',
     R12: '索引描述和文件 description 不一致，前缀截断另行保留；修复以文件为准。',
     R13: '同一目标有多条索引行，确定修复保留第一处。', R14: '非空索引行超过 200 个字符；改写需要保持规则原意。',
     R15: 'description 超过 250 个字符。', R16: '单个记忆超过 20 KB；归档预览同时处理相关索引和引用。',
@@ -127,7 +127,12 @@ function explanation(rule) {
 
 async function runAction(control, action) {
   control.disabled = true
-  try { await action() } catch (e) { problem = e.message || String(e); render() }
+  try { await action() } catch (e) {
+    const message = e.message || String(e)
+    const status = control.closest('dialog')?.querySelector('[role=status], [role=alert]')
+    if (status) { status.textContent = message; status.classList.add('px-error'); status.setAttribute('role', 'alert') }
+    else { problem = message; render() }
+  }
   finally { control.disabled = false }
 }
 
