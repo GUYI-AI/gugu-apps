@@ -61,8 +61,12 @@ test('cross-device watch, needs_you delivery, deduplication, offline retention a
     assert.equal(sent.length, 2, 'working again rearms the watch')
     await step([receiver], [{ deviceId: null, detail: 'remote listing unavailable' }])
     assert.ok(data.has('subs/w123.json'))
+    // A current local reading wins over an old remote address, even while that old device is offline.
+    await step([receiver, { ...remote, deviceId: null }], [{ deviceId: 'device-b', detail: 'offline' }])
+    await step([receiver, { ...remote, deviceId: null, status: 'needs_user', detail: 'question' }], [{ deviceId: 'device-b', detail: 'offline' }])
+    assert.equal(sent.length, 3)
     await step([receiver])
-    assert.equal(sent.length, 3, 'confirmed removal is told')
+    assert.equal(sent.length, 4, 'confirmed removal is told')
     assert.equal(data.has('subs/w123.json'), false)
     assert.deepEqual(errors, [])
   } finally {
@@ -85,6 +89,7 @@ test('watch resolves a remote session and stores the device for offline checks',
   } finally {
     delete process.env.GUGU_EXTENSION_DATA_DIR
     assert.ok(dir.startsWith(path.join(os.tmpdir(), 'radar-test-')))
+    console.log(`Removing own test directory: ${dir}`)
     await rm(dir, { recursive: true, force: true })
   }
 })

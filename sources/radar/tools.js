@@ -56,8 +56,8 @@ async function watchOnce(args, { agent }) {
         `Computers not reached: ${snapshot.unreached?.map((m) => m.label ?? m.detail).join('; ') || 'none'}.`,
     )
   }
-  const receiver = to ? resolveAgent(snapshot, to) : { agentId: agent }
-  if (!receiver) throw new Error(`${to} is not in gugu's agent list, so 雷达 cannot tell it anything.`)
+  const receiver = resolveAgent(snapshot, to ?? agent)
+  if (!receiver) throw new Error(`${to ?? agent} is not in gugu's agent list (checked ${snapshot.at}), so 雷达 cannot tell it anything yet.`)
   if (watched.agentId === receiver.agentId) throw new Error('an agent cannot watch itself: when it fails it cannot be told')
   const titleOf = (agentId) => snapshot.agents.find((a) => a.agentId === agentId)?.title ?? null
   const told = receiver.agentId === agent ? 'you' : receiver.agentId

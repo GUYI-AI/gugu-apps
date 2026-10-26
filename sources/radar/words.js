@@ -30,7 +30,7 @@ export const WORDS = {
     includes: '具体包括：', listSep: '、', end: '。',
     events: { failed: '停下来报错', gone: '不在了（引擎退出、任务被归档或删除）', stuck: (m) => `很久没动静（${m} 分钟没有新动作）`, waiting: '在等人批准或回答', done: '做完一轮' },
     eventDone: { failed: '停下来报错了', gone: '不在了', stuck: '好像卡住了', waiting: '在等人', done: '做完了' },
-    notHere: '收提醒的那个任务已经不在这台电脑上了', noPermission: '雷达没有给 agent 发消息的权限',
+    notHere: '收提醒的任务当前无法访问', noPermission: '雷达没有给 agent 发消息的权限',
     // reminders (what the told agent reads)
     // ended: the one it is about is gone, and this watch ended with it — nothing left to unwatch
     reminder: (body, sessionId, id, ended) => `雷达提醒：${body}\n（${sessionId ? `它的任务 session:${sessionId}，` : ''}这条不用回复。${ended ? '它不在了，这条关注也到此结束。' : `不想再收到：用 radar 的 unwatch，编号 ${id}。`}）`,
@@ -71,7 +71,7 @@ export const WORDS = {
     includes: 'That covers: ', listSep: ', ', end: '.',
     events: { failed: 'stopping with an error', gone: 'being gone (its engine quit, or its task was archived or deleted)', stuck: (m) => `going quiet (nothing new for ${m} minutes)`, waiting: 'waiting for someone to approve or answer', done: 'finishing a round' },
     eventDone: { failed: 'stopped with an error', gone: 'is gone', stuck: 'seems stuck', waiting: 'is waiting', done: 'finished' },
-    notHere: 'the task to tell is no longer on this computer', noPermission: 'Radar is not allowed to message agents',
+    notHere: 'the task to tell is not currently reachable', noPermission: 'Radar is not allowed to message agents',
     reminder: (body, sessionId, id, ended) => `Radar: ${body}\n(${sessionId ? `Its task is session:${sessionId}. ` : ''}No need to reply. ${ended ? 'It is gone, so this watch has ended.' : `To stop these: radar's unwatch, id ${id}.`})`,
     told: {
       failed: (who) => `${who} stopped with an error.`, gone: (who, why) => `${who} is gone: ${why}.`,

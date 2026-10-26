@@ -146,6 +146,7 @@ async function check() {
   const unreachable = (deviceId) => deviceId != null && reading.unreached.some((m) => m.deviceId === null || m.deviceId === deviceId)
   const subs = await readSubs()
   const byId = new Map(list.map((row) => [row.agentId, row]))
+  const deviceOf = (id, saved) => { const seen = byId.get(id) ?? state.last[id]; return seen ? seen.deviceId : saved }
   const now = Date.now()
 
   const snapshot = JSON.stringify({ agents: list.map(({ agentId, sessionId, title, status, detail, deviceId, deviceLabel, statusFrom, statusAt }) => ({ agentId, sessionId, title, status, detail: detail ?? null, deviceId, deviceLabel, statusFrom, statusAt })), unreached: reading.unreached })
@@ -168,7 +169,7 @@ async function check() {
       await endSub(sub, `这条订阅没有雷达认得的 level（${sub.level ?? '没写'}），是旧格式`, { loud: true })
       continue
     }
-    if (unreachable(byId.get(sub.to)?.deviceId ?? state.last[sub.to]?.deviceId ?? sub.devices?.to)) continue
+    if (unreachable(deviceOf(sub.to, sub.devices?.to))) continue
     if (!byId.has(sub.to)) {
       // 收提醒的那个不在了:和被关注的不在了一样,这条到此为止(这条路的次数留在 state.paths 里)。
       await endSub(sub, '收提醒的任务不在了')
@@ -176,7 +177,7 @@ async function check() {
     }
     const row = byId.get(sub.target)
     const before = state.last[sub.target]
-    if (unreachable(row?.deviceId ?? before?.deviceId ?? sub.devices?.target)) continue
+    if (unreachable(deviceOf(sub.target, sub.devices?.target))) continue
     if (!row) {
       // 不在清单里了:会话被归档或删除。这条订阅到此为止。
       const title = before?.title ?? sub.titles?.target ?? sub.target
