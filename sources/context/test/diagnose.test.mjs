@@ -87,6 +87,16 @@ test('an empty auto-created memory directory has known zero capacity', async (t)
   assert.equal(report.bars.health.complete, true)
 })
 
+test('capacity forecast is informational and does not deduct another health point', async (t) => {
+  const root = await fixture(t), memory = path.join(root, 'memory')
+  await fs.mkdir(memory)
+  await fs.writeFile(path.join(memory, 'MEMORY.md'), 'x'.repeat(20000))
+  const sessions = [12000, 15000, 18000].map((chars, i) => ({ source: 'claude-code', providerSessionId: String(i), loaded: [{ path: path.join(memory, 'MEMORY.md'), kind: 'instruction-file', chars, truncated: false, at: `2026-10-${23 + i}T01:00:00Z` }] }))
+  const report = await diagnose({ root, locations: [root], memories: [memory], codexRoots: [], claudeRoots: [] }, { complete: true, sessions, hot: 3, sample: 3 }, { now: NOW })
+  assert.equal(report.rules.find((r) => r.id === 'R3').findings.length, 1)
+  assert.equal(report.bars.health.value, 9)
+})
+
 test('worktrees and symlink roots merge, temporary directories are excluded', async (t) => {
   const root = await fixture(t, true), repo = path.join(root, 'repo'), wt = path.join(root, 'branch')
   await fs.mkdir(repo)

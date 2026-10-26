@@ -54,7 +54,7 @@ async function reportFor(id) {
   return report
 }
 function summary(report, id) {
-  return { id, project: report.project, bars: report.bars, capacities: report.capacities, instructions: report._instructions.map((f) => f.path), history: report.history, measuredAt: report.measuredAt, agents: report.agents,
+  return { id, project: report.project, bars: report.bars, capacities: report.capacities, capacityForecasts: report.rules.find((r) => r.id === 'R3').findings, instructions: report._instructions.map((f) => f.path), history: report.history, measuredAt: report.measuredAt, agents: report.agents,
     rules: report.rules.map(({ findings, ...rule }) => ({ ...rule, count: findings.length, fixable: findings.some((f) => f.repair) })) }
 }
 function onlyPerson(call) { if (call?.agent) throw new Error('文件写入只能由人在 App 页面查看预览并确认') }

@@ -40,11 +40,13 @@ function groups() {
 
 function say(group) {
   const hits = group.items.flatMap((e) => e.report?.rules || [])
+  const forecasts = group.items.flatMap((e) => e.report?.capacityForecasts || [])
+  const forecast = forecasts.length ? `；按当前增长约 ${Math.min(...forecasts.map((f) => f.daysLeft))} 天触顶` : ''
   const first = hits.find((r) => r.count && r.severity === 'red') || hits.find((r) => r.count && r.severity === 'yellow')
-  if (first) return `${first.title}${first.count > 1 ? ` · ${first.count} 处` : ''}${group.bars.capacity.percent >= 70 ? `；记忆索引用到 ${group.bars.capacity.percent}%` : ''}`
+  if (first) return `${first.title}${first.count > 1 ? ` · ${first.count} 处` : ''}${group.bars.capacity.percent >= 70 ? `；记忆索引用到 ${group.bars.capacity.percent}%` : ''}${forecast}`
   if (!group.bars.health.complete) return '正在读取上下文，健康尚未全测'
   const clean = hits.filter((r) => r.severity === 'clean' && r.count).reduce((sum, r) => sum + r.count, 0)
-  return clean ? `没有扣分项 · ${clean} 处可以清理` : '没有需要处理的上下文问题'
+  return (clean ? `没有扣分项 · ${clean} 处可以清理` : '没有需要处理的上下文问题') + forecast
 }
 
 function card(group, rank) {
@@ -173,6 +175,7 @@ function ruleRow(entry, rule) {
 function detailView(group) {
   root.append(button('‹ 全部项目', () => { selected = null; render() }, { class: 'px-back' }))
   root.append(character(el('section', { class: 'px-sheet' }, sprite(group.project.name, 96), el('div', {}, el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, group.project.name), el('span', { class: 'px-path px-mono' }, group.project.root)), tags(group.items), stats(group.bars, true), el('p', { class: 'px-notice' }, `红 ${group.bars.health.red} · 黄 ${group.bars.health.yellow}${group.bars.health.complete ? '' : ' · 尚有未测规则'}`))), group.project.name))
+  for (const entry of group.items) for (const forecast of entry.report?.capacityForecasts || []) root.append(el('p', { class: 'px-notice' }, `${entry.machine.name}：容量按当前增长约 ${forecast.daysLeft} 天触顶（${forecast.observedDays} 天的注入样本，不另扣健康）。`))
   if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
   root.append(section('在哪些机器上'))
   const body = el('tbody')
