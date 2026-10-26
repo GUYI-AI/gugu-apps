@@ -206,7 +206,7 @@ function detailView(group) {
     if (entry.error) { body.append(el('tr', {}, el('td', { colspan: '4' }, `${entry.machine.name}：${entry.error}`))); continue }
     for (const harness of harnesses(entry)) {
       const cap = (entry.report?.capacities || []).filter((c) => c.harness === (harness === 'Claude' ? 'claude' : 'codex')).toSorted((a, b) => b.ratio - a.ratio)[0]
-      const paths = entry.report?.instructions?.filter((p) => harness === 'Codex' ? /AGENTS(?:\.override)?\.md$/.test(p) : /CLAUDE(?:\.local)?\.md$/.test(p)) || []
+      const paths = cap ? cap.harness === 'claude' ? [cap.path] : cap.files : entry.report?.instructions?.filter((p) => harness === 'Codex' ? /AGENTS(?:\.override)?\.md$/.test(p) : /CLAUDE(?:\.local)?\.md$/.test(p)) || []
       const count = entry.report?.history?.sources?.[harness === 'Claude' ? 'claude-code' : 'codex']
       body.append(el('tr', {}, el('td', {}, badge(entry.machine.name, [harness])), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'px-path px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : count === null ? '起始时间未知' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
     }

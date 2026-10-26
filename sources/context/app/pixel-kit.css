@@ -11,7 +11,7 @@
 }
 [data-gugu-theme=dark] {
   --px-ink: color-mix(in oklab, var(--em-foreground) 38%, var(--em-background-1));
-  --px-shadow: var(--em-background);
+  --px-shadow: #000; /* Neutral-black hard shadow, as in the approved dark mockup. */
   --px-glyph: var(--em-background);
   --px-cyan: #3bb8d8; --px-pink: #e8789c; --px-lav: #a99ed6;
   --px-green: #94c266; --px-orange: #e3946a; --px-yellow: #e6c043;

@@ -87,6 +87,23 @@ test('an empty auto-created memory directory has known zero capacity', async (t)
   assert.equal(report.bars.health.complete, true)
 })
 
+test('Claude capacity and R1 evidence measure MEMORY.md, never project CLAUDE.md', async (t) => {
+  const root = await fixture(t), memory = path.join(root, 'memory'), measured = path.join(memory, 'MEMORY.md')
+  await fs.mkdir(memory)
+  await fs.writeFile(path.join(root, 'CLAUDE.md'), 'project instructions '.repeat(2000))
+  await fs.writeFile(measured, 'm'.repeat(100))
+  const real = await fs.realpath(measured)
+  const project = { root, locations: [root], memories: [memory], codexRoots: [], claudeRoots: [] }
+  let report = await diagnose(project)
+  assert.deepEqual(report.capacities.map(({ path, chars }) => ({ path, chars })), [{ path: real, chars: 100 }])
+  assert.equal(report.rules.find((r) => r.id === 'R1').findings.length, 0)
+  await fs.writeFile(measured, 'm'.repeat(20000))
+  report = await diagnose(project)
+  assert.equal(report.capacities[0].path, real)
+  assert.equal(report.capacities[0].chars, 20000)
+  assert.deepEqual(report.rules.find((r) => r.id === 'R1').findings.map((r) => r.path), [real])
+})
+
 test('capacity forecast is informational and does not deduct another health point', async (t) => {
   const root = await fixture(t), memory = path.join(root, 'memory')
   await fs.mkdir(memory)
