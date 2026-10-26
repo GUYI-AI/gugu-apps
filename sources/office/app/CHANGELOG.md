@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.11
+
+- Its own page opens beside a chat at 480 px instead of half the window: the start page declares its width (`sideWidth`, App API 16). A deck or workbook opened in it is still the chat's peer, half and half.
+
 ## 0.2.10
 
 - Hand selected places to an agent through the host dispatch sheet, or put them in the composer. Ask an agent for a file by making a blank file first and handing it over (App API 15).

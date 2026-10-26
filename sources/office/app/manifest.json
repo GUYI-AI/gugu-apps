@@ -16,8 +16,8 @@
     }
   },
   "author": "咕咕",
-  "version": "0.2.10",
-  "apiVersion": 15,
+  "version": "0.2.11",
+  "apiVersion": 16,
   "platforms": [
     "desktop",
     "phone"
@@ -41,7 +41,8 @@
         "name": "home",
         "title": "咕咕办公",
         "icon": "icon.png",
-        "entry": "home.html"
+        "entry": "home.html",
+        "sideWidth": 480
       }
     ],
     "skills": "skills"
