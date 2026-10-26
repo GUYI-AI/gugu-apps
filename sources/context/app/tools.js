@@ -18,10 +18,13 @@ const page = { offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer'
 const projectArg = { type: 'string', description: 'Project root or an explicit memory directory; discover lists projects.' }
 let inventory = null
 
-async function projectFor(target, rows = []) {
+async function projectFor(target, rows = [], discovered = null) {
   if (target === '@global') { const roots = await discoverRoots(settings()); return { key: 'global', name: '全局规矩', root: os.homedir(), locations: [], memories: [], codexRoots: roots.codex, claudeRoots: roots.claude, global: true } }
-  const info = await findProjects({ settings: settings(), sessions: rows, extraPaths: [target] })
   const full = expand(target)
+  const listed = discovered?.projects.find((p) => p.root === full || p.locations.includes(full) || p.memories.includes(full))
+  if (listed) return listed
+  const info = await findProjects({ settings: settings(), sessions: rows, extraPaths: [target] })
+  if (inventory?.rows === rows) inventory.discovered = info
   if (await exists(path.join(full, 'MEMORY.md'))) {
     const real = await fs.realpath(full)
     const known = info.projects.find((p) => p.memories.includes(real))
@@ -62,6 +65,7 @@ export const discover = {
   async run() {
     inventory = await sessionIndex(host())
     const found = await findProjects({ settings: settings(), sessions: inventory.rows })
+    inventory.discovered = found
     return { ...found, history: { complete: inventory.complete, reason: inventory.reason, total: inventory.total } }
   },
 }
@@ -69,8 +73,10 @@ export const diagnose = {
   description: 'Measure 21 deterministic context checks, activity, health and loading capacity for a project. Semantic checks produce prompts only. Missing host observations remain pending.',
   inputSchema: object({ project: projectArg }, ['project']), annotations: { readOnlyHint: true },
   async run({ project }) {
-    inventory = await sessionIndex(host())
-    const found = await projectFor(project, inventory.rows)
+    // A page refresh calls discover once, then diagnoses its projects against that
+    // same index. Do not rescan every historical config root for every role card.
+    inventory ||= await sessionIndex(host())
+    const found = await projectFor(project, inventory.rows, inventory.discovered)
     const rows = inventory.rows.filter((row) => found.locations.includes(row.cwd) || row.cwd === found.root)
     const history = found.global ? { complete: true, sessions: [], hot: 0, sample: 0, total: 0 } : inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300) }) : { complete: false, reason: inventory.reason, sessions: [], hot: null }
     const report = await measure(found, history)

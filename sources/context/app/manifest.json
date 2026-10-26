@@ -15,9 +15,9 @@
   "icon": "icon.png",
   "permissions": { "capabilities": ["agents:tools", "agents:history:all", "agents:read:all-machines"], "network": [] },
   "settings": [
-    { "key": "claudeRoots", "title": "补充 Claude 配置根", "type": "string", "description": "每行一个路径。会自动发现 CLAUDE_CONFIG_DIR、~/.claude 和 ~/.rec/claude/accounts/*/config。", "default": "" },
-    { "key": "codexRoots", "title": "补充 Codex 配置根", "type": "string", "description": "每行一个路径。会自动发现 CODEX_HOME 和 ~/.codex。", "default": "" },
-    { "key": "projects", "title": "补充项目目录", "type": "string", "description": "每行一个项目路径。worktree 会并到主仓；/tmp 下的临时目录不会列成项目。", "default": "" },
+    { "key": "claudeRoots", "title": "补充 Claude 配置根", "type": "string", "description": "补充配置根路径。会自动发现 CLAUDE_CONFIG_DIR、~/.claude 和 ~/.rec/claude/accounts/*/config。", "default": "" },
+    { "key": "codexRoots", "title": "补充 Codex 配置根", "type": "string", "description": "补充配置根路径。会自动发现 CODEX_HOME 和 ~/.codex。", "default": "" },
+    { "key": "projects", "title": "补充项目目录", "type": "string", "description": "补充项目路径。worktree 会并到主仓；/tmp 下的临时目录不会列成项目。", "default": "" },
     { "key": "sample", "title": "上下文样本数", "type": "select", "default": "300", "options": [{ "value": "100", "title": "最近 100 个任务" }, { "value": "300", "title": "最近 300 个任务" }], "description": "用于引用、注入和冷记忆检查；7 天任务热度查完整索引。" }
   ],
   "contributes": {

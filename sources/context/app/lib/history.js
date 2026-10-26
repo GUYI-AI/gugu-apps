@@ -1,3 +1,6 @@
+import path from 'node:path'
+import { canonicalPath } from './discovery.js'
+
 const DAY = 86400000
 
 export async function sessionIndex(host) {
@@ -19,32 +22,46 @@ export async function observe(host, rows, { sample = 300, now = Date.now() } = {
   if (!host?.sessions?.read) return { complete: false, reason: '宿主尚未提供上下文读数（需要 App API 17）', sessions: [], hot: null }
   const selected = rows.toSorted((a, b) => b.updatedAt - a.updatedAt)
   const observations = [], starts = [], unknownStarts = []
-  for (let i = 0; i < selected.length; i++) {
-    const row = selected[i]
-    if (i < sample) observations.push({ ...row, ...await host.sessions.read({ source: row.source, filePath: row.filePath, view: 'context' }) })
-    if (row.updatedAt >= now - 7 * DAY) {
-      const page = await host.sessions.read({ source: row.source, filePath: row.filePath, offset: 0, limit: 1 })
-      const start = page.turns[0]?.createdAt
-      if (start && Number.isFinite(Date.parse(start))) starts.push({ id: `${row.source}:${row.providerSessionId}`, source: row.source, at: start })
-      else unknownStarts.push(`${row.source}:${row.providerSessionId}`)
+  let next = 0
+  // Match discovery's bounded I/O concurrency. Both views use the same host reader;
+  // one slow transcript must not serialize every unrelated task in the sample.
+  await Promise.all(Array.from({ length: Math.min(8, selected.length) }, async () => {
+    while (next < selected.length) {
+      const i = next++, row = selected[i]
+      const [context, page] = await Promise.all([
+        i < sample ? host.sessions.read({ source: row.source, filePath: row.filePath, view: 'context' }) : null,
+        row.updatedAt >= now - 7 * DAY ? host.sessions.read({ source: row.source, filePath: row.filePath, offset: 0, limit: 1 }) : null,
+      ])
+      if (context) observations[i] = { ...row, ...context }
+      if (page) {
+        const start = page.turns[0]?.createdAt
+        if (start && Number.isFinite(Date.parse(start))) starts.push({ id: `${row.source}:${row.providerSessionId}`, source: row.source, at: start })
+        else unknownStarts.push(`${row.source}:${row.providerSessionId}`)
+      }
     }
-  }
+  }))
   const hot = starts.filter((s) => Date.parse(s.at) >= now - 7 * DAY && Date.parse(s.at) <= now)
   return {
     complete: true, sessions: observations, sample: observations.length, total: rows.length,
     since: selected.length ? new Date(selected[Math.min(selected.length, sample) - 1].updatedAt).toISOString() : null,
     hot: unknownStarts.length ? null : hot.length, unknownStarts,
     hotTasks: hot.map((s) => s.id),
-    sources: Object.fromEntries(['claude-code', 'codex'].map((source) => [source, hot.filter((s) => s.source === source).length])),
+    sources: Object.fromEntries(['claude-code', 'codex'].map((source) => [source, unknownStarts.some((id) => id.startsWith(`${source}:`)) ? null : hot.filter((s) => s.source === source).length])),
   }
 }
 
-export function summarizeHistory(history, files, now = Date.now()) {
-  const mentions = new Map(files.map((f) => [f.file, new Set()]))
+export async function summarizeHistory(history, files, now = Date.now()) {
+  const mentions = new Map(files.map((f) => [f.path, new Set()]))
+  const names = Map.groupBy(files, (f) => f.file)
+  const refs = [...new Set((history?.sessions || []).flatMap((task) => task.refs || []))].filter((ref) => names.has(path.basename(ref)))
+  const realRefs = new Map(await Promise.all(refs.map(async (ref) => [ref, path.isAbsolute(ref) ? await canonicalPath(ref) : ref])))
   const loaded = [], nested = [], initial = []
   for (const task of history?.sessions || []) {
     const id = `${task.source}:${task.providerSessionId}`
-    for (const ref of new Set(task.refs || [])) for (const file of files) if (ref === file.file || ref.endsWith(`/${file.file}`)) mentions.get(file.file).add(id)
+    for (const ref of new Set(task.refs || [])) for (const file of files) {
+      const relative = !path.isAbsolute(ref) && names.get(file.file).length === 1 && (ref === file.file || ref.endsWith(`/${file.file}`))
+      if (realRefs.get(ref) === file.path || relative) mentions.get(file.path).add(id)
+    }
     loaded.push(...(task.loaded || []))
     nested.push(...(task.nested || []))
     const first = (task.loaded || []).find((f) => f.kind === 'rendered-total')

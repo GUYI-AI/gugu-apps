@@ -78,6 +78,15 @@ test('missing history remains pending; missing Claude import is separately red',
   assert.equal(report.bars.hot.count, null)
 })
 
+test('an empty auto-created memory directory has known zero capacity', async (t) => {
+  const root = await fixture(t), memory = path.join(root, 'memory')
+  await fs.mkdir(memory)
+  const report = await diagnose({ root, locations: [root], memories: [memory], codexRoots: [], claudeRoots: [] }, { complete: true, sessions: [], hot: 0, sample: 0 })
+  assert.equal(report.rules.find((r) => r.id === 'R1').pending, null)
+  assert.equal(report.bars.capacity.percent, 0)
+  assert.equal(report.bars.health.complete, true)
+})
+
 test('worktrees and symlink roots merge, temporary directories are excluded', async (t) => {
   const root = await fixture(t, true), repo = path.join(root, 'repo'), wt = path.join(root, 'branch')
   await fs.mkdir(repo)
@@ -109,8 +118,22 @@ test('activity counts starts, not recent updates; context reads are projections 
   assert.equal(args.filter((a) => a.view === 'context').length, 2)
 })
 
-test('Codex instruction length uses one initial base and Project snapshot', () => {
-  const result = summarizeHistory({ sessions: [{ source: 'codex', loaded: [{ kind: 'base-instructions', chars: 100 }, { kind: 'instruction-file', scope: 'Project', chars: 200 }, { kind: 'instruction-file', scope: 'Project', chars: 800 }], refs: [] }] }, [])
+test('unknown task start remains unknown in the harness activity column', async () => {
+  const result = await observe({ sessions: { read: async (arg) => arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: null }] } } }, [{ source: 'codex', providerSessionId: 'unknown', filePath: 'unknown', updatedAt: NOW }], { now: NOW })
+  assert.equal(result.hot, null)
+  assert.equal(result.sources.codex, null)
+  assert.equal(result.sources['claude-code'], 0)
+})
+
+test('references do not credit another account memory with the same filename', async () => {
+  const files = [{ file: 'same.md', path: '/account-a/memory/same.md' }, { file: 'same.md', path: '/account-b/memory/same.md' }]
+  const result = await summarizeHistory({ sessions: [{ source: 'claude-code', providerSessionId: 'one', refs: ['/account-a/memory/same.md', 'same.md'] }] }, files)
+  assert.equal(result.mentions.get(files[0].path).size, 1)
+  assert.equal(result.mentions.get(files[1].path).size, 0)
+})
+
+test('Codex instruction length uses one initial base and Project snapshot', async () => {
+  const result = await summarizeHistory({ sessions: [{ source: 'codex', loaded: [{ kind: 'base-instructions', chars: 100 }, { kind: 'instruction-file', scope: 'Project', chars: 200 }, { kind: 'instruction-file', scope: 'Project', chars: 800 }], refs: [] }] }, [])
   assert.equal(result.initialMedian, 300)
 })
 

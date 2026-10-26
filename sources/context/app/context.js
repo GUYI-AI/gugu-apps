@@ -4,6 +4,7 @@ const g = window.gugu
 const root = document.getElementById('app')
 const dialog = document.getElementById('dialog')
 let ctx = await g.getContext()
+const settingsLink = await g.linkTo({ kind: 'app', tab: 'settings' })
 let machines = []
 let entries = []
 let selected = null
@@ -18,7 +19,7 @@ async function call(machine, tool, args = {}) {
   if (answer.isError) throw new Error(text || '上下文程序执行失败')
   return JSON.parse(text)
 }
-const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.report?.history?.sources || {}).filter(([, n]) => n > 0).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
+const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.report?.history?.sources || {}).filter(([, n]) => n > 0 || n === null).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
 const tags = (items) => el('div', { class: 'px-tags' }, items.map((e) => badge(e.machine.name, harnesses(e))))
 const groupKey = (entry) => entry.project.remote ? entry.project.key : `${entry.machine.id || 'local'}:${entry.project.key}`
 
@@ -55,12 +56,12 @@ function card(group, rank) {
 
 function listView() {
   const grouped = groups()
-  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${grouped.length} 个项目 · 按 7 天热度排 · 打开时由程序重算`), el('div', { class: 'page-actions' }, button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
+  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${grouped.length} 个项目 · 按 7 天热度排 · 打开时由程序重算`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
   root.append(header)
   if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
   const incomplete = machines.filter((m) => m.error)
   for (const machine of incomplete) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
-  for (const machine of machines.filter((m) => m.unmapped)) root.append(el('p', { class: 'px-notice' }, `${machine.name}：${machine.unmapped} 份记忆尚未关联项目，请在设置补充对应项目路径。`))
+  for (const machine of machines.filter((m) => m.unmapped)) root.append(el('p', { class: 'px-notice' }, `${machine.name}：${machine.unmapped} 个记忆目录尚未关联项目，请在设置补充对应项目路径。`))
   root.append(section('项目'))
   if (!grouped.length) root.append(el('div', { class: 'px-empty', role: 'status' }, loading ? '正在发现本机项目…' : '还没有找到项目。在 App 的「设置」页补充项目或配置根路径，再重新计算。'))
   else root.append(el('div', { class: 'project-grid' }, grouped.map((group, i) => card(group, i + 1))))
@@ -181,7 +182,7 @@ function detailView(group) {
       const cap = (entry.report?.capacities || []).filter((c) => c.harness === (harness === 'Claude' ? 'claude' : 'codex')).toSorted((a, b) => b.ratio - a.ratio)[0]
       const paths = entry.report?.instructions?.filter((p) => harness === 'Codex' ? /AGENTS(?:\.override)?\.md$/.test(p) : /CLAUDE(?:\.local)?\.md$/.test(p)) || []
       const count = entry.report?.history?.sources?.[harness === 'Claude' ? 'claude-code' : 'codex']
-      body.append(el('tr', {}, el('td', {}, badge(entry.machine.name, [harness])), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'px-path px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
+      body.append(el('tr', {}, el('td', {}, badge(entry.machine.name, [harness])), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'px-path px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : count === null ? '起始时间未知' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
     }
   }
   root.append(el('div', { class: 'table-scroll' }, el('table', { class: 'px-table machine-table' }, el('thead', {}, el('tr', {}, ['机器 · harness', '开工时拿到的规矩', '热度', '容量'].map((t) => el('th', { class: 'px-label' }, t)))), body)))
@@ -222,9 +223,14 @@ async function refresh() {
         for (const project of found.projects) entries.push({ machine, project, report: null })
         entries.push({ machine, project: { key: 'global', name: '全局规矩', root: '@global', global: true }, report: null })
         render()
-        for (const entry of entries.filter((e) => e.machine === machine)) {
+        const queue = entries.filter((e) => e.machine === machine)
+        while (queue.length) {
+          // Opening a card takes priority over untouched cards in the same pass.
+          const index = queue.findIndex((e) => (e.project.global ? '@global' : groupKey(e)) === selected)
+          const [entry] = queue.splice(Math.max(0, index), 1)
           try { await reloadEntry(entry) } catch (e) { entry.error = e.message || String(e); machine.error = `${entry.project.name}：${entry.error}` }
-          render()
+          // Avoid rebuilding hundreds of pixel cards for every empty old project.
+          if (!queue.length || queue.length % 10 === 0 || (entry.project.global ? '@global' : groupKey(entry)) === selected) render()
         }
       } catch (e) { machine.error = e.message || String(e); render() }
     }

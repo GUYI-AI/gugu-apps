@@ -74,7 +74,7 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
   const instructionTerms = instructions.map((f) => ({ path: f.path, terms: new Set(tokens(f.raw.replace(/-/g, ' '))) }))
   const capacities = []
   const files = memorySets.flatMap((m) => m.files)
-  const observed = summarizeHistory(history, files, now)
+  const observed = await summarizeHistory(history, files, now)
   const completeHistory = history?.complete === true
   for (const id of ['R3', 'R6', 'R7', 'R10', 'R11']) if (!completeHistory) rule(id).pending = history?.reason || '尚未读取宿主上下文摘要'
   if (!completeHistory) rule('R2').pending = '当前容量已检查；历史截断尚未读取'
@@ -82,7 +82,6 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
     const md = memory.files.filter((f) => f.file.endsWith('.md'))
     const byName = new Map(md.map((f) => [f.file, f]))
     const mm = byName.get('MEMORY.md')
-    if (!mm) rule('R1').pending = `没有索引：${memory.root}/MEMORY.md`
     const cap = mm ? { ...capacity(mm.raw, 'claude'), path: mm.path } : null
     if (cap) capacities.push(cap)
     if (cap?.ratio >= .7) add('R1', { path: mm.path, ...cap })
@@ -111,7 +110,7 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
       if ((file.fields.description || '').length > 250) add('R15', { path: file.path, chars: file.fields.description.length })
       if (file.bytes > 20000) add('R16', { path: file.path, bytes: file.bytes, repair: 'archive' })
       if (completeHistory) {
-        const tasks = observed.mentions.get(file.file)?.size || 0
+        const tasks = observed.mentions.get(file.path)?.size || 0
         if (tasks >= 5 && !oneLayer.has(file.file)) add('R6', { path: file.path, tasks, repair: file.fields.description ? 'index' : null })
         const old = now - file.mtimeMs > 14 * DAY
         if (!tasks) add('R11', { path: file.path, ageDays: Math.floor((now - file.mtimeMs) / DAY), repair: old && file.fields.type === 'project' ? 'archive' : null, sample: history.sample, since: history.since })
