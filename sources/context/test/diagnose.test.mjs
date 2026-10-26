@@ -5,7 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { capacity, bars, diagnose } from '../app/lib/diagnose.js'
 import { frontmatter, links, indexEntries } from '../app/lib/markdown.js'
-import { discover, projectIdentity, remoteIdentity, pathStatus } from '../app/lib/discovery.js'
+import { discover, projectIdentity, pathStatus } from '../app/lib/discovery.js'
 import { missingPaths } from '../app/lib/path-check.js'
 import { candidates } from '../app/lib/semantic.js'
 import { sessionIndex, observe, summarizeHistory } from '../app/lib/history.js'
@@ -97,7 +97,7 @@ test('capacity forecast is informational and does not deduct another health poin
   assert.equal(report.bars.health.value, 9)
 })
 
-test('worktrees and symlink roots merge, temporary directories are excluded', async (t) => {
+test('host grouping merges worktrees, zero-task context and realpath aliases; temporary directories are excluded', async (t) => {
   const root = await fixture(t, true), repo = path.join(root, 'repo'), wt = path.join(root, 'branch')
   await fs.mkdir(repo)
   execFileSync('git', ['init', '-q', repo])
@@ -105,19 +105,41 @@ test('worktrees and symlink roots merge, temporary directories are excluded', as
   execFileSync('git', ['-C', repo, 'remote', 'add', 'origin', 'git@github.com:example/repo.git'])
   execFileSync('git', ['-C', repo, 'worktree', 'add', '-qb', 'fixture', wt])
   const alias = path.join(root, 'alias'); await fs.symlink(repo, alias)
-  const found = await discover({ home: root, env: {}, extraPaths: [repo, wt, alias] })
+  const requested = []
+  const found = await discover({ home: root, env: {}, extraPaths: [repo, wt, alias], groupPaths: async (paths) => {
+    requested.push(...paths)
+    return paths.map((path) => ({ path, group: { key: repo, label: 'Host project', repositoryUrl: 'https://github.com/example/repo' } }))
+  } })
   assert.equal(found.projects.length, 1)
   assert.equal(found.projects[0].locations.length, 2)
-  assert.equal((await projectIdentity(repo)).commonDir, (await projectIdentity(wt)).commonDir)
-  assert.equal(remoteIdentity('https://user:secret@github.com/example/repo.git?token=secret'), 'github.com/example/repo')
+  assert.equal(found.projects[0].key, repo)
+  assert.equal(found.projects[0].name, 'Host project')
+  assert.equal(found.projects[0].repositoryUrl, 'https://github.com/example/repo')
+  assert.equal(requested.length, 2)
+  assert.equal((await projectIdentity(wt)).checkoutRoot, wt)
   assert.equal(await projectIdentity(await fixture(t)), null)
+})
+
+test('host default-task grouping belongs to global activity and never creates a project or orphan memory', async (t) => {
+  const root = await fixture(t, true), cwd = path.join(root, 'arbitrary-host-default'), config = path.join(root, 'claude')
+  const memory = path.join(config, 'projects', cwd.replace(/[^a-zA-Z0-9]/g, '-'), 'memory')
+  await fs.mkdir(cwd); await fs.mkdir(memory, { recursive: true })
+  const found = await discover({ home: root, env: { CLAUDE_CONFIG_DIR: config }, sessions: [{ cwd, group: { key: 'gugu:task-home', label: null } }] })
+  assert.equal(found.projects.length, 0)
+  assert.deepEqual(found.unmappedMemories, [])
+})
+
+test('scratchpad directories are excluded even outside the system temporary directory', async (t) => {
+  const root = await fixture(t, true), scratch = path.join(root, 'scratchpad', 'branch')
+  await fs.mkdir(scratch, { recursive: true })
+  assert.equal(await projectIdentity(scratch), null)
 })
 
 test('host pagination and hydration are not interpreted as complete zero', async () => {
   const pending = await sessionIndex({ sessions: { index: async () => ({ rows: [], total: 50, pending: true, stale: false, nextOffset: null }) } })
   assert.equal(pending.complete, false)
   let calls = 0
-  const result = await sessionIndex({ sessions: { index: async ({ offset }) => { calls++; return { rows: [{ source: 'codex', providerSessionId: String(offset) }], total: 2, pending: false, stale: false, nextOffset: offset === 0 ? 1 : null } } } })
+  const result = await sessionIndex({ sessions: { index: async ({ offset }) => { calls++; return { rows: [{ source: 'codex', providerSessionId: String(offset), group: { key: '/project', label: null } }], total: 2, pending: false, stale: false, nextOffset: offset === 0 ? 1 : null } } } })
   assert.equal(calls, 2); assert.equal(result.rows.length, 2)
 })
 
@@ -140,6 +162,29 @@ test('references do not credit another account memory with the same filename', a
   const result = await summarizeHistory({ sessions: [{ source: 'claude-code', providerSessionId: 'one', refs: ['/account-a/memory/same.md', 'same.md'] }] }, files)
   assert.equal(result.mentions.get(files[0].path).size, 1)
   assert.equal(result.mentions.get(files[1].path).size, 0)
+})
+
+test('inventory activity and selected context reuse the same first-turn observations', async () => {
+  const calls = [], firstTurns = new Map()
+  const host = { sessions: { read: async (arg) => { calls.push(arg); return arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: arg.filePath === 'unknown' ? null : '2026-10-25T10:00:00Z' }] } } } }
+  const rows = ['known', 'unknown'].map(filePath => ({ source: 'codex', providerSessionId: filePath, filePath, updatedAt: NOW }))
+  const activity = await observe(host, rows, { sample: 0, firstTurns, now: NOW })
+  assert.equal(activity.since, null)
+  assert.equal(activity.hot, null)
+  await observe(host, rows, { sample: 2, firstTurns, now: NOW })
+  assert.equal(calls.filter(c => !c.view).length, 2)
+  assert.equal(calls.filter(c => c.view).length, 2)
+})
+
+test('orphan memory directories are global cleanup candidates without health deductions', async (t) => {
+  const root = await fixture(t), codex = path.join(root, 'codex'), orphan = path.join(root, 'orphan-memory')
+  await fs.mkdir(codex); await fs.mkdir(orphan)
+  await fs.writeFile(path.join(codex, 'config.toml'), '[projects."/missing-context-fixture-root"]\ntrust_level = "trusted"\n')
+  const report = await diagnose({ root, global: true, locations: [], memories: [], codexRoots: [codex], claudeRoots: [], unmappedMemories: [orphan] }, { complete: true, sessions: [], hot: 0, sample: 0 })
+  const cleanup = report.rules.find(r => r.id === 'R20')
+  assert.deepEqual(cleanup.metrics, { codexStates: 1, unmappedMemoryDirectories: 1 })
+  assert.equal(cleanup.findings.find(f => f.path === orphan).repair, undefined)
+  assert.equal(report.bars.health.value, 10)
 })
 
 test('Codex instruction length uses one initial base and Project snapshot', async () => {

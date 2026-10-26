@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import os from 'node:os'
 import { createHash, randomUUID } from 'node:crypto'
 import { discover as findProjects, discoverRoots, projectIdentity, exists, expand } from './lib/discovery.js'
-import { sessionIndex, observe } from './lib/history.js'
+import { sessionIndex, observe, taskActivity } from './lib/history.js'
 import { diagnose as measure, promptFor } from './lib/diagnose.js'
 import { makePreview, readPreview, applyPreview } from './lib/repairs.js'
 
@@ -18,19 +18,26 @@ const page = { offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer'
 const projectArg = { type: 'string', description: 'Project root or an explicit memory directory; discover lists projects.' }
 let inventory = null
 
+async function groupsFor(paths) {
+  const page = await host().sessions.index({ groupPaths: paths, limit: 1 })
+  if (!Array.isArray(page.groups)) throw new Error('宿主尚未提供目录归属，请更新支持 App API 17 的宿主。')
+  return page.groups
+}
+const find = (options) => findProjects({ ...options, groupPaths: host()?.sessions?.index ? groupsFor : undefined })
+
 async function projectFor(target, rows = [], discovered = null) {
-  if (target === '@global') { const roots = await discoverRoots(settings()); return { key: 'global', name: '全局规矩', root: os.homedir(), locations: [], memories: [], codexRoots: roots.codex, claudeRoots: roots.claude, global: true } }
+  if (target === '@global') { const info = discovered || await find({ settings: settings(), sessions: rows }); return { key: 'global', name: '全局规矩', root: os.homedir(), locations: [], memories: [], unmappedMemories: info.unmappedMemories, codexRoots: info.roots.codex, claudeRoots: info.roots.claude, global: true } }
   const full = expand(target)
-  const listed = discovered?.projects.find((p) => p.root === full || p.locations.includes(full) || p.memories.includes(full))
+  const listed = discovered?.projects.find((p) => p.root === full || p.locations.includes(full) || p.sessionCwds?.includes(full) || p.memories.includes(full))
   if (listed) return listed
-  const info = await findProjects({ settings: settings(), sessions: rows, extraPaths: [target] })
+  const info = await find({ settings: settings(), sessions: rows, extraPaths: [target] })
   if (inventory?.rows === rows) inventory.discovered = info
   if (await exists(path.join(full, 'MEMORY.md'))) {
     const real = await fs.realpath(full)
     const known = info.projects.find((p) => p.memories.includes(real))
     return known || { key: `memory:${real}`, name: path.basename(path.dirname(full)), root: real, locations: [], memories: [real], codexRoots: [], claudeRoots: [] }
   }
-  const project = info.projects.find((p) => p.root === full || p.locations.includes(full))
+  const project = info.projects.find((p) => p.root === full || p.locations.includes(full) || p.sessionCwds?.includes(full))
   if (project) return project
   const identity = await projectIdentity(full)
   if (!identity) throw new Error(`没有找到项目：${target}`)
@@ -58,15 +65,28 @@ function summary(report, id) {
     rules: report.rules.map(({ findings, ...rule }) => ({ ...rule, count: findings.length, fixable: findings.some((f) => f.repair) })) }
 }
 function onlyPerson(call) { if (call?.agent) throw new Error('文件写入只能由人在 App 页面查看预览并确认') }
+const rowsFor = (project) => inventory.rows.filter((row) => project.global ? row.group?.key === 'gugu:task-home' : row.group?.key === project.key || project.sessionCwds?.includes(row.cwd) || project.locations.includes(row.cwd) || row.cwd === project.root)
 
 export const discover = {
-  description: 'Find this computer’s Claude/Codex configuration roots and projects. Merge worktrees and realpath aliases. Activity uses the host session index only.',
+  description: 'Find this computer’s Claude/Codex roots and context directories. Reuse host task-history grouping and repository identity; deduplicate filesystem aliases.',
   inputSchema: object(), annotations: { readOnlyHint: true },
   async run() {
     inventory = await sessionIndex(host())
-    const found = await findProjects({ settings: settings(), sessions: inventory.rows })
+    inventory.firstTurns = new Map()
+    const found = await find({ settings: settings(), sessions: inventory.rows })
     inventory.discovered = found
     return { ...found, history: { complete: inventory.complete, reason: inventory.reason, total: inventory.total } }
+  },
+}
+export const activity = {
+  description: 'Count seven-day task starts once for the discovered project inventory, using the host history reader. Unknown starts remain unknown.',
+  inputSchema: object(), annotations: { readOnlyHint: true },
+  async run() {
+    inventory ||= await sessionIndex(host())
+    inventory.firstTurns ||= new Map()
+    inventory.discovered ||= await find({ settings: settings(), sessions: inventory.rows })
+    if (inventory.complete) await observe(host(), inventory.rows, { sample: 0, firstTurns: inventory.firstTurns })
+    return { complete: inventory.complete, reason: inventory.reason, unassigned: inventory.complete ? taskActivity(rowsFor({ global: true }), inventory.firstTurns) : { hot: null, hotTasks: [], unknownStarts: [] }, projects: inventory.discovered.projects.map((project) => ({ key: project.key, ...(inventory.complete ? taskActivity(rowsFor(project), inventory.firstTurns) : { hot: null, hotTasks: [], unknownStarts: [] }) })) }
   },
 }
 export const diagnose = {
@@ -76,9 +96,10 @@ export const diagnose = {
     // A page refresh calls discover once, then diagnoses its projects against that
     // same index. Do not rescan every historical config root for every role card.
     inventory ||= await sessionIndex(host())
+    inventory.firstTurns ||= new Map()
     const found = await projectFor(project, inventory.rows, inventory.discovered)
-    const rows = inventory.rows.filter((row) => found.locations.includes(row.cwd) || row.cwd === found.root)
-    const history = found.global ? { complete: true, sessions: [], hot: 0, sample: 0, total: 0 } : inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300) }) : { complete: false, reason: inventory.reason, sessions: [], hot: null }
+    const rows = rowsFor(found)
+    const history = inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300), firstTurns: inventory.firstTurns }) : { complete: false, reason: inventory.reason, sessions: [], hot: null }
     const report = await measure(found, history)
     return summary(report, await saveReport(report))
   },

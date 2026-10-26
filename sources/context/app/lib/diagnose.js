@@ -183,6 +183,10 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
       for (const key of Object.keys(state)) if (path.isAbsolute(key) && !await exists(key)) add('R20', { path: hooksPath, target: key, repair: 'hook-state' })
     }
   }
+  if (project.global) {
+    for (const directory of project.unmappedMemories || []) add('R20', { kind: 'unmapped-memory-directory', path: directory, reason: '未关联到项目的记忆目录，归档前需核对内容和所属项目' })
+    rule('R20').metrics = { codexStates: rule('R20').findings.filter((f) => f.kind !== 'unmapped-memory-directory').length, unmappedMemoryDirectories: (project.unmappedMemories || []).length }
+  }
   const paths = await missingPaths(files, project)
   rule('R17').findings = paths.findings
   rule('R17').metrics = paths.metrics

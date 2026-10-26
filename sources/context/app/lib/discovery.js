@@ -19,32 +19,22 @@ export async function canonicalPath(p) {
 }
 const split = (s) => String(s || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean)
 
-async function git(cwd, args, optional = false) {
+async function git(cwd, args) {
   try { return (await exec('git', ['-C', cwd, ...args], { timeout: 10000, maxBuffer: 1024 * 1024 })).stdout.trim() }
-  catch (e) { if (optional && e.code === 1) return null; if (e.code === 128 && /not a git repository/.test(e.stderr)) return null; throw new Error(`Git could not identify ${cwd}: ${e.stderr || e.message}`) }
+  catch (e) { if (e.code === 128 && /not a git repository/.test(e.stderr)) return null; throw new Error(`Git could not identify ${cwd}: ${e.stderr || e.message}`) }
 }
 
-export function remoteIdentity(remote) {
-  if (!remote) return null
-  // Only canonicalize Git transports; never return credentials/query strings from a remote URL.
-  const scp = remote.match(/^(?:[^@/:]+@)?([^/:]+):(.+)$/)
-  if (scp && !remote.includes('://')) return `${scp[1].toLowerCase()}/${scp[2].replace(/^\/+|\.git\/?$/g, '')}`
-  try { const u = new URL(remote); return u.protocol === 'file:' ? null : `${u.hostname.toLowerCase()}${u.pathname.replace(/\.git\/?$/, '')}` }
-  catch { return null }
-}
-
+// Git only bounds the instruction search; project/worktree/remote grouping belongs
+// to the host task history, including directories without indexed tasks.
 export async function projectIdentity(cwd) {
   if (await pathStatus(cwd) !== 'present') return null
   const real = await fs.realpath(cwd)
+  if (real.split(path.sep).some((part) => part.toLowerCase() === 'scratchpad')) return null
   const temporary = await Promise.all([os.tmpdir(), '/tmp', '/private/tmp', '/var/tmp'].map(canonicalPath))
   if (temporary.some((base) => real === base || real.startsWith(`${base}/`))) return null
   if (!(await fs.stat(real)).isDirectory()) return null
-  const root = await git(real, ['rev-parse', '--show-toplevel'])
-  if (!root) return { key: `directory:${real}`, name: path.basename(real), root: real, cwd: real, checkoutRoot: real, remote: null, commonDir: null }
-  const commonDir = await fs.realpath(await git(real, ['rev-parse', '--path-format=absolute', '--git-common-dir']))
-  const main = path.basename(commonDir) === '.git' ? path.dirname(commonDir) : root
-  const remote = remoteIdentity(await git(real, ['config', '--get', 'remote.origin.url'], true))
-  return { key: remote ? `git:${remote}` : `directory:${main}`, name: path.basename(main), root: main, cwd: real, checkoutRoot: root, remote, commonDir }
+  const checkoutRoot = await git(real, ['rev-parse', '--show-toplevel']) || real
+  return { key: real, name: path.basename(real), root: real, cwd: real, checkoutRoot }
 }
 
 export function projectSections(raw) {
@@ -61,7 +51,7 @@ export async function discoverRoots(settings = {}, env = process.env, home = os.
   return { claude: await unique(claude), codex: await unique(codex) }
 }
 
-export async function discover({ settings = {}, sessions = [], extraPaths = [], env, home = os.homedir() } = {}) {
+export async function discover({ settings = {}, sessions = [], extraPaths = [], groupPaths, env, home = os.homedir() } = {}) {
   const roots = await discoverRoots(settings, env, home)
   const candidates = new Set([...split(settings.projects), ...extraPaths, ...sessions.map((s) => s.cwd).filter(Boolean)].map((p) => expand(p, home)))
   for (const root of roots.claude) {
@@ -76,6 +66,7 @@ export async function discover({ settings = {}, sessions = [], extraPaths = [], 
     for (const s of projectSections(await fs.readFile(path.join(root, 'config.toml'), 'utf8'))) candidates.add(expand(s.path, home))
   }
   const projects = new Map()
+  const byCwd = Map.groupBy(sessions.filter((s) => s.cwd), (s) => expand(s.cwd, home))
   // Filesystem and Git subprocess waits are independent. Avoid serially paying the
   // process-start cost for every historical project before diagnosing one project.
   const paths = [...candidates].sort(), identities = new Map()
@@ -83,22 +74,43 @@ export async function discover({ settings = {}, sessions = [], extraPaths = [], 
   await Promise.all(Array.from({ length: Math.min(8, paths.length) }, async () => {
     while (next < paths.length) { const cwd = paths[next++]; identities.set(cwd, await projectIdentity(cwd)) }
   }))
+  const groups = new Map(sessions.filter((row) => row.cwd && row.group).map((row) => [expand(row.cwd, home), row.group]))
+  const missingGroups = [...new Set(paths.flatMap((cwd) => identities.get(cwd) ? [identities.get(cwd).cwd] : []))].filter((cwd) => !groups.has(cwd))
+  if (groupPaths && missingGroups.length) {
+    const queried = await groupPaths(missingGroups)
+    for (const item of queried) groups.set(item.path, item.group)
+    for (const cwd of missingGroups) {
+      const group = groups.get(cwd)
+      if (!group) throw new Error(`宿主没有返回目录归属：${cwd}`)
+      groups.set(cwd, group)
+    }
+  }
+  const mapped = new Set()
   for (const cwd of paths) {
     const identity = identities.get(cwd)
     if (!identity) continue
-    const project = projects.get(identity.key) || { ...identity, locations: [], instructionRoots: {}, memories: [], codexRoots: roots.codex, claudeRoots: roots.claude }
+    // Standalone CLI checks one filesystem location; it does not recreate the
+    // host's grouping. Hosted discovery always supplies groupPaths.
+    const group = groups.get(identity.cwd) || groups.get(cwd) || { key: identity.cwd, label: null }
+    const key = group.key || identity.cwd
+    const project = projects.get(key) || { ...identity, key, root: path.isAbsolute(key) ? key : identity.root, name: group.label || path.basename(key), repositoryUrl: group.repositoryUrl, locations: [], sessionCwds: [], instructionRoots: {}, memories: [], hasContext: false, lastActiveAt: null, codexRoots: roots.codex, claudeRoots: roots.claude }
     if (!project.locations.includes(identity.cwd)) project.locations.push(identity.cwd)
+    for (const alias of new Set([cwd, identity.cwd])) if (!project.sessionCwds.includes(alias)) project.sessionCwds.push(alias)
+    for (const row of byCwd.get(cwd) || []) if (Number.isFinite(row.updatedAt)) project.lastActiveAt = Math.max(project.lastActiveAt || 0, row.updatedAt)
     project.instructionRoots[identity.cwd] = identity.checkoutRoot
+    for (const dir of new Set([identity.cwd, identity.checkoutRoot])) for (const name of ['AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', 'CLAUDE.local.md']) if (await pathStatus(path.join(dir, name)) === 'present') project.hasContext = true
     for (const root of roots.claude) {
       // Claude's actual project-directory encoding; no ambiguous reverse decoding.
-      for (const alias of new Set([cwd, identity.cwd, identity.root])) {
+      for (const alias of new Set([cwd, identity.cwd, project.root])) {
         const memory = path.join(root, 'projects', alias.replace(/[^a-zA-Z0-9]/g, '-'), 'memory')
-        if (await exists(memory)) { const real = await fs.realpath(memory); if (!project.memories.includes(real)) project.memories.push(real) }
+        if (await pathStatus(memory) === 'present') { const real = await fs.realpath(memory); mapped.add(real); if (!project.memories.includes(real)) project.memories.push(real); project.hasContext = true }
       }
     }
-    projects.set(identity.key, project)
+    // Default task directories have host-owned global attribution, even when a
+    // harness created an empty memory directory there. Never draw a project card.
+    if (key !== 'gugu:task-home') projects.set(key, project)
   }
-  const mapped = new Set([...projects.values()].flatMap((p) => p.memories)), unmappedMemories = new Set()
+  const unmappedMemories = new Set()
   for (const root of roots.claude) {
     const projectDir = path.join(root, 'projects')
     if (!await exists(projectDir)) continue

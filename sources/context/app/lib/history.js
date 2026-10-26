@@ -11,6 +11,7 @@ export async function sessionIndex(host) {
     if (seenOffsets.has(offset)) throw new Error('任务索引分页没有前进')
     seenOffsets.add(offset)
     const page = await host.sessions.index({ offset, limit: 100 })
+    if (page.rows.some((row) => !row.group || !Object.hasOwn(row.group, 'key'))) throw new Error('宿主尚未提供任务归属，请更新支持 App API 17 的宿主。')
     rows.push(...page.rows)
     if (page.pending || page.stale) return { rows, complete: false, reason: '宿主任务索引仍在更新，请稍后刷新', total: page.total }
     if (page.nextOffset === null || page.nextOffset === undefined) return { rows: [...new Map(rows.map((r) => [`${r.source}:${r.providerSessionId}`, r])).values()], complete: true, total: page.total }
@@ -18,35 +19,44 @@ export async function sessionIndex(host) {
   }
 }
 
-export async function observe(host, rows, { sample = 300, now = Date.now() } = {}) {
+export function taskActivity(rows, firstTurns, now = Date.now()) {
+  const starts = [], unknownStarts = []
+  for (const row of rows) {
+    if (row.updatedAt < now - 7 * DAY) continue
+    const id = `${row.source}:${row.providerSessionId}`, at = firstTurns.get(id)
+    if (at && Number.isFinite(Date.parse(at))) starts.push({ id, source: row.source, at })
+    else unknownStarts.push(id)
+  }
+  const hot = starts.filter((s) => Date.parse(s.at) >= now - 7 * DAY && Date.parse(s.at) <= now)
+  return { hot: unknownStarts.length ? null : hot.length, unknownStarts, hotTasks: hot.map((s) => s.id),
+    sources: Object.fromEntries(['claude-code', 'codex'].map((source) => [source, unknownStarts.some((id) => id.startsWith(`${source}:`)) ? null : hot.filter((s) => s.source === source).length])) }
+}
+
+export async function observe(host, rows, { sample = 300, now = Date.now(), firstTurns = new Map() } = {}) {
   if (!host?.sessions?.read) return { complete: false, reason: '宿主尚未提供上下文读数（需要 App API 17）', sessions: [], hot: null }
   const selected = rows.toSorted((a, b) => b.updatedAt - a.updatedAt)
-  const observations = [], starts = [], unknownStarts = []
+  const observations = []
   let next = 0
   // Match discovery's bounded I/O concurrency. Both views use the same host reader;
   // one slow transcript must not serialize every unrelated task in the sample.
   await Promise.all(Array.from({ length: Math.min(8, selected.length) }, async () => {
     while (next < selected.length) {
-      const i = next++, row = selected[i]
+      const i = next++, row = selected[i], id = `${row.source}:${row.providerSessionId}`
       const [context, page] = await Promise.all([
         i < sample ? host.sessions.read({ source: row.source, filePath: row.filePath, view: 'context' }) : null,
-        row.updatedAt >= now - 7 * DAY ? host.sessions.read({ source: row.source, filePath: row.filePath, offset: 0, limit: 1 }) : null,
+        row.updatedAt >= now - 7 * DAY && !firstTurns.has(id) ? host.sessions.read({ source: row.source, filePath: row.filePath, offset: 0, limit: 1 }) : null,
       ])
       if (context) observations[i] = { ...row, ...context }
       if (page) {
         const start = page.turns[0]?.createdAt
-        if (start && Number.isFinite(Date.parse(start))) starts.push({ id: `${row.source}:${row.providerSessionId}`, source: row.source, at: start })
-        else unknownStarts.push(`${row.source}:${row.providerSessionId}`)
+        firstTurns.set(id, start && Number.isFinite(Date.parse(start)) ? start : null)
       }
     }
   }))
-  const hot = starts.filter((s) => Date.parse(s.at) >= now - 7 * DAY && Date.parse(s.at) <= now)
   return {
     complete: true, sessions: observations, sample: observations.length, total: rows.length,
-    since: selected.length ? new Date(selected[Math.min(selected.length, sample) - 1].updatedAt).toISOString() : null,
-    hot: unknownStarts.length ? null : hot.length, unknownStarts,
-    hotTasks: hot.map((s) => s.id),
-    sources: Object.fromEntries(['claude-code', 'codex'].map((source) => [source, unknownStarts.some((id) => id.startsWith(`${source}:`)) ? null : hot.filter((s) => s.source === source).length])),
+    since: selected.length && sample > 0 ? new Date(selected[Math.min(selected.length, sample) - 1].updatedAt).toISOString() : null,
+    ...taskActivity(rows, firstTurns, now),
   }
 }
 

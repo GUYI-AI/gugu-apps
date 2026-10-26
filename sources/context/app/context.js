@@ -19,24 +19,32 @@ async function call(machine, tool, args = {}) {
   if (answer.isError) throw new Error(text || '上下文程序执行失败')
   return JSON.parse(text)
 }
-const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.report?.history?.sources || {}).filter(([, n]) => n > 0 || n === null).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
+const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.activity?.sources || entry.report?.history?.sources || {}).filter(([, n]) => n > 0 || n === null).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
 const tags = (items) => el('div', { class: 'px-tags' }, items.map((e) => badge(e.machine.name, harnesses(e))))
-const groupKey = (entry) => entry.project.remote ? entry.project.key : `${entry.machine.id || 'local'}:${entry.project.key}`
+const groupKey = (entry) => entry.project.repositoryUrl ? entry.project.repositoryUrl : `${entry.machine.id || 'local'}:${entry.project.key}`
 
-function groups() {
-  return [...Map.groupBy(entries.filter((e) => !e.project.global), groupKey)].map(([key, items]) => {
-    const reports = items.map((e) => e.report).filter(Boolean)
-    const ruleHits = new Map()
-    for (const report of reports) for (const r of report.rules) if (r.count) ruleHits.set(r.id, r)
-    const red = [...ruleHits.values()].filter((r) => r.severity === 'red').length
-    const yellow = [...ruleHits.values()].filter((r) => r.severity === 'yellow').length
-    const all = reports.length === items.length && reports.every((r) => r.bars.health.complete)
-    const hotKnown = reports.length === items.length && reports.every((r) => r.bars.hot.count !== null)
-    const hot = hotKnown ? new Set(reports.flatMap((r) => r.history.hotTasks)).size : null
-    const capacity = reports.length === items.length ? Math.max(0, ...reports.map((r) => r.bars.capacity.ratio)) : null
-    return { key, items, project: items[0].project, bars: { hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) }, health: { value: Math.max(0, 10 - red * 3 - yellow), red, yellow, complete: all }, capacity: { ratio: capacity, percent: capacity === null ? null : Math.round(capacity * 100), cells: capacity === null ? null : Math.min(10, Math.max(capacity > 0 ? 1 : 0, Math.round(capacity * 10))) } } }
-  }).toSorted((a, b) => (b.bars.hot.count ?? -1) - (a.bars.hot.count ?? -1) || a.project.name.localeCompare(b.project.name))
+function combine(key, items) {
+  const reports = items.map((e) => e.report).filter(Boolean)
+  const ruleHits = new Map()
+  for (const report of reports) for (const rule of report.rules) if (rule.count) ruleHits.set(rule.id, rule)
+  const red = [...ruleHits.values()].filter((r) => r.severity === 'red').length
+  const yellow = [...ruleHits.values()].filter((r) => r.severity === 'yellow').length
+  const complete = reports.length === items.length && reports.every((r) => r.bars.health.complete)
+  const hotKnown = items.every((e) => e.activity && e.activity.hot !== null)
+  const hot = hotKnown ? new Set(items.flatMap((e) => e.activity.hotTasks)).size : null
+  const capacity = reports.length === items.length ? Math.max(0, ...reports.map((r) => r.bars.capacity.ratio)) : null
+  return { key, items, project: items[0].report?.project || items[0].project, bars: {
+    hot: { count: hot, cells: hot === null ? null : Math.min(10, Math.ceil(Math.log2(hot + 1))) },
+    health: { value: Math.max(0, 10 - red * 3 - yellow), red, yellow, complete },
+    capacity: { ratio: capacity, percent: capacity === null ? null : Math.round(capacity * 100), cells: capacity === null ? null : Math.min(10, Math.max(capacity > 0 ? 1 : 0, Math.round(capacity * 10))) },
+  } }
 }
+function groups() {
+  return [...Map.groupBy(entries.filter((e) => !e.project.global), groupKey)]
+    .map(([key, items]) => combine(key, items))
+    .toSorted((a, b) => (b.bars.hot.count ?? -1) - (a.bars.hot.count ?? -1) || a.project.name.localeCompare(b.project.name))
+}
+const mainGroups = (all = groups()) => all.filter((group) => group.items.some((e) => e.project.hasContext || e.activity?.hot > 0)).slice(0, 8)
 
 function say(group) {
   const hits = group.items.flatMap((e) => e.report?.rules || [])
@@ -50,38 +58,48 @@ function say(group) {
 }
 
 function card(group, rank) {
-  const node = button('', () => { selected = group.key; render(); root.querySelector('h1')?.focus() }, { class: 'px-card', 'aria-label': `打开 ${group.project.name}` })
+  const node = button('', () => { void openGroup(group) }, { class: 'px-card', 'aria-label': `打开 ${group.project.name}` })
   character(node, group.project.name)
-  node.append(el('div', { class: 'px-card-top' }, sprite(group.project.name), el('div', { class: 'project-copy' }, el('div', { class: 'px-name' }, group.project.name), el('div', { class: 'px-path px-mono' }, group.project.root)), el('span', { class: 'px-rank px-label' }, `#${rank}`)), tags(group.items), el('p', { class: 'px-say' }, say(group)), stats(group.bars))
+  node.append(el('div', { class: 'px-card-top' }, sprite(group.project.name), el('div', { class: 'project-copy' }, el('div', { class: 'px-name', title: group.project.name }, group.project.name), el('div', { class: 'px-path px-mono' }, group.project.root)), el('span', { class: 'px-rank px-label' }, `#${rank}`)), tags(group.items), el('p', { class: 'px-say' }, say(group)), stats(group.bars))
   return node
 }
 
 function listView() {
-  const grouped = groups()
-  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${grouped.length} 个项目 · 按 7 天热度排 · 打开时由程序重算`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
+  const all = groups(), grouped = mainGroups(all), shown = new Set(grouped.map((group) => group.key))
+  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${grouped.length} 个项目 · 按 7 天热度排 · 最多显示 8 个`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
   root.append(header)
   if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
-  const incomplete = machines.filter((m) => m.error)
-  for (const machine of incomplete) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
-  for (const machine of machines.filter((m) => m.unmapped)) root.append(el('p', { class: 'px-notice' }, `${machine.name}：${machine.unmapped} 个记忆目录尚未关联项目，请在设置补充对应项目路径。`))
+  for (const machine of machines.filter((m) => m.error)) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
   root.append(section('项目'))
-  if (!grouped.length) root.append(el('div', { class: 'px-empty', role: 'status' }, loading ? '正在发现本机项目…' : '还没有找到项目。在 App 的「设置」页补充项目或配置根路径，再重新计算。'))
+  if (!grouped.length) root.append(el('div', { class: 'px-empty', role: 'status' }, loading ? '正在读取近期任务和项目规矩…' : '没有近期任务或项目级上下文。可在设置里补充项目目录。'))
   else root.append(el('div', { class: 'project-grid' }, grouped.map((group, i) => card(group, i + 1))))
-  const globals = entries.filter((e) => e.project.global && e.report)
+  const globals = entries.filter((e) => e.project.global)
   if (globals.length) {
     root.append(section('所有项目共用'))
-    const report = globals[0].report
-    const globalGroup = { key: '@global', project: report.project, items: globals, bars: report.bars }
-    const node = card(globalGroup, 0)
+    const group = combine('@global', globals), node = card(group, 0)
     node.querySelector('.px-rank')?.remove()
-    const count = globals.reduce((n, e) => n + (e.report.rules.find((r) => r.id === 'R20')?.count || 0), 0)
-    node.querySelector('.px-say').textContent = count ? `Codex 配置里有 ${count} 个已不存在目录的状态，可以清理` : '全局规矩和配置状态已检查'
-    node.querySelector('.px-stats').replaceWith(el('dl', { class: 'px-stats' }, el('dt', { class: 'px-label' }, '健康'), el('dd', {}, bar('health', 10)), el('dd', { class: 'px-stat-value px-mono' }, '10/10')))
+    const measured = globals.every((e) => e.report)
+    const counts = globals.map((e) => e.report?.rules.find((r) => r.id === 'R20')?.metrics)
+    const states = counts.reduce((n, m) => n + (m?.codexStates || 0), 0)
+    const memories = counts.reduce((n, m) => n + (m?.unmappedMemoryDirectories || 0), 0)
+    const activity = group.bars.hot.count
+    node.querySelector('.px-say').textContent = measured ? `可清理：${states} 项 Codex 状态 · ${memories} 个未关联记忆目录；未归属项目的任务：${activity === null ? '待读取' : `${activity} / 7天`}` : '正在检查全局规矩、未归属任务和可清理项…'
+    const health = group.bars.health
+    node.querySelector('.px-stats').replaceWith(el('dl', { class: 'px-stats' }, el('dt', { class: 'px-label' }, '健康'), el('dd', {}, bar('health', health.complete ? health.value : null)), el('dd', { class: 'px-stat-value px-mono' }, health.complete ? `${health.value}/10` : '未全测')))
     root.append(el('div', { class: 'global-grid' }, node))
+  }
+  const other = all.filter((group) => !shown.has(group.key)).flatMap((group) => group.items.flatMap((entry) => entry.project.locations.map((directory) => ({ entry, directory }))))
+  if (other.length) {
+    const details = el('details', { class: 'directory-fold' }, el('summary', {}, `其余 ${other.length} 个目录`))
+    const list = el('ul', { class: 'directory-list' })
+    for (const { entry, directory } of other) list.append(el('li', {}, button(entry.project.name, () => { void openGroup(all.find((group) => group.items.includes(entry))) }, { class: 'px-text-link' }), el('code', { class: 'px-path px-mono' }, directory), el('span', { class: 'px-path' }, `${entry.machine.name} · 最后活跃：${entry.project.lastActiveAt === null ? '未知' : new Date(entry.project.lastActiveAt).toLocaleString()}`)))
+    details.append(list)
+    root.append(details)
   }
 }
 
 function explanation(rule) {
+  if (rule.id === 'R20' && rule.metrics) return `${rule.metrics.codexStates} 项 Codex 状态指向已不存在目录；${rule.metrics.unmappedMemoryDirectories} 个记忆目录未关联项目。清理不扣健康，目录归档前需核对内容和所属项目。`
   if (rule.id === 'R17' && rule.metrics) {
     const m = rule.metrics
     const names = { 'deleted-worktree': '已删 worktree', temporary: '临时', 'moved-or-shorthand': '改名或简写', missing: '缺失', unverifiable: '无法核实' }
@@ -203,11 +221,22 @@ function detailView(group) {
 
 function render() {
   root.replaceChildren()
-  const group = selected === '@global' ? { key: '@global', items: entries.filter((e) => e.project.global && e.report), project: entries.find((e) => e.project.global)?.project, bars: entries.find((e) => e.project.global)?.report?.bars } : groups().find((p) => p.key === selected)
+  const globals = entries.filter((entry) => entry.project.global)
+  const group = selected === '@global' && globals.length ? combine('@global', globals) : groups().find((p) => p.key === selected)
   if (group?.project && group.bars) detailView(group)
   else listView()
 }
-async function reloadEntry(entry) { entry.report = await call(entry.machine, 'diagnose', { project: entry.project.global ? '@global' : entry.project.root }); entry.error = null }
+async function reloadEntry(entry) {
+  entry.request ||= call(entry.machine, 'diagnose', { project: entry.project.global ? '@global' : entry.project.root })
+  try { entry.report = await entry.request; entry.error = null } finally { entry.request = null }
+}
+async function openGroup(group) {
+  selected = group.key; render(); root.querySelector('h1')?.focus()
+  for (const entry of group.items.filter((e) => !e.report)) {
+    try { await reloadEntry(entry) } catch (e) { entry.error = e.message || String(e); problem = entry.error }
+    render()
+  }
+}
 async function refresh() {
   if (loading) return
   loading = true; problem = ''; entries = []; machines = []; render()
@@ -223,19 +252,25 @@ async function refresh() {
         const found = await call(machine, 'discover')
         machine.name ||= found.machine.name
         machine.unmapped = found.unmappedMemories.length
-        for (const project of found.projects) entries.push({ machine, project, report: null })
-        entries.push({ machine, project: { key: 'global', name: '全局规矩', root: '@global', global: true }, report: null })
+        for (const project of found.projects) entries.push({ machine, project, report: null, activity: null })
+        entries.push({ machine, project: { key: 'global', name: '全局规矩', root: '所有项目共用', global: true }, report: null, activity: null })
         render()
-        const queue = entries.filter((e) => e.machine === machine)
-        while (queue.length) {
-          // Opening a card takes priority over untouched cards in the same pass.
-          const index = queue.findIndex((e) => (e.project.global ? '@global' : groupKey(e)) === selected)
-          const [entry] = queue.splice(Math.max(0, index), 1)
-          try { await reloadEntry(entry) } catch (e) { entry.error = e.message || String(e); machine.error = `${entry.project.name}：${entry.error}` }
-          // Avoid rebuilding hundreds of pixel cards for every empty old project.
-          if (!queue.length || queue.length % 10 === 0 || (entry.project.global ? '@global' : groupKey(entry)) === selected) render()
-        }
+        const activity = await call(machine, 'activity')
+        const byKey = new Map(activity.projects.map((row) => [row.key, row]))
+        for (const entry of entries.filter((e) => e.machine === machine)) entry.activity = entry.project.global ? activity.unassigned || null : byKey.get(entry.project.key)
+        if (!activity.complete) machine.error = activity.reason || '任务索引尚未完成，热度仍未知'
+        render()
       } catch (e) { machine.error = e.message || String(e); render() }
+    }
+    const wanted = new Set(mainGroups().map((group) => group.key))
+    if (selected) wanted.add(selected)
+    const queue = entries.filter((entry) => entry.project.global || wanted.has(groupKey(entry)))
+    while (queue.length) {
+      const index = queue.findIndex((entry) => (entry.project.global ? '@global' : groupKey(entry)) === selected)
+      const global = queue.findIndex((entry) => entry.project.global)
+      const [entry] = queue.splice(index >= 0 ? index : global >= 0 ? global : 0, 1)
+      try { await reloadEntry(entry) } catch (e) { entry.error = e.message || String(e); entry.machine.error = `${entry.project.name}：${entry.error}` }
+      render()
     }
   } catch (e) { problem = e.message || String(e) }
   finally { loading = false; render() }

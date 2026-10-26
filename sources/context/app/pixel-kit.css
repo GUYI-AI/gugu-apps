@@ -28,6 +28,7 @@
 .px-card:disabled { cursor: progress; opacity: .65; }
 .px-card-top { display: flex; gap: 12px; align-items: center; margin-top: 4px; }
 .px-name { font-size: var(--em-font-heading); line-height: var(--em-lh-heading); font-weight: 700; margin: 0; }
+.px-card .px-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .px-path { color: var(--em-foreground-passive); font-size: var(--em-font-caption); overflow-wrap: anywhere; }
 .px-rank { margin-left: auto; align-self: flex-start; color: var(--em-foreground-passive); }
 .px-say { margin: 12px 0; min-height: 20px; }
@@ -67,3 +68,5 @@
 .px-notice { color: var(--em-foreground-muted); }.px-empty { border: 1.5px dashed var(--px-ink); padding: 24px; color: var(--em-foreground-muted); }
 @media (max-width: 640px) { .px-sheet { grid-template-columns: 1fr; gap: 12px; }.px-sheet .px-stats { grid-template-columns: auto 1fr auto; }.px-bar[data-big] i { width: 10px; height: 10px; }.px-row { grid-template-columns: 10px 1fr; }.px-row > .px-button { grid-column: 2; justify-self: start; }.px-button { min-height: 36px; }.px-stats { gap: 6px; }.px-stat-value { min-width: 44px; }.px-card { padding: 16px 14px; } }
 @media (prefers-reduced-motion: reduce) { .px-card, .px-button { transition: none; }.px-card:hover, .px-button:hover, .px-card:active, .px-button:active { transform: none; } }
+
+.px-text-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; text-decoration: underline; cursor: pointer; }
