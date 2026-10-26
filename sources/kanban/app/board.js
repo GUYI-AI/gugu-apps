@@ -67,19 +67,21 @@ if (creating) document.body.classList.add('creating-card')
 // This computer's board is read and written only through the background page and the App's program, and a phone has
 // neither (its `gugu` has no onBackgroundMessage — the host's way of saying so). A chat's board needs neither.
 const desktop = typeof g.onBackgroundMessage === 'function'
+const canDispatch = typeof g.dispatch === 'function'
 
 /** Where the board shown is kept: this computer (`{ kind: 'local' }`) or a chat's board file (`{ kind: 'chat', f }`). */
 let home = null
 let board = null
 let localBoard = null
 let agents = []
-let agentsKnown = false // false on a phone, and until the background page has listed them: no status is drawn then
+let agentsKnown = false // no status is drawn until this page has read the host's agent list
 let filter = 'all'
 let selected = null
 let visible = ctx.layout?.visible ?? true
 const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
 const waiting = new Map()
 let stateProblem = ''
+const failure = { board: null, agents: null }
 
 /** Element maker: text goes in as text (others wrote it), never as markup. */
 function h(tag, props = {}, ...kids) {
@@ -147,14 +149,8 @@ if (desktop) g.onBackgroundMessage((message) => {
   }
   if (message?.type !== 'state') return
   localBoard = message.board
-  agents = message.agents ?? []
-  agentsKnown = !message.failure?.agents
-  // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
-  const problems = [home?.kind === 'local' && message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
-  const problem = problems.join(' · ')
-  if (problem && problem !== stateProblem) showAlert(problem)
-  else if (!problem && stateProblem && !message.done) showAlert(null)
-  stateProblem = problem
+  failure.board = message.failure?.board
+  showStateProblem(message.done)
   if (message.done) {
     waiting.get(message.done.id)?.resolve(message.done.result)
     waiting.delete(message.done.id)
@@ -162,6 +158,15 @@ if (desktop) g.onBackgroundMessage((message) => {
   if (home?.kind === 'local') board = localBoard
   render()
 })
+
+function showStateProblem(done = false) {
+  // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
+  const problems = [home?.kind === 'local' && failure.board && t.noBoard(failure.board), failure.agents && t.noStatus(failure.agents)].filter(Boolean)
+  const problem = problems.join(' · ')
+  if (problem && problem !== stateProblem) showAlert(problem)
+  else if (!problem && stateProblem && !done) showAlert(null)
+  stateProblem = problem
+}
 
 const agentBySession = (session) => agents.find((a) => a.sessionId === session) ?? null
 const agentById = (id) => agents.find((a) => a.agentId === id) ?? null
@@ -172,7 +177,7 @@ const otherLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind
 const flagsOf = (card) => cardFlags(board, card, stateOf, Date.now())
 const chatOfBoard = () => (home?.kind === 'chat' ? { id: home.f.entry.chat, name: home.name } : null)
 
-/** A task's status, as gugu states it; nothing where the statuses are not known (a phone). */
+/** A task's status, as gugu states it; nothing until the host's agent list is known. */
 function stateBadge(link) {
   const state = stateOf(link.session)
   return state ? h('span', { class: `state ${state.key}`, text: t.states[state.key] }) : null
@@ -542,8 +547,8 @@ async function updateDrawer(force = false) {
     current && !linked.has(current)
       ? item(t.attachCurrent, () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })))
       : null,
-    desktop ? item(t.pickTask, () => pickTask(card)) : null,
-    desktop ? item(t.start, (e) => startTask(card, e.currentTarget, appState?.activeProjectId)) : null,
+    canDispatch ? item(t.pickTask, () => pickTask(card)) : null,
+    canDispatch ? item(t.start, (e) => startTask(card, e.currentTarget, appState?.activeProjectId)) : null,
     desktop ? item(t.pickFile, () => pickTaskFile(card)) : null,
     item(t.pickChatFile, () => pickChatFile(card)),
     // A gugu without project folders for Apps has no gugu.projects: the item is not offered there.
@@ -816,8 +821,8 @@ async function showChatBoard(open) {
       board = f.toJSON()
       render()
       // Someone else's change — an agent's on another computer, say — may come with that agent moving: ask for the
-      // statuses again (the background page hears only this computer's agents move).
-      if (!local && desktop) askAgents()
+      // statuses again (onAgentsChanged need not include agents on other computers).
+      if (!local) askAgents()
     })
     f.onStatus((status) => { if (status === 'gone') showAlert(t.gone) })
     showAlert(null)
@@ -845,9 +850,25 @@ function leaveHome() {
 
 let asking = null
 function askAgents() {
-  if (asking) return
-  asking = g.sendToBackground({ type: 'agents' }).catch((e) => showAlert(e.message)).finally(() => { asking = null })
+  if (typeof g.listAgents !== 'function') return
+  if (asking) return asking
+  asking = g.listAgents().then((rows) => {
+    agents = rows
+    agentsKnown = true
+    failure.agents = null
+  }).catch((error) => {
+    agents = []
+    agentsKnown = false
+    failure.agents = error?.message ?? String(error)
+  }).finally(() => {
+    asking = null
+    showStateProblem()
+    render()
+  })
+  return asking
 }
+
+if (typeof g.onAgentsChanged === 'function') g.onAgentsChanged(() => askAgents())
 
 /**
  * Opened in a chat (its panel, or one of its board files): that chat's board, nothing to pick. Anywhere else (the dock,
@@ -891,9 +912,12 @@ g.onContextChanged(async () => {
   placed()
   const now = ctx.layout?.visible ?? visible
   // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere, a chat's new board).
-  if (desktop && now && !visible) {
-    g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
-    if (!ctx.chat && !ctx.file) fillSwitcher()
+  if (now && !visible) {
+    askAgents()
+    if (desktop) {
+      g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
+      if (!ctx.chat && !ctx.file) fillSwitcher()
+    }
   }
   visible = now
   render()
@@ -913,3 +937,4 @@ else if (desktop) {
   for (const el of $('main').children) el.style.display = 'none'
   $('main').append(h('gugu-empty', { id: 'desktop-only', icon: 'layout-grid' }, h('strong', { text: t.desktopOnly }), h('small', { text: t.phoneHint })))
 }
+askAgents()
