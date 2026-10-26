@@ -66,7 +66,7 @@ function card(group, rank) {
 
 function listView() {
   const all = groups(), grouped = mainGroups(all), shown = new Set(grouped.map((group) => group.key))
-  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${grouped.length} 个项目 · 按 7 天热度排 · 最多显示 8 个`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
+  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${all.length} 个项目 · 按 7 天热度排`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
   root.append(header)
   if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
   for (const machine of machines.filter((m) => m.error)) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
@@ -83,7 +83,7 @@ function listView() {
     const states = counts.reduce((n, m) => n + (m?.codexStates || 0), 0)
     const memories = counts.reduce((n, m) => n + (m?.unmappedMemoryDirectories || 0), 0)
     const activity = group.bars.hot.count
-    node.querySelector('.px-say').textContent = measured ? `可清理：${states} 项 Codex 状态 · ${memories} 个未关联记忆目录；未归属项目的任务：${activity === null ? '待读取' : `${activity} / 7天`}` : '正在检查全局规矩、未归属任务和可清理项…'
+    node.querySelector('.px-say').textContent = measured ? `可清理：${states} 条失效的 Codex 项目信任 / hook 配置 · ${memories} 个无项目的记忆目录；未归属项目的任务：${activity === null ? '待读取' : `${activity} / 7天`}` : '正在检查全局规矩、未归属任务和可清理项…'
     const health = group.bars.health
     node.querySelector('.px-stats').replaceWith(el('dl', { class: 'px-stats' }, el('dt', { class: 'px-label' }, '健康'), el('dd', {}, bar('health', health.complete ? health.value : null)), el('dd', { class: 'px-stat-value px-mono' }, health.complete ? `${health.value}/10` : '未全测')))
     root.append(el('div', { class: 'global-grid' }, node))
@@ -280,5 +280,4 @@ g.onContextChanged(async () => {
   ctx = await g.getContext()
   if (previous.session?.deviceId !== ctx.session?.deviceId || (previous.layout?.visible === false && ctx.layout?.visible === true)) await refresh()
 })
-g.onCommand((id) => { if (id === 'refresh') void refresh() })
 await refresh()

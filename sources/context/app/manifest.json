@@ -22,7 +22,7 @@
   ],
   "contributes": {
     "tabs": [
-      { "name": "main", "title": "上下文", "entry": "context.html", "toolbar": [{ "id": "refresh", "title": "重新计算" }] },
+      { "name": "main", "title": "上下文", "entry": "context.html" },
       { "name": "settings", "title": "设置", "hostPage": "settings" }
     ],
     "mcpServers": [{ "tools": "tools.js" }],
