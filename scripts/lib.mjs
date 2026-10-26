@@ -153,7 +153,8 @@ export function fetchSource(version) {
 function collectFiles(root) {
   const out = [];
   const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    // Published bundles use the release runner's en-US collation, regardless of this machine's locale.
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, 'en-US'))) {
       if (BUNDLE_SKIP_NAMES.has(entry.name)) continue;
       const full = join(dir, entry.name);
       // 符号链接不进包:包要自足。跟随它等于把链接指向的东西打进 App。
