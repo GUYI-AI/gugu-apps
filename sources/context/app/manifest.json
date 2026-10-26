@@ -1,0 +1,32 @@
+{
+  "id": "context",
+  "name": "上下文",
+  "version": "0.1.0",
+  "apiVersion": 17,
+  "platforms": ["desktop"],
+  "engines": { "gugu": ">=0.2.58" },
+  "description": "按项目检查 Claude 和 Codex 的上下文：任务热度、规则健康和记忆容量。程序计算问题并预览确定的修复；需要理解含义的检查只生成复制给 agent 的提示。",
+  "subtitle": "项目的上下文健康与记忆容量",
+  "localized": { "en": { "name": "Context", "subtitle": "Context health and capacity", "description": "Inspect Claude and Codex context by project: task activity, rule health and memory capacity. Preview deterministic repairs; copy prompts for checks that need an agent’s judgment." } },
+  "author": "咕咕",
+  "license": "MIT",
+  "categories": ["developer", "productivity"],
+  "entry": "context.html",
+  "icon": "icon.png",
+  "permissions": { "capabilities": ["agents:tools", "agents:history:all", "agents:read:all-machines"], "network": [] },
+  "settings": [
+    { "key": "claudeRoots", "title": "补充 Claude 配置根", "type": "string", "description": "补充配置根路径。会自动发现 CLAUDE_CONFIG_DIR、~/.claude 和 ~/.rec/claude/accounts/*/config。", "default": "" },
+    { "key": "codexRoots", "title": "补充 Codex 配置根", "type": "string", "description": "补充配置根路径。会自动发现 CODEX_HOME 和 ~/.codex。", "default": "" },
+    { "key": "projects", "title": "补充项目目录", "type": "string", "description": "补充项目路径。worktree 会并到主仓；/tmp 下的临时目录不会列成项目。", "default": "" },
+    { "key": "sample", "title": "上下文样本数", "type": "select", "default": "300", "options": [{ "value": "100", "title": "最近 100 个任务" }, { "value": "300", "title": "最近 300 个任务" }], "description": "用于引用、注入和冷记忆检查；7 天任务热度查完整索引。" }
+  ],
+  "contributes": {
+    "tabs": [
+      { "name": "main", "title": "上下文", "entry": "context.html" },
+      { "name": "settings", "title": "设置", "hostPage": "settings" }
+    ],
+    "mcpServers": [{ "tools": "tools.js" }],
+    "skills": "skills"
+  },
+  "examples": ["检查这个项目的上下文健康", "哪些记忆有悬空链接？"]
+}
