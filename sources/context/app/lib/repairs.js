@@ -65,7 +65,7 @@ export async function makePreview(report, ruleId, dataDir) {
     dependencies.set(dest, { path: dest, exists: false, parent: await fs.realpath(path.dirname(archiveDir)), newParent: archiveDir })
     edits.set(dest, { base64: from.data })
     edits.set(p, null)
-    for (const memory of report._memories) for (const file of memory.files.filter((f) => f.file.endsWith('.md') && f.path !== p && edits.get(f.path) !== null)) {
+    for (const memory of report._memories.filter((m) => m.root === path.dirname(p))) for (const file of memory.files.filter((f) => f.file.endsWith('.md') && f.path !== p && edits.get(f.path) !== null)) {
       const name = path.basename(p), raw = await read(file.path)
       let next = raw
       if (file.file === 'MEMORY.md' || file.file.endsWith('-hub.md')) next = editedLines(next, (line) => line.includes(`](${name})`) ? [] : line)
@@ -107,7 +107,7 @@ export async function makePreview(report, ruleId, dataDir) {
     else if (row.repair === 'duplicate') {
       // Only identical bodies are mechanically merged; near-duplicates need a person/agent.
       const obsolete = row.b, current = path.basename(row.a)
-      for (const memory of report._memories) for (const file of memory.files.filter((f) => f.file.endsWith('.md') && f.path !== obsolete)) {
+      for (const memory of report._memories.filter((m) => m.root === path.dirname(obsolete))) for (const file of memory.files.filter((f) => f.file.endsWith('.md') && f.path !== obsolete && edits.get(f.path) !== null)) {
         const before = await read(file.path)
         const next = before.replaceAll(`](${path.basename(obsolete)})`, `](${current})`).replaceAll(`[[${slug(obsolete)}]]`, `[[${slug(current)}]]`)
         if (next !== before) await write(file.path, next)

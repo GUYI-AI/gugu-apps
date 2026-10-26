@@ -67,3 +67,45 @@ test('preview digest mismatch never writes', async (t) => {
   await assert.rejects(applyPreview(f.data, preview.id, 'wrong', true), /不匹配/)
   assert.match(await fs.readFile(path.join(f.memory, 'MEMORY.md'), 'utf8'), /\[\[absent\]\]/)
 })
+
+test('archiving a large memory never changes another account with the same filename', async (t) => {
+  const f = await fixture(t), other = path.join(f.root, 'other-memory')
+  await fs.mkdir(other)
+  const index = '- [one](one.md) — different account\n', note = 'This account still uses [[one]].\n'
+  await fs.writeFile(path.join(other, 'MEMORY.md'), index)
+  await fs.writeFile(path.join(other, 'one.md'), note)
+  const original = '---\nname: one\ndescription: large note\ntype: feedback\n---\n' + 'Long archived content.\n'.repeat(1000)
+  await fs.writeFile(path.join(f.memory, 'one.md'), original)
+  const report = await diagnose({ ...f.project, memories: [f.memory, other] })
+  const preview = await makePreview(report, 'R16', f.data)
+  assert.doesNotMatch((await readPreview(f.data, preview.id)).text, /other-memory/)
+  await applyPreview(f.data, preview.id, preview.digest, true)
+  assert.equal(await fs.readFile(path.join(f.memory, 'archive/one.md'), 'utf8'), original)
+  assert.doesNotMatch(await fs.readFile(path.join(f.memory, 'MEMORY.md'), 'utf8'), /\]\(one\.md\)/)
+  assert.equal(await fs.readFile(path.join(other, 'MEMORY.md'), 'utf8'), index)
+  assert.equal(await fs.readFile(path.join(other, 'one.md'), 'utf8'), note)
+})
+
+test('merging identical memories keeps links scoped to their account, including three copies', async (t) => {
+  const f = await fixture(t), other = path.join(f.root, 'other-memory')
+  await fs.mkdir(other)
+  const index = '- [b](b.md) — another account\n', note = 'Another account refers to [[b]].\n'
+  await fs.writeFile(path.join(other, 'MEMORY.md'), index)
+  await fs.writeFile(path.join(other, 'b.md'), note)
+  const body = '\nIdentical instructions shared only within this account.\n'
+  for (const name of ['a', 'b', 'c']) await fs.writeFile(path.join(f.memory, `${name}.md`), `---\nname: ${name}\ndescription: identical instructions\ntype: feedback\n---\n${body}`)
+  await fs.writeFile(path.join(f.memory, 'MEMORY.md'), '- [a](a.md)\n- [b](b.md)\n- [c](c.md)\n')
+  const report = await diagnose({ ...f.project, memories: [f.memory, other] })
+  assert.equal(report.rules.find((r) => r.id === 'R18').findings.filter((r) => r.identical).length, 3)
+  const preview = await makePreview(report, 'R18', f.data)
+  assert.doesNotMatch((await readPreview(f.data, preview.id)).text, /other-memory/)
+  await applyPreview(f.data, preview.id, preview.digest, true)
+  assert.match(await fs.readFile(path.join(f.memory, 'a.md'), 'utf8'), /Identical instructions/)
+  for (const name of ['b', 'c']) {
+    await assert.rejects(fs.access(path.join(f.memory, `${name}.md`)), { code: 'ENOENT' })
+    assert.match(await fs.readFile(path.join(f.memory, `archive/${name}.md`), 'utf8'), /Identical instructions/)
+  }
+  assert.doesNotMatch(await fs.readFile(path.join(f.memory, 'MEMORY.md'), 'utf8'), /\]\([bc]\.md\)/)
+  assert.equal(await fs.readFile(path.join(other, 'MEMORY.md'), 'utf8'), index)
+  assert.equal(await fs.readFile(path.join(other, 'b.md'), 'utf8'), note)
+})
