@@ -32,8 +32,9 @@
 - 后台页没在跑的那段时间（咕咕关着、雷达刚装上或刚重启），发生的事会漏掉：后台起来后的第一眼只记下当时的状态，不和之前比，所以不会补报。
 - `engines.gugu` 现在写的是 `>=0.2.53`。等 gugu#7023（listAgents 的 detail / failure / lastActionAt）发版以后，抬到那个版本。
 
-- 目前只能盯这台电脑上的 agent。盯别的电脑要等咕咕的跨机器统一（PR-5）。
-- 终端 agent 看不到「最后说的话」和「引擎为什么没了」，只能看到状态。
+- 可关注同一账号各台电脑上的 agent，也可把提醒交给另一台电脑上的 agent。跨设备清单和投递都走咕咕的现有机制；每 30 秒读取一次远端状态，提醒带机器名和读数时间。远端机器离线或暂时无法读取时保留关注，不当成任务被删除；`watching` 的 `not_reached` 列出未读到的机器。
+- 无窗口的咕咕 server 也可运行后台页，需要宿主提供后台运行环境（服务器上安装 Chrome/Chromium）。旧宿主不支持完整读数报告时会明确报错。
+- 远端 agent 的实时计数、最后一次工具调用和对话内容当前未开放；跨设备「跑完」提醒会明确写出最后一句不可读，不会代用之前的对话。
 - 有人主动停掉一条正在跑的会话：咕咕 Beta 64.1（#7026）起读成「空闲 · 被打断」（`idle/plain`），雷达既不当出错、也不当跑完。更早的咕咕会把它读成出错，雷达会照常投「出错」。
 
 ## 页签
@@ -42,4 +43,4 @@
 
 ## 需要的能力
 
-看到所有 agent（`agents:read:all`），给 agent 发消息（`agents:control:all`），读「跑完」时最后说的话（`agents:history:all`），给 agent 提供工具（`agents:tools`）。
+看到所有 agent（`agents:read:all-machines`），给 agent 发消息（`agents:control:all-machines`），读「跑完」时最后说的话（`agents:history:all`），给 agent 提供工具（`agents:tools`）。

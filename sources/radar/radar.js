@@ -54,7 +54,9 @@ const titleOf = (agentId) => agents.get(agentId)?.title ?? saved.get(agentId) ??
 const centerId = () => (mode === 'local' ? ctx?.session?.agentId ?? null : null)
 
 async function load() {
-  const [rawState, files, rows] = await Promise.all([g.readData('state.json'), g.listData('subs'), g.listAgents()])
+  const [rawState, files, reading] = await Promise.all([g.readData('state.json'), g.listData('subs'), g.listAgents({ report: true })])
+  if (!Array.isArray(reading?.agents)) throw new Error('Radar needs a gugu host with listAgents({ report: true }) support')
+  const rows = reading.agents
   if (rawState !== null) state = JSON.parse(rawState)
   const next = {}
   for (const { path, kind } of files) {
@@ -67,6 +69,11 @@ async function load() {
   }
   subs = next
   agents = new Map(rows.map((row) => [row.agentId, row]))
+  for (const [id, old] of Object.entries(state.last ?? {})) {
+    if (!agents.has(id) && old.deviceId && reading.unreached.some((m) => m.deviceId === null || m.deviceId === old.deviceId)) {
+      agents.set(id, { ...old, agentId: id, status: null })
+    }
+  }
   saved = new Map()
   for (const sub of Object.values(subs)) for (const k of ['by', 'target', 'to']) if (sub.titles?.[k]) saved.set(sub[k], sub.titles[k])
 }
@@ -76,14 +83,15 @@ function nodeSentence(agentId) {
   const n = titleOf(agentId)
   const row = agents.get(agentId)
   if (!row) return W.gone(n)
-  if (row.status === 'working') return W.working(n, agoOf(row.lastActionAt))
-  if (row.status === 'idle') return W.idle(n)
-  if (row.status === 'needs_user') return W.waiting(n, W.waits[row.detail] ?? W.waitAny)
+  const source = row.deviceId ? ` ${W.observed(row.deviceLabel ?? row.deviceId, row.statusAt)}` : ''
+  if (row.status === 'working') return W.working(n, agoOf(row.lastActionAt)) + source
+  if (row.status === 'idle') return W.idle(n) + source
+  if (row.status === 'needs_user') return W.waiting(n, W.waits[row.detail] ?? W.waitAny) + source
   if (row.status === 'error') {
-    if (row.failure) return W.troubleWhy(n, row.failure.kind === 'start-failed' ? W.startFailed : W.engineQuit)
-    return W.trouble(n)
+    if (row.failure) return W.troubleWhy(n, row.failure.kind === 'start-failed' ? W.startFailed : W.engineQuit) + source
+    return W.trouble(n) + source
   }
-  return W.noStatus(n)
+  return W.noStatus(n) + source
 }
 
 /** Every path a reminder can travel (who it is about → who is told), with the subscriptions and the count behind it. */
