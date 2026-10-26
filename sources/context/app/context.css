@@ -6,7 +6,8 @@ body { margin: 0; }
 .page-header h1 { margin: 0; }.page-actions { display: flex; gap: 10px; margin-left: auto; align-items: center; }
 .project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 20px; }
 .global-grid { max-width: calc(50% - 10px); }
-.project-copy { flex: 1; min-width: 0; }.table-scroll { overflow-x: auto; }.machine-table { min-width: 640px; }
+.project-copy { flex: 1; min-width: 0; }.table-scroll { overflow-x: auto; }.machine-table { min-width: 640px; table-layout: fixed; }
+.machine-table th:first-child, .machine-table th:last-child { width: 176px; }.machine-table th:nth-child(3) { width: 88px; }
 .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }.detail-evidence { margin-top: 12px; }
 .dialog-shell { position: fixed; inset: 0; z-index: 2; align-items: center; padding: 24px; background: var(--em-background); overflow: auto; border: 0; max-width: 100%; max-height: 100%; width: min(960px, 100%); }
 .dialog-shell[open] { display: grid; }.dialog-shell > section { width: 100%; margin: auto; }.dialog-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }

@@ -56,7 +56,7 @@
 .px-sheet { display: grid; grid-template-columns: auto 1fr; gap: 24px; padding: 22px; }
 .px-sheet .px-stats { grid-template-columns: auto auto 1fr; margin-top: 12px; }
 .px-sheet .px-stat-value { text-align: left; }
-.px-row { display: grid; grid-template-columns: 14px 1fr auto; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--em-border); align-items: start; }
+.px-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--em-border); align-items: start; }
 .px-row:last-child { border-bottom: 0; }.px-row-title { font-weight: 600; }.px-row-sub { color: var(--em-foreground-muted); margin-top: 2px; }.px-row-where { font-size: var(--em-font-caption); color: var(--em-foreground-passive); margin-top: 4px; overflow-wrap: anywhere; }
 .px-pip { width: 10px; height: 10px; margin-top: 5px; border: 1.5px solid var(--px-ink); background: var(--px-empty); }
 .px-pip[data-tone=red] { background: var(--em-foreground-destructive); }.px-pip[data-tone=yellow] { background: var(--em-foreground-warning); }
