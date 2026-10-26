@@ -103,7 +103,7 @@ function explanation(rule) {
   if (rule.id === 'R17' && rule.metrics) {
     const m = rule.metrics
     const names = { 'deleted-worktree': '已删 worktree', temporary: '临时', 'moved-or-shorthand': '改名或简写', missing: '缺失', unverifiable: '无法核实' }
-    return `检查 ${m.checkedPaths} 条唯一路径，缺失 ${m.missingPaths} 条，涉及 ${m.affectedFiles} 个文件；非临时类涉及 ${m.nonTemporaryFiles} 个文件。` + Object.entries(m.classes).map(([kind, count]) => `${names[kind]} ${count.paths} 路径 / ${count.files} 文件`).join('；') + '。证据按文件和路径去重，展开后分页读取。'
+    return `已核查 ${m.checkedPaths} 条唯一路径；确认失效 ${m.missingPaths} 条，涉及 ${m.affectedFiles} 个文件。无法核实 ${m.classes.unverifiable.paths} 条、临时路径 ${m.classes.temporary.paths} 条，均不计入失效。` + Object.entries(m.classes).map(([kind, count]) => `${names[kind]} ${count.paths} 路径 / ${count.files} 文件`).join('；') + '。证据按文件和路径去重，展开后分页读取。'
   }
   const text = {
     R1: '按 UTF-16 字符数 / 25,000 和行数 / 200 取较大值；Codex 按项目 AGENTS.md 合计 / 32 KiB，全局指令不占项目预算。',
@@ -179,7 +179,7 @@ async function showPreview(entry, id) {
 }
 
 function ruleRow(entry, rule) {
-  const evidence = el('details', {}, el('summary', {}, `查看 ${rule.count} 条证据`))
+  const evidence = el('details', {}, el('summary', {}, `查看 ${rule.evidenceCount ?? rule.count} 条证据`))
   let offset = 0
   const pre = el('pre', { class: 'px-row-where px-mono' })
   const more = button('更多证据', async (event) => runAction(event.currentTarget, load))
@@ -192,7 +192,7 @@ function ruleRow(entry, rule) {
   evidence.addEventListener('toggle', () => { if (evidence.open && !pre.textContent) void runAction(more, load) })
   evidence.append(pre, more)
   const action = button(rule.fixable ? '看改动' : '复制给 agent', (event) => runAction(event.currentTarget, () => rule.fixable ? showPreview(entry, rule.id) : showPrompt(entry, rule.id)))
-  return el('article', { class: 'px-row', 'aria-label': `${entry.machine.name} ${rule.title}` }, el('span', { class: 'px-pip', 'data-tone': rule.severity }), el('div', {}, el('div', { class: 'px-row-title' }, `${rule.title} · ${rule.count} 处`, el('span', { class: 'px-who px-label' }, '程序'), ['red', 'yellow'].includes(rule.severity) ? ` −${rule.severity === 'red' ? 3 : 1}` : ''), el('div', { class: 'px-row-sub' }, explanation(rule)), el('div', { class: 'px-row-where px-mono' }, entry.machine.name), evidence), action)
+  return el('article', { class: 'px-row', 'aria-label': `${entry.machine.name} ${rule.title}` }, el('span', { class: 'px-pip', 'data-tone': rule.severity }), el('div', {}, el('div', { class: 'px-row-title' }, `${rule.title} · ${rule.count} ${rule.id === 'R17' ? '条' : '处'}`, el('span', { class: 'px-who px-label' }, '程序'), ['red', 'yellow'].includes(rule.severity) ? ` −${rule.severity === 'red' ? 3 : 1}` : ''), el('div', { class: 'px-row-sub' }, explanation(rule)), el('div', { class: 'px-row-where px-mono' }, entry.machine.name), evidence), action)
 }
 
 function detailView(group) {
@@ -214,7 +214,7 @@ function detailView(group) {
   root.append(el('div', { class: 'table-scroll' }, el('table', { class: 'px-table machine-table' }, el('thead', {}, el('tr', {}, ['机器 · harness', '开工时拿到的规矩', '热度', '容量'].map((t) => el('th', { class: 'px-label' }, t)))), body)))
   for (const [title, severities] of [['扣了健康的', ['red', 'yellow']], ['可以清理 · 不扣健康', ['clean']]]) {
     root.append(section(title))
-    const rows = group.items.flatMap((e) => e.report?.rules.filter((r) => r.count && severities.includes(r.severity)).map((r) => ruleRow(e, r)) || [])
+    const rows = group.items.flatMap((e) => e.report?.rules.filter((r) => (r.evidenceCount ?? r.count) && severities.includes(r.severity)).map((r) => ruleRow(e, r)) || [])
     root.append(rows.length ? el('div', { class: 'px-rows' }, rows) : el('p', { class: 'px-notice' }, group.bars.health.complete ? '没有命中' : '已测范围内没有命中'))
   }
   const pending = group.items.flatMap((e) => e.report?.rules.filter((r) => r.pending).map((r) => `${e.machine.name} · ${r.id}：${r.pending}`) || [])

@@ -62,7 +62,7 @@ async function reportFor(id) {
 }
 function summary(report, id) {
   return { id, project: report.project, bars: report.bars, capacities: report.capacities, capacityForecasts: report.rules.find((r) => r.id === 'R3').findings, instructions: report._instructions.map((f) => f.path), history: report.history, measuredAt: report.measuredAt, agents: report.agents,
-    rules: report.rules.map(({ findings, ...rule }) => ({ ...rule, count: findings.length, fixable: findings.some((f) => f.repair) })) }
+    rules: report.rules.map(({ findings, ...rule }) => ({ ...rule, count: rule.count ?? findings.length, fixable: findings.some((f) => f.repair) })) }
 }
 function onlyPerson(call) { if (call?.agent) throw new Error('文件写入只能由人在 App 页面查看预览并确认') }
 const rowsFor = (project) => inventory.rows.filter((row) => project.global ? row.group?.key === 'gugu:task-home' : row.group?.key === project.key || project.sessionCwds?.includes(row.cwd) || project.locations.includes(row.cwd) || row.cwd === project.root)
@@ -147,7 +147,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       const report = await measure(project, history)
       for (const rule of report.rules) {
         if (rule.id !== 'R17') for (const finding of rule.findings) console.log(JSON.stringify({ type: 'finding', rule: rule.id, ...finding }))
-        console.log(JSON.stringify({ type: 'rule', rule: rule.id, title: rule.title, count: rule.findings.length, pending: rule.pending, ...(rule.metrics ? { metrics: rule.metrics } : {}) }))
+        console.log(JSON.stringify({ type: 'rule', rule: rule.id, title: rule.title, count: rule.count ?? rule.findings.length, evidenceCount: rule.evidenceCount, pending: rule.pending, ...(rule.metrics ? { metrics: rule.metrics } : {}) }))
       }
       console.log(JSON.stringify({ type: 'summary', project: report.project, bars: report.bars, capacities: report.capacities }))
     } catch (e) { console.error(e.message); process.exitCode = 1 }

@@ -92,6 +92,6 @@ export async function missingPaths(files, project) {
     const rows = findings.filter((row) => row.kind === kind)
     return [kind, { paths: new Set(rows.map((row) => row.target)).size, files: new Set(rows.map((row) => row.path)).size }]
   }))
-  const missing = findings.filter((row) => row.kind !== 'unverifiable')
+  const missing = findings.filter((row) => ['missing', 'deleted-worktree', 'moved-or-shorthand'].includes(row.kind))
   return { findings, metrics: { checkedPaths: checked.size, missingPaths: new Set(missing.map((row) => row.target)).size, affectedFiles: new Set(missing.map((row) => row.path)).size, nonTemporaryFiles: new Set(missing.filter((row) => !['temporary', 'deleted-worktree'].includes(row.kind)).map((row) => row.path)).size, classes } }
 }

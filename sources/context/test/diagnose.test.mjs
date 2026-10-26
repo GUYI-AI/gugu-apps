@@ -243,6 +243,26 @@ test('path evidence deduplicates file × path and does not repeat long source li
   assert.equal(result.findings[0].line, 7)
 })
 
+test('R17 counts unique confirmed missing paths and keeps temporary and unknown evidence separate', async (t) => {
+  const root = await fixture(t), memory = path.join(root, 'memory')
+  await fs.mkdir(memory); await fs.mkdir(path.join(root, 'src'))
+  await fs.writeFile(path.join(root, 'src/current.ts'), 'export {}\n')
+  execFileSync('git', ['init', '-q', root])
+  execFileSync('git', ['-C', root, 'add', 'src/current.ts'])
+  execFileSync('git', ['-C', root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture'])
+  await fs.writeFile(path.join(memory, 'MEMORY.md'), '')
+  const temporary = `/tmp/context-never-created-${path.basename(root)}.md`
+  await fs.writeFile(path.join(memory, 'one.md'), fm('one', `src/gone.ts\n.worktrees/gone/file.md\nold/current.ts\n${temporary}\n/context-foreign-device/reference.md`))
+  await fs.writeFile(path.join(memory, 'two.md'), fm('two', 'src/gone.ts'))
+  const report = await diagnose({ root, locations: [], memories: [memory], codexRoots: [], claudeRoots: [] })
+  const rule = report.rules.find((r) => r.id === 'R17')
+  assert.equal(rule.count, 3)
+  assert.equal(rule.evidenceCount, 6)
+  assert.equal(rule.metrics.missingPaths, 3)
+  assert.equal(rule.metrics.affectedFiles, 2)
+  for (const kind of ['missing', 'deleted-worktree', 'moved-or-shorthand', 'temporary', 'unverifiable']) assert.equal(rule.metrics.classes[kind].paths, 1, kind)
+})
+
 test('Codex project budget excludes global instructions and selects project override', async (t) => {
   const root = await fixture(t), codex = path.join(root, 'codex')
   await fs.mkdir(path.join(root, 'project')); await fs.mkdir(codex)
@@ -303,12 +323,14 @@ test('global card diagnoses stale Codex project and hook state', async (t) => {
 test('CLI emits JSONL ending in summary, with R17 counts only', async (t) => {
   const root = await fixture(t)
   await fs.writeFile(path.join(root, 'MEMORY.md'), '- [one](one.md) — one\n')
-  await fs.writeFile(path.join(root, 'one.md'), fm('one', 'src/deleted.ts src/deleted.ts'))
+  await fs.writeFile(path.join(root, 'one.md'), fm('one', `src/deleted.ts src/deleted.ts\n/tmp/context-never-created-${path.basename(root)}.md\n/context-foreign-device/reference.md`))
   const output = execFileSync(process.execPath, [path.resolve('app/tools.js'), '--diagnose', root], { encoding: 'utf8', env: { ...process.env, HOME: root, CLAUDE_CONFIG_DIR: root, CODEX_HOME: root, GUGU_APP_SETTINGS: '{}' } })
   const rows = output.trim().split('\n').map((line) => JSON.parse(line))
   assert.equal(rows.at(-1).type, 'summary')
   assert.equal(rows.filter((row) => row.rule === 'R17').length, 1)
   assert.equal(rows.find((row) => row.rule === 'R17').metrics.missingPaths, 1)
+  assert.equal(rows.find((row) => row.rule === 'R17').count, 1)
+  assert.equal(rows.find((row) => row.rule === 'R17').evidenceCount, 3)
 })
 
 test('literal prefix filtering agrees with exhaustive Jaccard, including common-vocabulary pairs', () => {

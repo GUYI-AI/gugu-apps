@@ -190,6 +190,8 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
   const paths = await missingPaths(files, project)
   rule('R17').findings = paths.findings
   rule('R17').metrics = paths.metrics
+  rule('R17').count = paths.metrics.missingPaths
+  rule('R17').evidenceCount = paths.findings.length
   const stats = bars(rules, capacities, completeHistory ? history.hot : null)
   return { project, rules, capacities, bars: stats, history: history ? { complete: history.complete, sample: history.sample, total: history.total, since: history.since, sources: history.sources, hotTasks: history.hotTasks, reason: history.reason, unknownStarts: history.unknownStarts } : null, agents: agentDefinitions, measuredAt: new Date(now).toISOString(), _memories: memorySets, _instructions: instructions }
 }

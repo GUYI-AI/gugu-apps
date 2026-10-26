@@ -22,6 +22,8 @@ node tools.js --diagnose /absolute/path/to/memory --context-export /absolute/pat
 
 CLI 不解析 transcript。导出文件支持宿主 `sessions.read({view:'context'})` 的单份投影、投影数组或 `{sessions:[…]}`；没有导出时只报告静态检查，历史检查显示待测。热度还需要导出带宿主首条消息时间计算出的 `hot` / `sources`；未提供则显示未知。输出全部为 JSONL，最后一行是 `type: "summary"`。R17 仅输出唯一路径、涉及文件及分类计数，逐项证据在 App 的分页工具中读取。
 
+R17 的 `count` 与 `metrics.missingPaths` 都只算 missing、deleted-worktree、moved-or-shorthand 三类确认不存在的唯一路径；临时路径和无法核实分别列出。`evidenceCount` 是按文件与路径去重的证据条数，同一个失效路径出现在两份记忆里只算一个失效、两条证据；没有失效但有无法核实项时仍可展开证据。
+
 Codex 容量只累计仓库根到工作目录的项目指令（每层优先 AGENTS.override.md），全局指令单独列出，不占项目的 32 KiB。R19 从 MEMORY.md 直接收录的 feedback 索引文字提词，拆分连字符标识符，去停用词和高频词；3–8 条共同出现的稀有词组或单个明确代码标识符形成候选，不跨组传递合并。相关常驻指令同时列为证据，不预置主题词表。
 
 程序不读取凭据或认证文件，不发送消息，不派 agent。修复快照保存在 App 数据夹 `snapshots/`，保留原始字节、路径和时间；同一项目的诊断报告刷新覆盖，原始 transcript 始终由宿主管理。
