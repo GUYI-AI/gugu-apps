@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2
+
+- Offer New task and Link task on phones whose host supports dispatch.
+- Read task lists and status changes directly from the host on both phone and desktop.
+
 ## 1.1.1
 
 - Hand cards to linked agents and start new tasks through the unified dispatch API (App API 15).
