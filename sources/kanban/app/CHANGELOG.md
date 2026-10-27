@@ -1,3 +1,7 @@
+## 1.1.3
+
+Board data is explicitly marked when created or opened, so chat folders can hide it by default. Linked documents remain ordinary files. Requires App API 18.
+
 # Changelog
 
 ## 1.1.2
