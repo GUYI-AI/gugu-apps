@@ -21,6 +21,7 @@ async function call(machine, tool, args = {}) {
 }
 // A program call stops at its read budget and says how far it got; call again until it finishes.
 async function settle(machine, tool, args, label) {
+  machine.progress = { label }; render()
   for (let round = 0; ; round++) {
     const answer = await call(machine, tool, args)
     const progress = tool === 'discover' ? answer.history?.progress : answer.progress
@@ -103,7 +104,7 @@ function listView() {
     const { label, done, total, pending } = machine.progress
     root.append(el('div', { class: 'px-progress', role: 'status' }, el('span', { class: 'px-notice' }, `${machine.name}：${label}${total ? ` · ${done} / ${total}` : pending ? ` · 还有 ${pending} 个` : ''}`), total ? el('progress', { value: String(done), max: String(total) }) : el('progress')))
   }
-  if (loading && !machines.some((m) => m.progress)) root.append(el('progress', { class: 'px-progress', 'aria-label': '正在计算' }))
+  if (loading && !machines.some((m) => m.progress)) root.append(el('div', { class: 'px-progress', role: 'status' }, el('span', { class: 'px-notice' }, '正在读取机器列表'), el('progress')))
   if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
   for (const machine of machines.filter((m) => m.error)) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
   root.append(section('项目'))
