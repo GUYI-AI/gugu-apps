@@ -73,6 +73,7 @@ const canDispatch = typeof g.dispatch === 'function'
 let home = null
 let board = null
 let localBoard = null
+let pendingNewCards = 0
 let agents = []
 let agentsKnown = false // no status is drawn until this page has read the host's agent list
 let filter = 'all'
@@ -216,6 +217,7 @@ function render() {
   if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
   if (selected && !board.cards[selected]) closeCard()
   else if (selected) updateDrawer()
+  while (pendingNewCards > 0) { pendingNewCards--; newCard() }
 }
 
 function columnView(column, flags) {
@@ -340,12 +342,13 @@ function renderNewCard() {
   title.focus()
 }
 
-g.onCommand((id) => {
-  if (id !== 'new' || !board) return
+function newCard() {
+  if (!board) { pendingNewCards++; return }
   const columns = columnsInOrder(board)
   // Narrow, the first column that is open; wide, the first.
   openAdd((narrow() && columns.find((c) => !collapsed.get(c.id))?.id) || columns[0].id)
-})
+}
+g.onCommand((id) => { if (id === 'new') newCard() })
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
