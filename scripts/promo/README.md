@@ -8,10 +8,11 @@ To add an App, copy a template and replace the icon, name, benefit, screenshot p
 
 ## Screenshot sources
 
-All product images below already existed in the corresponding App before this artwork change. Only their placement inside the promotional frame is new.
+All product images below already existed in the corresponding App before this artwork change, except Context, whose screenshots were taken for its 0.1.1 listing from a real project report with paths and machine names replaced. Only their placement inside the promotional frame is new.
 
 | Template | Product screenshot, relative to package root | SHA-256 |
 | --- | --- | --- |
+| `context.html` | `screenshots/1.jpg` | `ee9dfdfaefc6fbed364b7df10c73a30f0b05e84bf05467dfc2284e1a08fc9b50` |
 | `browser-use.html` | `screenshots/1.jpg` | `b20cc7ea678d121fd35558f0874b7675365f3663792425f0f47dd6e2a67b9f90` |
 | `computer-use.html` | `screenshots/settings.jpg` | `91f9445add380dd3d187f122f5f9a7499717b5d854b962017d34e916c27bf066` |
 | `day-calendar.html` | `screenshots/1.jpg` | `34e5a4e79eff902982c42fa1d716faddd8936d45bec2be022c0f8d04943d34d1` |
