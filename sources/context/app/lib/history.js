@@ -6,7 +6,7 @@ const DAY = 86400000
 // Each index call hydrates one time-budgeted round; the host leaves further rounds to the caller.
 const INDEX_ROUNDS = 20
 
-export async function sessionIndex(host) {
+export async function sessionIndex(host, { deadline = Infinity } = {}) {
   if (!host?.sessions?.index) return { rows: [], complete: false, reason: '宿主尚未提供任务索引（需要 App API 17）' }
   let rows = [], seenOffsets = new Set(), rounds = 1
   let offset = 0
@@ -16,8 +16,8 @@ export async function sessionIndex(host) {
     const page = await host.sessions.index({ offset, limit: 100 })
     if (page.rows.some((row) => !row.group || !Object.hasOwn(row.group, 'key'))) throw new Error('宿主尚未提供任务归属，请更新支持 App API 17 的宿主。')
     rows.push(...page.rows)
-    if (page.pending && rounds < INDEX_ROUNDS) { rows = []; seenOffsets = new Set(); offset = 0; rounds++; continue }
-    if (page.pending || page.stale) return { rows, complete: false, reason: '宿主任务索引仍在更新，请稍后刷新', total: page.total }
+    if (page.pending && rounds < INDEX_ROUNDS && Date.now() < deadline) { rows = []; seenOffsets = new Set(); offset = 0; rounds++; continue }
+    if (page.pending || page.stale) return { rows, complete: false, reason: '宿主任务索引仍在更新，请稍后刷新', total: page.total, progress: page.pending ? { pending: page.pending } : null }
     if (page.nextOffset === null || page.nextOffset === undefined) return { rows: [...new Map(rows.map((r) => [`${r.source}:${r.providerSessionId}`, r])).values()], complete: true, total: page.total }
     offset = page.nextOffset
   }
@@ -36,27 +36,32 @@ export function taskActivity(rows, firstTurns, now = Date.now()) {
     sources: Object.fromEntries(['claude-code', 'codex'].map((source) => [source, unknownStarts.some((id) => id.startsWith(`${source}:`)) ? null : hot.filter((s) => s.source === source).length])) }
 }
 
-export async function observe(host, rows, { sample = 300, now = Date.now(), firstTurns = new Map() } = {}) {
+// contexts and firstTurns carry over between calls, so a call that hits its deadline leaves the next call less to read.
+export async function observe(host, rows, { sample = 300, now = Date.now(), firstTurns = new Map(), contexts = new Map(), deadline = Infinity } = {}) {
   if (!host?.sessions?.read) return { complete: false, reason: '宿主尚未提供上下文读数（需要 App API 17）', sessions: [], hot: null }
   const selected = rows.toSorted((a, b) => b.updatedAt - a.updatedAt)
-  const observations = []
+  const contextKey = (row) => `${row.source}:${row.providerSessionId}:${row.updatedAt}`
+  const owed = (row, i) => (i < sample && !contexts.has(contextKey(row))) || (row.updatedAt >= now - 7 * DAY && !firstTurns.has(`${row.source}:${row.providerSessionId}`))
   let next = 0
   // Match discovery's bounded I/O concurrency. Both views use the same host reader;
   // one slow transcript must not serialize every unrelated task in the sample.
   await Promise.all(Array.from({ length: Math.min(8, selected.length) }, async () => {
-    while (next < selected.length) {
+    while (next < selected.length && Date.now() < deadline) {
       const i = next++, row = selected[i], id = `${row.source}:${row.providerSessionId}`
       const [context, page] = await Promise.all([
-        i < sample ? host.sessions.read({ source: row.source, filePath: row.filePath, view: 'context' }) : null,
+        i < sample && !contexts.has(contextKey(row)) ? host.sessions.read({ source: row.source, filePath: row.filePath, view: 'context' }) : null,
         row.updatedAt >= now - 7 * DAY && !firstTurns.has(id) ? host.sessions.read({ source: row.source, filePath: row.filePath, offset: 0, limit: 1 }) : null,
       ])
-      if (context) observations[i] = { ...row, ...context }
+      if (context) contexts.set(contextKey(row), context)
       if (page) {
         const start = page.turns[0]?.createdAt
         firstTurns.set(id, start && Number.isFinite(Date.parse(start)) ? start : null)
       }
     }
   }))
+  const left = selected.filter(owed).length
+  if (left) return { complete: false, reason: '正在读取任务记录', progress: { done: selected.length - left, total: selected.length }, sessions: [], hot: null }
+  const observations = selected.slice(0, sample).map((row) => ({ ...row, ...contexts.get(contextKey(row)) }))
   return {
     complete: true, sessions: observations, sample: observations.length, total: rows.length,
     since: selected.length && sample > 0 ? new Date(selected[Math.min(selected.length, sample) - 1].updatedAt).toISOString() : null,
