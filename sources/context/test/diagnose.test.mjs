@@ -166,6 +166,9 @@ test('scratchpad directories are excluded even outside the system temporary dire
 test('host pagination and hydration are not interpreted as complete zero', async () => {
   const pending = await sessionIndex({ sessions: { index: async () => ({ rows: [], total: 50, pending: true, stale: false, nextOffset: null }) } })
   assert.equal(pending.complete, false)
+  let rounds = 0
+  const hydrated = await sessionIndex({ sessions: { index: async () => { rounds++; return { rows: [{ source: 'codex', providerSessionId: 'a', group: { key: '/project', label: null } }], total: 1, pending: rounds < 3 ? 5 : 0, stale: false, nextOffset: null } } } })
+  assert.equal(rounds, 3); assert.equal(hydrated.complete, true); assert.equal(hydrated.rows.length, 1)
   let calls = 0
   const result = await sessionIndex({ sessions: { index: async ({ offset }) => { calls++; return { rows: [{ source: 'codex', providerSessionId: String(offset), group: { key: '/project', label: null } }], total: 2, pending: false, stale: false, nextOffset: offset === 0 ? 1 : null } } } })
   assert.equal(calls, 2); assert.equal(result.rows.length, 2)

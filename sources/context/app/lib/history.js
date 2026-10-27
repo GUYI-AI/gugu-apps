@@ -3,9 +3,12 @@ import { canonicalPath } from './discovery.js'
 
 const DAY = 86400000
 
+// Each index call hydrates one time-budgeted round; the host leaves further rounds to the caller.
+const INDEX_ROUNDS = 20
+
 export async function sessionIndex(host) {
   if (!host?.sessions?.index) return { rows: [], complete: false, reason: '宿主尚未提供任务索引（需要 App API 17）' }
-  const rows = [], seenOffsets = new Set()
+  let rows = [], seenOffsets = new Set(), rounds = 1
   let offset = 0
   while (true) {
     if (seenOffsets.has(offset)) throw new Error('任务索引分页没有前进')
@@ -13,6 +16,7 @@ export async function sessionIndex(host) {
     const page = await host.sessions.index({ offset, limit: 100 })
     if (page.rows.some((row) => !row.group || !Object.hasOwn(row.group, 'key'))) throw new Error('宿主尚未提供任务归属，请更新支持 App API 17 的宿主。')
     rows.push(...page.rows)
+    if (page.pending && rounds < INDEX_ROUNDS) { rows = []; seenOffsets = new Set(); offset = 0; rounds++; continue }
     if (page.pending || page.stale) return { rows, complete: false, reason: '宿主任务索引仍在更新，请稍后刷新', total: page.total }
     if (page.nextOffset === null || page.nextOffset === undefined) return { rows: [...new Map(rows.map((r) => [`${r.source}:${r.providerSessionId}`, r])).values()], complete: true, total: page.total }
     offset = page.nextOffset
