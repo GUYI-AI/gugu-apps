@@ -176,6 +176,19 @@ test('host pagination and hydration are not interpreted as complete zero', async
   assert.equal(calls, 2); assert.equal(result.rows.length, 2)
 })
 
+test('a read that reaches its deadline reports progress and the next call resumes without rereading', async () => {
+  const reads = []
+  const host = { sessions: { read: async (arg) => { reads.push(arg.filePath + (arg.view || '')); return arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: '2026-10-25T10:00:00Z' }] } } } }
+  const rows = ['a', 'b', 'c'].map((filePath, i) => ({ source: 'codex', providerSessionId: filePath, filePath, updatedAt: Date.parse('2026-10-26T01:00:00Z') - i }))
+  const firstTurns = new Map(), contexts = new Map()
+  const stopped = await observe(host, rows, { now: NOW, firstTurns, contexts, deadline: 0 })
+  assert.deepEqual([stopped.complete, stopped.progress], [false, { done: 0, total: 3 }])
+  const done = await observe(host, rows, { now: NOW, firstTurns, contexts })
+  assert.equal(done.complete, true); assert.equal(done.hot, 3); assert.equal(done.sessions.length, 3)
+  const again = await observe(host, rows, { now: NOW, firstTurns, contexts })
+  assert.equal(again.complete, true); assert.equal(reads.length, 6)
+})
+
 test('activity counts starts, not recent updates; context reads are projections only', async () => {
   const args = []
   const result = await observe({ sessions: { read: async (arg) => { args.push(arg); return arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: arg.filePath === 'new' ? '2026-10-25T10:00:00Z' : '2026-10-01T10:00:00Z' }] } } } }, ['new', 'old'].map((filePath) => ({ source: 'codex', providerSessionId: filePath, filePath, updatedAt: Date.parse('2026-10-26T01:00:00Z') })), { now: NOW })

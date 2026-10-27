@@ -1,3 +1,9 @@
+## 0.1.1
+
+- Answer within the host's request timeout on busy or remote computers: reading stops at a time budget, resumes on the next call and shows progress.
+- Keep the last results on screen with the time they were calculated; recalculate on 「重新计算」 or the first open, updating each machine in place.
+- Read the host task index to completion and count each untrusted nested instruction load once.
+
 ## 0.1.0
 
 - Add project context discovery, deterministic diagnostics and reviewed repairs for Claude and Codex.
