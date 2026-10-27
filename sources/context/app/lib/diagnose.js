@@ -165,12 +165,20 @@ export async function diagnose(project, history = null, { now = Date.now() } = {
     const latest = observed.loaded.filter((r) => r.path?.endsWith('/MEMORY.md')).toSorted((a, b) => Date.parse(b.at) - Date.parse(a.at))[0]
     if (latest?.truncated) add('R2', { path: latest.path, at: latest.at, reason: '最近一次注入出现截断警告' })
     if (observed.initialMedian > 30000) add('R10', { chars: observed.initialMedian, sample: history.sample })
-    for (const instruction of instructions) for (const line of lines(instruction.raw)) {
-      if (!/(?:只读|不作依据|read.only|not (?:an? )?(?:authority|source of truth))/i.test(line)) continue
-      const paths = [...line.matchAll(/`([^`]+\/?)`/g)].map((m) => m[1]).filter((p) => !p.includes(' ') && !p.startsWith('http'))
+    const counted = new Set()
+    for (const instruction of instructions) for (const line of lines(instruction.raw)) for (const sentence of line.split(/[。；;!?！？]/)) {
+      // The declared directories are the subject: paths written before the keyword in the same sentence.
+      const keyword = sentence.search(/只读|不作依据|read.only|not (?:an? )?(?:authority|source of truth)/i)
+      if (keyword < 0) continue
+      const paths = [...sentence.slice(0, keyword).matchAll(/`([^`]+\/?)`/g)].map((m) => m[1]).filter((p) => !p.includes(' ') && !p.startsWith('http'))
       for (const p of paths) {
         const base = await canonicalPath(p.startsWith('~') || path.isAbsolute(p) ? expand(p) : path.resolve(path.dirname(instruction.path), p))
-        for (const nested of observed.nested) if ((await canonicalPath(nested.path)).startsWith(`${base.replace(/\/$/, '')}/`)) add('R7', { path: nested.path, at: nested.at, declaredIn: instruction.path, directory: base, repair: 'snapshot-note' })
+        for (const nested of observed.nested) {
+          const key = `${nested.path}\0${nested.at}`
+          if (counted.has(key) || !(await canonicalPath(nested.path)).startsWith(`${base.replace(/\/$/, '')}/`)) continue
+          counted.add(key)
+          add('R7', { path: nested.path, at: nested.at, declaredIn: instruction.path, directory: base, repair: 'snapshot-note' })
+        }
       }
     }
   }
