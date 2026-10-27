@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3
+
+- Keep New card commands received while the board is loading and execute them once its first state arrives.
+
 ## 1.1.2
 
 - Offer New task and Link task on phones whose host supports dispatch.
