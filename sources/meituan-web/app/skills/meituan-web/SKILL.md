@@ -13,10 +13,16 @@ matters; never promise things like 「一键点外卖」.
 
 Use the `browser_*` tools of the `gugu-browser` MCP server (`browser_navigate`, `browser_snapshot`, `browser_click`,
 `browser_type`, `browser_take_screenshot` …). They drive the browser tab in your session, which the person watches and
-which keeps their logins. On a desktop they come from the 「Browser Use」 App; if they are not in your tool list, look in
-`catalog_list` for `browser`. If you have no browser tools at all, stop and tell the person that this needs the
-「Browser Use」 App installed and enabled — do not launch your own browser, Playwright or Chrome, and do not try to
-answer from memory instead.
+which keeps their logins. On a desktop they come from the 「Browser Use」 App; on a Gugu cloud computer / server they are
+the cloud browser, and only **task agents** get them there. If they are not in your tool list, look in `catalog_list`
+for `browser`.
+
+- **You are the personal assistant (or a tool says browser actions need a task agent):** don't drive the browser
+  yourself. Hand the Meituan job to a task agent on the device with the browser (`session_spawn`), pass it this skill's
+  rules (no order or payment, person does login/codes/checks, fail loud), and relay its result.
+- **No browser tools at all and nothing to hand to:** stop and tell the person that this needs a browser — on a desktop
+  the 「Browser Use」 App installed and enabled. Do not launch your own browser, Playwright or Chrome, and do not try to
+  answer from memory instead.
 
 ## Where to go
 
