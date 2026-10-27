@@ -1,0 +1,24 @@
+{
+  "id": "meituan-web",
+  "name": "美团（实验性）",
+  "version": "0.1.0",
+  "apiVersion": 12,
+  "platforms": ["desktop"],
+  "engines": { "gugu": ">=0.2.58" },
+  "description": "实验性、依赖美团网页版：用你自己的浏览器页签和人自己的登录，在美团网页版上搜商家、美食、团购和酒店，比较、看详情、加购物车。美团没有官方公开接口，网页一改就可能失效；下单和付款永远交给人自己确认。",
+  "subtitle": "实验性 · 依赖美团网页版",
+  "localized": {
+    "en": {
+      "name": "Meituan (experimental)",
+      "subtitle": "Experimental · Meituan web",
+      "description": "Experimental, relies on Meituan's web pages: in your own browser tab, with the person's login, search Meituan for merchants, food, deals and hotels, compare, read details, add to cart. No official API, so page changes can break it; ordering and paying stay with the person."
+    }
+  },
+  "author": "咕咕",
+  "license": "MIT",
+  "categories": ["productivity"],
+  "icon": "icon.png",
+  "permissions": { "capabilities": ["agents:tools"], "network": [] },
+  "contributes": { "skills": "skills" },
+  "examples": ["在美团上帮我找附近评分高的火锅团购", "比较一下这几家店的人均和评价", "把这家店的招牌菜加进购物车，付款我自己来"]
+}
