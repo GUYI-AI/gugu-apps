@@ -171,13 +171,43 @@ export async function prepareDriver({ dataDir, platform = process.platform, arch
   if (!release || release.platform !== platform || release.arch !== arch) throw new Error('This platform has no supported native driver.');
   if (signal?.aborted) throw signal.reason;
   const key = path.join(dataDir, 'native', release.sha256);
-  if (active.has(key)) { await active.get(key); return prepareDriver({ dataDir, platform, arch, signal, fetchArchive, verify, releases }); }
-  const task = (async () => {
+  const identity = key + '\0' + platform + '\0' + arch;
+  let job = active.get(identity);
+  if (!job) {
+    job = { controller: new AbortController(), subscribers: new Set(), settled: false };
+    active.set(identity, job);
+    job.task = prepare(job.controller.signal).finally(() => {
+      job.settled = true;
+      if (active.get(identity) === job) active.delete(identity);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const subscriber = {};
+    job.subscribers.add(subscriber);
+    const leave = () => {
+      signal?.removeEventListener('abort', abort);
+      job.subscribers.delete(subscriber);
+      if (!job.settled && job.subscribers.size === 0) {
+        if (active.get(identity) === job) active.delete(identity);
+        job.controller.abort(new Error('Native preparation has no remaining callers.'));
+      }
+    };
+    const abort = () => { leave(); reject(signal.reason); };
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) abort();
+    // Also consumes a late rejection when all subscribers have cancelled.
+    job.task.then(value => { leave(); resolve(value); }, error => { leave(); reject(error); });
+  });
+
+  async function prepare(signal) {
     await mkdir(key, { recursive: true, mode: 0o700 });
+    signal.throwIfAborted();
     const archive = path.join(key, 'archive');
     let bytes = await regular(archive);
+    signal.throwIfAborted();
     if (!bytes || digest(bytes) !== release.sha256) {
       bytes = await fetchArchive(release.url, { signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(120_000)]) });
+      signal.throwIfAborted();
       if (digest(bytes) !== release.sha256 || bytes.length > MAX_ARCHIVE) throw new Error('Native archive integrity check failed.');
       const temporary = archive + '.' + randomUUID() + '.part';
       try { await writeFile(temporary, bytes, { mode: 0o600, flag: 'wx' }); await rename(temporary, archive); }
@@ -188,6 +218,7 @@ export async function prepareDriver({ dataDir, platform = process.platform, arch
     assertNativeArchitecture(executableBytes, platform, arch);
     const file = path.join(key, release.member);
     const cached = await regular(file);
+    signal.throwIfAborted();
     if (!cached || digest(cached) !== digest(executableBytes)) {
       const temporary = file + '.' + randomUUID() + '.part';
       try { await writeFile(temporary, executableBytes, { mode: 0o700, flag: 'wx' }); await rename(temporary, file); }
@@ -196,8 +227,7 @@ export async function prepareDriver({ dataDir, platform = process.platform, arch
     if (platform !== 'win32') await chmod(file, 0o700);
     if (signal?.aborted) throw signal.reason;
     await verify(file, release, dataDir, signal);
+    signal.throwIfAborted();
     return { binary: file, version: release.version, revision: release.revision, sha256: digest(executableBytes) };
-  })();
-  active.set(key, task);
-  try { return await task; } finally { if (active.get(key) === task) active.delete(key); }
+  }
 }

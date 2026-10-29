@@ -22,7 +22,7 @@ await check('two bound tasks never share a native input owner', async () => {
   const owners = [];
   const tools = runtime.createComputerTools({ platform: 'darwin', protectedHost: () => ({ pids: new Set([10]), names: new Set(['gugu']) }), permissions: async () => ({ permissions: { accessibility: true, screen: true } }),
     specs: runtime.TOOLS.map(tool => ({ name: tool.cua, input_schema: { type: 'object', properties: { session: { type: 'string' } } } })),
-    cua: { callTool: async (_name, args) => { owners.push(args.session); return { content: [] }; } } });
+    cua: { callTool: async (_name, args) => { if (_name === 'check_permissions') return { structuredContent: { accessibility: true, screen_recording: true } }; owners.push(args.session); return { content: [] }; } } });
   await tools.call('click', { pid: 44 }, { agent: 'agent-a', session: 'task-a' });
   await tools.call('click', { pid: 44 }, { agent: 'agent-a', session: 'task-b' });
   assert.notEqual(owners[0], owners[1], 'different bound tasks must have different native owners');

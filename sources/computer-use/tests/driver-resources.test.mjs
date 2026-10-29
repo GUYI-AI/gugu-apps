@@ -68,3 +68,54 @@ test('bad archive, wrong architecture, failed signature and cancelled preparatio
   await assert.rejects(prepareDriver({ ...options, dataDir: undefined }), /data directory/);
   await assert.rejects(prepareDriver({ ...options, platform: 'linux' }), /supported native/);
 });
+
+test('same-key preparation cancellation belongs to each subscriber, not the first caller', async t => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'cu-prepare-shared-')); t.after(() => rm(dataDir, { recursive: true, force: true }));
+  const archive = tar([{ name: 'cua-driver', bytes: mach() }]);
+  let downloading; const started = new Promise(resolve => { downloading = resolve; });
+  let finish; const gate = new Promise(resolve => { finish = resolve; });
+  let downloads = 0;
+  const options = { dataDir, platform: 'darwin', arch: 'arm64', releases: { 'darwin-arm64': release(archive) }, verify: async () => {},
+    fetchArchive: async (_url, { signal }) => {
+      downloads++; downloading();
+      await Promise.race([gate, new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true }))]);
+      return archive;
+    } };
+  const a = new AbortController();
+  const rejected = assert.rejects(prepareDriver({ ...options, signal: a.signal }), /A cancelled/);
+  await started;
+  const b = prepareDriver(options);
+  const bOutcome = b.then(value => ({ value }), error => ({ error }));
+  a.abort(new Error('A cancelled'));
+  finish(); await rejected;
+  const outcome = await bOutcome;
+  assert.equal(outcome.error, undefined, 'B must not inherit A cancellation');
+  assert(outcome.value.binary); assert.equal(downloads, 1);
+});
+test('a later subscriber cancels promptly while another subscriber completes preparation', async t => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'cu-prepare-later-')); t.after(() => rm(dataDir, { recursive: true, force: true }));
+  const archive = tar([{ name: 'cua-driver', bytes: mach() }]);
+  let downloading; const started = new Promise(resolve => { downloading = resolve; });
+  let finish; const gate = new Promise(resolve => { finish = resolve; }); t.after(() => finish());
+  const options = { dataDir, platform: 'darwin', arch: 'arm64', releases: { 'darwin-arm64': release(archive) }, verify: async () => {}, fetchArchive: async () => { downloading(); await gate; return archive; } };
+  const b = prepareDriver(options); await started;
+  const c = new AbortController();
+  const cancelled = prepareDriver({ ...options, signal: c.signal }).then(() => 'resolved', () => 'cancelled');
+  c.abort(new Error('C cancelled'));
+  const result = await Promise.race([cancelled, new Promise(resolve => setTimeout(() => resolve('still waiting'), 250))]);
+  finish(); await b;
+  assert.equal(result, 'cancelled', 'C must not wait for B download');
+});
+test('mid-flight cancellation with no subscribers never verifies or executes a late archive', async t => {
+  const dataDir = await mkdtemp(path.join(os.tmpdir(), 'cu-prepare-abandoned-')); t.after(() => rm(dataDir, { recursive: true, force: true }));
+  const archive = tar([{ name: 'cua-driver', bytes: mach() }]);
+  let downloading; const started = new Promise(resolve => { downloading = resolve; });
+  let finish; const gate = new Promise(resolve => { finish = resolve; });
+  let verifications = 0;
+  const stop = new AbortController();
+  const rejected = assert.rejects(prepareDriver({ dataDir, platform: 'darwin', arch: 'arm64', signal: stop.signal, releases: { 'darwin-arm64': release(archive) },
+    fetchArchive: async () => { downloading(); await gate; return archive; }, verify: async () => { verifications++; } }), /mid-flight/);
+  await started; stop.abort(new Error('mid-flight')); finish(); await rejected;
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(verifications, 0);
+});

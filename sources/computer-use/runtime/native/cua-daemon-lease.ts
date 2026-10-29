@@ -37,6 +37,7 @@ export async function openCuaDaemonLease(options: {
   owner: string
   hostBundleId?: string
   timeoutMs: number
+  signal?: AbortSignal
   onClosed(): void
 }): Promise<CuaDaemonLease> {
   const connections = new Set<net.Socket>()
@@ -101,33 +102,41 @@ export async function openCuaDaemonLease(options: {
   }
 
   try {
-    const metadata = await exchange({ method: 'metadata' })
+    const metadata = await exchange({ method: 'metadata' }, { signal: options.signal })
     const identity = metadata.result as { embedded?: boolean; host_bundle_id?: string; driver_version?: string } | undefined
     if (!metadata.ok || identity?.embedded !== true || !identity.driver_version
       || (options.hostBundleId && identity.host_bundle_id !== options.hostBundleId)) {
       throw new NativeCallError('execution_failed', '电脑控制服务的宿主身份不匹配')
     }
+    if (options.signal?.aborted) throw unavailable()
     await new Promise<void>((resolve, reject) => {
       control = net.createConnection(options.socket)
       const lines = readline.createInterface({ input: control })
       let acknowledged = false
-      const timer = setTimeout(() => { reject(new NativeCallError('timeout', '电脑控制会话未能启动')); close() }, options.timeoutMs)
+      const finish = (error?: unknown) => {
+        clearTimeout(timer)
+        options.signal?.removeEventListener('abort', abort)
+        if (error) { reject(error); close() }
+        else resolve()
+      }
+      const abort = () => finish(unavailable())
+      const timer = setTimeout(() => finish(new NativeCallError('timeout', '电脑控制会话未能启动')), options.timeoutMs)
+      options.signal?.addEventListener('abort', abort, { once: true })
       control.once('connect', () => control!.write(`${JSON.stringify({ method: 'session_begin', session_id: options.owner })}\n`))
-      control.once('error', error => { clearTimeout(timer); reject(error); close() })
+      control.once('error', error => finish(error))
       control.once('close', () => {
         clearTimeout(timer)
         lines.close()
-        if (!acknowledged) reject(unavailable())
+        if (!acknowledged) finish(unavailable())
         close()
       })
       lines.once('line', line => {
-        clearTimeout(timer)
         try {
           const response = JSON.parse(line) as Response
           if (!response.ok || (response.result as { session_begin?: boolean } | undefined)?.session_begin !== true) throw unavailable()
           acknowledged = true
-          resolve()
-        } catch (error) { reject(error); close() }
+          finish()
+        } catch (error) { finish(error) }
       })
     })
   } catch (error) {

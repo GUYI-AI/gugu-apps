@@ -95,42 +95,44 @@ async function openCuaDaemonLease(options) {
     });
   };
   try {
-    const metadata = await exchange({ method: "metadata" });
+    const metadata = await exchange({ method: "metadata" }, { signal: options.signal });
     const identity = metadata.result;
     if (!metadata.ok || identity?.embedded !== true || !identity.driver_version || options.hostBundleId && identity.host_bundle_id !== options.hostBundleId) {
       throw new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u670D\u52A1\u7684\u5BBF\u4E3B\u8EAB\u4EFD\u4E0D\u5339\u914D");
     }
+    if (options.signal?.aborted) throw unavailable();
     await new Promise((resolve, reject) => {
       control = net.createConnection(options.socket);
       const lines = readline.createInterface({ input: control });
       let acknowledged = false;
-      const timer = setTimeout(() => {
-        reject(new NativeCallError("timeout", "\u7535\u8111\u63A7\u5236\u4F1A\u8BDD\u672A\u80FD\u542F\u52A8"));
-        close();
-      }, options.timeoutMs);
+      const finish = (error) => {
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", abort);
+        if (error) {
+          reject(error);
+          close();
+        } else resolve();
+      };
+      const abort = () => finish(unavailable());
+      const timer = setTimeout(() => finish(new NativeCallError("timeout", "\u7535\u8111\u63A7\u5236\u4F1A\u8BDD\u672A\u80FD\u542F\u52A8")), options.timeoutMs);
+      options.signal?.addEventListener("abort", abort, { once: true });
       control.once("connect", () => control.write(`${JSON.stringify({ method: "session_begin", session_id: options.owner })}
 `));
-      control.once("error", (error) => {
-        clearTimeout(timer);
-        reject(error);
-        close();
-      });
+      control.once("error", (error) => finish(error));
       control.once("close", () => {
         clearTimeout(timer);
         lines.close();
-        if (!acknowledged) reject(unavailable());
+        if (!acknowledged) finish(unavailable());
         close();
       });
       lines.once("line", (line) => {
-        clearTimeout(timer);
         try {
           const response = JSON.parse(line);
           if (!response.ok || response.result?.session_begin !== true) throw unavailable();
           acknowledged = true;
-          resolve();
+          finish();
         } catch (error) {
-          reject(error);
-          close();
+          finish(error);
         }
       });
     });
@@ -465,26 +467,29 @@ function createCuaClient(options) {
     });
   };
   const closeLane = (key, lane, reason) => {
+    if (lane.closed) return;
+    lane.closed = true;
     if (lanes.get(key) === lane) {
       lanes.delete(key);
       needsObservation.delete(key);
     }
     if (lane.idle) clearTimeout(lane.idle);
     lane.idle = null;
+    lane.startup.abort();
     if (lane.direct) {
       lane.direct.close();
-      return;
     }
     const p = lane.proc;
-    if (!p) return;
-    failAll(p, new NativeCallError("execution_failed", reason));
-    p.stdin?.end();
-    p.kill();
+    if (p) {
+      failAll(p, new NativeCallError("execution_failed", reason));
+      p.stdin?.end();
+      p.kill();
+    }
+    if (lanes.size === 0) stopDaemon();
   };
-  const shutdown = (reason) => {
+  const stopDaemon = () => {
     if (idle) clearTimeout(idle);
     idle = null;
-    for (const [key, lane] of [...lanes]) closeLane(key, lane, reason);
     const oldDaemon = daemon;
     daemon = null;
     daemonReady = null;
@@ -496,6 +501,10 @@ function createCuaClient(options) {
         options.log?.warn({ err: String(error) }, "cua-driver socket could not be removed");
       }
     }
+  };
+  const shutdown = (reason) => {
+    for (const [key, lane] of [...lanes]) closeLane(key, lane, reason);
+    stopDaemon();
   };
   const waitForSocket = async (child) => {
     const deadline = Date.now() + (options.readyTimeoutMs ?? READY_MS);
@@ -577,7 +586,7 @@ function createCuaClient(options) {
     const existing = lanes.get(key);
     if (existing) return existing;
     const daemonUp = startDaemon();
-    const lane = { ready: Promise.resolve(null), proc: null, session: `${key}-${randomUUID()}`, inflight: 0, settledAt: 0, idle: null };
+    const lane = { ready: Promise.resolve(null), proc: null, session: `${key}-${randomUUID()}`, inflight: 0, users: 0, starting: true, startup: new AbortController(), closed: false, settledAt: 0, idle: null };
     lanes.set(key, lane);
     lane.ready = (async () => {
       await daemonUp;
@@ -588,6 +597,7 @@ function createCuaClient(options) {
           socket,
           owner: `mcp-gugu-${randomUUID()}`,
           timeoutMs: options.readyTimeoutMs ?? READY_MS,
+          signal: lane.startup.signal,
           ...options.hostBundleId ? { hostBundleId: options.hostBundleId } : {},
           onClosed: () => {
             if (lanes.get(key) === lane) closeLane(key, lane, DISCONNECTED);
@@ -598,6 +608,7 @@ function createCuaClient(options) {
           throw new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u91CD\u65B0\u542F\u52A8\u4E86");
         }
         lane.direct = direct;
+        lane.starting = false;
         return daemon;
       }
       const p = spawn(options.binary, ["mcp", "--embedded", "--socket", socket], { env: environment2(), stdio: ["pipe", "pipe", "pipe"] });
@@ -638,8 +649,9 @@ function createCuaClient(options) {
       }).done, readyMs, () => {
         options.log?.warn({ timeoutMs: readyMs, lane: key }, "cua-driver mcp did not answer initialize in time");
         return new NativeCallError("execution_failed", START_FAILED);
-      });
+      }, lane.startup.signal);
       write(p, { jsonrpc: "2.0", method: "notifications/initialized" });
+      lane.starting = false;
       return p;
     })();
     lane.ready.catch((error) => {
@@ -656,7 +668,7 @@ function createCuaClient(options) {
   const touchLane = (key, lane) => {
     if (lane.idle) clearTimeout(lane.idle);
     lane.idle = setTimeout(() => {
-      if (lane.inflight === 0) closeLane(key, lane, "\u8FD9\u6761\u7535\u8111\u63A7\u5236\u7684\u8FDE\u63A5\u95F2\u7F6E\u592A\u4E45,\u5DF2\u5173\u95ED");
+      if (lane.users === 0) closeLane(key, lane, "\u8FD9\u6761\u7535\u8111\u63A7\u5236\u7684\u8FDE\u63A5\u95F2\u7F6E\u592A\u4E45,\u5DF2\u5173\u95ED");
     }, laneIdleMs);
     lane.idle.unref?.();
   };
@@ -667,57 +679,64 @@ function createCuaClient(options) {
     if (callOptions.signal?.aborted) throw new NativeCallError("execution_failed", "\u5DF2\u53D6\u6D88\uFF0C\u672C\u6B21\u64CD\u4F5C\u6CA1\u6709\u53D1\u51FA");
     if (timeoutMs <= 0) throw exhausted();
     const lane = openLane(key);
-    const p = await within(
-      lane.ready,
-      timeoutMs,
-      () => new NativeCallError("timeout", `\u7535\u8111\u63A7\u5236 ${Math.round(timeoutMs / 1e3)} \u79D2\u5185\u6CA1\u80FD\u542F\u52A8,${name} \u6CA1\u6709\u53D1\u51FA\u53BB`),
-      callOptions.signal
-    );
-    if (disposed || lanes.get(key) !== lane || callOptions.signal?.aborted) throw new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u5DF2\u53D6\u6D88\u6216\u91CD\u65B0\u542F\u52A8\uFF0C\u672C\u6B21\u64CD\u4F5C\u6CA1\u6709\u53D1\u51FA");
-    const sent = Date.now();
-    const left = Math.min(timeoutMs - (sent - asked), callOptions.remainingMs?.() ?? Infinity);
-    if (left <= 0) throw exhausted();
-    touch();
-    touchLane(key, lane);
-    lane.inflight += 1;
-    const forwarded = typeof args.session === "string" && args.session ? { ...args, session: lane.session } : args;
-    const { id, done } = lane.direct ? { id: 0, done: lane.direct.call(name, forwarded, { signal: callOptions.signal, timeoutMs: left }) } : request(p, "tools/call", { name, arguments: forwarded });
-    let timer = null;
-    let onAbort = null;
-    const mutation = cuaMutates(name, args);
-    const cancel = (why, error, reject) => {
-      if (!lane.direct) {
-        pendingOf.get(p)?.delete(id);
-        write(p, { jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: id, reason: why } });
-      }
-      if (mutation) closeLane(key, lane, error.message);
-      reject(error);
-    };
+    lane.users += 1;
     try {
-      return await Promise.race([
-        done,
-        new Promise((_, reject) => {
-          timer = setTimeout(() => cancel("timeout", new NativeCallError("timeout", `${name} \u8D85\u8FC7 ${Math.round(timeoutMs / 1e3)} \u79D2\u6CA1\u505A\u5B8C\uFF1B${CUA_CANCEL_UNCONFIRMED}`), reject), left);
-          onAbort = () => cancel("cancelled", new NativeCallError("execution_failed", CUA_CANCEL_UNCONFIRMED), reject);
-          callOptions.signal?.addEventListener("abort", onAbort, { once: true });
-        })
-      ]);
-    } catch (error) {
-      if (mutation && error instanceof NativeCallError && (error.code === "timeout" || callOptions.signal?.aborted)) closeLane(key, lane, CUA_CANCEL_UNCONFIRMED);
-      throw error;
-    } finally {
-      if (timer) clearTimeout(timer);
-      if (onAbort) callOptions.signal?.removeEventListener("abort", onAbort);
-      const end = Date.now();
-      const before = lane.settledAt;
-      lane.inflight -= 1;
-      lane.settledAt = end;
+      const p = await within(
+        lane.ready,
+        timeoutMs,
+        () => new NativeCallError("timeout", `\u7535\u8111\u63A7\u5236 ${Math.round(timeoutMs / 1e3)} \u79D2\u5185\u6CA1\u80FD\u542F\u52A8,${name} \u6CA1\u6709\u53D1\u51FA\u53BB`),
+        callOptions.signal
+      );
+      if (disposed || lanes.get(key) !== lane || callOptions.signal?.aborted) throw new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u5DF2\u53D6\u6D88\u6216\u91CD\u65B0\u542F\u52A8\uFF0C\u672C\u6B21\u64CD\u4F5C\u6CA1\u6709\u53D1\u51FA");
+      const sent = Date.now();
+      const left = Math.min(timeoutMs - (sent - asked), callOptions.remainingMs?.() ?? Infinity);
+      if (left <= 0) throw exhausted();
       touch();
-      if (lanes.get(key) === lane) touchLane(key, lane);
-      if (end - asked >= SLOW_MS) {
-        const waited = Math.max(0, Math.min(before, end) - sent);
-        options.log?.warn({ tool: name, lane: key, totalMs: end - asked, startMs: sent - asked, queuedMs: waited, driverMs: end - sent - waited, lanes: lanes.size }, "cua-driver call was slow");
+      touchLane(key, lane);
+      lane.inflight += 1;
+      const forwarded = typeof args.session === "string" && args.session ? { ...args, session: lane.session } : args;
+      const { id, done } = lane.direct ? { id: 0, done: lane.direct.call(name, forwarded, { signal: callOptions.signal, timeoutMs: left }) } : request(p, "tools/call", { name, arguments: forwarded });
+      let timer = null;
+      let onAbort = null;
+      const mutation = cuaMutates(name, args);
+      const cancel = (why, error, reject) => {
+        if (!lane.direct) {
+          pendingOf.get(p)?.delete(id);
+          write(p, { jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: id, reason: why } });
+        }
+        if (mutation) closeLane(key, lane, error.message);
+        reject(error);
+      };
+      try {
+        return await Promise.race([
+          done,
+          new Promise((_, reject) => {
+            timer = setTimeout(() => cancel("timeout", new NativeCallError("timeout", `${name} \u8D85\u8FC7 ${Math.round(timeoutMs / 1e3)} \u79D2\u6CA1\u505A\u5B8C\uFF1B${CUA_CANCEL_UNCONFIRMED}`), reject), left);
+            onAbort = () => cancel("cancelled", new NativeCallError("execution_failed", CUA_CANCEL_UNCONFIRMED), reject);
+            callOptions.signal?.addEventListener("abort", onAbort, { once: true });
+          })
+        ]);
+      } catch (error) {
+        if (mutation && error instanceof NativeCallError && (error.code === "timeout" || callOptions.signal?.aborted)) closeLane(key, lane, CUA_CANCEL_UNCONFIRMED);
+        throw error;
+      } finally {
+        if (timer) clearTimeout(timer);
+        if (onAbort) callOptions.signal?.removeEventListener("abort", onAbort);
+        const end = Date.now();
+        const before = lane.settledAt;
+        lane.inflight -= 1;
+        lane.settledAt = end;
+        touch();
+        if (lanes.get(key) === lane) touchLane(key, lane);
+        if (end - asked >= SLOW_MS) {
+          const waited = Math.max(0, Math.min(before, end) - sent);
+          options.log?.warn({ tool: name, lane: key, totalMs: end - asked, startMs: sent - asked, queuedMs: waited, driverMs: end - sent - waited, lanes: lanes.size }, "cua-driver call was slow");
+        }
       }
+    } finally {
+      lane.users -= 1;
+      if (lane.starting && lane.users === 0) closeLane(key, lane, "\u7535\u8111\u63A7\u5236\u542F\u52A8\u5DF2\u53D6\u6D88");
+      else if (lanes.get(key) === lane) touchLane(key, lane);
     }
   };
   const sessionEnded = (result) => result?.isError === true && (result.content ?? []).some((block) => block.type === "text" && typeof block.text === "string" && block.text.includes("session has ended"));
@@ -1064,7 +1083,7 @@ function checkCall(tool, args, self, platform) {
     if (!INPUT_TOOLS.has(step.tool)) return { refused: `Step ${i + 1}: run_steps here only runs ${[...INPUT_TOOLS].join(", ")}.`, foreground };
     const problem = refusal(step.tool, step.args, self, inherited);
     if (problem) return { refused: `Step ${i + 1}: ${problem}`, foreground };
-    if (lower(step.args.delivery_mode) === "foreground") foreground = true;
+    if (lower(step.args.delivery_mode) === "foreground" || step.args.foreground_fallback === true) foreground = true;
   }
   if (isRecord(args.observe) && self.pids.has(targetPid(args.observe) ?? -1)) {
     return { refused: "That is \u5495\u5495 itself: \u5495\u5495 does not let an agent operate its own windows.", foreground };
@@ -1253,16 +1272,50 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
   if (!release || release.platform !== platform || release.arch !== arch) throw new Error("This platform has no supported native driver.");
   if (signal?.aborted) throw signal.reason;
   const key = path3.join(dataDir, "native", release.sha256);
-  if (active.has(key)) {
-    await active.get(key);
-    return prepareDriver({ dataDir, platform, arch, signal, fetchArchive, verify, releases });
+  const identity = key + "\0" + platform + "\0" + arch;
+  let job = active.get(identity);
+  if (!job) {
+    job = { controller: new AbortController(), subscribers: /* @__PURE__ */ new Set(), settled: false };
+    active.set(identity, job);
+    job.task = prepare(job.controller.signal).finally(() => {
+      job.settled = true;
+      if (active.get(identity) === job) active.delete(identity);
+    });
   }
-  const task = (async () => {
+  return new Promise((resolve, reject) => {
+    const subscriber = {};
+    job.subscribers.add(subscriber);
+    const leave = () => {
+      signal?.removeEventListener("abort", abort);
+      job.subscribers.delete(subscriber);
+      if (!job.settled && job.subscribers.size === 0) {
+        if (active.get(identity) === job) active.delete(identity);
+        job.controller.abort(new Error("Native preparation has no remaining callers."));
+      }
+    };
+    const abort = () => {
+      leave();
+      reject(signal.reason);
+    };
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
+    job.task.then((value) => {
+      leave();
+      resolve(value);
+    }, (error) => {
+      leave();
+      reject(error);
+    });
+  });
+  async function prepare(signal2) {
     await mkdir(key, { recursive: true, mode: 448 });
+    signal2.throwIfAborted();
     const archive = path3.join(key, "archive");
     let bytes = await regular(archive);
+    signal2.throwIfAborted();
     if (!bytes || digest(bytes) !== release.sha256) {
-      bytes = await fetchArchive(release.url, { signal: AbortSignal.any([...signal ? [signal] : [], AbortSignal.timeout(12e4)]) });
+      bytes = await fetchArchive(release.url, { signal: AbortSignal.any([...signal2 ? [signal2] : [], AbortSignal.timeout(12e4)]) });
+      signal2.throwIfAborted();
       if (digest(bytes) !== release.sha256 || bytes.length > MAX_ARCHIVE) throw new Error("Native archive integrity check failed.");
       const temporary = archive + "." + randomUUID2() + ".part";
       try {
@@ -1272,11 +1325,12 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
         await rm(temporary, { force: true });
       }
     }
-    if (signal?.aborted) throw signal.reason;
+    if (signal2?.aborted) throw signal2.reason;
     const executableBytes = unpackDriver(bytes, release);
     assertNativeArchitecture(executableBytes, platform, arch);
     const file = path3.join(key, release.member);
     const cached = await regular(file);
+    signal2.throwIfAborted();
     if (!cached || digest(cached) !== digest(executableBytes)) {
       const temporary = file + "." + randomUUID2() + ".part";
       try {
@@ -1287,15 +1341,10 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
       }
     }
     if (platform !== "win32") await chmod(file, 448);
-    if (signal?.aborted) throw signal.reason;
-    await verify(file, release, dataDir, signal);
+    if (signal2?.aborted) throw signal2.reason;
+    await verify(file, release, dataDir, signal2);
+    signal2.throwIfAborted();
     return { binary: file, version: release.version, revision: release.revision, sha256: digest(executableBytes) };
-  })();
-  active.set(key, task);
-  try {
-    return await task;
-  } finally {
-    if (active.get(key) === task) active.delete(key);
   }
 }
 
@@ -1426,6 +1475,22 @@ function createAppDirectory() {
 // runtime/tools.ts
 var failure = (code, message) => ({ isError: true, content: [{ type: "text", text: message }], structuredContent: { code } });
 var object2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+function permissionState(result) {
+  if (result.isError) return null;
+  if (object2(result.structuredContent)) return result.structuredContent;
+  for (const block of result.content ?? []) {
+    if (block.type !== "text" || typeof block.text !== "string") continue;
+    try {
+      const state = JSON.parse(block.text);
+      if (object2(state)) return state;
+    } catch {
+    }
+  }
+  return null;
+}
+function needsScreen(name, args) {
+  return name === "get_desktop_state" || name === "zoom" || name === "get_window_state" && args.include_screenshot !== false || name === "verify_state" && args.include_screenshot === true || name === "run_steps" && object2(args.observe) && args.observe.include_screenshot === true;
+}
 function createComputerTools(input) {
   const specs = new Map(input.specs.map((spec) => [spec.name, spec]));
   const definitions = new Map(TOOLS.map((tool) => {
@@ -1454,14 +1519,6 @@ function createComputerTools(input) {
       if (!self.pids.size || !self.names.size) return failure("unavailable", "The protected host identity could not be checked.");
       const checked = checkCall(name, forwardArgs, self, input.platform);
       if (checked.refused) return failure("invalid_args", checked.refused);
-      if (input.platform === "darwin") {
-        if (!input.permissions) return failure("unavailable", "The permission probe is not available.");
-        const state = await input.permissions();
-        if (!state.permissions.accessibility) {
-          const missing = ["Accessibility", ...!state.permissions.screen ? ["Screen Recording"] : []].join(" and ");
-          return failure("os_permission", `${missing} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`);
-        }
-      }
       const tool = definition.tool;
       if ((tool.confirm === "always" || checked.foreground) && confirmed !== true) {
         const question = tool.question?.(forwardArgs) ?? checked.question ?? "This will bring the target window to the foreground and may interrupt the person\u2019s pointer or keyboard focus.";
@@ -1475,6 +1532,15 @@ function createComputerTools(input) {
       if (handle && "refused" in handle) return failure("revoked", handle.refused);
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal;
       try {
+        if (input.platform === "darwin") {
+          const state = permissionState(await input.cua.callTool("check_permissions", { prompt: false }, { signal, lane: owner, timeoutMs: 15e3, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {} }));
+          if (!state || typeof state.accessibility !== "boolean" || typeof state.screen_recording !== "boolean") return failure("unavailable", "The native driver could not check its system permissions. No input was sent.");
+          const missing = [...!state.accessibility ? ["Accessibility"] : [], ...!state.screen_recording ? ["Screen Recording"] : []];
+          if (!state.accessibility || !state.screen_recording && needsScreen(name, forwardArgs)) {
+            return failure("os_permission", `${missing.join(" and ")} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`);
+          }
+        }
+        if (signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
         const forward = object2(definition.schema.properties) && "session" in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs;
         const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}, timeoutMs: tool.timeoutMs?.(args) ?? 6e4 });
         if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs);

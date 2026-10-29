@@ -178,7 +178,7 @@ export function checkCall(tool: string, args: Args, self: SelfApp, platform: Nod
     if (!INPUT_TOOLS.has(step.tool)) return { refused: `Step ${i + 1}: run_steps here only runs ${[...INPUT_TOOLS].join(', ')}.`, foreground }
     const problem = refusal(step.tool, step.args, self, inherited)
     if (problem) return { refused: `Step ${i + 1}: ${problem}`, foreground }
-    if (lower(step.args.delivery_mode) === 'foreground') foreground = true
+    if (lower(step.args.delivery_mode) === 'foreground' || step.args.foreground_fallback === true) foreground = true
   }
   if (isRecord(args.observe) && self.pids.has(targetPid(args.observe) ?? -1)) {
     return { refused: 'That is 咕咕 itself: 咕咕 does not let an agent operate its own windows.', foreground }
@@ -187,7 +187,7 @@ export function checkCall(tool: string, args: Args, self: SelfApp, platform: Nod
 }
 
 
-/** Retained native tool guidance, with App consent replacing the former confirmed argument. */
+/** Retained native tool guidance; confirmation is asserted by the agent after asking the person. */
 export function descriptionOf(tool: CuaTool, spec: { description?: string }): string {
   return [spec.description || tool.titleEn,
     tool.kind === 'act' && !['kill_app', 'bring_to_front', 'invoke_menu'].includes(tool.cua) ? BACKGROUND : '',

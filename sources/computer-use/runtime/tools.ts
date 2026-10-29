@@ -10,13 +10,29 @@ export type ToolCaller = { agent: string; session: string; name?: string; signal
 const failure = (code: string, message: string): CuaToolResult => ({ isError: true, content: [{ type: 'text', text: message }], structuredContent: { code } })
 const object = (v: unknown): v is Args => !!v && typeof v === 'object' && !Array.isArray(v)
 
+function permissionState(result: CuaToolResult): Args | null {
+  if (result.isError) return null
+  if (object(result.structuredContent)) return result.structuredContent
+  for (const block of result.content ?? []) {
+    if (block.type !== 'text' || typeof block.text !== 'string') continue
+    try { const state: unknown = JSON.parse(block.text); if (object(state)) return state } catch { /* Native text may not be JSON. */ }
+  }
+  return null
+}
+
+function needsScreen(name: string, args: Args): boolean {
+  return name === 'get_desktop_state' || name === 'zoom'
+    || (name === 'get_window_state' && args.include_screenshot !== false)
+    || (name === 'verify_state' && args.include_screenshot === true)
+    || (name === 'run_steps' && object(args.observe) && args.observe.include_screenshot === true)
+}
+
 /** Called by the App's MCP adapter with gateway-stamped caller identity, never tool arguments. */
 export function createComputerTools(input: {
   cua: CuaClient
   specs: NativeSpec[]
   platform: NodeJS.Platform
   protectedHost(): Promise<SelfApp> | SelfApp
-  permissions?(): Promise<{ permissions: { accessibility: boolean; screen: boolean } }>
   control?: ComputerControl
 }) {
   const specs = new Map(input.specs.map(spec => [spec.name, spec]))
@@ -46,14 +62,6 @@ export function createComputerTools(input: {
       if (!self.pids.size || !self.names.size) return failure('unavailable', 'The protected host identity could not be checked.')
       const checked = checkCall(name, forwardArgs, self, input.platform)
       if (checked.refused) return failure('invalid_args', checked.refused)
-      if (input.platform === 'darwin') {
-        if (!input.permissions) return failure('unavailable', 'The permission probe is not available.')
-        const state = await input.permissions()
-        if (!state.permissions.accessibility) {
-          const missing = ['Accessibility', ...(!state.permissions.screen ? ['Screen Recording'] : [])].join(' and ')
-          return failure('os_permission', `${missing} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`)
-        }
-      }
       const tool = definition.tool
       if ((tool.confirm === 'always' || checked.foreground) && confirmed !== true) {
         const question = tool.question?.(forwardArgs) ?? checked.question ?? 'This will bring the target window to the foreground and may interrupt the person’s pointer or keyboard focus.'
@@ -67,6 +75,17 @@ export function createComputerTools(input: {
       if (handle && 'refused' in handle) return failure('revoked', handle.refused)
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal
       try {
+        if (input.platform === 'darwin') {
+          // Only the process that executes native operations can authorize them.
+          // A helper's TCC status can belong to a different responsible process.
+          const state = permissionState(await input.cua.callTool('check_permissions', { prompt: false }, { signal, lane: owner, timeoutMs: 15_000, ...(caller.remainingMs ? { remainingMs: caller.remainingMs } : {}) }))
+          if (!state || typeof state.accessibility !== 'boolean' || typeof state.screen_recording !== 'boolean') return failure('unavailable', 'The native driver could not check its system permissions. No input was sent.')
+          const missing = [...(!state.accessibility ? ['Accessibility'] : []), ...(!state.screen_recording ? ['Screen Recording'] : [])]
+          if (!state.accessibility || (!state.screen_recording && needsScreen(name, forwardArgs))) {
+            return failure('os_permission', `${missing.join(' and ')} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`)
+          }
+        }
+        if (signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')
         const forward = object(definition.schema.properties) && 'session' in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs
         const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...(caller.remainingMs ? { remainingMs: caller.remainingMs } : {}), timeoutMs: tool.timeoutMs?.(args) ?? 60_000 })
         if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs)

@@ -6,8 +6,9 @@ const self = { pids: new Set([10]), names: new Set(['咕咕', 'gugu']) };
 const caller = { agent: 'user:agent-a', session: 'session-a' };
 function fixture(extra = {}) {
   const calls = [];
+  const readPermissions = extra.permissions ?? (async () => ({ permissions: { accessibility: true, screen: true } }));
   const tools = createComputerTools({ platform: 'darwin', protectedHost: () => self, permissions: async () => ({ permissions: { accessibility: true, screen: true } }),
-    cua: { callTool: async (name, args, options) => { calls.push({ name, args, options }); return { content: [{ type: 'image', mimeType: 'image/png', data: 'png-data' }], structuredContent: { snapshot_id: 'shot', pid: 44, window_id: 3 } }; } },
+    cua: { callTool: async (name, args, options) => { if (name === 'check_permissions') { const state = await readPermissions(); return { structuredContent: { accessibility: state.permissions.accessibility, screen_recording: state.permissions.screen, source: 'cua_driver' } }; } calls.push({ name, args, options }); return { content: [{ type: 'image', mimeType: 'image/png', data: 'png-data' }], structuredContent: { snapshot_id: 'shot', pid: 44, window_id: 3 } }; } },
     specs: TOOLS.map(tool => ({ name: tool.cua, input_schema: { type: 'object', properties: { session: { type: 'string' }, pid: { type: 'number' } } } })), ...extra });
   return { tools, calls };
 }
@@ -19,8 +20,7 @@ test('protected host, desktop input and injected owner cannot reach the driver',
   assert.equal(calls.length, 0);
 });
 test('foreground tool returns immediately for the agent to ask; explicit retry never forwards its confirmation flag', async () => {
-  // Regression trap: the removed App-specific waiting callback must never be invoked.
-  const { tools, calls } = fixture({ requestHuman: () => { throw new Error('An App must not wait for a person in a tool call.'); } });
+  const { tools, calls } = fixture();
   for (const args of [{ pid: 44, delivery_mode: 'foreground' }, { pid: 44, foreground_fallback: true }, { pid: 44, delivery_mode: 'foreground', confirmed: 'true' }]) {
     const value = await tools.call('click', args, caller);
     assert.equal(value.structuredContent.code, 'needs_confirmation');
@@ -65,4 +65,71 @@ test('the native environment keeps system variables and disables telemetry and u
   const value = cuaEnvironment({ home: '/app-data/driver', source: { PATH: '/bin', HOME: '/person', OPENAI_API_KEY: 'secret', GUGU_MCP_TOKEN: 'secret' } });
   assert.equal(value.CUA_DRIVER_RS_HOME, '/app-data/driver'); assert.equal(value.CUA_DRIVER_RS_UPDATE_CHECK, 'false');
   assert.equal(value.CUA_DRIVER_RS_TELEMETRY_ENABLED, 'false'); assert.equal(value.OPENAI_API_KEY, undefined); assert.equal(value.GUGU_MCP_TOKEN, undefined);
+});
+
+test('both batch step forms require explicit approval for foreground fallback', async () => {
+  const { tools, calls } = fixture();
+  for (const step of [{ tool: 'click', args: { pid: 44, foreground_fallback: true } }, { click: { pid: 44, foreground_fallback: true } }]) {
+    const value = await tools.call('run_steps', { steps: [step] }, caller);
+    assert.equal(value.structuredContent?.code, 'needs_confirmation');
+    assert.equal(calls.length, 0, 'unapproved batch must not reach the native driver');
+    await tools.call('run_steps', { steps: [step], confirmed: true }, caller);
+    assert.equal(calls.pop().name, 'run_steps');
+  }
+});
+test('screen-only denial blocks screenshot tools, while an accessibility-only window read remains available', async () => {
+  const { tools, calls } = fixture({ permissions: async () => ({ permissions: { accessibility: true, screen: false } }) });
+  for (const [name, args] of [['get_desktop_state', {}], ['zoom', { pid: 44 }], ['get_window_state', { pid: 44 }], ['verify_state', { pid: 44, include_screenshot: true }], ['run_steps', { steps: [{ click: { pid: 44 } }], observe: { include_screenshot: true } }]]) {
+    const value = await tools.call(name, args, caller);
+    assert.equal(value.structuredContent?.code, 'os_permission');
+    assert.match(value.content[0].text, /Screen Recording permission is missing/);
+    assert.doesNotMatch(value.content[0].text, /Accessibility permission is missing/);
+  }
+  assert.equal(calls.length, 0);
+  await tools.call('get_window_state', { pid: 44, include_screenshot: false }, caller);
+  await tools.call('run_steps', { steps: [{ click: { pid: 44 } }], observe: {} }, caller);
+  assert.equal(calls.length, 2);
+});
+test('human blockers settle promptly without any answer, callback or driver dispatch', async () => {
+  const { tools, calls } = fixture();
+  // There is deliberately no person-answering route. Any style of wait fails the deadline.
+  const settled = await Promise.race([
+    tools.call('bring_to_front', { pid: 44 }, caller),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('human blocker did not return immediately')), 300)),
+  ]);
+  assert.equal(settled.structuredContent.code, 'needs_confirmation');
+  assert.equal(calls.length, 0);
+});
+test('revocation reaches the native call signal and terminates in-flight dispatch', async () => {
+  const control = createComputerControl({ view: { show() {}, hide() {} } });
+  let nativeSignal;
+  let started;
+  const ready = new Promise(resolve => { started = resolve; });
+  const { tools } = fixture({ control, cua: { callTool(_name, _args, options) {
+    if (_name === 'check_permissions') return Promise.resolve({ structuredContent: { accessibility: true, screen_recording: true } });
+    nativeSignal = options.signal;
+    started();
+    return new Promise((_, reject) => {
+      const abort = () => reject(new Error('native call cancelled'));
+      if (nativeSignal.aborted) abort(); else nativeSignal.addEventListener('abort', abort, { once: true });
+    });
+  } } });
+  const rejected = assert.rejects(tools.call('click', { pid: 44 }, caller), /native call cancelled/);
+  await ready;
+  control.dispose();
+  await rejected;
+  assert.equal(nativeSignal.aborted, true);
+});
+
+test('the native driver permission denial overrides a granted helper status', async () => {
+  const probes = [], actions = [];
+  const { tools } = fixture({ permissions: async () => ({ permissions: { accessibility: true, screen: true } }), cua: { async callTool(name, args, options) {
+    if (name === 'check_permissions') { probes.push({ args, options }); return { structuredContent: { accessibility: true, screen_recording: false, source: 'cua_driver' } }; }
+    actions.push(name); return { content: [], structuredContent: { ok: true } };
+  } } });
+  const result = await tools.call('get_desktop_state', {}, caller);
+  assert.equal(result.structuredContent?.code, 'os_permission');
+  assert.equal(actions.length, 0, 'helper grants must not authorize native screenshot dispatch');
+  assert.equal(probes.length, 1);
+  assert.equal(probes[0].args.prompt, false, 'agent path never raises permission dialogs');
 });

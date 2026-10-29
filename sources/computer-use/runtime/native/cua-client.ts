@@ -120,7 +120,19 @@ export function createCuaClient(options: {
   // 在途请求按代理进程记:旧的那一代迟一步退出时只拒它自己的,❌ 连带拒掉已经发给新一代的。
   const pendingOf = new WeakMap<ChildProcess, Pending>()
   /** 一条道:一个代理进程,一次办一个请求。`settledAt` = 这条道上最近一个调用回来的时刻(算排队用)。 */
-  interface Lane { ready: Promise<ChildProcess>; proc: ChildProcess | null; direct?: CuaDaemonLease; session: string; inflight: number; settledAt: number; idle: ReturnType<typeof setTimeout> | null }
+  interface Lane {
+    ready: Promise<ChildProcess>
+    proc: ChildProcess | null
+    direct?: CuaDaemonLease
+    session: string
+    inflight: number
+    users: number
+    starting: boolean
+    startup: AbortController
+    closed: boolean
+    settledAt: number
+    idle: ReturnType<typeof setTimeout> | null
+  }
   const lanes = new Map<string, Lane>()
   const needsObservation = new Set<string>()
   const observations = createObservationGate()
@@ -188,27 +200,32 @@ export function createCuaClient(options: {
   }
 
   const closeLane = (key: string, lane: Lane, reason: string) => {
+    if (lane.closed) return
+    lane.closed = true
     if (lanes.get(key) === lane) {
       lanes.delete(key)
       needsObservation.delete(key)
     }
     if (lane.idle) clearTimeout(lane.idle)
     lane.idle = null
+    // A direct lease may still be opening; terminate its metadata/control sockets
+    // even before openCuaDaemonLease has returned an object to this lane.
+    lane.startup.abort()
     if (lane.direct) {
       lane.direct.close()
-      return
     }
     const p = lane.proc
-    if (!p) return
-    failAll(p, new NativeCallError('execution_failed', reason))
-    p.stdin?.end()
-    p.kill()
+    if (p) {
+      failAll(p, new NativeCallError('execution_failed', reason))
+      p.stdin?.end()
+      p.kill()
+    }
+    if (lanes.size === 0) stopDaemon()
   }
 
-  const shutdown = (reason: string) => {
+  const stopDaemon = () => {
     if (idle) clearTimeout(idle)
     idle = null
-    for (const [key, lane] of [...lanes]) closeLane(key, lane, reason)
     const oldDaemon = daemon
     daemon = null
     daemonReady = null
@@ -222,6 +239,11 @@ export function createCuaClient(options: {
         options.log?.warn({ err: String(error) }, 'cua-driver socket could not be removed')
       }
     }
+  }
+
+  const shutdown = (reason: string) => {
+    for (const [key, lane] of [...lanes]) closeLane(key, lane, reason)
+    stopDaemon()
   }
 
   const waitForSocket = async (child: ChildProcess) => {
@@ -318,7 +340,7 @@ export function createCuaClient(options: {
     const daemonUp = startDaemon()
     // cua 的会话名归创建它的 transport 所有；旧代理退出后,新代理连 start_session 都不能接回那个名字。
     // lane 的 key 仍归同一个 agent,但每代代理的驱动会话名必须不同(旧快照和元素编号也随之作废)。
-    const lane: Lane = { ready: Promise.resolve(null as never), proc: null, session: `${key}-${randomUUID()}`, inflight: 0, settledAt: 0, idle: null }
+    const lane: Lane = { ready: Promise.resolve(null as never), proc: null, session: `${key}-${randomUUID()}`, inflight: 0, users: 0, starting: true, startup: new AbortController(), closed: false, settledAt: 0, idle: null }
     lanes.set(key, lane)
     lane.ready = (async () => {
       await daemonUp
@@ -327,6 +349,7 @@ export function createCuaClient(options: {
         const owner = daemon
         const direct = await openCuaDaemonLease({
           socket, owner: `mcp-gugu-${randomUUID()}`, timeoutMs: options.readyTimeoutMs ?? READY_MS,
+          signal: lane.startup.signal,
           ...(options.hostBundleId ? { hostBundleId: options.hostBundleId } : {}),
           onClosed: () => {
             if (lanes.get(key) === lane) closeLane(key, lane, DISCONNECTED)
@@ -337,6 +360,7 @@ export function createCuaClient(options: {
           throw new NativeCallError('execution_failed', '电脑控制重新启动了')
         }
         lane.direct = direct
+        lane.starting = false
         // The daemon is only a ready marker here; requests use this lane's
         // control lease, never its stdin. A preview can sample that same owner.
         return daemon!
@@ -380,8 +404,9 @@ export function createCuaClient(options: {
       }).done, readyMs, () => {
         options.log?.warn({ timeoutMs: readyMs, lane: key }, 'cua-driver mcp did not answer initialize in time')
         return new NativeCallError('execution_failed', START_FAILED)
-      })
+      }, lane.startup.signal)
       write(p, { jsonrpc: '2.0', method: 'notifications/initialized' })
+      lane.starting = false
       return p
     })()
     lane.ready.catch((error: unknown) => {
@@ -399,7 +424,7 @@ export function createCuaClient(options: {
   const touchLane = (key: string, lane: Lane) => {
     if (lane.idle) clearTimeout(lane.idle)
     lane.idle = setTimeout(() => {
-      if (lane.inflight === 0) closeLane(key, lane, '这条电脑控制的连接闲置太久,已关闭')
+      if (lane.users === 0) closeLane(key, lane, '这条电脑控制的连接闲置太久,已关闭')
     }, laneIdleMs)
     ;(lane.idle as { unref?: () => void }).unref?.()
   }
@@ -411,61 +436,70 @@ export function createCuaClient(options: {
     if (callOptions.signal?.aborted) throw new NativeCallError('execution_failed', '已取消，本次操作没有发出')
     if (timeoutMs <= 0) throw exhausted()
     const lane = openLane(key)
-    const p = await within(lane.ready, timeoutMs,
-      () => new NativeCallError('timeout', `电脑控制 ${Math.round(timeoutMs / 1000)} 秒内没能启动,${name} 没有发出去`), callOptions.signal)
-    if (disposed || lanes.get(key) !== lane || callOptions.signal?.aborted) throw new NativeCallError('execution_failed', '电脑控制已取消或重新启动，本次操作没有发出')
-    const sent = Date.now()
-    const left = Math.min(timeoutMs - (sent - asked), callOptions.remainingMs?.() ?? Infinity)
-    if (left <= 0) throw exhausted()
-    touch()
-    touchLane(key, lane)
-    lane.inflight += 1
-    const forwarded = typeof args.session === 'string' && args.session ? { ...args, session: lane.session } : args
-    const { id, done } = lane.direct
-      ? { id: 0, done: lane.direct.call(name, forwarded, { signal: callOptions.signal, timeoutMs: left }) }
-      : request(p, 'tools/call', { name, arguments: forwarded })
-    // 起道用掉的那段也在这一次的时限里。
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let onAbort: (() => void) | null = null
-    const mutation = cuaMutates(name, args)
-    // Input cancellation retires only this owner generation. A read must not
-    // end a same-owner input, and no cancellation replays an input.
-    const cancel = (why: 'timeout' | 'cancelled', error: NativeCallError, reject: (e: Error) => void) => {
-      if (!lane.direct) {
-        pendingOf.get(p)?.delete(id)
-        write(p, { jsonrpc: '2.0', method: 'notifications/cancelled', params: { requestId: id, reason: why } })
-      }
-      if (mutation) closeLane(key, lane, error.message)
-      reject(error)
-    }
+    lane.users += 1
     try {
-      return (await Promise.race([
-        done,
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => cancel('timeout', new NativeCallError('timeout', `${name} 超过 ${Math.round(timeoutMs / 1000)} 秒没做完；${CUA_CANCEL_UNCONFIRMED}`), reject), left)
-          onAbort = () => cancel('cancelled', new NativeCallError('execution_failed', CUA_CANCEL_UNCONFIRMED), reject)
-          callOptions.signal?.addEventListener('abort', onAbort, { once: true })
-        }),
-      ])) as CuaToolResult
-    } catch (error) {
-      // The direct lease's own timer can reject before this outer timer.
-      // Ordinary native refusals are ToolResults, not transport cancellation.
-      if (mutation && error instanceof NativeCallError && (error.code === 'timeout' || callOptions.signal?.aborted)) closeLane(key, lane, CUA_CANCEL_UNCONFIRMED)
-      throw error
-    } finally {
-      if (timer) clearTimeout(timer)
-      if (onAbort) callOptions.signal?.removeEventListener('abort', onAbort)
-      const end = Date.now()
-      const before = lane.settledAt
-      lane.inflight -= 1
-      lane.settledAt = end
+      const p = await within(lane.ready, timeoutMs,
+        () => new NativeCallError('timeout', `电脑控制 ${Math.round(timeoutMs / 1000)} 秒内没能启动,${name} 没有发出去`), callOptions.signal)
+      if (disposed || lanes.get(key) !== lane || callOptions.signal?.aborted) throw new NativeCallError('execution_failed', '电脑控制已取消或重新启动，本次操作没有发出')
+      const sent = Date.now()
+      const left = Math.min(timeoutMs - (sent - asked), callOptions.remainingMs?.() ?? Infinity)
+      if (left <= 0) throw exhausted()
       touch()
-      if (lanes.get(key) === lane) touchLane(key, lane)
-      if (end - asked >= SLOW_MS) {
-        // 一条道一次办一个:在它前面的那个回来之前,这个只是在排队(前面那个被这边放弃的话,排队算少了)。
-        const waited = Math.max(0, Math.min(before, end) - sent)
-        options.log?.warn({ tool: name, lane: key, totalMs: end - asked, startMs: sent - asked, queuedMs: waited, driverMs: end - sent - waited, lanes: lanes.size }, 'cua-driver call was slow')
+      touchLane(key, lane)
+      lane.inflight += 1
+      const forwarded = typeof args.session === 'string' && args.session ? { ...args, session: lane.session } : args
+      const { id, done } = lane.direct
+        ? { id: 0, done: lane.direct.call(name, forwarded, { signal: callOptions.signal, timeoutMs: left }) }
+        : request(p, 'tools/call', { name, arguments: forwarded })
+      // 起道用掉的那段也在这一次的时限里。
+      let timer: ReturnType<typeof setTimeout> | null = null
+      let onAbort: (() => void) | null = null
+      const mutation = cuaMutates(name, args)
+      // Input cancellation retires only this owner generation. A read must not
+      // end a same-owner input, and no cancellation replays an input.
+      const cancel = (why: 'timeout' | 'cancelled', error: NativeCallError, reject: (e: Error) => void) => {
+        if (!lane.direct) {
+          pendingOf.get(p)?.delete(id)
+          write(p, { jsonrpc: '2.0', method: 'notifications/cancelled', params: { requestId: id, reason: why } })
+        }
+        if (mutation) closeLane(key, lane, error.message)
+        reject(error)
       }
+      try {
+        return (await Promise.race([
+          done,
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => cancel('timeout', new NativeCallError('timeout', `${name} 超过 ${Math.round(timeoutMs / 1000)} 秒没做完；${CUA_CANCEL_UNCONFIRMED}`), reject), left)
+            onAbort = () => cancel('cancelled', new NativeCallError('execution_failed', CUA_CANCEL_UNCONFIRMED), reject)
+            callOptions.signal?.addEventListener('abort', onAbort, { once: true })
+          }),
+        ])) as CuaToolResult
+      } catch (error) {
+        // The direct lease's own timer can reject before this outer timer.
+        // Ordinary native refusals are ToolResults, not transport cancellation.
+        if (mutation && error instanceof NativeCallError && (error.code === 'timeout' || callOptions.signal?.aborted)) closeLane(key, lane, CUA_CANCEL_UNCONFIRMED)
+        throw error
+      } finally {
+        if (timer) clearTimeout(timer)
+        if (onAbort) callOptions.signal?.removeEventListener('abort', onAbort)
+        const end = Date.now()
+        const before = lane.settledAt
+        lane.inflight -= 1
+        lane.settledAt = end
+        touch()
+        if (lanes.get(key) === lane) touchLane(key, lane)
+        if (end - asked >= SLOW_MS) {
+          // 一条道一次办一个:在它前面的那个回来之前,这个只是在排队(前面那个被这边放弃的话,排队算少了)。
+          const waited = Math.max(0, Math.min(before, end) - sent)
+          options.log?.warn({ tool: name, lane: key, totalMs: end - asked, startMs: sent - asked, queuedMs: waited, driverMs: end - sent - waited, lanes: lanes.size }, 'cua-driver call was slow')
+        }
+      }
+    } finally {
+      lane.users -= 1
+      // Subscribers share startup, not cancellation. The last departing caller
+      // owns cleanup; another caller on this lane or another lane stays alive.
+      if (lane.starting && lane.users === 0) closeLane(key, lane, '电脑控制启动已取消')
+      else if (lanes.get(key) === lane) touchLane(key, lane)
     }
   }
 
