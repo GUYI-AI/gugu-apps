@@ -1362,7 +1362,7 @@ function createPermissionClient({ bundleDir, dataDir, platform = process.platfor
   if (!bundleDir || !dataDir || !path4.isAbsolute(bundleDir) || !path4.isAbsolute(dataDir)) throw new Error("App bundle and data directories are required.");
   let ready;
   async function prepare() {
-    if (platform !== "darwin") throw new Error("macOS permission checks are not available on this platform.");
+    if (platform !== "darwin") throw new Error("macOS system settings are not available on this platform.");
     ready ??= (async () => {
       const meta = JSON.parse(await readFile2(path4.join(bundleDir, "permissions.json"), "utf8"));
       if (meta.platform !== platform || !meta.architectures.includes(arch) || !/^[a-f0-9]{64}$/.test(meta.sha256)) throw new Error("The permission helper does not match this computer.");
@@ -1392,15 +1392,12 @@ function createPermissionClient({ bundleDir, dataDir, platform = process.platfor
     if (signal?.aborted) throw signal.reason;
     const file = await prepare();
     const keep = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL"];
-    const { stdout } = await run(file, args, { signal, timeout: args[0] === "request" ? 12e4 : 15e3, maxBuffer: 64 * 1024, env: Object.fromEntries(keep.filter((key) => process.env[key] !== void 0).map((key) => [key, process.env[key]])) });
+    const { stdout } = await run(file, args, { signal, timeout: 15e3, maxBuffer: 64 * 1024, env: Object.fromEntries(keep.filter((key) => process.env[key] !== void 0).map((key) => [key, process.env[key]])) });
     const result = JSON.parse(stdout);
     if (!result.ok) throw new Error("The permission operation could not be completed.");
     return result;
   }
   return {
-    status: (signal) => call(["status"], signal),
-    // Wire only to the page's explicit grant/connect action, never an agent operation.
-    requestFromPage: (signal) => call(["request"], signal),
     openSettings(permission, signal) {
       if (!choices.has(permission)) throw new Error("Choose Accessibility or Screen Recording.");
       return call(["open", permission], signal);
@@ -1488,8 +1485,11 @@ function permissionState(result) {
   }
   return null;
 }
+function fileCapture(args) {
+  return object2(args) && (typeof args.screenshot_out_file === "string" || typeof args.debug_image_out === "string");
+}
 function needsScreen(name, args) {
-  return name === "get_desktop_state" || name === "zoom" || name === "get_window_state" && args.include_screenshot !== false || name === "verify_state" && args.include_screenshot === true || name === "run_steps" && object2(args.observe) && args.observe.include_screenshot === true;
+  return fileCapture(args) || name === "get_desktop_state" || name === "zoom" || name === "get_window_state" && args.include_screenshot !== false || name === "verify_state" && args.include_screenshot === true || name === "run_steps" && (fileCapture(args.observe) || object2(args.observe) && args.observe.include_screenshot === true || Array.isArray(args.steps) && args.steps.some((step) => object2(step) && Object.values(step).some(fileCapture)));
 }
 function createComputerTools(input) {
   const specs = new Map(input.specs.map((spec) => [spec.name, spec]));

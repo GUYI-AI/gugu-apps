@@ -10,12 +10,12 @@ const execute = promisify(execFile);
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const choices = new Set(['accessibility', 'screen']);
 
-/** The App supplies its own bundled helper, never the desktop's mac-helper path. */
+/** Settings navigation only. Permission status always comes from the running driver. */
 export function createPermissionClient({ bundleDir, dataDir, platform = process.platform, arch = process.arch, run = execute }) {
   if (!bundleDir || !dataDir || !path.isAbsolute(bundleDir) || !path.isAbsolute(dataDir)) throw new Error('App bundle and data directories are required.');
   let ready;
   async function prepare() {
-    if (platform !== 'darwin') throw new Error('macOS permission checks are not available on this platform.');
+    if (platform !== 'darwin') throw new Error('macOS system settings are not available on this platform.');
     ready ??= (async () => {
       const meta = JSON.parse(await readFile(path.join(bundleDir, 'permissions.json'), 'utf8'));
       if (meta.platform !== platform || !meta.architectures.includes(arch) || !/^[a-f0-9]{64}$/.test(meta.sha256)) throw new Error('The permission helper does not match this computer.');
@@ -38,15 +38,12 @@ export function createPermissionClient({ bundleDir, dataDir, platform = process.
     if (signal?.aborted) throw signal.reason;
     const file = await prepare();
     const keep = ['PATH', 'HOME', 'USER', 'LOGNAME', 'TMPDIR', 'LANG', 'LC_ALL'];
-    const { stdout } = await run(file, args, { signal, timeout: args[0] === 'request' ? 120_000 : 15_000, maxBuffer: 64 * 1024, env: Object.fromEntries(keep.filter(key => process.env[key] !== undefined).map(key => [key, process.env[key]])) });
+    const { stdout } = await run(file, args, { signal, timeout: 15_000, maxBuffer: 64 * 1024, env: Object.fromEntries(keep.filter(key => process.env[key] !== undefined).map(key => [key, process.env[key]])) });
     const result = JSON.parse(stdout);
     if (!result.ok) throw new Error('The permission operation could not be completed.');
     return result;
   }
   return {
-    status: signal => call(['status'], signal),
-    // Wire only to the page's explicit grant/connect action, never an agent operation.
-    requestFromPage: signal => call(['request'], signal),
     openSettings(permission, signal) {
       if (!choices.has(permission)) throw new Error('Choose Accessibility or Screen Recording.');
       return call(['open', permission], signal);

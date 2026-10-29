@@ -20,11 +20,18 @@ function permissionState(result: CuaToolResult): Args | null {
   return null
 }
 
+function fileCapture(args: unknown): boolean {
+  return object(args) && (typeof args.screenshot_out_file === 'string' || typeof args.debug_image_out === 'string')
+}
+
 function needsScreen(name: string, args: Args): boolean {
-  return name === 'get_desktop_state' || name === 'zoom'
+  return fileCapture(args) || name === 'get_desktop_state' || name === 'zoom'
     || (name === 'get_window_state' && args.include_screenshot !== false)
     || (name === 'verify_state' && args.include_screenshot === true)
-    || (name === 'run_steps' && object(args.observe) && args.observe.include_screenshot === true)
+    || (name === 'run_steps' && (
+      fileCapture(args.observe) || (object(args.observe) && args.observe.include_screenshot === true)
+      || (Array.isArray(args.steps) && args.steps.some(step => object(step) && Object.values(step).some(fileCapture)))
+    ))
 }
 
 /** Called by the App's MCP adapter with gateway-stamped caller identity, never tool arguments. */

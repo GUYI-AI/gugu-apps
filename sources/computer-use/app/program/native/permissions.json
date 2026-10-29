@@ -4,8 +4,8 @@
     "arm64",
     "x64"
   ],
-  "sha256": "1f090b35dcfba9d9c784fd499e65c330c3da94aad73769339ca61fcebd80c98a",
-  "sourceSha256": "b20aef911731d3d985a0e52cb43a5845e5eb683d2f7a54aba9a7e16aa31c679c",
+  "sha256": "3df5e170f2b1379d2645c2781c56c88eb1255ee1d2ab232029186dd05dec405a",
+  "sourceSha256": "e4033ab73df7effdfd86a3ce33f0e14335c7209fdadff182d045a5031a3f0eeb",
   "signature": "ad-hoc",
   "identity": "app.computer-use.permissions"
 }

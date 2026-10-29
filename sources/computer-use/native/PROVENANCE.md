@@ -17,3 +17,5 @@ This layer does not activate a market release or change the existing App manifes
 Permission attribution must be observed through the actual App launch chain and operating-system UI. The former direct-child comments are historical evidence, not proof of the App's independent TCC identity.
 
 Native-layer review corrections retain provenance but tighten the copied behavior: nested batch foreground fallback requires the same confirmation as a direct call; permission admission reads the running driver; abandoned startup and shared resource preparation cancel per caller without affecting other owners. The optional native fixture is newly written verification code, not copied driver implementation.
+
+The macOS helper is now limited to the two fixed System Settings links. Status and grant modes were removed from both its JavaScript adapter and native executable; permission state is obtained exclusively from the running driver's read-only check.

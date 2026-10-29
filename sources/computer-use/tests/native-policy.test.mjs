@@ -133,3 +133,25 @@ test('the native driver permission denial overrides a granted helper status', as
   assert.equal(probes.length, 1);
   assert.equal(probes[0].args.prompt, false, 'agent path never raises permission dialogs');
 });
+
+for (const [name, args] of [
+  ['get_window_state', { pid: 44, include_screenshot: false, screenshot_out_file: '/tmp/owned-shot.png' }],
+  ['click', { pid: 44, debug_image_out: '/tmp/owned-debug.png' }],
+]) {
+  test(`screen-only denial blocks implicit file capture by ${name}`, async () => {
+    const { tools, calls } = fixture({ permissions: async () => ({ permissions: { accessibility: true, screen: false } }) });
+    const value = await tools.call(name, args, caller);
+    assert.equal(value.structuredContent?.code, 'os_permission');
+    assert.match(value.content[0].text, /Screen Recording permission is missing/);
+    assert.equal(calls.length, 0, 'no screenshot or input reaches the driver');
+  });
+}
+test('batch file captures also require screen permission in both step forms and end observation', async () => {
+  const { tools, calls } = fixture({ permissions: async () => ({ permissions: { accessibility: true, screen: false } }) });
+  for (const args of [
+    { steps: [{ tool: 'click', args: { pid: 44, debug_image_out: '/tmp/debug.png' } }] },
+    { steps: [{ click: { pid: 44, debug_image_out: '/tmp/debug.png' } }] },
+    { steps: [{ click: { pid: 44 } }], observe: { include_screenshot: false, screenshot_out_file: '/tmp/observe.png' } },
+  ]) assert.equal((await tools.call('run_steps', args, caller)).structuredContent?.code, 'os_permission');
+  assert.equal(calls.length, 0);
+});
