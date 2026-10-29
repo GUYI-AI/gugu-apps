@@ -58,12 +58,12 @@
       "yanked": null
     },
     {
-      "version": "0.7.11",
+      "version": "0.7.12",
       "repo": "shuxueshuxue/promo-skills",
       "path": ".",
-      "commit": "936238f05db8ac862a712d53be07912000442ce5",
-      "sha256": "48c8b8508c569621a1c75db9818e8fc9311238c8da6afeb1b999b72e3b7c3ed9",
-      "bytes": 807351,
+      "commit": "a77b80f8abbda693a405a0c2f335634a62a9e109",
+      "sha256": "f1303df26fad98a27ece1d79ccc33c2313ee3f42f3299cfb4d6a6f1ca2d2cb3a",
+      "bytes": 811334,
       "yanked": null
     }
   ]
