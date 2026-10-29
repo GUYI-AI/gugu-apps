@@ -1,0 +1,2 @@
+# Preserve the pinned upstream patch bytes, including blank context-line spaces.
+sources/computer-use/native/driver/patches/0.36.0-gugu.1.patch -whitespace
