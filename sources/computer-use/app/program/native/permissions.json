@@ -1,0 +1,11 @@
+{
+  "platform": "darwin",
+  "architectures": [
+    "arm64",
+    "x64"
+  ],
+  "sha256": "1f090b35dcfba9d9c784fd499e65c330c3da94aad73769339ca61fcebd80c98a",
+  "sourceSha256": "b20aef911731d3d985a0e52cb43a5845e5eb683d2f7a54aba9a7e16aa31c679c",
+  "signature": "ad-hoc",
+  "identity": "app.computer-use.permissions"
+}
