@@ -19,20 +19,20 @@ const findBoard = async (files, chat) =>
  */
 export async function openChatBoard(files, chat) {
   const found = await findBoard(files, chat)
-  if (found) return filled(await files.open(found))
+  if (found) return filled(await files.open(found, { appData: true }))
   let made
   try {
-    made = await files.create({ chat, name: CHAT_BOARD_NAME }, emptyBoard())
+    made = await files.create({ chat, name: CHAT_BOARD_NAME }, emptyBoard(), { appData: true })
   } catch (error) {
     const theirs = await findBoard(files, chat)
     if (!theirs) throw error
-    return filled(await files.open(theirs))
+    return filled(await files.open(theirs, { appData: true }))
   }
-  if (made.name === CHAT_BOARD_NAME) return filled(await files.open(made))
+  if (made.name === CHAT_BOARD_NAME) return filled(await files.open(made, { appData: true }))
   await files.remove(made)
   const theirs = await findBoard(files, chat)
   if (!theirs) throw new Error(`${CHAT_BOARD_NAME} was made as ${made.name} and the board it gave way to is gone`)
-  return filled(await files.open(theirs))
+  return filled(await files.open(theirs, { appData: true }))
 }
 
 /**

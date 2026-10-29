@@ -893,7 +893,7 @@ async function fillSwitcher() {
   select.hidden = boards.length === 0
   select.onchange = () => {
     const entry = boards.find((e) => e.id === select.value)
-    if (entry) showChatBoard(() => g.files.open(entry))
+    if (entry) showChatBoard(() => g.files.open(entry, { appData: true }))
     else showLocalBoard()
   }
 }
@@ -928,9 +928,9 @@ g.onContextChanged(async () => {
 
 placed()
 if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
-if (creating?.file) await showChatBoard(() => g.files.open(creating.file))
+if (creating?.file) await showChatBoard(() => g.files.open(creating.file, { appData: true }))
 else if (creating && desktop) showLocalBoard()
-else if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
+else if (ctx.file) await showChatBoard(() => g.files.open(ctx.file, { appData: true }))
 else if (ctx.chat) await showChatBoard(() => openChatBoard(g.files, ctx.chat.id))
 else if (desktop) {
   showLocalBoard()
