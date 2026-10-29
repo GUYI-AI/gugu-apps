@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node runtime/build.mjs --check && node --test tests/*.test.mjs && node native/check-boundaries.mjs && node vendor/build.mjs --check",
+    "test": "node runtime/build.mjs --check && node program-src/build.mjs --check && node --test tests/*.test.mjs && node native/check-boundaries.mjs && node program-src/check-boundaries.mjs && node vendor/build.mjs --check",
     "build:runtime": "node runtime/build.mjs",
     "build:permissions": "node native/build-permissions.mjs",
-    "test:mutations": "node native/run-mutations.mjs"
+    "test:mutations": "node native/run-mutations.mjs && node program-src/run-mutations.mjs",
+    "build:program": "node program-src/build.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "pngjs": "7.0.0"
   }
 }
