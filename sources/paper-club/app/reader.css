@@ -5,8 +5,9 @@ html, body { height: 100%; }
 body { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
 
 .bar { display: flex; align-items: center; gap: var(--em-spacing-xs); padding: var(--em-spacing-xs) var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); min-height: var(--em-control-h-md); }
-.bar .title { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bar .spacer { flex: 1; }
+.document-heading { display: flex; align-items: center; gap: var(--em-spacing-sm); flex: 1; min-width: 0; }
+.document-tools { display: flex; align-items: center; gap: var(--em-spacing-xs); flex: none; }
+.bar .title { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar .pageno { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bar button { flex: none; }
 #side-toggle span { margin-left: 4px; }
@@ -23,10 +24,19 @@ body { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
 .side { width: 320px; flex: none; border-left: 1px solid var(--em-border); display: flex; flex-direction: column; min-height: 0; background: var(--em-background); }
 .side[hidden] { display: none; }
 .tabs { display: flex; gap: var(--em-spacing-xs); padding: var(--em-spacing-xs) var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); }
-.side-body { flex: 1; overflow: auto; padding: var(--em-spacing-sm); display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+.side-body { flex: 1; min-height: 0; overflow: auto; padding: var(--em-spacing-sm); display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+.highlight-filters { display: flex; flex-wrap: wrap; gap: var(--em-spacing-xs); padding: var(--em-spacing-xs) var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); }
+.highlight-filters[hidden] { display: none; }
+.highlight-filters button { flex: 1; white-space: nowrap; padding-inline: var(--em-spacing-xs); }
+.highlight-filters [aria-pressed='true'] { background: var(--em-selected); }
+.thread-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--em-spacing-xs); }
 
 /* A narrow panel (a chat's 520 px, a topic's 340, a phone): the side is a sheet over the lower half. */
 @media (max-width: 720px) {
+  .bar { flex-wrap: wrap; }
+  .document-heading { flex-basis: 100%; }
+  .document-tools { width: 100%; }
+  .document-tools .pageno { margin-right: auto; }
   .side { position: fixed; left: 0; right: 0; bottom: 0; width: auto; height: 55%; border-left: 0; border-top: 1px solid var(--em-border); box-shadow: 0 -8px 24px rgb(0 0 0 / 0.12); z-index: 5; }
   #side-toggle span { display: none; }
 }
@@ -63,10 +73,11 @@ body { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
 .sel-colors { display: flex; gap: 2px; }
 .swatch { width: 24px; height: 24px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid var(--em-border); background: var(--hl); }
 
-.thread { display: flex; flex-direction: column; gap: var(--em-spacing-xs); padding: var(--em-spacing-sm); }
-.thread.focused { border-color: var(--em-foreground-muted); }
+.thread { display: flex; flex-direction: column; gap: var(--em-spacing-sm); padding: var(--em-spacing-sm); border-bottom: 1px solid var(--em-border); }
+.thread.focused { background: var(--em-selected); }
 .thread .quote { display: block; text-align: left; background: none; border: 0; padding: 0; min-height: 0; height: auto; white-space: normal; }
-.thread blockquote { margin: 0 0 2px; border-left: 3px solid var(--box); padding-left: var(--em-spacing-xs); max-height: 6.5em; overflow: hidden; }
+.thread blockquote { margin: 0 0 2px; border-left: 3px solid var(--box); padding-left: var(--em-spacing-xs); max-height: 4.5em; overflow: hidden; }
+.thread.focused blockquote { max-height: none; }
 .comment { display: grid; grid-template-columns: auto 1fr auto; gap: var(--em-spacing-xs); align-items: start; }
 .comment p { margin: 0; white-space: pre-wrap; word-break: break-word; }
 .comment .from-agent { color: var(--em-foreground-muted); }

@@ -15,6 +15,7 @@ import { openPdf, pdfjs } from './lib/pdf.js'
 import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry } from './lib/paper.js'
 import { fmt, stringsFor } from './lib/strings.js'
 import { createReview } from './lib/review.js'
+import { highlightView } from './lib/highlight-view.js'
 import { importFailure, importInto, uploadInto } from './lib/import-box.js'
 
 const $ = (id) => document.getElementById(id)
@@ -35,6 +36,7 @@ const state = {
   selection: null, // { page, rects, quote, box? }
   focus: null, // highlight id the side shows
   tab: 'highlights',
+  highlightFilter: 'all', // local view of the existing shared notes, never persisted
   follow: null, // userId being followed
   place_wait: null, // a link's place, until the pages exist
   discussed: new Map(), // highlight id → the chat's messages citing it, newest first
@@ -90,6 +92,8 @@ function labels() {
   $('import-go').textContent = t.import
   $('import-upload').textContent = t.upload
   $('side-toggle-label').textContent = t.notes
+  $('tabs').setAttribute('aria-label', t.notes)
+  $('highlight-filters').setAttribute('aria-label', t.filterHighlights)
   $('tab-highlights').textContent = t.highlights
   $('tab-cards').textContent = t.cards
   $('tab-about').textContent = t.about
@@ -648,6 +652,7 @@ function onPageClick(event) {
 function openThread(id) {
   readDiscussions()
   state.focus = id
+  state.highlightFilter = 'all' // a source link must reveal its passage even after filtering
   state.tab = 'highlights'
   showSide(true)
   drawAllMarks()
@@ -784,71 +789,97 @@ function showSide(open) {
 
 function drawSide() {
   if ($('side').hidden) return
-  for (const tab of document.querySelectorAll('#tabs [role=tab]')) tab.setAttribute('aria-selected', String(tab.dataset.tab === state.tab))
+  const data = state.notes?.data
+  const view = highlightView(data, state.discussed, state.notes?.presence.self.userId, state.highlightFilter)
+  $('tab-highlights').textContent = fmt(state.t.highlightsCount, { n: view.counts.all })
+  $('tab-cards').textContent = fmt(state.t.cardsCount, { n: Object.keys(data?.cards ?? {}).length })
+  for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
+    tab.setAttribute('aria-selected', String(tab.dataset.tab === state.tab))
+    tab.setAttribute('aria-controls', 'side-body')
+  }
+  $('highlight-filters').hidden = state.tab !== 'highlights'
+  for (const button of document.querySelectorAll('[data-highlight-filter]')) {
+    const filter = button.dataset.highlightFilter
+    button.textContent = fmt(state.t[`${filter}Highlights`], { n: view.counts[filter] })
+    button.setAttribute('aria-pressed', String(filter === state.highlightFilter))
+  }
   const body = $('side-body')
+  body.setAttribute('aria-labelledby', `tab-${state.tab}`)
   if (state.tab === 'cards') return review.draw(body)
   if (state.tab === 'about') return drawAbout(body)
-  drawHighlights(body)
+  drawHighlights(body, view)
 }
 
-function drawHighlights(body) {
+function drawHighlights(body, view) {
   const t = state.t
-  const data = state.notes?.data
-  const list = Object.entries(data?.highlights ?? {}).sort(([, a], [, b]) => a.page - b.page || (a.rects?.[0]?.[1] ?? 0) - (b.rects?.[0]?.[1] ?? 0))
-  if (!list.length) {
+  if (!view.rows.length) {
     const empty = document.createElement('gugu-empty')
     empty.setAttribute('icon', 'pencil')
     const strong = document.createElement('strong')
-    strong.textContent = t.noHighlights
+    strong.textContent = view.counts.all ? t.noFilteredHighlights : t.noHighlights
     empty.append(strong)
-    if (!canWrite()) {
+    if (view.counts.all) {
+      const reset = document.createElement('button')
+      reset.type = 'button'
+      reset.textContent = t.showAllHighlights
+      reset.onclick = () => { state.highlightFilter = 'all'; drawSide() }
+      empty.append(reset)
+    } else if (!canWrite()) {
       const small = document.createElement('small')
       small.textContent = t.readOnly
       empty.append(small)
     }
     return body.replaceChildren(empty)
   }
-  const comments = Object.entries(data.comments ?? {})
   body.replaceChildren(
-    ...list.map(([id, h]) => {
+    ...view.rows.map(({ id, highlight: h, comments, messages }) => {
+      const selected = state.focus === id
       const card = document.createElement('article')
-      card.className = `thread card${state.focus === id ? ' focused' : ''}`
+      card.className = `thread${selected ? ' focused' : ''}`
       card.dataset.thread = id
       const head = document.createElement('button')
       head.type = 'button'
       head.className = 'quote'
+      head.id = `quote-${id}`
+      card.setAttribute('aria-labelledby', head.id)
+      head.setAttribute('aria-expanded', String(selected))
       const q = document.createElement('blockquote')
       q.className = `c-${h.color ?? 'yellow'}`
       q.textContent = h.quote
       const meta = document.createElement('small')
-      meta.className = 'muted'
-      meta.textContent = `${fmt(t.page, { n: h.page })} · ${memberName(h.by, h.name)}`
+      meta.className = 'muted thread-meta'
+      const source = document.createElement('span')
+      source.textContent = `${fmt(t.page, { n: h.page })} · ${memberName(h.by, h.name)}`
+      const replies = document.createElement('span')
+      replies.textContent = comments.length ? fmt(t.commentCount, { n: comments.length }) : ''
+      meta.append(source, replies)
       head.append(q, meta)
       head.onclick = () => {
-        state.focus = id
-        scrollToPage(h.page, h.rects?.[0]?.[1] ?? 0)
+        state.focus = selected ? null : id
+        if (!selected) scrollToPage(h.page, h.rects?.[0]?.[1] ?? 0)
         drawAllMarks()
         drawSide()
       }
       card.append(head)
-      for (const [, c] of comments.filter(([, c]) => c.on === id).sort(([, a], [, b]) => String(a.at).localeCompare(String(b.at)))) {
-        const row = document.createElement('div')
-        row.className = 'comment'
-        const avatar = document.createElement('gugu-avatar')
-        avatar.setAttribute('user', c.by)
-        avatar.setAttribute('size', 'xs')
-        const text = document.createElement('p')
-        text.textContent = c.text
-        const when = document.createElement('gugu-time')
-        when.setAttribute('datetime', c.at)
-        row.append(avatar, text, when)
-        card.append(row)
+      if (selected) {
+        for (const c of comments) {
+          const row = document.createElement('div')
+          row.className = 'comment'
+          const avatar = document.createElement('gugu-avatar')
+          avatar.setAttribute('user', c.by)
+          avatar.setAttribute('size', 'xs')
+          const text = document.createElement('p')
+          text.textContent = c.text
+          const when = document.createElement('gugu-time')
+          when.setAttribute('datetime', c.at)
+          row.append(avatar, text, when)
+          card.append(row)
+        }
       }
-      const said = state.discussed.get(id) ?? []
-      if (said.length) card.append(discussionOf(id, said))
-      else if (state.focus === id && !state.place?.chat) card.append(note(t.noChatInSession))
-      else if (state.focus === id && !messagesReadable()) card.append(note(t.noMessagesHere))
-      if (state.focus === id && canWrite()) card.append(replyBox(id, h))
+      if (messages.length) card.append(discussionOf(id, messages))
+      else if (selected && !state.place?.chat) card.append(note(t.noChatInSession))
+      else if (selected && !messagesReadable()) card.append(note(t.noMessagesHere))
+      if (selected && canWrite()) card.append(replyBox(id, h))
       return card
     }),
   )
@@ -872,14 +903,17 @@ function discussionOf(id, said) {
   const toggle = document.createElement('button')
   toggle.type = 'button'
   toggle.className = 'discussion-toggle'
-  toggle.setAttribute('aria-expanded', String(state.openDiscussion === id))
+  const expanded = state.focus === id && state.openDiscussion === id
+  toggle.setAttribute('aria-expanded', String(expanded))
   toggle.textContent = fmt(t.discussed, { n: said.length })
   toggle.onclick = () => {
-    state.openDiscussion = state.openDiscussion === id ? null : id
+    state.focus = id
+    state.openDiscussion = expanded ? null : id
+    drawAllMarks()
     drawSide()
   }
   box.append(toggle)
-  if (state.openDiscussion !== id) return box
+  if (!expanded) return box
   const list = document.createElement('ul')
   list.className = 'list'
   for (const m of said) {
@@ -1056,6 +1090,9 @@ window.addEventListener('focus', () => {
   refocused = Date.now()
   readDiscussions()
 })
+for (const button of document.querySelectorAll('[data-highlight-filter]')) {
+  button.onclick = () => { state.highlightFilter = button.dataset.highlightFilter; drawSide() }
+}
 for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
   tab.onclick = () => {
     state.tab = tab.dataset.tab
