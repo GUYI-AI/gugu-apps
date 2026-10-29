@@ -19,6 +19,34 @@ async function call(machine, tool, args = {}) {
   if (answer.isError) throw new Error(text || '上下文程序执行失败')
   return JSON.parse(text)
 }
+// A program call stops at its read budget and says how far it got; call again until it finishes.
+async function settle(machine, tool, args, label) {
+  machine.progress = { label }; render()
+  for (let round = 0; ; round++) {
+    const answer = await call(machine, tool, args)
+    const progress = tool === 'discover' ? answer.history?.progress : answer.progress
+    if (!progress || round >= 40) { machine.progress = null; return answer }
+    machine.progress = { label, ...progress }; render()
+  }
+}
+const SNAPSHOT = 'context-snapshot-v1'
+let lastAt = null
+function saveSnapshot() {
+  lastAt = Date.now()
+  const plain = (m) => ({ id: m.id, name: m.name, online: m.online, thisMachine: m.thisMachine, unmapped: m.unmapped, error: m.error || null })
+  try { localStorage.setItem(SNAPSHOT, JSON.stringify({ at: lastAt, machines: machines.map(plain), entries: entries.map((e) => ({ machine: e.machine.id, project: e.project, report: e.report, activity: e.activity })) })) } catch { /* A full store only costs the next open a recalculation. */ }
+}
+function loadSnapshot() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SNAPSHOT) || 'null')
+    if (!saved) return false
+    machines = saved.machines
+    const byId = new Map(machines.map((m) => [m.id, m]))
+    entries = saved.entries.filter((e) => byId.has(e.machine)).map((e) => ({ ...e, machine: byId.get(e.machine) }))
+    lastAt = saved.at
+    return true
+  } catch { return false }
+}
 const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.activity?.sources || entry.report?.history?.sources || {}).filter(([, n]) => n > 0 || n === null).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
 const tags = (items) => el('div', { class: 'px-tags' }, items.map((e) => badge(e.machine.name, harnesses(e))))
 const groupKey = (entry) => entry.project.repositoryUrl ? entry.project.repositoryUrl : `${entry.machine.id || 'local'}:${entry.project.key}`
@@ -68,6 +96,15 @@ function listView() {
   const all = groups(), grouped = mainGroups(all), shown = new Set(grouped.map((group) => group.key))
   const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${all.length} 个项目 · 按 7 天热度排`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
   root.append(header)
+  if (lastAt && !loading) {
+    const when = document.createElement('gugu-time'); when.setAttribute('datetime', new Date(lastAt).toISOString())
+    root.append(el('p', { class: 'px-notice', role: 'status' }, '上次计算于 ', when))
+  }
+  for (const machine of machines.filter((m) => m.progress)) {
+    const { label, done, total, pending } = machine.progress
+    root.append(el('div', { class: 'px-progress', role: 'status' }, el('span', { class: 'px-notice' }, `${machine.name}：${label}${total ? ` · ${done} / ${total}` : pending ? ` · 还有 ${pending} 个` : ''}`), total ? el('progress', { value: String(done), max: String(total) }) : el('progress')))
+  }
+  if (loading && !machines.some((m) => m.progress)) root.append(el('div', { class: 'px-progress', role: 'status' }, el('span', { class: 'px-notice' }, '正在读取机器列表'), el('progress')))
   if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
   for (const machine of machines.filter((m) => m.error)) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
   root.append(section('项目'))
@@ -232,7 +269,7 @@ function render() {
   else listView()
 }
 async function reloadEntry(entry) {
-  entry.request ||= call(entry.machine, 'diagnose', { project: entry.project.global ? '@global' : entry.project.root })
+  entry.request ||= settle(entry.machine, 'diagnose', { project: entry.project.global ? '@global' : entry.project.root }, `正在读取 ${entry.project.name} 的任务记录`)
   try { entry.report = await entry.request; entry.error = null } finally { entry.request = null }
 }
 async function openGroup(group) {
@@ -244,45 +281,52 @@ async function openGroup(group) {
 }
 async function refresh() {
   if (loading) return
-  loading = true; problem = ''; entries = []; machines = []; render()
+  // Keep the last results on screen; each machine's part is replaced in place as it is recalculated.
+  loading = true; problem = ''; render()
   try {
     // The host owns device discovery. No App network client or second device directory.
     const report = await g.listAgents({ report: true })
     if (!Array.isArray(report.devices)) throw new Error('宿主尚未提供完整机器目录，请更新支持 App API 17 的宿主。')
-    machines = report.devices.map((device) => ({ id: device.deviceId, name: device.label, online: device.online, thisMachine: device.thisMachine, checkedAt: device.checkedAt }))
+    const previous = new Map(machines.map((m) => [m.id, m]))
+    machines = report.devices.map((device) => Object.assign(previous.get(device.deviceId) || {}, { id: device.deviceId, name: device.label, online: device.online, thisMachine: device.thisMachine, checkedAt: device.checkedAt, error: null }))
+    entries = entries.filter((e) => machines.includes(e.machine))
     render()
-    for (const machine of machines) {
-      if (!machine.online && !machine.thisMachine) { machine.error = '机器离线，尚未读取上下文'; render(); continue }
-      try {
-        const found = await call(machine, 'discover')
-        machine.name ||= found.machine.name
-        machine.unmapped = found.unmappedMemories.length
-        for (const project of found.projects) entries.push({ machine, project, report: null, activity: null })
-        entries.push({ machine, project: { key: 'global', name: '全局规矩', root: '所有项目共用', global: true }, report: null, activity: null })
-        render()
-        const activity = await call(machine, 'activity')
-        const byKey = new Map(activity.projects.map((row) => [row.key, row]))
-        for (const entry of entries.filter((e) => e.machine === machine)) entry.activity = entry.project.global ? activity.unassigned || null : byKey.get(entry.project.key)
-        if (!activity.complete) machine.error = activity.reason || '任务索引尚未完成，热度仍未知'
-        render()
-      } catch (e) { machine.error = e.message || String(e); render() }
-    }
-    const wanted = new Set(mainGroups().map((group) => group.key))
-    if (selected) wanted.add(selected)
-    const queue = entries.filter((entry) => entry.project.global || wanted.has(groupKey(entry)))
-    while (queue.length) {
-      const index = queue.findIndex((entry) => (entry.project.global ? '@global' : groupKey(entry)) === selected)
-      const global = queue.findIndex((entry) => entry.project.global)
-      const [entry] = queue.splice(index >= 0 ? index : global >= 0 ? global : 0, 1)
-      try { await reloadEntry(entry) } catch (e) { entry.error = e.message || String(e); entry.machine.error = `${entry.project.name}：${entry.error}` }
-      render()
-    }
+    await Promise.all(machines.map(refreshMachine))
+    saveSnapshot()
   } catch (e) { problem = e.message || String(e) }
   finally { loading = false; render() }
+}
+async function refreshMachine(machine) {
+  if (!machine.online && !machine.thisMachine) { machine.error = '机器离线，显示的是上次的结果'; render(); return }
+  try {
+    const found = await settle(machine, 'discover', {}, '正在更新任务索引')
+    machine.name ||= found.machine.name
+    machine.unmapped = found.unmappedMemories.length
+    const old = new Map(entries.filter((e) => e.machine === machine).map((e) => [e.project.key, e]))
+    const fresh = [...found.projects, { key: 'global', name: '全局规矩', root: '所有项目共用', global: true }]
+      .map((project) => ({ machine, project, report: old.get(project.key)?.report || null, activity: old.get(project.key)?.activity || null }))
+    entries = [...entries.filter((e) => e.machine !== machine), ...fresh]
+    render()
+    const activity = await settle(machine, 'activity', {}, '正在读取任务开工时间')
+    const byKey = new Map(activity.projects.map((row) => [row.key, row]))
+    for (const entry of fresh) entry.activity = entry.project.global ? activity.unassigned || null : byKey.get(entry.project.key)
+    if (!activity.complete) machine.error = activity.reason || '任务索引尚未完成，热度仍未知'
+    render()
+    const wanted = new Set(mainGroups().map((group) => group.key))
+    if (selected) wanted.add(selected)
+    const queue = fresh.filter((entry) => entry.project.global || wanted.has(groupKey(entry)))
+      .toSorted((a, b) => Number((b.project.global ? '@global' : groupKey(b)) === selected) - Number((a.project.global ? '@global' : groupKey(a)) === selected))
+    for (const entry of queue) {
+      try { await reloadEntry(entry) } catch (e) { entry.error = e.message || String(e); machine.error = `${entry.project.name}：${entry.error}` }
+      render()
+    }
+  } catch (e) { machine.error = e.message || String(e); machine.progress = null; render() }
 }
 g.onContextChanged(async () => {
   const previous = ctx
   ctx = await g.getContext()
-  if (previous.session?.deviceId !== ctx.session?.deviceId || (previous.layout?.visible === false && ctx.layout?.visible === true)) await refresh()
+  // Coming back to the tab shows what is already here; recalculating is the person's 「重新计算」.
+  if (previous.session?.deviceId !== ctx.session?.deviceId) render()
 })
-await refresh()
+if (loadSnapshot()) render()
+else await refresh()

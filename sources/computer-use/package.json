@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs && node vendor/build.mjs --check"
+    "test": "node runtime/build.mjs --check && node --test tests/*.test.mjs && node native/check-boundaries.mjs && node vendor/build.mjs --check",
+    "build:runtime": "node runtime/build.mjs",
+    "build:permissions": "node native/build-permissions.mjs",
+    "test:mutations": "node native/run-mutations.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.12"

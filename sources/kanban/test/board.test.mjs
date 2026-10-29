@@ -57,3 +57,40 @@ for (const code of ['denied', 'not-found', null]) {
     }
   })
 }
+
+test('commands received before the first local board state execute once when it arrives', async () => {
+  const { window, document } = parseHTML(html)
+  document.hasFocus = () => false
+  Object.defineProperty(document.getElementById('where'), 'value', { value: '', writable: true })
+  const board = emptyBoard()
+  let command, backgroundMessage
+  const opened = []
+  window.gugu = {
+    getContext: async () => ({ locale: 'en' }),
+    onContextChanged() {},
+    onCommand(fn) { command = fn; fn('new'); fn('ignored'); fn('new') },
+    onBackgroundMessage(fn) { backgroundMessage = fn },
+    sendToBackground: async () => {},
+    getAppState: async () => null,
+    setTabBadge: async () => {},
+    modal: { open: async (options) => { opened.push(options) } },
+    files: { search: async () => [] },
+  }
+  globalThis.window = window
+  globalThis.document = document
+  try {
+    await import('../app/board.js?opening-command')
+    await new Promise(setImmediate)
+    assert.equal(opened.length, 0, 'no dialog can open before there is a board')
+    backgroundMessage({ type: 'state', board })
+    assert.equal(opened.length, 2, 'both pending commands execute; unknown commands do not')
+    assert.ok(opened.every((options) => options.data.newCard.column === Object.keys(board.columns)[0]))
+    backgroundMessage({ type: 'state', board })
+    assert.equal(opened.length, 2, 'later state updates never replay commands')
+    command('new')
+    assert.equal(opened.length, 3, 'a ready board still executes immediately')
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+})

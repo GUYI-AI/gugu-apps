@@ -17,6 +17,8 @@ const text = { type: 'string' }
 const page = { offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 25 } }
 const projectArg = { type: 'string', description: 'Project root or an explicit memory directory; discover lists projects.' }
 let inventory = null
+// A page's program call is bounded by the host's 60 s MCP request timeout; the static checks still need their share after reading.
+const READ_BUDGET_MS = 25000
 
 async function groupsFor(paths) {
   const page = await host().sessions.index({ groupPaths: paths, limit: 1 })
@@ -71,22 +73,27 @@ export const discover = {
   description: 'Find this computer’s Claude/Codex roots and context directories. Reuse host task-history grouping and repository identity; deduplicate filesystem aliases.',
   inputSchema: object(), annotations: { readOnlyHint: true },
   async run() {
-    inventory = await sessionIndex(host())
-    inventory.firstTurns = new Map()
+    const carried = inventory
+    inventory = await sessionIndex(host(), { deadline: Date.now() + READ_BUDGET_MS })
+    inventory.firstTurns = carried?.firstTurns || new Map()
+    inventory.contexts = carried?.contexts || new Map()
     const found = await find({ settings: settings(), sessions: inventory.rows })
     inventory.discovered = found
-    return { ...found, history: { complete: inventory.complete, reason: inventory.reason, total: inventory.total } }
+    return { ...found, history: { complete: inventory.complete, reason: inventory.reason, total: inventory.total, progress: inventory.progress } }
   },
 }
 export const activity = {
   description: 'Count seven-day task starts once for the discovered project inventory, using the host history reader. Unknown starts remain unknown.',
   inputSchema: object(), annotations: { readOnlyHint: true },
   async run() {
-    inventory ||= await sessionIndex(host())
+    const deadline = Date.now() + READ_BUDGET_MS
+    inventory ||= await sessionIndex(host(), { deadline })
     inventory.firstTurns ||= new Map()
+    inventory.contexts ||= new Map()
     inventory.discovered ||= await find({ settings: settings(), sessions: inventory.rows })
-    if (inventory.complete) await observe(host(), inventory.rows, { sample: 0, firstTurns: inventory.firstTurns })
-    return { complete: inventory.complete, reason: inventory.reason, unassigned: inventory.complete ? taskActivity(rowsFor({ global: true }), inventory.firstTurns) : { hot: null, hotTasks: [], unknownStarts: [] }, projects: inventory.discovered.projects.map((project) => ({ key: project.key, ...(inventory.complete ? taskActivity(rowsFor(project), inventory.firstTurns) : { hot: null, hotTasks: [], unknownStarts: [] }) })) }
+    const read = inventory.complete ? await observe(host(), inventory.rows, { sample: 0, firstTurns: inventory.firstTurns, deadline }) : inventory
+    const unknown = { hot: null, hotTasks: [], unknownStarts: [] }
+    return { complete: read.complete, reason: read.reason, progress: read.progress, unassigned: read.complete ? taskActivity(rowsFor({ global: true }), inventory.firstTurns) : unknown, projects: inventory.discovered.projects.map((project) => ({ key: project.key, ...(read.complete ? taskActivity(rowsFor(project), inventory.firstTurns) : unknown) })) }
   },
 }
 export const diagnose = {
@@ -95,11 +102,15 @@ export const diagnose = {
   async run({ project }) {
     // A page refresh calls discover once, then diagnoses its projects against that
     // same index. Do not rescan every historical config root for every role card.
-    inventory ||= await sessionIndex(host())
+    const deadline = Date.now() + READ_BUDGET_MS
+    inventory ||= await sessionIndex(host(), { deadline })
     inventory.firstTurns ||= new Map()
+    inventory.contexts ||= new Map()
     const found = await projectFor(project, inventory.rows, inventory.discovered)
     const rows = rowsFor(found)
-    const history = inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300), firstTurns: inventory.firstTurns }) : { complete: false, reason: inventory.reason, sessions: [], hot: null }
+    const history = inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300), firstTurns: inventory.firstTurns, contexts: inventory.contexts, deadline }) : { complete: false, reason: inventory.reason, sessions: [], hot: null }
+    // Reading stopped at the deadline: say how far it got and let the page call again, rather than outrun the host's request timeout.
+    if (history.progress) return { complete: false, reason: history.reason, progress: history.progress, project: found }
     const report = await measure(found, history)
     return summary(report, await saveReport(report))
   },

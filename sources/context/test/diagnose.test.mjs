@@ -54,16 +54,18 @@ test('diagnoses the case-study combination without counting individual occurrenc
   const root = await fixture(t), memory = path.join(root, 'memory')
   await fs.mkdir(memory)
   await fs.mkdir(path.join(root, 'legacy'))
-  await fs.writeFile(path.join(root, 'AGENTS.md'), '`legacy/` 只读，不作依据\n')
+  await fs.mkdir(path.join(root, 'current'))
+  await fs.writeFile(path.join(root, 'AGENTS.md'), '> `legacy/` 是旧快照，只读。里面的 AGENTS.md 不作依据，以 `current/` 为准。\n| `legacy/` | 旧快照，只读，不作依据 |\n')
   await fs.writeFile(path.join(root, 'CLAUDE.md'), '@AGENTS.md\n')
   await fs.writeFile(path.join(memory, 'MEMORY.md'), '- [old](old.md) — old\n- [new](new.md) — new\n[[missing]]\n' + '中'.repeat(19930))
   await fs.writeFile(path.join(memory, 'old.md'), fm('old'))
   await fs.writeFile(path.join(memory, 'new.md'), fm('new', '取代 [[old]]'))
   await fs.writeFile(path.join(memory, 'hot.md'), fm('hot'))
-  const sessions = Array.from({ length: 5 }, (_, i) => ({ source: 'claude-code', providerSessionId: String(i), refs: [path.join(memory, 'hot.md')], loaded: [], nested: i ? [] : [{ path: path.join(root, 'legacy/AGENTS.md'), at: '2026-10-26T01:00:00Z' }] }))
+  const sessions = Array.from({ length: 5 }, (_, i) => ({ source: 'claude-code', providerSessionId: String(i), refs: [path.join(memory, 'hot.md')], loaded: [], nested: i ? [] : [{ path: path.join(root, 'legacy/AGENTS.md'), at: '2026-10-26T01:00:00Z' }, { path: path.join(root, 'current/AGENTS.md'), at: '2026-10-26T01:00:00Z' }] }))
   const report = await diagnose({ key: 'fixture', root, locations: [root], memories: [memory], codexRoots: [], claudeRoots: [] }, { complete: true, sessions, hot: 144, sample: 5 }, { now: NOW })
   assert.deepEqual(report.rules.filter((r) => r.findings.length && ['red', 'yellow'].includes(r.severity)).map((r) => r.id), ['R1', 'R4', 'R6', 'R7', 'R8'])
   assert.equal(report.bars.health.value, 3)
+  assert.deepEqual(report.rules.find((r) => r.id === 'R7').findings.map((f) => f.path), [path.join(root, 'legacy/AGENTS.md')])
   assert.equal(report.rules.length, 21)
   assert.equal(report.agents.length, 3)
 })
@@ -166,9 +168,25 @@ test('scratchpad directories are excluded even outside the system temporary dire
 test('host pagination and hydration are not interpreted as complete zero', async () => {
   const pending = await sessionIndex({ sessions: { index: async () => ({ rows: [], total: 50, pending: true, stale: false, nextOffset: null }) } })
   assert.equal(pending.complete, false)
+  let rounds = 0
+  const hydrated = await sessionIndex({ sessions: { index: async () => { rounds++; return { rows: [{ source: 'codex', providerSessionId: 'a', group: { key: '/project', label: null } }], total: 1, pending: rounds < 3 ? 5 : 0, stale: false, nextOffset: null } } } })
+  assert.equal(rounds, 3); assert.equal(hydrated.complete, true); assert.equal(hydrated.rows.length, 1)
   let calls = 0
   const result = await sessionIndex({ sessions: { index: async ({ offset }) => { calls++; return { rows: [{ source: 'codex', providerSessionId: String(offset), group: { key: '/project', label: null } }], total: 2, pending: false, stale: false, nextOffset: offset === 0 ? 1 : null } } } })
   assert.equal(calls, 2); assert.equal(result.rows.length, 2)
+})
+
+test('a read that reaches its deadline reports progress and the next call resumes without rereading', async () => {
+  const reads = []
+  const host = { sessions: { read: async (arg) => { reads.push(arg.filePath + (arg.view || '')); return arg.view ? { loaded: [], nested: [], refs: [] } : { turns: [{ createdAt: '2026-10-25T10:00:00Z' }] } } } }
+  const rows = ['a', 'b', 'c'].map((filePath, i) => ({ source: 'codex', providerSessionId: filePath, filePath, updatedAt: Date.parse('2026-10-26T01:00:00Z') - i }))
+  const firstTurns = new Map(), contexts = new Map()
+  const stopped = await observe(host, rows, { now: NOW, firstTurns, contexts, deadline: 0 })
+  assert.deepEqual([stopped.complete, stopped.progress], [false, { done: 0, total: 3 }])
+  const done = await observe(host, rows, { now: NOW, firstTurns, contexts })
+  assert.equal(done.complete, true); assert.equal(done.hot, 3); assert.equal(done.sessions.length, 3)
+  const again = await observe(host, rows, { now: NOW, firstTurns, contexts })
+  assert.equal(again.complete, true); assert.equal(reads.length, 6)
 })
 
 test('activity counts starts, not recent updates; context reads are projections only', async () => {

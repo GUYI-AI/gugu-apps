@@ -1,8 +1,12 @@
+# Changelog
+
+## 1.1.4
+
+- Explicitly declare shared board state as App data when created or opened, so folders can hide it by default. Linked documents remain ordinary files. Requires App API 18.
+
 ## 1.1.3
 
-Board data is explicitly marked when created or opened, so chat folders can hide it by default. Linked documents remain ordinary files. Requires App API 18.
-
-# Changelog
+- Keep New card commands received while the board is loading and execute them once its first state arrives.
 
 ## 1.1.2
 
