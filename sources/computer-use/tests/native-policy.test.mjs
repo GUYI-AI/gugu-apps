@@ -51,12 +51,15 @@ test('missing permissions and missing protected-host identity fail closed withou
   assert.equal(unknown.calls.length, 0);
 });
 test('dispose aborts in-flight work and refuses later work; pausing one target leaves others running', () => {
-  const control = createComputerControl({ view: { show() {}, hide() {} } });
+  let shown = 0;
+  const control = createComputerControl({ view: { show() { shown++; }, hide() {} } });
   const other = control.begin({ pid: 77 }); const active = control.begin({ pid: 44 });
   control.stop(); assert.equal(active.signal.aborted, true); assert.equal(other.signal.aborted, false);
   control.resume(); const continued = control.begin({ pid: 44 });
   control.dispose(); assert.equal(continued.signal.aborted, true); assert.equal(other.signal.aborted, true);
   assert('refused' in control.begin({ pid: 88 }));
+  const final = shown; control.stop(); control.resume(); assert.equal(shown, final, 'late page commands cannot resurrect a disposed control');
+  assert(control.stoppedFor(44));
 });
 test('the native environment keeps system variables and disables telemetry and updates', () => {
   const value = cuaEnvironment({ home: '/app-data/driver', source: { PATH: '/bin', HOME: '/person', OPENAI_API_KEY: 'secret', GUGU_MCP_TOKEN: 'secret' } });

@@ -886,10 +886,12 @@ function createComputerControl(input) {
       };
     },
     stoppedFor(pid) {
+      if (disposed) return "Computer Use App \u5DF2\u505C\u6B62";
       if (paused.has("computer")) return COMPUTER_STOPPED;
       return pid !== void 0 && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null;
     },
     stop() {
+      if (disposed) return;
       if (!shown || shown.state !== "driving") return;
       const prior = shown;
       const { subject, appName, windowId } = shown;
@@ -903,6 +905,7 @@ function createComputerControl(input) {
       hideAfter(PAUSED_BAR_MS);
     },
     resume() {
+      if (disposed) return;
       if (!shown || shown.state !== "paused") return;
       paused.delete(shown.subject);
       shown = null;
@@ -913,6 +916,8 @@ function createComputerControl(input) {
       disposed = true;
       for (const controllers of inFlight.values()) for (const controller of controllers) controller.abort("Computer Use App \u5DF2\u505C\u6B62");
       inFlight.clear();
+      paused.clear();
+      shown = null;
       clearHide();
       input.view.hide();
     }

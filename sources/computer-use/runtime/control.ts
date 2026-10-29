@@ -124,10 +124,12 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       }
     },
     stoppedFor(pid) {
+      if (disposed) return 'Computer Use App 已停止'
       if (paused.has('computer')) return COMPUTER_STOPPED
       return pid !== undefined && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null
     },
     stop() {
+      if (disposed) return
       if (!shown || shown.state !== 'driving') return
       const prior = shown
       const { subject, appName, windowId } = shown
@@ -141,6 +143,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       hideAfter(PAUSED_BAR_MS)
     },
     resume() {
+      if (disposed) return
       if (!shown || shown.state !== 'paused') return
       paused.delete(shown.subject)
       shown = null
@@ -151,6 +154,8 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       disposed = true
       for (const controllers of inFlight.values()) for (const controller of controllers) controller.abort('Computer Use App 已停止')
       inFlight.clear()
+      paused.clear()
+      shown = null
       clearHide()
       input.view.hide()
     },
