@@ -91,6 +91,9 @@ export async function startComputerStdio(options) {
   process.once('SIGTERM', exit);
   process.once('SIGINT', exit);
   process.stdin.once('end', exit);
+  process.stdin.once('close', exit);
+  process.stdin.once('error', exit);
+  process.stdout.once('error', exit);
   try { await active.server.connect(new StdioServerTransport()); }
   catch (error) { await stop(); throw error; }
   return { ...active, stop };

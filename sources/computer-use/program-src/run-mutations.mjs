@@ -25,5 +25,15 @@ for (const mutation of mutations) {
     const output = result.stdout + result.stderr;
     console.log(`MUTANT ${mutation.name}: exit ${result.status}`); process.stdout.write(output);
     if (result.status !== 1 || !output.includes(mutation.expected)) throw new Error('The expected program boundary did not turn red.');
+    if (mutation.name === 'drop single-call cancellation') {
+      const sourceTest = await readFile(path.join(root, 'tests/program.test.mjs'), 'utf8');
+      const boundedTest = path.join(temporary, 'bounded-cancellation.test.mjs');
+      await writeFile(boundedTest, sourceTest.replace('../app/program/program-core.mjs', './program-core.mjs').replace('../app/program/native-runtime.mjs', './native-runtime.mjs'));
+      const bounded = spawnSync(process.execPath, ['--test', '--test-name-pattern=single-call cancellation', boundedTest], { cwd: root, encoding: 'utf8', timeout: 6_000 });
+      const said = bounded.stdout + bounded.stderr;
+      console.log(`MUTANT cancellation test fails within its deadline: exit ${bounded.status}`);
+      process.stdout.write(said);
+      if (bounded.status !== 1 || !said.includes('The cancellation result did not arrive.')) throw new Error('The cancellation regression must fail explicitly instead of hanging.');
+    }
   } finally { await rm(temporary, { recursive: true, force: true }); }
 }

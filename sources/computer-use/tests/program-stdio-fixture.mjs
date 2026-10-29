@@ -11,3 +11,7 @@ const active = await startComputerStdio({ version: 'test', platform: 'darwin',
     if (name === 'click') return new Promise((_, reject) => options.signal.addEventListener('abort', () => { record({ event: 'cancelled', pid: args.pid }); reject(new Error('cancelled')); }, { once: true }));
     return { content: [{ type: 'image', mimeType: 'image/png', data: 'iVBORw0KGgo=' }], structuredContent: { fixture: true } };
   }, dispose() { record({ event: 'disposed' }); } } });
+if (process.env.CU_TEST_STREAM_END) {
+  const [stream, event] = process.env.CU_TEST_STREAM_END.split(':');
+  process[stream].emit(event, Object.assign(new Error('test stream ended'), { code: 'EPIPE' }));
+}

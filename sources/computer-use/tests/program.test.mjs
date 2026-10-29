@@ -5,6 +5,11 @@ import { TOOLS } from '../app/program/native-runtime.mjs';
 const taskA = '11111111-1111-4111-8111-111111111111', taskB = '22222222-2222-4222-8222-222222222222';
 const agent = 'user:33333333-3333-4333-8333-333333333333';
 const meta = session => ({ 'gugu/agent': agent, 'gugu/sessionId': session });
+async function within(promise) {
+  let timer;
+  try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('The cancellation result did not arrive.')), 2_000); })]); }
+  finally { clearTimeout(timer); }
+}
 function fixture(extra = {}) {
   const calls = [], settingsCalls = [];
   let disposals = 0;
@@ -36,18 +41,21 @@ test('page permission status is the driver result; agents cannot call page contr
   assert.equal(settingsCalls.length, 1, 'an agent working a page cannot open settings as the person');
   assert.equal((await program.call({ name: 'open_system_settings', arguments: { permission: 'screen', session: taskB }, _meta: { 'gugu/caller': 'app' } })).structuredContent.code, 'invalid_args');
 });
-test('single-call cancellation does not cancel another task; disposal aborts all calls and refuses new work', async () => {
+test('single-call cancellation does not cancel another task; disposal aborts all calls and refuses new work', { timeout: 6_000 }, async t => {
   const active = new Map(); let closed = 0;
   const { program } = fixture({ native: { async callTool(name, args, options) {
     if (name === 'check_permissions') return { structuredContent: { accessibility: true, screen_recording: true } };
     return new Promise((resolve, reject) => { active.set(args.pid, { resolve, signal: options.signal }); options.signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true }); });
   }, dispose() { closed++; } } });
+  t.after(() => program.dispose());
   const stop = new AbortController();
   const a = program.call({ name: 'click', arguments: { pid: 44 }, _meta: meta(taskA) }, { signal: stop.signal });
   const b = program.call({ name: 'click', arguments: { pid: 77 }, _meta: meta(taskB) });
-  while (active.size < 2) await new Promise(resolve => setImmediate(resolve));
-  stop.abort(); assert.equal((await a).structuredContent.code, 'cancelled'); assert.equal(active.get(77).signal.aborted, false);
-  program.dispose(); assert.equal((await b).structuredContent.code, 'cancelled');
+  const deadline = Date.now() + 2_000;
+  while (active.size < 2 && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+  assert.equal(active.size, 2, 'both calls must reach native execution');
+  stop.abort(); assert.equal((await within(a)).structuredContent.code, 'cancelled'); assert.equal(active.get(77).signal.aborted, false);
+  program.dispose(); assert.equal((await within(b)).structuredContent.code, 'cancelled');
   assert.equal(closed, 1); program.dispose(); assert.equal(closed, 1);
   assert.equal((await program.call({ name: 'click', arguments: { pid: 44 }, _meta: meta(taskA) })).structuredContent.code, 'revoked');
 });

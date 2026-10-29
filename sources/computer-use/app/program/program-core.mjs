@@ -19221,6 +19221,9 @@ async function startComputerStdio(options) {
   process.once("SIGTERM", exit);
   process.once("SIGINT", exit);
   process.stdin.once("end", exit);
+  process.stdin.once("close", exit);
+  process.stdin.once("error", exit);
+  process.stdout.once("error", exit);
   try {
     await active.server.connect(new StdioServerTransport());
   } catch (error2) {
@@ -19244,7 +19247,7 @@ function createProtectedHost({ platform = process.platform, pid = process.pid, p
       const rows = JSON.parse(stdout);
       processes = new Map((Array.isArray(rows) ? rows : [rows]).map((row) => [row.ProcessId, { parent: row.ParentProcessId, executable: row.ExecutablePath ?? "" }]));
     } else {
-      const { stdout } = await run("/bin/ps", ["-ww", "-axo", "pid=,ppid=,comm="], { timeout: 5e3, maxBuffer: 4 * 1024 * 1024 });
+      const { stdout } = await run("/bin/ps", ["-ww", "-axo", "pid=,ppid=,comm="], { timeout: 5e3, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, LC_ALL: "en_US.UTF-8" } });
       processes = new Map(stdout.split("\n").flatMap((line) => {
         const match = /^\s*(\d+)\s+(\d+)\s+(.+)$/.exec(line);
         return match ? [[Number(match[1]), { parent: Number(match[2]), executable: match[3] }]] : [];
