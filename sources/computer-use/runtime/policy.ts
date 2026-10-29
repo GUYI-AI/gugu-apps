@@ -31,7 +31,7 @@ export interface CuaTool {
 }
 
 const WINDOW_ONLY = 'Target one window (pid with window_id, a window target, or an element_token from computer.get_window_state). Desktop-wide input (scope or target "desktop", or no window at all) moves the person\'s real pointer and is refused by 咕咕.'
-const FOREGROUND = 'delivery_mode "foreground" briefly brings the target to the front and interrupts the person: the App asks the person first; tool arguments cannot grant consent. Foreground HID mouse input moves the person\'s real pointer, including across displays. The person and agent share the pointer and keyboard focus; simultaneous input can interfere with clicks. Coordinate foreground work with the person; standing authorization does not isolate their concurrent desktop use.'
+const FOREGROUND = 'delivery_mode "foreground" briefly brings the target to the front and interrupts the person: the tool returns immediately so the agent can ask the person using its existing conversation, then retry with confirmed: true after explicit approval. Foreground HID mouse input moves the person\'s real pointer, including across displays. The person and agent share the pointer and keyboard focus; simultaneous input can interfere with clicks. Coordinate foreground work with the person; standing authorization does not isolate their concurrent desktop use.'
 const NOT_GUGU = 'Operating 咕咕 itself is refused.'
 const MENU_FOCUS = 'Some native menus need the app to remain active across calls. A foreground click immediately restores the previous app and can dismiss such a menu. After the person has authorized foreground work, record the previous active app with list_apps, use bring_to_front to keep the target active, read the menu and choose its item, then restore the previous app. Check fresh pixels and list_windows filtered by pid; a successful dispatch alone does not prove that a menu opened.'
 
@@ -54,7 +54,7 @@ export const TOOLS: readonly CuaTool[] = [
     kind: 'act',
     risk: 'medium',
     confirm: 'on_conflict',
-    note: `On Windows an app may jump to the front as it starts (cua-driver cannot stop that for a normal launch): the App asks the person first; tool arguments cannot grant consent — unless you pass start_minimized: true, which starts it without ever activating it, or refuses and starts nothing. If it still times out, the app may come up anyway — look with list_windows before launching it again. ${NOT_GUGU}`,
+    note: `On Windows an app may jump to the front as it starts (cua-driver cannot stop that for a normal launch): the tool returns immediately so the agent can ask the person using its existing conversation, then retry with confirmed: true after explicit approval — unless you pass start_minimized: true, which starts it without ever activating it, or refuses and starts nothing. If it still times out, the app may come up anyway — look with list_windows before launching it again. ${NOT_GUGU}`,
   },
   {
     cua: 'bring_to_front',
@@ -74,7 +74,7 @@ export const TOOLS: readonly CuaTool[] = [
     kind: 'act',
     confirm: 'always',
     question: (args) => `要强制退出进程 ${num(args, 'pid') ?? '?'} 吗？它没保存的内容会丢。`,
-    note: `Only processes this driver launched can be ended; 咕咕 asks the person every time. ${NOT_GUGU}`,
+    note: `Only processes this driver launched can be ended; requires the person’s prior explicit approval every time. ${NOT_GUGU}`,
   },
   // 操作
   { cua: 'click', title: '点击', titleEn: 'Click', kind: 'act', confirm: 'on_conflict', windowInput: true, note: MENU_FOCUS },

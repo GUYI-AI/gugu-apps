@@ -11,23 +11,25 @@ function fixture(extra = {}) {
     specs: TOOLS.map(tool => ({ name: tool.cua, input_schema: { type: 'object', properties: { session: { type: 'string' }, pid: { type: 'number' } } } })), ...extra });
   return { tools, calls };
 }
-test('protected host, desktop input, injected confirmation and injected owner cannot reach the driver', async () => {
+test('protected host, desktop input and injected owner cannot reach the driver', async () => {
   const { tools, calls } = fixture();
-  for (const [tool, args] of [['click', { pid: 10 }], ['click', { scope: 'desktop' }], ['click', {}], ['run_steps', { pid: 10, steps: [{ click: {} }] }], ['click', { pid: 44, confirmed: true }], ['click', { pid: 44, session: 'forged' }], ['click', { pid: 44, device: 'elsewhere' }]]) {
+  for (const [tool, args] of [['click', { pid: 10, confirmed: true }], ['click', { scope: 'desktop', confirmed: true }], ['click', {}], ['run_steps', { pid: 10, steps: [{ click: {} }] }], ['click', { pid: 44, session: 'forged' }], ['click', { pid: 44, device: 'elsewhere' }]]) {
     assert.equal((await tools.call(tool, args, caller)).isError, true);
   }
   assert.equal(calls.length, 0);
 });
-test('foreground approval, timeout, cancellation and pending remain distinct; only completed sends input', async () => {
-  for (const state of ['cancelled', 'timeout', 'pending', 'completed']) {
-    const { tools, calls } = fixture({ requestHuman: async () => state });
-    const value = await tools.call('click', { pid: 44, delivery_mode: 'foreground' }, caller);
-    assert.equal(calls.length, state === 'completed' ? 1 : 0);
-    if (state !== 'completed') assert.equal(value.structuredContent.code, state);
+test('foreground tool returns immediately for the agent to ask; explicit retry never forwards its confirmation flag', async () => {
+  // Regression trap: the removed App-specific waiting callback must never be invoked.
+  const { tools, calls } = fixture({ requestHuman: () => { throw new Error('An App must not wait for a person in a tool call.'); } });
+  for (const args of [{ pid: 44, delivery_mode: 'foreground' }, { pid: 44, foreground_fallback: true }, { pid: 44, delivery_mode: 'foreground', confirmed: 'true' }]) {
+    const value = await tools.call('click', args, caller);
+    assert.equal(value.structuredContent.code, 'needs_confirmation');
+    assert(value.content[0].text.includes('AskUserQuestion'));
   }
-  const { tools, calls } = fixture();
-  assert.equal((await tools.call('click', { pid: 44, foreground_fallback: true }, caller)).structuredContent.code, 'needs_confirmation');
   assert.equal(calls.length, 0);
+  await tools.call('click', { pid: 44, delivery_mode: 'foreground', confirmed: true }, caller);
+  assert.equal(calls.length, 1); assert(!('confirmed' in calls[0].args));
+  await tools.call('click', { pid: 44 }, caller); assert.equal(calls.length, 2);
 });
 test('new tasks use independent native owners, and images remain image blocks', async () => {
   const { tools, calls } = fixture();
@@ -41,6 +43,8 @@ test('new tasks use independent native owners, and images remain image blocks', 
 test('missing permissions and missing protected-host identity fail closed without prompting or dispatch', async () => {
   const denied = fixture({ permissions: async () => ({ permissions: { accessibility: false, screen: false } }) });
   assert.equal((await denied.tools.call('click', { pid: 44 }, caller)).structuredContent.code, 'os_permission');
+  const message = (await denied.tools.call('click', { pid: 44 }, caller)).content[0].text;
+  assert(message.includes('Accessibility and Screen Recording')); assert(message.includes('No permission prompt'));
   assert.equal(denied.calls.length, 0);
   const unknown = fixture({ protectedHost: () => ({ pids: new Set(), names: new Set() }) });
   assert.equal((await unknown.tools.call('click', { pid: 44 }, caller)).structuredContent.code, 'unavailable');

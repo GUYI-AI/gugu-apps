@@ -7,7 +7,6 @@ import type { Args, SelfApp } from './types'
 
 type NativeSpec = { name: string; description?: string; input_schema?: Args; inputSchema?: Args }
 export type ToolCaller = { agent: string; session: string; name?: string; signal?: AbortSignal; remainingMs?: () => number }
-type Consent = 'completed' | 'cancelled' | 'timeout' | 'pending'
 const failure = (code: string, message: string): CuaToolResult => ({ isError: true, content: [{ type: 'text', text: message }], structuredContent: { code } })
 const object = (v: unknown): v is Args => !!v && typeof v === 'object' && !Array.isArray(v)
 
@@ -19,7 +18,6 @@ export function createComputerTools(input: {
   protectedHost(): Promise<SelfApp> | SelfApp
   permissions?(): Promise<{ permissions: { accessibility: boolean; screen: boolean } }>
   control?: ComputerControl
-  requestHuman?(request: { title: string; detail: string }, caller: ToolCaller): Promise<Consent>
 }) {
   const specs = new Map(input.specs.map(spec => [spec.name, spec]))
   const definitions = new Map(TOOLS.map(tool => {
@@ -29,6 +27,7 @@ export function createComputerTools(input: {
     if (!object(schema) || schema.type !== 'object' || !object(schema.properties)) throw new Error(`Invalid native tool schema: ${tool.cua}`)
     const properties = { ...schema.properties }
     delete properties.session
+    if (tool.confirm) properties.confirmed = { type: 'boolean', description: 'Set true only after the person explicitly approved this foreground or destructive action through the agent’s existing conversation. This flag is not approval by the App.' }
     const required = Array.isArray(schema.required) ? schema.required.filter(key => key !== 'session') : []
     return [tool.cua, { tool, native, schema, public: { name: tool.cua, description: descriptionOf(tool, native), inputSchema: { ...schema, properties, required }, annotations: { readOnlyHint: tool.kind === 'look', destructiveHint: tool.cua === 'kill_app' } } }] as const
   }))
@@ -40,34 +39,37 @@ export function createComputerTools(input: {
       if (!definition) return failure('not_found', 'This App does not expose that native tool.')
       if (!caller.agent || !caller.session) return failure('not_granted', 'An agent and its bound task are required.')
       if (input.platform !== 'darwin' && input.platform !== 'win32') return failure('unsupported', 'This platform has no supported Computer Use driver.')
-      if (['session', 'device', 'device_id', 'agent', 'confirmed'].some(key => key in args)) return failure('invalid_args', 'Caller, machine and confirmation identity cannot be supplied as tool arguments.')
+      if (['session', 'device', 'device_id', 'agent'].some(key => key in args)) return failure('invalid_args', 'Caller and machine identity cannot be supplied as tool arguments.')
+      const { confirmed, ...forwardArgs } = args
       if (caller.signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')
       const self = await input.protectedHost()
       if (!self.pids.size || !self.names.size) return failure('unavailable', 'The protected host identity could not be checked.')
-      const checked = checkCall(name, args, self, input.platform)
+      const checked = checkCall(name, forwardArgs, self, input.platform)
       if (checked.refused) return failure('invalid_args', checked.refused)
       if (input.platform === 'darwin') {
         if (!input.permissions) return failure('unavailable', 'The permission probe is not available.')
         const state = await input.permissions()
-        if (!state.permissions.accessibility) return failure('os_permission', 'Accessibility permission is missing. Open the Computer Use App to check this computer’s system permissions.')
+        if (!state.permissions.accessibility) {
+          const missing = ['Accessibility', ...(!state.permissions.screen ? ['Screen Recording'] : [])].join(' and ')
+          return failure('os_permission', `${missing} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`)
+        }
       }
       const tool = definition.tool
-      if (tool.confirm === 'always' || checked.foreground) {
-        if (!input.requestHuman) return failure('needs_confirmation', 'The person must approve this operation in the App before it can run.')
-        const consent = await input.requestHuman({ title: tool.question?.(args) ?? checked.question ?? '允许把目标窗口切到前台？', detail: 'This may interrupt the person’s window or pointer. Only approval of this request allows it to continue.' }, caller)
-        if (consent !== 'completed') return failure(consent, consent === 'pending' ? 'The request is still waiting for the person; no input was sent.' : 'The person’s request did not approve this operation; no input was sent.')
+      if ((tool.confirm === 'always' || checked.foreground) && confirmed !== true) {
+        const question = tool.question?.(forwardArgs) ?? checked.question ?? 'This will bring the target window to the foreground and may interrupt the person’s pointer or keyboard focus.'
+        return failure('needs_confirmation', `${question} Ask the person using AskUserQuestion or the existing conversation. Only after their explicit approval retry with confirmed: true. No input was sent; this tool does not wait for an answer.`)
       }
       if (caller.signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')
       const owner = 'gugu-' + createHash('sha256').update(caller.agent + '\0' + caller.session).digest('hex').slice(0, 20)
-      const pid = apps.pidOf(owner, args)
+      const pid = apps.pidOf(owner, forwardArgs)
       if (pid !== undefined && self.pids.has(pid)) return failure('invalid_args', 'The target belongs to the protected host.')
-      const handle = input.control?.begin({ ...(pid === undefined ? {} : { pid }), ...(caller.name ? { callerName: caller.name } : {}), windowId: apps.windowOf(owner, args) })
+      const handle = input.control?.begin({ ...(pid === undefined ? {} : { pid }), ...(caller.name ? { callerName: caller.name } : {}), windowId: apps.windowOf(owner, forwardArgs) })
       if (handle && 'refused' in handle) return failure('revoked', handle.refused)
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal
       try {
-        const forward = object(definition.schema.properties) && 'session' in definition.schema.properties ? { ...args, session: owner } : args
+        const forward = object(definition.schema.properties) && 'session' in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs
         const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...(caller.remainingMs ? { remainingMs: caller.remainingMs } : {}), timeoutMs: tool.timeoutMs?.(args) ?? 60_000 })
-        if (result.isError !== true) apps.learn(owner, result.structuredContent, args)
+        if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs)
         return result
       } finally { handle?.end() }
     },
