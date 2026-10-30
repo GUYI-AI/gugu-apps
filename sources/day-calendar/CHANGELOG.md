@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+- Market: the four in-client images are retaken in an example account (the person shows as 林夏), so no test-account name appears; the promotional image is re-rendered with the new side panel. No code change.
+
 ## 0.5.5
 
 - Market: in-client captures of 0.5.4 replace the 0.4 images: the side panel beside an agent's `record` turn (light and dark) and the week view (light and dark); the promotional image is re-rendered with the side panel. No code change.
