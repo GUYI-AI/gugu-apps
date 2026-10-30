@@ -70,16 +70,16 @@ body {
 .note gugu-time, .note time { font-size: var(--em-font-caption); color: var(--em-foreground-passive); line-height: 20px; font-variant-numeric: tabular-nums; }
 
 /* one watch: whom, from when, how often it spoke; stopping shows on hover */
-.watch { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: var(--em-radius-control); min-height: 32px; }
+.watch { position: relative; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: var(--em-radius-control); min-height: 32px; }
 .watch:hover { background: var(--em-hover); }
 .watch .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .watch .who small { color: var(--em-foreground-passive); margin-left: 6px; }
 .level { font-size: 11.5px; line-height: 20px; padding: 0 7px; border-radius: var(--em-radius-capsule); border: 1px solid var(--em-border-1); color: var(--em-foreground-muted); white-space: nowrap; }
 .watch .sent { font-size: var(--em-font-caption); color: var(--em-foreground-passive); min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
-.watch .stop { grid-column: 4; grid-row: 1; opacity: 0; pointer-events: none; height: 24px; font-size: var(--em-font-caption); padding: 0 8px; }
+.watch .stop { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0; pointer-events: none; height: 24px; font-size: var(--em-font-caption); padding: 0 8px; }
 .watch:hover .stop, .watch:focus-within .stop { opacity: 1; pointer-events: auto; }
 .watch .sent { grid-column: 4; grid-row: 1; }
-.watch:hover .sent, .watch:focus-within .sent { visibility: hidden; }
+.watch:hover .sent, .watch:focus-within .sent, .watch:hover .level, .watch:focus-within .level { visibility: hidden; }
 
 /* a picked agent or path: a property sheet, Linear-style */
 #detail { background: var(--em-background-1); }
