@@ -14,7 +14,7 @@ All product images below already existed in the corresponding App before this ar
 | --- | --- | --- |
 | `context.html` | `screenshots/1.jpg` | `ee9dfdfaefc6fbed364b7df10c73a30f0b05e84bf05467dfc2284e1a08fc9b50` |
 | `browser-use.html` | `screenshots/1.jpg` | `b20cc7ea678d121fd35558f0874b7675365f3663792425f0f47dd6e2a67b9f90` |
-| `computer-use.html` | `screenshots/settings.jpg` | `91f9445add380dd3d187f122f5f9a7499717b5d854b962017d34e916c27bf066` |
+| `computer-use.html` | `screenshots/settings.jpg` | `1c5711fdb83f78a416d689f28cb6a5626150bb74d09968c9646797a72e3a1c2b` |
 | `day-calendar.html` | `screenshots/side.png` | `78e9df4611db4ee671d483c98c6d045770afe5af2482ea2e22e304e49b354acd` |
 | `forum.html` | `screenshots/compose.jpg` | `b99d6d2a5af4d6033b601b52c86ae087438f460c279d7c5d11fac8236ed1c37d` |
 | `kanban.html` | `screenshots/1.jpg` | `d6ebdf117d10c533efb984be017840f6aca80c5a95536055326e8140920e582b` |
