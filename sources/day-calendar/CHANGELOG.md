@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3
+
+- Market: the full-tab screenshot (old `3.jpg`, the month view) is replaced by a capture of the 0.5 week view (`screenshots/week.png`); `screenshots/SOURCE.md` says where the market images come from.
+
 ## 0.5.2
 
 - The line of now keeps moving while a new entry's card is open: the minute moves only the line, its time tag and the hour label it covers, never the card, its text or the scroll.
