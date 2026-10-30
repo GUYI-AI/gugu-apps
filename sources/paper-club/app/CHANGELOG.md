@@ -1,5 +1,12 @@
 # 论文共读
 
+## 0.3.8
+
+- Lead each highlight card with its quote (book face, full ink, the marker colour beside it) and one quiet line under it: a page capsule, who marked it, and one discussion count in the corner.
+- Highlight tabs show counts; small 全部 / 我的 / 有讨论 filters; only the selected card opens its thread, with names and the agent mark from gugu, a one-line reply beside 问 agent, and Delete under ⋯ for the marker.
+- 问 agent on the selection bar is a text button: gugu no longer has a generic agent glyph (`bot`).
+- Show where other readers are (「在第 N 页」); on narrow panels the title and the tools take a row each.
+
 ## 0.3.7
 
 - Hand passages to a composer or a new task through the unified dispatch API (App API 15).
