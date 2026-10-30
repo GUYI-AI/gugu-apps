@@ -81,7 +81,6 @@ table.mt td .p { font-size: 11.5px; color: var(--em-foreground-passive); margin-
   .irow { grid-template-columns: 20px minmax(0, 1fr); } .irow > .px-button { grid-column: 2; justify-self: start; }
 }
 
-.prow.global { grid-template-columns: minmax(200px, 1.6fr) minmax(220px, 2fr) 118px; }
 .global .issue .txt { white-space: normal; }
 .pts { width: auto; height: auto; display: inline; }
 .progress { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
@@ -102,6 +101,4 @@ dialog pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 55vh; o
   .phead { display: none; }
   .prow { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; }
   .prow .who, .prow .iss { grid-column: 1 / -1; } .prow .iss { margin-left: 40px; }
-  .prow.global { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .prow.global .metric { grid-column: 1 / -1; }
 }

@@ -138,12 +138,10 @@ function listView() {
     const states = counts.reduce((n, m) => n + (m?.codexStates || 0), 0), memories = counts.reduce((n, m) => n + (m?.unmappedMemoryDirectories || 0), 0)
     const row = card(group)
     const measured = globals.every((e) => e.report)
-    const activity = group.bars.hot.count
     row.classList.add('global')
-    row.querySelector('.issue').replaceWith(el('div', { class: 'issue ok' }, el('span', { class: 'sev clean' }, icon('sparkles')), el('span', { class: 'txt' }, measured ? `可清理：${states} 条失效的 Codex 项目信任 / hook 配置 · ${memories} 个无项目的记忆目录；未归属项目的任务：${activity === null ? '待读取' : `${activity} / 7天`}` : '正在检查全局规矩、未归属任务和可清理项…')))
-    const health = metrics(group.bars)[1]
-    row.querySelectorAll('.metric').forEach((m) => m.remove())
-    row.append(health)
+    // The unassigned tasks are the 热度 column; the global rules have no memory index of their own, so 容量 stays empty.
+    row.querySelector('.issue').replaceWith(el('div', { class: 'issue ok' }, el('span', { class: 'sev clean' }, icon('sparkles')), el('span', { class: 'txt' }, measured ? `可清理：${states} 条失效的 Codex 项目信任 / hook 配置 · ${memories} 个无项目的记忆目录` : '正在检查全局规矩、未归属任务和可清理项…')))
+    row.querySelectorAll('.metric')[2].replaceWith(el('span', { class: 'metric', 'aria-hidden': 'true' }))
     root.append(el('div', { class: 'plist' }, row))
   }
   const other = all.filter((group) => !shown.has(group.key)).flatMap((group) => group.items.flatMap((entry) => entry.project.locations.map((directory) => ({ entry, directory }))))
