@@ -220,3 +220,47 @@ test('a plain click opens the card; a carry dropped on Done moves it without ope
     clear()
   }
 })
+
+test('a linked markdown file is drawn as a file, front matter read; the card\'s own note is not a file', async () => {
+  const { window, document } = parseHTML(html)
+  document.hasFocus = () => false
+  const board = emptyBoard()
+  let n = 0
+  const by = { by: 'person', now: '2026-10-25T00:00:00.000Z', id: () => `id${++n}` }
+  const { card } = applyOp(board, { type: 'card.create', title: 'Plan', note: '---\nnot: front matter\n---' }, by)
+  applyOp(board, { type: 'link.add', card, link: { kind: 'chatfile', file: 'plan', name: 'plan.md' } }, by)
+  const renders = []
+  const planEntry = { id: 'plan', chat: 'chat', name: 'plan.md' }
+  window.gugu = {
+    getContext: async () => ({ locale: 'en', file: { id: 'board' }, chat: { id: 'chat', name: 'Chat', members: [] } }),
+    onContextChanged() {},
+    onCommand() {},
+    getAppState: async () => null,
+    setTabBadge: async () => {},
+    codemirror: async () => ({}),
+    markdown: async () => ({ render: (element, text, options) => renders.push({ text, options }) }),
+    files: {
+      open: async (ref) => (ref.id === 'plan'
+        ? { type: 'text', entry: planEntry, text: '---\ntitle: x\n---\n\nbody', onChange: () => () => {}, close() {} }
+        : { entry: { id: 'board', chat: 'chat' }, data: board, toJSON: () => structuredClone(board), presence: { self: { userId: 'person' } }, onChange() {}, onStatus() {}, close() {} }),
+    },
+  }
+  globalThis.window = window
+  globalThis.document = document
+  try {
+    await import('../app/board.js?frontmatter')
+    document.querySelector(`[data-card="${card}"]`).click()
+    await new Promise(setImmediate)
+    const view = [...document.querySelectorAll('#drawer button')].find((el) => el.textContent === 'View')
+    assert.ok(view)
+    view.click()
+    for (let i = 0; i < 5 && !renders.some((r) => r.options?.file); i++) await new Promise(setImmediate)
+    const note = renders.find((r) => r.text.startsWith('---\nnot:'))
+    const file = renders.find((r) => r.options?.file)
+    assert.deepEqual(note?.options, { density: 'comfortable' }, 'the note: no front matter, no file')
+    assert.deepEqual(file?.options, { density: 'comfortable', frontmatter: true, file: planEntry })
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+})

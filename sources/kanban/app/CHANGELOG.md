@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.3
+
+- A markdown file shown in a card reads its front matter as the host draws it for a file: a property list instead of a heading. A card's own note is not a file and is drawn as before.
+
 ## 1.2.2
 
 - A press that carried a card never opens it on release, however long after Esc the mouse comes up: the press is marked when the carry starts and its click is ignored, in place of 1.2.1's 400 ms window. A drop uses the same mark.
