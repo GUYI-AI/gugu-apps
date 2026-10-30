@@ -1,4 +1,4 @@
-import { el, character, sprite, bar, button, section, badge, stats } from './pixel-kit.js'
+import { el, character, sprite, bar, button, toneFor } from './pixel-kit.js'
 
 const g = window.gugu
 const root = document.getElementById('app')
@@ -48,7 +48,6 @@ function loadSnapshot() {
   } catch { return false }
 }
 const harnesses = (entry) => [...new Set([...(entry.report?.capacities || []).map((c) => c.harness === 'claude' ? 'Claude' : 'Codex'), ...(entry.report?.instructions || []).flatMap((p) => /\/AGENTS(?:\.override)?\.md$/.test(p) ? ['Codex'] : /\/CLAUDE(?:\.local)?\.md$/.test(p) ? ['Claude'] : []), ...Object.entries(entry.activity?.sources || entry.report?.history?.sources || {}).filter(([, n]) => n > 0 || n === null).map(([s]) => s === 'claude-code' ? 'Claude' : 'Codex')])]
-const tags = (items) => el('div', { class: 'px-tags' }, items.map((e) => badge(e.machine.name, harnesses(e))))
 const groupKey = (entry) => entry.project.repositoryUrl ? entry.project.repositoryUrl : `${entry.machine.id || 'local'}:${entry.project.key}`
 
 function combine(key, items) {
@@ -74,62 +73,84 @@ function groups() {
 }
 const mainGroups = (all = groups()) => all.filter((group) => group.items.some((e) => e.project.hasContext || e.activity?.hot > 0)).slice(0, 8)
 
-function say(group) {
-  const hits = group.items.flatMap((e) => e.report?.rules || [])
-  const forecasts = group.items.flatMap((e) => e.report?.capacityForecasts || [])
-  const forecast = forecasts.length ? `；按当前增长约 ${Math.min(...forecasts.map((f) => f.daysLeft))} 天触顶` : ''
-  const first = hits.find((r) => r.count && r.severity === 'red') || hits.find((r) => r.count && r.severity === 'yellow')
-  if (first) return `${first.title}${first.count > 1 ? ` · ${first.count} 处` : ''}${group.bars.capacity.percent >= 70 ? `；记忆索引用到 ${group.bars.capacity.percent}%` : ''}${forecast}`
-  if (!group.bars.health.complete) return '正在读取上下文，健康尚未全测'
-  const clean = hits.filter((r) => r.severity === 'clean' && r.count).reduce((sum, r) => sum + r.count, 0)
-  return (clean ? `没有扣分项 · ${clean} 处可以清理` : '没有需要处理的上下文问题') + forecast
+const icon = (name) => el('gugu-icon', { name })
+const SEV = { red: 'alert-circle', yellow: 'alert-triangle', clean: 'sparkles', ok: 'check', none: 'circle' }
+const machinePills = (items) => el('div', { class: 'machines' }, items.map((e) => el('span', { class: 'pill' }, icon('monitor'), e.machine.name, el('span', { class: 'h' }, harnesses(e).join(' · ')))))
+function worst(group) {
+  const hits = group.items.flatMap((e) => e.report?.rules || []).filter((r) => r.count)
+  return hits.find((r) => r.severity === 'red') || hits.find((r) => r.severity === 'yellow') || null
 }
-
-function card(group, rank) {
-  const node = button('', () => { void openGroup(group) }, { class: 'px-card', 'aria-label': `打开 ${group.project.name}` })
-  character(node, group.project.name)
-  node.append(el('div', { class: 'px-card-top' }, sprite(group.project.name), el('div', { class: 'project-copy' }, el('div', { class: 'px-name', title: group.project.name }, group.project.name), el('div', { class: 'px-path px-mono' }, group.project.root)), el('span', { class: 'px-rank px-label' }, `#${rank}`)), tags(group.items), el('p', { class: 'px-say' }, say(group)), stats(group.bars))
-  return node
+function issueCell(group) {
+  const first = worst(group)
+  if (!first && !group.bars.health.complete) return el('div', { class: 'issue' }, el('span', { class: 'sev none' }, icon('circle')), el('span', { class: 'txt' }, '正在读取上下文，健康尚未全测'))
+  if (first) return el('div', { class: 'issue' }, el('span', { class: `sev ${first.severity}` }, icon(SEV[first.severity])), el('span', { class: 'txt' }, `${first.title}${first.count > 1 ? ` · ${first.count} 处` : ''}`))
+  const clean = group.items.flatMap((e) => e.report?.rules || []).filter((r) => r.severity === 'clean' && r.count).reduce((n, r) => n + r.count, 0)
+  return el('div', { class: 'issue ok' }, el('span', { class: `sev ${clean ? 'clean' : 'ok'}` }, icon(clean ? 'sparkles' : 'check')), el('span', { class: 'txt' }, clean ? `没有扣分项 · ${clean} 处可清理` : '没有问题'))
 }
+function metric(kind, cells, text) { return el('div', { class: `metric ${toneFor(kind, cells)}` }, el('b', {}, text), bar(kind, cells)) }
+function metrics(b) {
+  return [
+    metric('hot', b.hot.cells, b.hot.count === null ? '待计算' : `${b.hot.count} 次 / 7天`),
+    metric('health', b.health.complete ? b.health.value : null, b.health.complete ? `${b.health.value} / 10` : '未全测'),
+    metric('capacity', b.capacity.cells, b.capacity.percent === null ? '待计算' : `${b.capacity.percent}%`),
+  ]
+}
+function card(group) {
+  return el('button', { type: 'button', class: 'prow', onclick: () => { void openGroup(group) }, 'aria-label': `打开 ${group.project.name}` },
+    character(el('div', { class: 'who' }, sprite(group.project.name, 30), el('div', {}, el('div', { class: 'name' }, group.project.name), el('div', { class: 'path px-mono' }, group.project.root))), group.project.name),
+    el('div', { class: 'iss' }, issueCell(group), machinePills(group.items)),
+    ...metrics(group.bars))
+}
+function tile(k, v, unit, n, tone = '', extra = null) { return el('div', { class: `tile ${tone}` }, el('div', { class: 'k' }, k), el('div', { class: 'v' }, v, unit ? el('small', {}, unit) : null), n ? el('div', { class: 'n' }, n) : null, extra) }
 
 function listView() {
   const all = groups(), grouped = mainGroups(all), shown = new Set(grouped.map((group) => group.key))
-  const header = el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'px-notice' }, `${all.length} 个项目 · 按 7 天热度排`), el('div', { class: 'page-actions' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink))), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading })))
-  root.append(header)
-  if (lastAt && !loading) {
-    const when = document.createElement('gugu-time'); when.setAttribute('datetime', new Date(lastAt).toISOString())
-    root.append(el('p', { class: 'px-notice', role: 'status' }, '上次计算于 ', when))
-  }
+  const when = lastAt ? (() => { const t = document.createElement('gugu-time'); t.setAttribute('datetime', new Date(lastAt).toISOString()); return t })() : null
+  root.append(el('header', { class: 'top' }, el('h1', { tabindex: '-1' }, '上下文'), el('span', { class: 'sub' }, `${all.length} 个项目 · ${machines.length} 台电脑 · 上次计算 `, when),
+    el('div', { class: 'acts' }, button('设置', (event) => runAction(event.currentTarget, () => g.openLink(settingsLink)), { class: 'px-button', 'aria-label': '设置' }), button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading, class: 'px-button primary' }))))
   for (const machine of machines.filter((m) => m.progress)) {
     const { label, done, total, pending } = machine.progress
-    root.append(el('div', { class: 'px-progress', role: 'status' }, el('span', { class: 'px-notice' }, `${machine.name}：${label}${total ? ` · ${done} / ${total}` : pending ? ` · 还有 ${pending} 个` : ''}`), total ? el('progress', { value: String(done), max: String(total) }) : el('progress')))
+    root.append(el('div', { class: 'progress', role: 'status' }, el('span', { class: 'note' }, `${machine.name}：${label}${total ? ` · ${done} / ${total}` : pending ? ` · 还有 ${pending} 个` : ''}`), total ? el('progress', { value: String(done), max: String(total) }) : el('progress')))
   }
-  if (loading && !machines.some((m) => m.progress)) root.append(el('div', { class: 'px-progress', role: 'status' }, el('span', { class: 'px-notice' }, '正在读取机器列表'), el('progress')))
-  if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
-  for (const machine of machines.filter((m) => m.error)) root.append(el('p', { class: 'px-error', role: 'alert' }, `${machine.name}：${machine.error}`))
-  root.append(section('项目'))
-  if (!grouped.length) root.append(el('div', { class: 'px-empty', role: 'status' }, loading ? '正在读取近期任务和项目规矩…' : '没有近期任务或项目级上下文。可在设置里补充项目目录。'))
-  else root.append(el('div', { class: 'project-grid' }, grouped.map((group, i) => card(group, i + 1))))
+  if (loading && !machines.some((m) => m.progress)) root.append(el('div', { class: 'progress', role: 'status' }, el('span', { class: 'note' }, '正在读取机器列表'), el('progress')))
+  if (problem) root.append(el('p', { role: 'alert' }, problem))
+  for (const machine of machines.filter((m) => m.error)) root.append(el('p', { role: 'alert' }, `${machine.name}：${machine.error}`))
+  if (grouped.length) {
+    const need = grouped.filter((gr) => worst(gr))
+    const reds = grouped.filter((gr) => worst(gr)?.severity === 'red').length
+    const top = grouped.toSorted((x, y) => (y.bars.capacity.percent ?? 0) - (x.bars.capacity.percent ?? 0))[0]
+    const tasks = grouped.reduce((n, gr) => n + (gr.bars.hot.count || 0), 0)
+    const clean = grouped.flatMap((gr) => gr.items.flatMap((e) => e.report?.rules || [])).filter((r) => r.severity === 'clean').reduce((n, r) => n + (r.count || 0), 0)
+    root.append(el('div', { class: 'tiles' },
+      tile('要处理', String(need.length), '个项目', `${reds} 个有红色问题`, reds ? 'red' : need.length ? 'yellow' : ''),
+      tile('最满的记忆索引', top.bars.capacity.percent === null ? '待计算' : `${top.bars.capacity.percent}%`, '', top.project.name, toneFor('capacity', top.bars.capacity.cells), bar('capacity', top.bars.capacity.cells)),
+      tile('7 天任务', String(tasks), '次', `${grouped.length} 个项目`),
+      tile('可以清理', String(clean), '处', '不扣健康')))
+  }
+  root.append(el('div', { class: 'sect' }, '项目', el('small', {}, '按 7 天热度排')))
+  if (!grouped.length) root.append(el('gugu-empty', { icon: 'layers' }, el('strong', {}, loading ? '正在读取近期任务和项目规矩…' : '还没有项目'), el('small', {}, '这台电脑最近没有 Claude / Codex 任务，也没有项目级规矩。可在设置里补充项目目录。')))
+  else root.append(el('div', { class: 'plist' }, el('div', { class: 'phead' }, el('span', {}, '项目'), el('span', {}, '最该处理的'), el('span', {}, '热度'), el('span', {}, '健康'), el('span', {}, '容量')), grouped.map((group) => card(group))))
   const globals = entries.filter((e) => e.project.global)
   if (globals.length) {
-    root.append(section('所有项目共用'))
-    const group = combine('@global', globals), node = card(group, 0)
-    node.querySelector('.px-rank')?.remove()
-    const measured = globals.every((e) => e.report)
+    root.append(el('div', { class: 'sect' }, '所有项目共用', el('small', {}, '全局规矩、未归属项目的任务')))
+    const group = combine('@global', globals)
     const counts = globals.map((e) => e.report?.rules.find((r) => r.id === 'R20')?.metrics)
-    const states = counts.reduce((n, m) => n + (m?.codexStates || 0), 0)
-    const memories = counts.reduce((n, m) => n + (m?.unmappedMemoryDirectories || 0), 0)
+    const states = counts.reduce((n, m) => n + (m?.codexStates || 0), 0), memories = counts.reduce((n, m) => n + (m?.unmappedMemoryDirectories || 0), 0)
+    const row = card(group)
+    const measured = globals.every((e) => e.report)
     const activity = group.bars.hot.count
-    node.querySelector('.px-say').textContent = measured ? `可清理：${states} 条失效的 Codex 项目信任 / hook 配置 · ${memories} 个无项目的记忆目录；未归属项目的任务：${activity === null ? '待读取' : `${activity} / 7天`}` : '正在检查全局规矩、未归属任务和可清理项…'
-    const health = group.bars.health
-    node.querySelector('.px-stats').replaceWith(el('dl', { class: 'px-stats' }, el('dt', { class: 'px-label' }, '健康'), el('dd', {}, bar('health', health.complete ? health.value : null)), el('dd', { class: 'px-stat-value px-mono' }, health.complete ? `${health.value}/10` : '未全测')))
-    root.append(el('div', { class: 'global-grid' }, node))
+    row.classList.add('global')
+    row.querySelector('.issue').replaceWith(el('div', { class: 'issue ok' }, el('span', { class: 'sev clean' }, icon('sparkles')), el('span', { class: 'txt' }, measured ? `可清理：${states} 条失效的 Codex 项目信任 / hook 配置 · ${memories} 个无项目的记忆目录；未归属项目的任务：${activity === null ? '待读取' : `${activity} / 7天`}` : '正在检查全局规矩、未归属任务和可清理项…')))
+    const health = metrics(group.bars)[1]
+    row.querySelectorAll('.metric').forEach((m) => m.remove())
+    row.append(health)
+    root.append(el('div', { class: 'plist' }, row))
   }
   const other = all.filter((group) => !shown.has(group.key)).flatMap((group) => group.items.flatMap((entry) => entry.project.locations.map((directory) => ({ entry, directory }))))
   if (other.length) {
-    const details = el('details', { class: 'directory-fold' }, el('summary', {}, `其余 ${other.length} 个目录`))
+    const details = el('details', { class: 'fold' }, el('summary', {}, `其余 ${other.length} 个目录（没有近期任务或项目级上下文）`))
     const list = el('ul', { class: 'directory-list' })
-    for (const { entry, directory } of other) list.append(el('li', {}, button(entry.project.name, () => { void openGroup(all.find((group) => group.items.includes(entry))) }, { class: 'px-text-link' }), el('code', { class: 'px-path px-mono' }, directory), el('span', { class: 'px-path' }, `${entry.machine.name} · 最后活跃：${entry.project.lastActiveAt === null ? '未知' : new Date(entry.project.lastActiveAt).toLocaleString()}`)))
+    for (const { entry, directory } of other) list.append(el('li', {}, button(entry.project.name, () => { void openGroup(all.find((group) => group.items.includes(entry))) }, { class: 'px-text-link' }), el('code', { class: 'path px-mono' }, directory), el('span', { class: 'path' }, `${entry.machine.name} · 最后活跃：${entry.project.lastActiveAt === null ? '未知' : new Date(entry.project.lastActiveAt).toLocaleString()}`)))
     details.append(list)
     root.append(details)
   }
@@ -167,7 +188,7 @@ async function runAction(control, action) {
   try { await action() } catch (e) {
     const message = e.message || String(e)
     const status = control.closest('dialog')?.querySelector('[role=status], [role=alert]')
-    if (status) { status.textContent = message; status.classList.add('px-error'); status.setAttribute('role', 'alert') }
+    if (status) { status.textContent = message; status.setAttribute('role', 'alert') }
     else { problem = message; render() }
   }
   finally { control.disabled = false }
@@ -211,14 +232,14 @@ async function showPreview(entry, id) {
     confirm.disabled = !complete || !check.checked
   }
   check.addEventListener('change', () => { confirm.disabled = !complete || !check.checked })
-  showDialog('改动预览', el('div', {}, el('p', { class: 'px-notice' }, '确认后先保存改前快照，再核对文件哈希和修改时间；文件被别人改过就拒绝写入。'), pre, more, status, el('label', {}, check, ' 我已查看完整改动，同意写入这些文件')), [confirm])
+  showDialog('改动预览', el('div', {}, el('p', { class: 'note' }, '确认后先保存改前快照，再核对文件哈希和修改时间；文件被别人改过就拒绝写入。'), pre, more, status, el('label', {}, check, ' 我已查看完整改动，同意写入这些文件')), [confirm])
   await load()
 }
 
 function ruleRow(entry, rule) {
   const evidence = el('details', {}, el('summary', {}, `查看 ${rule.evidenceCount ?? rule.count} 条证据`))
   let offset = 0
-  const pre = el('pre', { class: 'px-row-where px-mono' })
+  const pre = el('pre', { class: 'evidence px-mono' })
   const more = button('更多证据', async (event) => runAction(event.currentTarget, load))
   async function load() {
     const page = await call(entry.machine, 'findings', { report: entry.report.id, rule: rule.id, offset })
@@ -229,15 +250,31 @@ function ruleRow(entry, rule) {
   evidence.addEventListener('toggle', () => { if (evidence.open && !pre.textContent) void runAction(more, load) })
   evidence.append(pre, more)
   const action = button(rule.fixable ? '看改动' : '复制给 agent', (event) => runAction(event.currentTarget, () => rule.fixable ? showPreview(entry, rule.id) : showPrompt(entry, rule.id)))
-  return el('article', { class: 'px-row', 'aria-label': `${entry.machine.name} ${rule.title}` }, el('span', { class: 'px-pip', 'data-tone': rule.severity }), el('div', {}, el('div', { class: 'px-row-title' }, `${rule.title} · ${rule.count} ${rule.id === 'R17' ? '条' : '处'}`, el('span', { class: 'px-who px-label' }, '程序'), ['red', 'yellow'].includes(rule.severity) ? ` −${rule.severity === 'red' ? 3 : 1}` : ''), el('div', { class: 'px-row-sub' }, explanation(rule)), el('div', { class: 'px-row-where px-mono' }, entry.machine.name), evidence), action)
+  const pts = ['red', 'yellow'].includes(rule.severity) ? el('span', { class: `pts sev ${rule.severity}` }, `−${rule.severity === 'red' ? 3 : 1}`) : null
+  return el('article', { class: 'irow', 'aria-label': `${entry.machine.name} ${rule.title}` }, el('span', { class: `sev ${rule.severity}` }, icon(SEV[rule.severity])),
+    el('div', {}, el('div', { class: 't' }, rule.title, el('span', { class: 'cnt' }, `${rule.count} ${rule.id === 'R17' ? '条' : '处'}`), pts), el('div', { class: 'd' }, explanation(rule)), el('div', { class: 'w' }, `${entry.machine.name} · 程序检查`), evidence), action)
 }
 
 function detailView(group) {
-  root.append(button('‹ 全部项目', () => { selected = null; render() }, { class: 'px-back' }))
-  root.append(character(el('section', { class: 'px-sheet' }, sprite(group.project.name, 96), el('div', {}, el('header', { class: 'page-header' }, el('h1', { tabindex: '-1' }, group.project.name), el('span', { class: 'px-path px-mono' }, group.project.root)), tags(group.items), stats(group.bars, true), el('p', { class: 'px-notice' }, `红 ${group.bars.health.red} · 黄 ${group.bars.health.yellow}${group.bars.health.complete ? '' : ' · 尚有未测规则'}`))), group.project.name))
-  for (const entry of group.items) for (const forecast of entry.report?.capacityForecasts || []) root.append(el('p', { class: 'px-notice' }, `${entry.machine.name}：容量按当前增长约 ${forecast.daysLeft} 天触顶（${forecast.observedDays} 天的注入样本，不另扣健康）。`))
-  if (problem) root.append(el('p', { class: 'px-error', role: 'alert' }, problem))
-  root.append(section('在哪些机器上'))
+  root.append(el('nav', { class: 'crumb' }, el('button', { type: 'button', onclick: () => { selected = null; render(); root.querySelector('h1')?.focus() } }, '上下文'), '/', el('span', {}, group.project.name)))
+  root.append(el('header', { class: 'hero' }, sprite(group.project.name, 48), el('div', {}, el('h1', { tabindex: '-1' }, group.project.name), el('div', { class: 'path px-mono' }, group.project.root), machinePills(group.items)), el('div', { class: 'acts' }, button(loading ? '正在计算…' : '重新计算', refresh, { disabled: loading }))))
+  const b = group.bars
+  const fc = group.items.flatMap((e) => e.report?.capacityForecasts || [])
+  root.append(el('div', { class: 'tiles tiles3' },
+    tile('7 天热度', b.hot.count === null ? '—' : String(b.hot.count), '次任务', null, '', bar('hot', b.hot.cells, { big: true })),
+    tile('健康', b.health.complete ? String(b.health.value) : '—', '/ 10', `红 ${b.health.red} · 黄 ${b.health.yellow}${b.health.complete ? '' : ' · 尚有未测规则'}`, toneFor('health', b.health.complete ? b.health.value : null), bar('health', b.health.complete ? b.health.value : null, { big: true })),
+    tile('容量', b.capacity.percent === null ? '—' : `${b.capacity.percent}%`, '', fc.length ? `按当前增长约 ${Math.min(...fc.map((f) => f.daysLeft))} 天触顶` : '记忆索引占加载上限', toneFor('capacity', b.capacity.cells), bar('capacity', b.capacity.cells, { big: true }))))
+  if (problem) root.append(el('p', { role: 'alert' }, problem))
+  const sev = ['red', 'yellow']
+  for (const [title, severities, hint] of [['扣了健康的', sev, '红 −3 · 黄 −1'], ['可以清理', ['clean'], '不扣健康']]) {
+    const rows = group.items.flatMap((e) => e.report?.rules.filter((r) => (r.evidenceCount ?? r.count) && severities.includes(r.severity)).map((r) => ruleRow(e, r)) || [])
+    rows.sort((x, y) => (x.querySelector('.sev.red') ? 0 : 1) - (y.querySelector('.sev.red') ? 0 : 1))
+    root.append(el('div', { class: 'sect' }, title, el('small', {}, `${rows.length} 项 · ${hint}`)))
+    root.append(rows.length ? el('div', { class: 'box' }, rows) : el('p', { class: 'note' }, group.bars.health.complete ? '没有命中' : '已测范围内没有命中'))
+  }
+  const pending = group.items.flatMap((e) => e.report?.rules.filter((r) => r.pending).map((r) => `${e.machine.name} · ${r.id}：${r.pending}`) || [])
+  if (pending.length) root.append(el('p', { class: 'note', role: 'status' }, pending.join('；')))
+  root.append(el('div', { class: 'sect' }, '在哪些电脑上'))
   const body = el('tbody')
   for (const entry of group.items) {
     if (entry.error) { body.append(el('tr', {}, el('td', { colspan: '4' }, `${entry.machine.name}：${entry.error}`))); continue }
@@ -245,20 +282,13 @@ function detailView(group) {
       const cap = (entry.report?.capacities || []).filter((c) => c.harness === (harness === 'Claude' ? 'claude' : 'codex')).toSorted((a, b) => b.ratio - a.ratio)[0]
       const paths = cap ? cap.harness === 'claude' ? [cap.path] : cap.files : entry.report?.instructions?.filter((p) => harness === 'Codex' ? /AGENTS(?:\.override)?\.md$/.test(p) : /CLAUDE(?:\.local)?\.md$/.test(p)) || []
       const count = entry.report?.history?.sources?.[harness === 'Claude' ? 'claude-code' : 'codex']
-      body.append(el('tr', {}, el('td', {}, badge(entry.machine.name, [harness])), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'px-path px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : count === null ? '起始时间未知' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
+      body.append(el('tr', {}, el('td', {}, el('span', { class: 'pill' }, icon('monitor'), entry.machine.name, el('span', { class: 'h' }, harness))), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? `${cap.chars.toLocaleString()} / 25,000 字符 · ${cap.lines} / 200 行` : `${cap.bytes.toLocaleString()} / 32,768 字节` : '没有常驻记忆索引'), el('div', { class: 'p px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? '待计算' : count === null ? '起始时间未知' : `${count} / 7天`), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
     }
   }
-  root.append(el('div', { class: 'table-scroll' }, el('table', { class: 'px-table machine-table' }, el('thead', {}, el('tr', {}, ['机器 · harness', '开工时拿到的规矩', '热度', '容量'].map((t) => el('th', { class: 'px-label' }, t)))), body)))
-  for (const [title, severities] of [['扣了健康的', ['red', 'yellow']], ['可以清理 · 不扣健康', ['clean']]]) {
-    root.append(section(title))
-    const rows = group.items.flatMap((e) => e.report?.rules.filter((r) => (r.evidenceCount ?? r.count) && severities.includes(r.severity)).map((r) => ruleRow(e, r)) || [])
-    root.append(rows.length ? el('div', { class: 'px-rows' }, rows) : el('p', { class: 'px-notice' }, group.bars.health.complete ? '没有命中' : '已测范围内没有命中'))
-  }
-  const pending = group.items.flatMap((e) => e.report?.rules.filter((r) => r.pending).map((r) => `${e.machine.name} · ${r.id}：${r.pending}`) || [])
-  if (pending.length) root.append(el('p', { class: 'px-notice', role: 'status' }, pending.join('；')))
-  root.append(section('要 agent 判断'))
-  root.append(el('div', { class: 'px-rows' }, group.items.flatMap((entry) => (entry.report?.agents || []).map((rule) => el('article', { class: 'px-row', 'aria-label': rule.title }, el('span', { class: 'px-pip' }), el('div', {}, el('div', { class: 'px-row-title' }, rule.title, el('span', { class: 'px-who px-label' }, 'agent')), el('p', { class: 'px-row-sub' }, `${entry.machine.name} · 程序只提供候选，复制后由你交给 agent。`)), button('复制给 agent', (event) => runAction(event.currentTarget, () => showPrompt(entry, rule.id))))))))
-  root.append(el('p', { class: 'px-notice' }, group.items.map((e) => `${e.machine.name}：${e.report?.history?.sample ?? 0} 个任务的上下文样本；最近 7 天热度查完整索引`).join(' · ')))
+  root.append(el('div', { class: 'box table-scroll' }, el('table', { class: 'mt' }, el('thead', {}, el('tr', {}, ['电脑 · harness', '开工时拿到的规矩', '7 天', '容量'].map((t) => el('th', {}, t)))), body)))
+  root.append(el('div', { class: 'sect' }, '要 agent 判断', el('small', {}, '程序只给候选，复制后交给 agent')))
+  root.append(el('div', { class: 'box' }, group.items.flatMap((entry) => (entry.report?.agents || []).map((rule) => el('article', { class: 'irow', 'aria-label': rule.title }, el('span', { class: 'sev none' }, icon('sparkles')), el('div', {}, el('div', { class: 't' }, rule.title), el('p', { class: 'd' }, `${entry.machine.name} · 程序只提供候选，复制后由你交给 agent。`)), button('复制给 agent', (event) => runAction(event.currentTarget, () => showPrompt(entry, rule.id))))))))
+  root.append(el('p', { class: 'note' }, group.items.map((e) => `${e.machine.name}：${e.report?.history?.sample ?? 0} 个任务的上下文样本；最近 7 天热度查完整索引`).join(' · ')))
 }
 
 function render() {
