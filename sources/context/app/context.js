@@ -119,12 +119,12 @@ function listView() {
     const need = grouped.filter((gr) => worst(gr))
     const reds = grouped.filter((gr) => worst(gr)?.severity === 'red').length
     const top = grouped.toSorted((x, y) => (y.bars.capacity.percent ?? 0) - (x.bars.capacity.percent ?? 0))[0]
-    const tasks = grouped.reduce((n, gr) => n + (gr.bars.hot.count || 0), 0)
+    const tasks = grouped.some((gr) => gr.bars.hot.count === null) ? null : grouped.reduce((n, gr) => n + gr.bars.hot.count, 0)
     const clean = grouped.flatMap((gr) => gr.items.flatMap((e) => e.report?.rules || [])).filter((r) => r.severity === 'clean').reduce((n, r) => n + (r.count || 0), 0)
     root.append(el('div', { class: 'tiles' },
       tile('要处理', String(need.length), '个项目', `${reds} 个有红色问题`, reds ? 'red' : need.length ? 'yellow' : ''),
       tile('最满的记忆索引', top.bars.capacity.percent === null ? '待计算' : `${top.bars.capacity.percent}%`, '', top.project.name, toneFor('capacity', top.bars.capacity.cells), bar('capacity', top.bars.capacity.cells)),
-      tile('7 天任务', String(tasks), '次', `${grouped.length} 个项目`),
+      tile('7 天任务', tasks === null ? '待计算' : String(tasks), tasks === null ? '' : '次', `${grouped.length} 个项目`),
       tile('可以清理', String(clean), '处', '不扣健康')))
   }
   root.append(el('div', { class: 'sect' }, '项目', el('small', {}, '按 7 天热度排')))

@@ -271,7 +271,7 @@ function renderSide() {
   const counts = Object.fromEntries(FILTERS.map(([k, , f]) => [k, log.filter(f).length]))
   $('filters').replaceChildren(...FILTERS.map(([k, label]) => h('button', { role: 'tab', 'aria-selected': String(k === filter), onclick: () => { filter = k; renderSide() } }, W[label], h('span', {}, String(counts[k])))))
   const pick = FILTERS.find(([k]) => k === filter)[2]
-  $('log').replaceChildren(...[logList(log.filter(pick).slice(0, 50))].flat())
+  $('log').replaceChildren(...[logList(log.filter(pick))].flat())
   $('watch-n').textContent = String(watches.length)
   $('watch-list').replaceChildren(...watches.map(watchRow))
 }
