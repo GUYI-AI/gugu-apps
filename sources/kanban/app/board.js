@@ -352,7 +352,9 @@ function endDrag() {
 function cancelDrag() {
   if (!drag) return
   const d = endDrag()
-  if (d.started && d.stale) render()
+  if (!d.started) return
+  carriedAt = Date.now() // the release after Esc is not a click on the card either
+  if (d.stale) render()
 }
 
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && drag?.started) { event.stopPropagation(); cancelDrag() } }, true)

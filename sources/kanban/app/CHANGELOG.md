@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Cancelling a carried card with Esc no longer opens it when the mouse is released.
+
 ## 1.2.0
 
 - A lighter, denser board after Linear's: each card is its title with the assignee beside it and one line of facts (task status, due date, attachments, a small progress bar, when it changed); each column has a status ring and its count, with add and more on hover.

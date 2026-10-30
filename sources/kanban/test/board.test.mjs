@@ -152,3 +152,32 @@ test('a task without an agent is named in text, with no icon the host does not h
     delete globalThis.document
   }
 })
+
+test('Esc cancels a carry, and the release that follows does not open the card', async () => {
+  const board = emptyBoard()
+  let n = 0
+  const by = { by: 'person', now: '2026-10-25T00:00:00.000Z', id: () => `id${++n}` }
+  const { card } = applyOp(board, { type: 'card.create', title: 'Carried', column: 'review' }, by)
+  try {
+    const document = await openChatBoard(board, 'esc-cancel')
+    const { window } = globalThis
+    Object.defineProperty(document.getElementById('shell'), 'clientWidth', { value: 1200 }) // wide: cards can be carried
+    window.HTMLElement.prototype.getBoundingClientRect ??= function () { return { left: 0, top: 0, width: 240, height: 64 } }
+    document.elementsFromPoint = () => []
+    const pointer = (type, x, y) => Object.assign(new window.Event(type, { bubbles: true }), { button: 0, pointerType: 'mouse', pointerId: 1, clientX: x, clientY: y })
+    const shown = document.querySelector(`[data-card="${card}"]`)
+    shown.dispatchEvent(pointer('pointerdown', 10, 10))
+    shown.dispatchEvent(pointer('pointermove', 40, 30))
+    assert.ok(document.querySelector('.card.lifted'), 'the card is carried')
+    document.dispatchEvent(Object.assign(new window.Event('keydown', { bubbles: true }), { key: 'Escape' }))
+    assert.equal(document.querySelector('.card.lifted'), null, 'Esc puts it down')
+    shown.dispatchEvent(pointer('pointerup', 40, 30))
+    shown.click() // the browser's click at the end of that press
+    await new Promise(setImmediate)
+    assert.equal(document.getElementById('drawer').hidden, true, 'the card stays closed')
+    assert.equal(board.cards[card].column, 'review')
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
