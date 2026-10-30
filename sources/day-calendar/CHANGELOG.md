@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- A time axis instead of a month and two lists: hour scale, an ink line and tag for now, each entry a block at its hour (to-do, checked to-do, memory), overlapping entries side by side, to-dos without a time in an all-day row.
+- Side panel: one day with a week strip (the whole month folds out). Full tab: a week with a month rail and a legend; Day / Week switch.
+- Click or drag on an empty time to add a to-do or a memory with a start and an end; the quick add at the bottom still adds an all-day to-do.
+- Click an entry for its card: details, tags, when it was recorded, back to the task that recorded it, delete. An agent's entry carries the agent mark.
+- `record` takes an optional `end` (HH:MM after `time`). Entries without it are drawn as half an hour; nothing is migrated. `time` and `end` must be real clock times (00:00–23:59).
+
 ## 0.4.6
 
 - Declare desktop support (App API 12). Adding, checking and removing entries require the App's local program.

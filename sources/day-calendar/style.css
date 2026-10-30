@@ -1,182 +1,189 @@
-body { margin: 0; }
+/* Everything here is the host's: --em-* tokens, its buttons, checkboxes, tablist, .card, <gugu-empty>. */
+body { margin: 0; height: 100vh; overflow: hidden; }
 
-main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--em-spacing-sm);
-  padding: var(--em-spacing-md) var(--em-spacing-md) var(--em-spacing-xl);
-  max-width: 520px;
-  margin: 0 auto;
-}
-
-button.nav, button.month, button.cell, button.todo-main, button.del, button.jump, button.memory-body {
+button.plain {
   appearance: none;
   margin: 0;
   border: 0;
-  box-shadow: none;
+  padding: 0;
   background: transparent;
   color: inherit;
   font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
   height: auto;
   min-height: 0;
+  white-space: normal;
+  text-align: inherit;
   cursor: pointer;
 }
 
-/* ---- month header ---- */
-.head { display: flex; align-items: center; gap: var(--em-spacing-xs); }
-button.nav {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: inline-grid;
-  place-items: center;
-  color: var(--em-foreground-muted);
-  border-radius: var(--em-radius-control);
-}
-button.month {
-  flex: 1;
-  padding: var(--em-spacing-xs) 0;
-  font-weight: 600;
-  text-align: center;
-  border-radius: var(--em-radius-control);
-}
-button.nav:hover, button.month:hover { background: var(--em-hover); color: var(--em-foreground); }
+.app { display: flex; height: 100vh; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#err { margin: 0 var(--em-spacing-md) var(--em-spacing-sm); }
 
-/* ---- grid ---- */
-.weekdays, .grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 2px;
-}
-.weekdays span {
-  text-align: center;
-  font-size: var(--em-font-caption);
-  color: var(--em-foreground-passive);
-}
-button.cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--em-spacing-xs) 0;
-  border-radius: var(--em-radius-control);
-  font-variant-numeric: tabular-nums;
-}
-button.cell:hover { background: var(--em-hover); }
-button.cell.today .num { font-weight: 700; color: var(--em-foreground-info); }
-/* Selected: a quiet fill and a ring, never a filled ink block (it would swallow the number in dark). */
-button.cell.selected {
-  background: var(--em-selected);
-  box-shadow: inset 0 0 0 1px var(--em-accent-9);
-}
-.marker { display: flex; align-items: center; justify-content: center; height: 6px; }
-.dot { display: block; width: 5px; height: 5px; border-radius: 50%; box-sizing: border-box; }
-.dot.pending { border: 1.5px solid var(--em-foreground-muted); }
-.dot.done { background: var(--em-foreground-success); }
-.dot.memory { background: var(--em-foreground-info); }
+/* ---- header ---- */
+.head { display: flex; align-items: center; gap: var(--em-spacing-xs); padding: var(--em-spacing-md) var(--em-spacing-md) var(--em-spacing-sm); }
+.head h3 { margin: 0; flex: 1; min-width: 0; display: flex; align-items: baseline; gap: var(--em-spacing-sm); white-space: nowrap; overflow: hidden; }
+.head h3 small { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+.head .today-btn { padding-inline: 10px; }
+.head .modes { margin: 0 var(--em-spacing-xs) 0 0; flex-wrap: nowrap; }
+.head .modes > [role=tab] { padding-block: 4px; padding-inline: 12px; }
 
-/* ---- the day ---- */
-.day {
-  display: flex;
-  flex-direction: column;
-  gap: var(--em-spacing-xs);
-  margin-top: var(--em-spacing-xs);
-  padding-top: var(--em-spacing-md);
-  border-top: 1px solid var(--em-border);
-}
-.day-title { display: flex; align-items: baseline; gap: var(--em-spacing-sm); }
-.day h5 {
-  margin: var(--em-spacing-sm) 0 var(--em-spacing-xs);
-  letter-spacing: 0.08em;
+/* ---- a day's number and marks (week strip, month, week head) ---- */
+.num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--em-radius-capsule); font-variant-numeric: tabular-nums; font-weight: 500; }
+.is-today .num { background: var(--em-accent-9); color: var(--em-accent-contrast); font-weight: 600; }
+.marks { display: flex; justify-content: center; gap: 3px; height: 5px; }
+.marks i { width: 5px; height: 5px; border-radius: 50%; box-sizing: border-box; }
+.marks i.todo { border: 1.25px solid var(--em-foreground-muted); }
+.marks i.done { background: var(--em-foreground-muted); }
+.marks i.memory { background: var(--em-foreground-info); }
+
+/* ---- week strip (narrow) ---- */
+.strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; padding: 0 var(--em-spacing-md) var(--em-spacing-sm); }
+.strip button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 6px; border-radius: var(--em-radius-control); }
+.strip .wd { font-size: var(--em-font-caption); line-height: var(--em-lh-caption); color: var(--em-foreground-passive); }
+.strip button[aria-pressed="true"] { background: var(--em-selected); }
+@media (hover: hover) { .strip button:hover { background: var(--em-hover); } }
+
+/* ---- month (narrow, unfolded) and mini month (wide rail) ---- */
+.month { padding: 0 var(--em-spacing-md) var(--em-spacing-sm); }
+.mh { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
+.mh strong { flex: 1; padding-inline-start: 6px; }
+.month-grid, .mini-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; text-align: center; font-variant-numeric: tabular-nums; }
+.month-grid .wd, .mini-grid .wd { font-size: 11px; line-height: 20px; color: var(--em-foreground-passive); }
+.month-grid .mday { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0 4px; border-radius: var(--em-radius-control); }
+.month-grid .mday[aria-pressed="true"] { background: var(--em-selected); }
+.mini-grid .mday { display: grid; place-items: center; height: 28px; font-size: var(--em-font-caption); border-radius: 0; }
+.mini-grid .mday .num { width: 24px; height: 24px; font-weight: 400; }
+.mini-grid .mday.out { color: var(--em-foreground-passive); }
+.mini-grid .mday.inweek { background: var(--em-selected); }
+.mini-grid .mday.first { border-start-start-radius: var(--em-radius-capsule); border-end-start-radius: var(--em-radius-capsule); }
+.mini-grid .mday.last { border-start-end-radius: var(--em-radius-capsule); border-end-end-radius: var(--em-radius-capsule); }
+.mini-grid .mday[aria-pressed="true"]:not(.inweek) .num { background: var(--em-selected); }
+.mini-grid .mday.is-today .num { background: var(--em-accent-9); font-weight: 600; }
+@media (hover: hover) {
+  .month-grid .mday:hover, .mini-grid .mday:not(.inweek):hover .num { background: var(--em-hover); }
+  .mini-grid .mday.is-today:hover .num { background: var(--em-accent-9); }
 }
 
-.todo, .memory {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--em-spacing-xs);
-  border-radius: var(--em-radius-control);
+/* ---- all-day row ---- */
+.allday { display: grid; border-block: 1px solid var(--em-border); flex: none; max-height: 30%; overflow-y: auto; }
+.gutter-label { font-size: var(--em-font-caption); line-height: var(--em-lh-caption); color: var(--em-foreground-passive); text-align: end; padding: 7px 8px 0 0; }
+.allday .cell { display: flex; flex-direction: column; gap: 2px; padding: 4px 3px 5px; min-width: 0; min-height: 30px; border-inline-start: 1px solid var(--em-border); }
+.chip {
+  display: flex; align-items: center; gap: 6px; min-width: 0; padding: 2px 6px; border-radius: var(--em-radius-document);
+  background: var(--em-background-3); font-size: var(--em-font-caption); line-height: var(--em-lh-caption);
 }
-.todo:hover, .memory:hover { background: var(--em-hover); }
-button.todo-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: var(--em-spacing-sm);
-  padding: var(--em-spacing-xs);
-  text-align: start;
-  border-radius: var(--em-radius-control);
+.chip.memory { background: var(--em-background-info); }
+.chip-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; }
+.chip.done .chip-title { text-decoration: line-through; color: var(--em-foreground-muted); }
+.chip input[type=checkbox], .ev input[type=checkbox] { width: 14px; height: 14px; vertical-align: 0; }
+.chip input[type=checkbox]:checked::after, .ev input[type=checkbox]:checked::after { left: 3.5px; top: 1px; width: 3.5px; height: 7px; }
+.chip gugu-icon { width: 12px; height: 12px; color: var(--em-foreground-muted); }
+
+/* ---- the time axis ---- */
+.scroller { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
+.grid { display: grid; position: relative; }
+.hours { position: relative; }
+.hours span {
+  position: absolute; right: 8px; transform: translateY(-50%);
+  font-size: 11px; line-height: 14px; color: var(--em-foreground-passive); font-variant-numeric: tabular-nums;
 }
-.mark {
-  flex: 0 0 auto;
-  align-self: center;
-  width: 14px;
-  height: 14px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  border: 1.5px solid var(--em-foreground-muted);
-  display: grid;
-  place-items: center;
+.col { position: relative; border-inline-start: 1px solid var(--em-border); }
+.col.today-col { background: color-mix(in oklab, var(--em-hover) 60%, transparent); }
+.hline { position: absolute; left: 0; right: 0; height: 1px; background: var(--em-border); }
+.slot-hint {
+  position: absolute; left: 3px; right: 3px; display: flex; align-items: center; gap: 4px; padding: 0 6px; overflow: hidden; white-space: nowrap;
+  border-radius: var(--em-radius-document); border: 1px dashed var(--em-border-1); color: var(--em-foreground-muted);
+  font-size: var(--em-font-caption); line-height: var(--em-lh-caption); pointer-events: none;
 }
-.todo.done .mark {
-  border-color: var(--em-foreground-success);
-  background: var(--em-foreground-success);
-  color: var(--em-background);
+.slot-hint gugu-icon { width: 12px; height: 12px; }
+
+/* An entry: a block with a bar on its left. To-do: ink bar on the quiet fill. Checked: a passive bar, struck title.
+   Memory: info bar on the info fill. Opaque (the fill over the background), so hour lines never run through text. */
+.ev {
+  position: absolute; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; gap: 1px;
+  padding: 3px 6px 3px 8px; border-radius: var(--em-radius-document); font-size: var(--em-font-caption); line-height: var(--em-lh-caption);
+  background: var(--em-background-3); color: var(--em-foreground);
+  box-shadow: inset 3px 0 0 var(--em-accent-9), 0 0 0 1px var(--em-background); cursor: pointer; z-index: 1;
 }
-.mark gugu-icon { width: 10px; height: 10px; }
-.title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.todo.done .title { text-decoration: line-through; color: var(--em-foreground-muted); }
-.time {
-  flex: 0 0 auto;
-  color: var(--em-foreground-passive);
-  font-variant-numeric: tabular-nums;
+.ev.memory { background: linear-gradient(var(--em-background-info), var(--em-background-info)), var(--em-background); box-shadow: inset 3px 0 0 var(--em-foreground-info), 0 0 0 1px var(--em-background); }
+.ev.done { box-shadow: inset 3px 0 0 var(--em-foreground-passive), 0 0 0 1px var(--em-background); }
+.ev.open { outline: 2px solid var(--em-accent-9); outline-offset: -1px; z-index: 2; }
+.ev .line { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ev .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.ev.done .title { text-decoration: line-through; color: var(--em-foreground-muted); font-weight: 400; }
+.ev .at { flex: none; color: var(--em-foreground-muted); font-variant-numeric: tabular-nums; }
+.ev .sub { color: var(--em-foreground-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev gugu-icon { width: 12px; height: 12px; flex: none; color: var(--em-foreground-muted); }
+.ev.short { justify-content: center; padding-block: 0; }
+.ev.narrow { padding-inline: 6px 3px; }
+.ev.draft { background: var(--em-background-1); box-shadow: inset 3px 0 0 var(--em-accent-9), var(--em-shadow-lift); z-index: 3; cursor: default; }
+.ev.draft .title { color: var(--em-foreground-muted); font-weight: 400; }
+@media (hover: hover) { .ev:not(.draft):hover { background-image: linear-gradient(var(--em-hover), var(--em-hover)); } .ev.memory:hover { background: linear-gradient(var(--em-hover), var(--em-hover)), linear-gradient(var(--em-background-info), var(--em-background-info)), var(--em-background); } }
+
+/* Now: an ink line across today with a dot at its start, the time on an ink tag in the gutter; a faint line across the
+   other days of a week. */
+.now { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px solid var(--em-accent-9); z-index: 4; pointer-events: none; }
+.now::before { content: ""; position: absolute; left: -4px; top: -4.75px; width: 8px; height: 8px; border-radius: 50%; background: var(--em-accent-9); }
+.now-all { position: absolute; right: 0; height: 0; border-top: 1px solid color-mix(in oklab, var(--em-accent-9) 30%, transparent); z-index: 0; pointer-events: none; }
+.now-label {
+  position: absolute; left: 0; transform: translateY(-50%); z-index: 4; padding: 0 3px; text-align: center; box-sizing: border-box;
+  border-radius: var(--em-radius-document); background: var(--em-accent-9); color: var(--em-accent-contrast);
+  font-size: 11px; line-height: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 
-.memory-body { flex: 1; min-width: 0; padding: var(--em-spacing-xs); }
-button.memory-body { display: block; text-align: start; border-radius: var(--em-radius-control); }
-.memory-line { display: flex; align-items: baseline; gap: var(--em-spacing-sm); }
-.go { flex: 0 0 auto; align-self: center; width: 14px; height: 14px; color: var(--em-foreground-passive); }
-button.memory-body:hover .go, button.memory-body:focus-visible .go { color: var(--em-foreground); }
-.bullet { flex: 0 0 14px; align-self: center; display: grid; place-items: center; }
-.bullet i { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--em-foreground-info); }
-.memory-more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px var(--em-spacing-xs);
-  margin: 2px 0 0 calc(14px + var(--em-spacing-sm));
-}
-.tag {
-  font-style: normal;
-  font-size: var(--em-font-caption);
-  padding: 0 6px;
-  border-radius: var(--em-radius-xl);
-  background: var(--em-background-info);
-  color: var(--em-foreground-info);
-}
-.detail { display: block; color: var(--em-foreground-muted); }
+/* ---- cards (new entry / an entry's details) ---- */
+.pop { position: absolute; z-index: 6; width: 288px; margin: 0; border: 0; box-shadow: var(--em-shadow-dialog); display: flex; flex-direction: column; gap: var(--em-spacing-sm); }
+.wide .pop { padding: var(--em-spacing-md); }
+.pop > * { margin: 0; }
+.pop input[type=text] { width: 100%; }
+.pop .when { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
+.pop .when gugu-icon { color: var(--em-foreground-passive); }
+.pop .when input[type=time] { min-height: var(--em-control-h-sm); padding: 0 6px; font-size: var(--em-font-caption); }
+.pop .when .date { flex-basis: calc(100% - 22px); }
+.pop .when .date ~ input[type=time] { margin-inline-start: 22px; }
+.pop .when .date ~ input[type=time] ~ input[type=time] { margin-inline-start: 0; }
+.pop [role=tablist] { margin: 0; }
+.pop [role=tablist] > [role=tab] { padding-block: 2px; padding-inline: 12px; }
+.pop .row { justify-content: flex-end; margin: 0; }
+.pop-head { display: flex; align-items: flex-start; gap: var(--em-spacing-sm); }
+.pop-head strong { flex: 1; min-width: 0; overflow-wrap: anywhere; padding-top: 4px; }
+.pop-head strong.done { text-decoration: line-through; color: var(--em-foreground-muted); }
+.pop-head input[type=checkbox] { margin-top: 5px; }
+.pop-head button { margin: -2px -6px 0 0; }
+.kind-dot { flex: none; width: 8px; height: 8px; margin: 10px 5px 0; border-radius: 50%; background: var(--em-foreground-info); }
+.pop .more { display: flex; flex-wrap: wrap; gap: 4px; }
+.pop .more p { flex-basis: 100%; margin: 2px 0 0; color: var(--em-foreground-muted); }
+.tag { font-style: normal; font-size: var(--em-font-caption); padding: 0 6px; border-radius: var(--em-radius-xl); background: var(--em-background-info); color: var(--em-foreground-info); }
+.recorded { display: flex; align-items: center; gap: 4px; }
+.recorded gugu-icon { width: 12px; height: 12px; }
+.danger-text { color: var(--em-foreground-destructive); }
 
-button.del, button.jump {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  margin-top: 2px;
-  padding: 0;
-  display: inline-grid;
-  place-items: center;
-  color: var(--em-foreground-passive);
-  border-radius: var(--em-radius-control);
-  opacity: 0;
-}
-.todo:hover button.del, .memory:hover button.del, button.del:focus-visible { opacity: 1; }
-button.jump { opacity: 1; }
-button.jump:hover { color: var(--em-foreground); background: var(--em-press); }
-button.del:hover { color: var(--em-foreground-destructive); background: var(--em-press); }
+/* ---- empty ---- */
+.empty-over { position: absolute; right: 12px; z-index: 5; display: flex; justify-content: center; pointer-events: none; }
+.empty-over gugu-empty { min-height: 0; max-width: 420px; background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-surface); }
 
-.empty { margin: var(--em-spacing-xs) 0; color: var(--em-foreground-passive); font-size: var(--em-font-caption); }
-.add { margin-top: var(--em-spacing-sm); }
-.add input { width: 100%; box-sizing: border-box; }
+/* ---- quick add ---- */
+.add { margin: 0; padding: var(--em-spacing-sm) var(--em-spacing-md) var(--em-spacing-md); border-top: 1px solid var(--em-border); }
+.add input { width: 100%; }
+.add .hint { display: block; margin: 6px 2px 0; }
 
-@media (hover: none) {
-  button.del { opacity: 1; }
-}
+/* ---- wide: rail + week ---- */
+.rail { width: 244px; flex: none; border-inline-end: 1px solid var(--em-border); padding: var(--em-spacing-md); display: flex; flex-direction: column; gap: var(--em-spacing-lg); overflow-y: auto; }
+.rail .add { padding: 0; border: 0; margin-top: auto; }
+.legend { display: flex; flex-direction: column; gap: 6px; font-size: var(--em-font-caption); color: var(--em-foreground-muted); }
+.legend h5 { margin: 0 0 2px; }
+.legend div { display: flex; align-items: center; gap: 8px; }
+.legend .sw { flex: none; width: 14px; height: 10px; border-radius: 3px; background: var(--em-background-3); box-shadow: inset 2px 0 0 var(--em-accent-9); }
+.legend .sw.memory { background: var(--em-background-info); box-shadow: inset 2px 0 0 var(--em-foreground-info); }
+.legend .sw.done { box-shadow: inset 2px 0 0 var(--em-foreground-passive); }
+.legend gugu-icon { flex: none; width: 14px; height: 12px; }
+.dayhead { display: grid; flex: none; }
+.dayhead button { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 0; color: var(--em-foreground-muted); font-size: var(--em-font-caption); border-radius: var(--em-radius-control); }
+.dayhead .num { width: 26px; height: 26px; color: var(--em-foreground); font-size: var(--em-font-body); }
+.dayhead .is-today { color: var(--em-foreground); font-weight: 600; }
+.dayhead .is-today .num { color: var(--em-accent-contrast); }
+.dayhead .weekend { color: var(--em-foreground-passive); }
+@media (hover: hover) { .dayhead button:hover { background: var(--em-hover); } }
