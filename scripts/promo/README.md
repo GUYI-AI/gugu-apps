@@ -8,14 +8,14 @@ To add an App, copy a template and replace the icon, name, benefit, screenshot p
 
 ## Screenshot sources
 
-All product images below already existed in the corresponding App before this artwork change, except Context, whose screenshots were taken for its 0.1.1 listing from a real project report with paths and machine names replaced, and Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader (see its `screenshots/SOURCE.md`). Only their placement inside the promotional frame is new.
+All product images below already existed in the corresponding App before this artwork change, except Context, whose screenshots were taken for its 0.1.1 listing from a real project report with paths and machine names replaced, Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader, and Calendar, whose screenshots were retaken in the client for 0.5.5 to show the time axis (see each App's `screenshots/SOURCE.md`). Only their placement inside the promotional frame is new.
 
 | Template | Product screenshot, relative to package root | SHA-256 |
 | --- | --- | --- |
 | `context.html` | `screenshots/1.jpg` | `ee9dfdfaefc6fbed364b7df10c73a30f0b05e84bf05467dfc2284e1a08fc9b50` |
 | `browser-use.html` | `screenshots/1.jpg` | `b20cc7ea678d121fd35558f0874b7675365f3663792425f0f47dd6e2a67b9f90` |
 | `computer-use.html` | `screenshots/settings.jpg` | `91f9445add380dd3d187f122f5f9a7499717b5d854b962017d34e916c27bf066` |
-| `day-calendar.html` | `screenshots/1.jpg` | `34e5a4e79eff902982c42fa1d716faddd8936d45bec2be022c0f8d04943d34d1` |
+| `day-calendar.html` | `screenshots/side.png` | `92d31798f7175618d5daeaad3da1fce7d0fac72d91102d5590a39532465f9f5e` |
 | `forum.html` | `screenshots/compose.jpg` | `b99d6d2a5af4d6033b601b52c86ae087438f460c279d7c5d11fac8236ed1c37d` |
 | `kanban.html` | `screenshots/1.jpg` | `3cf96007477abf83181cab90d42503bed5a7062cade28aada1dfaf5fbe948727` |
 | `office.html` | `screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
