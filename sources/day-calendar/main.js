@@ -502,12 +502,22 @@
     for (const span of document.querySelectorAll('.hours span')) span.hidden = nearNow(Number(span.dataset.h), now)
   }
 
-  // Where a range opens: a little before now when today is in it, else an hour before its first timed entry, else 08:00.
-  function homeScroll(keys) {
+  // Where a range opens, in minutes from midnight. With today in it: an hour before today's first timed entry (or before
+  // now, if it has none), not earlier than 07:00, yet the line of now always on screen, half an hour from either edge,
+  // when the two disagree. Other ranges: an hour before their first timed entry, else 08:00.
+  function homeScroll(keys, viewMins) {
+    const timed = (ks) => ks.flatMap((k) => (days[k] || []).filter((e) => e.time).map((e) => minsOf(e.time)))
     const today = keyOf(new Date())
-    if (keys.includes(today)) return Math.max(0, Math.floor(nowMins() / 60) - 5.5) * HOUR()
-    const first = keys.flatMap((k) => (days[k] || []).filter((e) => e.time).map((e) => minsOf(e.time)))
-    return (first.length ? Math.max(0, Math.min(...first) / 60 - 1) : 8) * HOUR()
+    if (!keys.includes(today)) {
+      const first = timed(keys)
+      return first.length ? Math.max(0, Math.min(...first) - 60) : 8 * 60
+    }
+    const now = nowMins()
+    const first = timed([today])
+    let top = Math.max((first.length ? Math.min(...first) : now) - 60, 7 * 60)
+    if (now < top + 30) top = now - 30
+    if (now > top + viewMins - 30) top = now - viewMins + 30
+    return Math.max(0, Math.min(top, 24 * 60 - viewMins))
   }
 
   // ---- months ---------------------------------------------------------------
@@ -640,7 +650,10 @@
     }
     if (draftFocused) focusDraft()
     const key = `${mode()}:${tl.keys[0]}:${wide()}`
-    const top = key === scrollRange && scrollTop != null ? scrollTop : homeScroll(tl.keys)
+    const view = tl.scroller.clientHeight
+    // Drawn while out of sight the axis has no height: where it opens is decided by the first redraw that has one.
+    if (!view && key !== scrollRange) return
+    const top = key === scrollRange && scrollTop != null ? scrollTop : (homeScroll(tl.keys, (view / HOUR()) * 60) / 60) * HOUR()
     scrollRange = key
     tl.scroller.scrollTop = top
     scrollTop = tl.scroller.scrollTop
@@ -672,7 +685,8 @@
   function noteLayout(ctx) {
     const was = shown
     shown = !(ctx && ctx.layout && ctx.layout.visible === false)
-    if (shown && !was) load().then((changed) => { if (changed && !draft) render() })
+    // (A redraw either way: an axis first drawn out of sight gets its opening place now that it has a height.)
+    if (shown && !was) load().then(() => { if (!draft) render() })
   }
 
   async function start() {

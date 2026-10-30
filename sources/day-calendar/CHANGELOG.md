@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4
+
+- Where the time axis opens on a range with today: an hour before today's first timed entry (an hour before now when there is none), not earlier than 07:00, and the line of now always on screen when the two disagree. Before, it opened five and a half hours before now, which at 09:00 meant a screen of empty early morning.
+
 ## 0.5.3
 
 - Market: the full-tab screenshot (old `3.jpg`, the month view) is replaced by a capture of the 0.5 week view (`screenshots/week.png`); `screenshots/SOURCE.md` says where the market images come from.
