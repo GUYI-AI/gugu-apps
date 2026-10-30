@@ -1,11 +1,13 @@
-// 海龟汤's page. In a chat's side panel it is the lobby (this chat's rounds, and a new one); opened for a round file
-// (`.turtle-soup.json`) it is that round. Players act here — ask, guess the story, ask for a hint, give up — and talk
-// in the chat as usual. The host is an agent in the chat with this App's tools, woken by a whisper (gugu.dispatch) when
-// something waits for it; the round file is what everyone sees, live.
+// 海龟汤's page. In a chat's side panel it is the lobby (a new round on the stage, and this chat's rounds); opened for a
+// round file (`.turtle-soup.json`) it is that round's board. Players act here — ask, guess the story, ask for a hint,
+// give up — and talk in the chat as usual. The host is an agent in the chat with this App's tools, woken by a whisper
+// (gugu.dispatch) when something waits for it; the round file is what everyone sees, live.
 import {
-  FILE_SUFFIX, VERDICT_LABEL, DIFFICULTY_LABEL, MAX_QUESTION, MAX_GUESS,
-  newRound, ended, questionsInOrder, hintsGiven, hintWaiting, checkQuestion, giveUpNeeded, somethingWaits,
+  FILE_SUFFIX, VERDICT_LABEL, DIFFICULTY_LABEL, STATUS_LABEL, MAX_QUESTION, MAX_GUESS,
+  newRound, ended, questionsInOrder, hintsGiven, hintWaiting, checkQuestion, giveUpNeeded, somethingWaits, playersOf,
+  askedCount, summaryOf,
 } from './game.js'
+import { followRounds } from './rounds.js'
 
 const $ = (sel) => document.querySelector(sel)
 const status = $('#status')
@@ -47,6 +49,15 @@ const members = () => ctx.chat?.members ?? []
 const nameOf = (id) => members().find((m) => m.id === id)?.name ?? '已离开的成员'
 const LANGS = { zh: '中文题', en: 'English' }
 const defaultLang = () => (String(ctx.locale ?? '').startsWith('en') ? 'en' : 'zh')
+const roundName = (entry) => entry.name.slice(0, -FILE_SUFFIX.length)
+
+/** Faces of who played, overlapping; a few, then the count of the rest. */
+function faces(ids, max = 5) {
+  if (!ids.length) return null
+  return h('span', { className: 'faces', ariaLabel: `${ids.length} 人在玩` },
+    ids.slice(0, max).map((id) => h('gugu-avatar', { user: id, size: 'sm' })),
+    ids.length > max ? h('small', { textContent: `+${ids.length - max}` }) : null)
+}
 
 // ── the lobby ────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -59,103 +70,185 @@ async function loadBank() {
   return bank
 }
 
+// A lobby drawn later than another wins: a round read for an older one lands nowhere.
+let lobbyDrawn = 0
+// The chat's file changes the lobby follows while it shows (followRounds); stopped when it goes.
+let following = null
+function stopFollowing() {
+  following?.stop()
+  following = null
+}
+
 async function showLobby() {
   $('#round').hidden = true
   const lobby = $('#lobby')
   lobby.hidden = false
+  document.body.dataset.view = 'lobby'
   window.gugu.setTabTitle('海龟汤').catch((e) => console.warn('setTabTitle', e)) // only the tab's name
+  stopFollowing()
+  const drawn = ++lobbyDrawn
   if (!ctx.chat) {
-    await showEveryRound(lobby)
+    await showEveryRound(lobby, drawn)
     return
   }
   put(lobby, h('p', { className: 'muted', textContent: '正在读这个群的牌局…' }))
-  let rounds = []
-  try {
-    const entries = await window.gugu.files.list({ chat: ctx.chat.id })
-    rounds = entries.filter((e) => e.type !== 'folder' && e.name.endsWith(FILE_SUFFIX)).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
-  } catch (e) {
-    fail('读不到这个群的文件', e)
-  }
-  let puzzles = []
-  try {
-    puzzles = (await loadBank()).puzzles
-  } catch (e) {
-    fail('题库读不到', e)
-  }
-  put(lobby, 
-    h('h2', { textContent: '海龟汤' }),
-    h('p', { className: 'muted', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。问出关键，还原整个故事。' }),
+  const puzzles = await loadBank().then((b) => b.puzzles, (e) => { fail('题库读不到', e); return [] })
+  if (drawn !== lobbyDrawn) return
+  const rounds = history(drawn, (entry) => openRound(entry), (entry) => (entry.createdBy?.name ? `${entry.createdBy.name} 开的` : ''),
+    h('gugu-empty', { icon: 'message-circle' }, h('strong', { textContent: '这个群还没开过汤' }), h('small', { textContent: '在上面选好题，点「开汤」' })))
+  put(lobby,
     newRoundForm(puzzles),
-    rounds.length ? h('h5', { textContent: '这个群的牌局' }) : null,
-    rounds.length
-      ? h('ul', { className: 'list' }, rounds.map((entry) => h('li', { tabIndex: 0, role: 'button', ariaLabel: entry.name, onclick: () => openRound(entry), onkeydown: (ev) => ev.key === 'Enter' && openRound(entry) },
-          h('gugu-icon', { name: 'message-circle' }),
-          h('div', {}, h('strong', { textContent: entry.name.slice(0, -FILE_SUFFIX.length) }), h('span', { textContent: entry.createdBy?.name ? `${entry.createdBy.name} 开的` : '' })),
-          h('gugu-time', { datetime: entry.updatedAt ?? entry.createdAt }))))
-      : null,
+    h('section', { className: 'stack', ariaLabel: '这个群的牌局' }, h('h5', { textContent: '这个群的牌局' }), rounds.el),
   )
+  following = followRounds(window.gugu.files, ctx.chat.id, rounds.draw)
+  following.ready.catch((e) => fail('读不到这个群的文件', e))
 }
 
 /**
  * Outside a chat (the App's own page): the rounds of every chat the person is in, each opening in its own chat. A new round
  * starts in a chat — the App opened there, where the chat is already known — not from a list of chats drawn here.
  */
-async function showEveryRound(lobby) {
+async function showEveryRound(lobby, drawn) {
   put(lobby, h('p', { className: 'muted', textContent: '正在找你的牌局…' }))
-  let rounds = []
+  let found = []
   try {
-    rounds = await window.gugu.files.search({ query: FILE_SUFFIX, suffixes: ['.json'], limit: 50 })
-    rounds = rounds.filter((e) => e.name.endsWith(FILE_SUFFIX))
+    found = await window.gugu.files.search({ query: FILE_SUFFIX, suffixes: ['.json'], limit: 50 })
+    found = found.filter((e) => e.name.endsWith(FILE_SUFFIX))
   } catch (e) {
     fail('找不到牌局', e)
   }
+  if (drawn !== lobbyDrawn) return
+  const go = (entry) => window.gugu.files.openWith(entry).catch((e) => fail('打不开这一局', e))
+  const rounds = history(drawn, go, (entry) => entry.chatName ?? '',
+    h('gugu-empty', { icon: 'message-circle' },
+      h('strong', { textContent: '牌局在聊天里开' }),
+      h('small', { textContent: '在群聊或和 agent 的私聊里打开海龟汤，选好题点「开汤」，大家就在那里一起猜。' })))
   put(lobby,
-    h('h2', { textContent: '海龟汤' }),
-    h('p', { className: 'muted', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。在群聊或私聊里打开海龟汤开新局，大家就在那里一起猜。' }),
-    rounds.length ? h('h5', { textContent: '我的牌局' }) : null,
-    rounds.length
-      ? h('ul', { className: 'list', ariaLabel: '我的牌局' }, rounds.map((entry) => {
-          const go = () => window.gugu.files.openWith(entry).catch((e) => fail('打不开这一局', e))
-          return h('li', { tabIndex: 0, role: 'button', ariaLabel: entry.name, onclick: go, onkeydown: (ev) => ev.key === 'Enter' && go() },
-            h('gugu-icon', { name: 'message-circle' }),
-            h('div', {}, h('strong', { textContent: entry.name.slice(0, -FILE_SUFFIX.length) }), h('span', { textContent: entry.chatName ?? '' })),
-            h('gugu-time', { datetime: entry.updatedAt ?? entry.createdAt }))
-        }))
-      : null,
+    h('header', { className: 'stage' },
+      h('h2', { textContent: '海龟汤' }),
+      h('p', { className: 'lead', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。问出关键，还原整个故事。' })),
+    h('section', { className: 'stack', ariaLabel: '我的牌局' }, h('h5', { textContent: '我的牌局' }), rounds.el),
   )
+  rounds.draw(found, found)
 }
 
-/** A new round in this chat, hosted by an agent in it. */
+/**
+ * Rounds as rows, kept by id: `draw(rounds, changed)` adds, moves and drops rows at once from what the entries know
+ * (name, who, when); each new or changed round is then read once in the background for its status, questions and
+ * players — the lobby never waits for them. `empty` shows while there is none.
+ */
+function history(drawn, open, whoLine, empty) {
+  const el = h('div', {}, h('p', { className: 'muted', textContent: '正在读牌局…' }))
+  const ul = h('ul', { className: 'list games' })
+  const rows = new Map()
+  const subOf = (entry, s) => {
+    const words = [whoLine(entry), s ? `已问 ${s.asked}` : ''].filter(Boolean).join(' · ')
+    return [words, words ? ' · ' : null, h('gugu-time', { datetime: entry.updatedAt ?? entry.createdAt })]
+  }
+  const rowOf = (entry) => {
+    const r = { entry, summary: null, reading: false, again: false }
+    const go = () => open(r.entry)
+    r.title = h('strong', { textContent: roundName(entry) })
+    r.sub = h('span', {}, subOf(entry))
+    r.side = h('span', { className: 'side' })
+    r.row = h('li', { tabIndex: 0, role: 'button', ariaLabel: roundName(entry), onclick: go, onkeydown: (ev) => ev.key === 'Enter' && go() },
+      h('div', {}, r.title, r.sub),
+      r.side)
+    return r
+  }
+  // One read per row at a time; a change while it reads asks for one more.
+  const summarize = (r) => {
+    if (r.reading) { r.again = true; return }
+    r.reading = true
+    readSummary(r.entry).then((s) => {
+      if (drawn !== lobbyDrawn) return
+      r.summary = s
+      if (s.title) r.title.textContent = s.title // the file's name carries when it began; the row says that already
+      put(r.sub, subOf(r.entry, s))
+      put(r.side, faces(s.players, 3), h('mark', { className: `chip st-${s.status}`, textContent: STATUS_LABEL[s.status] ?? s.status }))
+    }, (e) => console.warn('round summary', r.entry.name, e)) // the row still opens; it only shows less
+      .finally(() => {
+        r.reading = false
+        if (r.again && drawn === lobbyDrawn) { r.again = false; summarize(r) }
+      })
+  }
+  const draw = (rounds, changed) => {
+    const ids = new Set(rounds.map((e) => e.id))
+    for (const [id, r] of rows) if (!ids.has(id)) { r.row.remove(); rows.delete(id) }
+    const toRead = []
+    const changedIds = new Set(changed.map((e) => e.id))
+    for (const entry of rounds) { // newest first: the 20 read below are the latest
+      if (!changedIds.has(entry.id)) continue
+      let r = rows.get(entry.id)
+      if (r) {
+        r.entry = entry
+        put(r.sub, subOf(entry, r.summary))
+      } else rows.set(entry.id, (r = rowOf(entry)))
+      toRead.push(r)
+    }
+    // Moved only when the order changed: a row moved in the DOM loses the focus someone had on it.
+    const want = rounds.map((e) => rows.get(e.id).row)
+    if (want.length !== ul.children.length || want.some((row, i) => ul.children[i] !== row)) ul.replaceChildren(...want)
+    const show = rounds.length ? ul : empty
+    if (el.firstChild !== show) put(el, show)
+    for (const r of toRead.slice(0, 20)) summarize(r)
+  }
+  return { el, draw }
+}
+
+/** A round file read once, for the lobby's row: never kept open. */
+async function readSummary(entry) {
+  const f = await window.gugu.files.open(entry)
+  try {
+    return summaryOf(f.toJSON())
+  } finally {
+    f.close()
+  }
+}
+
+/** A choice of a few, as a row of pills: radios underneath, so keys and screen readers work as on any radio group. */
+function pills(legend, name, options, value) {
+  return h('fieldset', { className: 'pills' },
+    h('legend', { textContent: legend }),
+    options.map(([v, label]) => h('label', {}, h('input', { type: 'radio', name, value: v, checked: v === value }), h('span', { textContent: label }))))
+}
+
+/** A new round in this chat, on the stage. Its host is picked in gugu's dispatch sheet, among the agents in the chat. */
 function newRoundForm(puzzles) {
-  const form = h('form', { className: 'card stack', ariaLabel: '新开一局' })
-  form.append(h('h3', { textContent: '新开一局' }))
-  const language = h('select', { name: 'lang' }, Object.entries(LANGS).map(([value, label]) => h('option', { value, textContent: label, selected: value === defaultLang() })))
-  const level = h('select', { name: 'difficulty' },
-    h('option', { value: '', textContent: '全部难度' }),
-    Object.entries(DIFFICULTY_LABEL).map(([value, label]) => h('option', { value, textContent: label })))
-  const pick = h('select', { name: 'puzzle' })
-  const shownNow = () => puzzles.filter((p) => p.lang === language.value && (!level.value || p.difficulty === level.value))
+  const form = h('form', { className: 'stage', ariaLabel: '新开一局' })
+  const pick = h('select', { name: 'puzzle', ariaLabel: '指定的题目', hidden: true })
+  const randomLabel = h('span')
+  const shownNow = () => puzzles.filter((p) => p.lang === form.elements.lang.value && (!form.elements.difficulty.value || p.difficulty === form.elements.difficulty.value))
   const fill = () => {
     const shown = shownNow()
-    put(pick, h('option', { value: '', textContent: `随机一题（${shown.length} 道）` }),
-      shown.map((p) => h('option', { value: p.id, textContent: `${p.title} · ${DIFFICULTY_LABEL[p.difficulty] ?? ''}` })))
+    randomLabel.textContent = `随机一题 · ${shown.length} 道`
+    const kept = pick.value
+    put(pick, shown.map((p) => h('option', { value: p.id, textContent: `${p.title} · ${DIFFICULTY_LABEL[p.difficulty] ?? ''}` })))
+    if (shown.some((p) => p.id === kept)) pick.value = kept
+    pick.hidden = form.elements.which.value !== 'pick'
   }
-  level.onchange = fill
-  language.onchange = fill
-  fill()
-  const go = h('button', { type: 'submit', className: 'primary', textContent: '开汤' })
+  const which = h('fieldset', { className: 'pills' },
+    h('legend', { textContent: '题目' }),
+    h('label', {}, h('input', { type: 'radio', name: 'which', value: 'random', checked: true }), randomLabel),
+    h('label', {}, h('input', { type: 'radio', name: 'which', value: 'pick' }), h('span', { textContent: '指定一题…' })))
+  const go = h('button', { type: 'submit', className: 'start', textContent: '开汤' })
   form.append(...kids([
-    h('div', { className: 'row' }, h('label', {}, '语言', language), h('label', {}, '难度', level)),
-    h('label', {}, '题目', pick),
-    h('p', { className: 'muted', textContent: '主持人的主人看得到汤底：别让要一起猜的人的 agent 主持。' }),
-    h('div', { className: 'row' }, go),
+    h('h2', { textContent: '新开一局' }),
+    h('p', { className: 'lead', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。问出关键，还原整个故事。' }),
+    pills('语言', 'lang', Object.entries(LANGS), defaultLang()),
+    pills('难度', 'difficulty', [['', '全部'], ...Object.entries(DIFFICULTY_LABEL)], ''),
+    which,
+    pick,
+    h('div', { className: 'go' }, go, h('small', { textContent: '主持人的主人看得到汤底：别让要一起猜的人的 agent 主持。' })),
   ]))
+  form.onchange = (ev) => { if (ev.target !== pick) fill() }
+  fill()
   form.onsubmit = async (ev) => {
     ev.preventDefault()
     go.disabled = true
     try {
       const shown = shownNow()
-      const puzzle = pick.value ? puzzles.find((p) => p.id === pick.value) : shown[Math.floor(Math.random() * shown.length)]
+      const puzzle = form.elements.which.value === 'pick' ? puzzles.find((p) => p.id === pick.value) : shown[Math.floor(Math.random() * shown.length)]
       if (!puzzle) throw new Error('没有这个难度的题')
       await startRound(puzzle)
     } catch (e) {
@@ -200,8 +293,11 @@ async function openRound(entry) {
   }
   const f = current
   offs.push(f.onChange(drawRound), f.onStatus(drawRound), f.presence.onChange(drawRound))
+  stopFollowing()
+  lobbyDrawn++
   $('#lobby').hidden = true
   $('#round').hidden = false
+  document.body.dataset.view = 'round'
   drawControls()
   drawRound()
 }
@@ -219,10 +315,32 @@ function whoAmI() {
   return myId
 }
 
-function badge(q) {
-  if (!q.verdict) return { text: '…', cls: 'pending' }
+/** A verdict as a stamp; one still waiting for the host is a dashed outline. */
+function stamp(q) {
+  if (!q.verdict) return { text: '判定中', cls: 'pending' }
   if (q.verdict === 'close') return { text: `接近 ${q.hits ?? 0}/${current.data.puzzle.requiredCount}`, cls: 'close' }
   return { text: VERDICT_LABEL[q.verdict] ?? q.verdict, cls: q.verdict }
+}
+
+/** Under the case: who hosts, how far along, who plays — or how it ended. */
+function statusBar(round) {
+  const p = round.puzzle
+  const asked = askedCount(round)
+  const given = hintsGiven(round)
+  const solver = round.solvedBy && round.questions[round.solvedBy]?.by
+  const lead = {
+    waiting: h('span', { className: 'host' }, h('span', { className: 'name', textContent: `等 ${nameOf(round.host)} 接手主持…` })),
+    playing: h('span', { className: 'host' }, h('gugu-avatar', { user: round.host, size: 'sm' }), h('span', { className: 'name', textContent: `主持 ${nameOf(round.host)}` })),
+    solved: h('span', { className: 'host' }, solver ? h('gugu-avatar', { user: solver, size: 'sm' }) : null, h('span', { className: 'name', textContent: `${solver ? nameOf(solver) : ''} 还原成功` })),
+    revealed: h('span', { className: 'host' }, h('span', { className: 'name', textContent: '大家放弃了，汤底揭晓' })),
+  }[round.status] ?? h('span', { className: 'host', textContent: round.status })
+  return h('div', { className: 'statusbar', role: 'group', ariaLabel: '这一局' },
+    lead,
+    h('span', { textContent: `${ended(round) ? '共问' : '已问'} ${asked}` }),
+    p.hintCount ? h('span', { className: 'hints', ariaLabel: `提示 ${given}/${p.hintCount}` },
+      h('span', { className: 'word', textContent: '提示' }), h('span', { className: 'cells' }, Array.from({ length: p.hintCount }, (_, i) => h('i', { className: i < given ? 'on' : '' })))) : null,
+    h('span', { className: 'grow' }),
+    faces(playersOf(round), 3))
 }
 
 function drawRound() {
@@ -235,29 +353,26 @@ function drawRound() {
   document.body.dataset.file = f.status
   window.gugu.setTabTitle(p.title).catch((e) => console.warn('setTabTitle', e)) // only the tab's name
   const questions = questionsInOrder(round)
-  const asked = questions.filter((q) => q.kind === 'ask').length
   const given = hintsGiven(round)
-  const line = {
-    waiting: `等 ${nameOf(round.host)} 接手主持…`,
-    playing: `主持：${nameOf(round.host)} · 已问 ${asked} · 提示 ${given}/${p.hintCount}`,
-    solved: `还原成功${round.solvedBy && round.questions[round.solvedBy] ? ` · ${nameOf(round.questions[round.solvedBy].by)}` : ''} · 共问 ${asked} 次`,
-    revealed: `大家放弃了，汤底揭晓 · 共问 ${asked} 次`,
-  }[round.status] ?? round.status
-  put($('#board'), 
-    // The title is the panel's or the tab's own (setTabTitle above); from the lobby, a way back to it.
-    ctx.file ? null : h('div', { className: 'row' }, h('button', { type: 'button', textContent: '回到大厅', onclick: () => { closeRound(); showLobby() } })),
-    h('article', { className: 'card stack', ariaLabel: '汤面' }, h('h5', { textContent: '汤面' }), h('p', { className: 'surface', textContent: p.surface })),
-    h('p', { className: 'muted', textContent: line }),
-    round.bottom ? h('article', { className: 'card stack bottom', ariaLabel: '汤底' }, h('h5', { textContent: '汤底' }), h('p', { className: 'surface', textContent: round.bottom }), credit(p)) : null,
+  put($('#board'),
+    // Opened for its file the panel or tab is the round's own; from the lobby, a way back to it.
+    ctx.file ? null : h('div', {}, h('button', { type: 'button', className: 'link back', onclick: () => { closeRound(); showLobby() } }, h('gugu-icon', { name: 'chevron-left' }), '回到大厅')),
+    h('article', { className: 'stage case', ariaLabel: '汤面' },
+      h('small', { className: 'kicker', textContent: '汤面' }),
+      h('h2', { textContent: p.title }),
+      h('p', { className: 'surface', textContent: p.surface }),
+      h('div', { className: 'tags' }, h('span', { textContent: LANGS[p.lang] ?? p.lang }), DIFFICULTY_LABEL[p.difficulty] ? h('span', { textContent: DIFFICULTY_LABEL[p.difficulty] }) : null)),
+    statusBar(round),
+    round.bottom ? h('article', { className: `card stack bottom st-${round.status}`, ariaLabel: '汤底' }, h('h5', { textContent: '汤底' }), h('p', { className: 'surface', textContent: round.bottom }), credit(p)) : null,
     given ? h('details', { open: !ended(round) }, h('summary', { textContent: `提示（${given}）` }),
       h('ol', {}, Object.keys(round.hints).sort((a, b) => a - b).map((k) => h('li', { textContent: round.hints[k].text })))) : null,
     questions.length
-      ? h('ul', { className: 'list qa', ariaLabel: '问答' }, questions.map((q) => {
-          const b = badge(q)
-          return h('li', { dataset: { key: q.id } },
+      ? h('ul', { className: 'qa', ariaLabel: '问答' }, questions.map((q) => {
+          const s = stamp(q)
+          return h('li', { dataset: { key: q.id }, className: q.kind === 'guess' ? 'guess' : '' },
             h('gugu-avatar', { user: q.by }),
-            h('div', {}, h('strong', { textContent: (q.kind === 'guess' ? '还原：' : '') + q.text }), h('span', { textContent: nameOf(q.by) })),
-            h('mark', { className: `verdict v-${b.cls}`, textContent: b.text }))
+            h('div', {}, h('div', { className: 'q', textContent: (q.kind === 'guess' ? '还原：' : '') + q.text }), h('small', { className: 'muted', textContent: nameOf(q.by) })),
+            h('mark', { className: `stamp s-${s.cls}`, textContent: s.text }))
         }))
       : h('gugu-empty', { icon: 'message-circle' }, h('strong', { textContent: '还没有人提问' }), h('small', { textContent: '问一个能用「是 / 不是」回答的问题' })),
   )
@@ -273,18 +388,19 @@ function credit(p) {
   return h('small', { className: 'muted' }, `题目：${s.author ?? ''} · ${s.license}${from}${link ? ' · ' : ''}`, link)
 }
 
+// The box people type in is drawn once per round and never redrawn: a draft, its caret and IME survive every update.
 let input, askBtn, guessBtn, actions
 function drawControls() {
-  input = h('textarea', { rows: 2, maxLength: MAX_GUESS, placeholder: '问一个能用是 / 否回答的问题；想通了就写下整个故事，点「还原」', ariaLabel: '问题或还原' })
+  input = h('textarea', { rows: 2, maxLength: MAX_GUESS, placeholder: '问一个能用是 / 不是回答的问题；想通了就写下整个故事，点「还原」', ariaLabel: '问题或还原' })
   askBtn = h('button', { type: 'submit', className: 'primary', textContent: '提问' })
   guessBtn = h('button', { type: 'button', textContent: '还原', onclick: () => submit('guess') })
-  const form = h('form', { className: 'stack' }, input, h('div', { className: 'row' }, askBtn, guessBtn))
+  actions = h('span', { className: 'actions' })
+  const form = h('form', { className: 'ask' }, input, h('div', { className: 'bar' }, actions, guessBtn, askBtn))
   form.onsubmit = (ev) => { ev.preventDefault(); submit('ask') }
   input.onkeydown = (ev) => {
     if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); submit('ask') }
   }
-  actions = h('div', { className: 'row' })
-  put($('#controls'), form, actions)
+  put($('#controls'), form)
 }
 
 function drawActions() {
@@ -292,21 +408,25 @@ function drawActions() {
   const round = f.data
   const over = ended(round) || f.status === 'gone'
   for (const el of [input, askBtn, guessBtn]) el.disabled = over
+  for (const el of [input, askBtn, guessBtn]) el.hidden = ended(round)
   if (ended(round)) {
-    put(actions, ctx.file ? h('span') : h('button', { type: 'button', className: 'primary', textContent: '再来一局', onclick: () => { closeRound(); showLobby() } }))
+    put(actions, ctx.file
+      ? h('small', { className: 'muted', textContent: '这一局结束了' })
+      : h('button', { type: 'button', className: 'primary', textContent: '再来一局', onclick: () => { closeRound(); showLobby() } }))
     return
   }
   const given = hintsGiven(round)
   const votes = Object.keys(round.giveUp ?? {}).length
   const mine = myId && round.giveUp?.[myId]
-  put(actions, 
+  put(actions,
     h('button', {
       type: 'button',
+      className: 'link',
       disabled: over || given >= round.puzzle.hintCount || hintWaiting(round),
-      textContent: hintWaiting(round) ? '等主持给提示…' : given >= round.puzzle.hintCount ? '没有提示了' : `要提示（${given + 1}/${round.puzzle.hintCount}）`,
+      textContent: hintWaiting(round) ? '等主持给提示…' : given >= round.puzzle.hintCount ? '没有提示了' : `要提示（${given}/${round.puzzle.hintCount}）`,
       onclick: askHint,
     }),
-    h('button', { type: 'button', className: mine ? '' : 'danger', disabled: over, textContent: mine ? '收回放弃' : '放弃，看汤底', onclick: toggleGiveUp }),
+    h('button', { type: 'button', className: mine ? 'link' : 'link danger', disabled: over, textContent: mine ? '收回放弃' : '放弃，看汤底', onclick: toggleGiveUp }),
     votes ? h('small', { className: 'muted', textContent: `${votes}/${giveUpNeeded(round)} 人同意揭晓` }) : null,
   )
 }
