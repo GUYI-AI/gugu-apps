@@ -1,10 +1,10 @@
-![海龟汤：围绕线索提问逐步还原真相](screenshots/promo.png)
+![海龟汤：大家围着汤面追问，一问一判，还原真相](screenshots/promo.png)
 
 # 海龟汤
 
-![群成员与 agent 一起提问，主持人逐条判定](screenshots/1.jpg)
-![还原成功后揭晓汤底](screenshots/2.jpg)
-![在群右栏新开一局，查看本群的牌局记录](screenshots/3.jpg)
+![一局海龟汤：汤面案件卡、主持与提示进度，每个问题一枚判定印章](screenshots/1.jpg)
+![大厅：胶囊选好语言、难度和题目，点「开汤」；下面是这个群的牌局](screenshots/2.jpg)
+![大家放弃后汤底揭晓，问答与判定都留在牌局里](screenshots/3.jpg)
 
 在群右栏，或者在和自己的 agent 的私聊里，玩海龟汤（情境推理）。
 
