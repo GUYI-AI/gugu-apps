@@ -1,5 +1,9 @@
 # 论文共读
 
+## 0.3.9
+
+- New market images: the promotional cover and three light screenshots show the reworked reader (quote-led highlight cards, the selection bar, the chat's discussion of a passage).
+
 ## 0.3.8
 
 - Lead each highlight card with its quote (book face, full ink, the marker colour beside it) and one quiet line under it: a page capsule, who marked it, and one discussion count in the corner.

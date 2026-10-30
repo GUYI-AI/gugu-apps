@@ -8,7 +8,7 @@ To add an App, copy a template and replace the icon, name, benefit, screenshot p
 
 ## Screenshot sources
 
-All product images below already existed in the corresponding App before this artwork change, except Context, whose screenshots were taken for its 0.1.1 listing from a real project report with paths and machine names replaced. Only their placement inside the promotional frame is new.
+All product images below already existed in the corresponding App before this artwork change, except Context, whose screenshots were taken for its 0.1.1 listing from a real project report with paths and machine names replaced, and Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader (see its `screenshots/SOURCE.md`). Only their placement inside the promotional frame is new.
 
 | Template | Product screenshot, relative to package root | SHA-256 |
 | --- | --- | --- |
@@ -20,6 +20,6 @@ All product images below already existed in the corresponding App before this ar
 | `kanban.html` | `screenshots/1.jpg` | `3cf96007477abf83181cab90d42503bed5a7062cade28aada1dfaf5fbe948727` |
 | `office.html` | `screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
 | `omnisearch.html` | `screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |
-| `paper-club.html` | `screenshots/1.jpg` | `0394784ad09cd55ec77b6d16d35bb526908896177334426825d1ff1d79d4634f` |
+| `paper-club.html` | `screenshots/1.jpg` | `4bdfec7a8a7d7fd6611d5318083a9f0485d84a34b2e1771e073fd33f235c4fe5` |
 | `radar.html` | `screenshots/1.jpg` | `967cb35d769065b25f756f74a20e8d48434174d465434abe77995f219aa1a3d5` |
 | `turtle-soup.html` | `screenshots/1.jpg` | `242c3f9a7f3c06801b5fed8d59d3c913395e05a8f8f40f7ba6d253fe3c668970` |
