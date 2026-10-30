@@ -17,6 +17,8 @@ const WORDS = {
     column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
     addNote: '添加说明…', editNote: '编辑说明', addLink: '添加', noLinks: '暂无关联', messageLink: '群消息', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
     updated: '更新时间', toggle: '展开或收起',
+    renameColumn: '重命名列', deleteColumn: '删除列', deleteColumnHint: '先移走或删除这一列的卡片', noCards: '暂无卡片', dropToDone: '拖到这里标记完成',
+    emptyBoard: '这块看板还是空的', emptyBoardHint: '新建一张卡片，或在群里让 agent 用看板工具添加', undo: '撤销', doneNote: (title) => `「${title}」已完成`,
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
     noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
     attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
@@ -40,6 +42,8 @@ const WORDS = {
     column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
     addNote: 'Add a note…', editNote: 'Edit note', addLink: 'Add', noLinks: 'Nothing linked yet', messageLink: 'Chat message', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
     updated: 'Updated', toggle: 'Expand or collapse',
+    renameColumn: 'Rename column', deleteColumn: 'Delete column', deleteColumnHint: 'Move or delete the cards in this column first', noCards: 'No cards', dropToDone: 'Drop here to mark done',
+    emptyBoard: 'This board is empty', emptyBoardHint: 'Create a card, or ask an agent in the chat to add one with the board tools', undo: 'Undo', doneNote: (title) => `“${title}” is done`,
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
     noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
     attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
@@ -78,6 +82,9 @@ let agents = []
 let agentsKnown = false // no status is drawn until this page has read the host's agent list
 let filter = 'all'
 let selected = null
+let drag = null // a card being carried (wide only)
+let landed = null // the card just dropped into a done column: drawn once with .landed
+let carriedAt = 0
 let visible = ctx.layout?.visible ?? true
 const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
 const waiting = new Map()
@@ -194,6 +201,8 @@ function byLabel(by) {
 function render() {
   if (!board) return
   if (creating) { renderNewCard(); return }
+  // A card being carried keeps the board as it was when it was picked up; what arrived meanwhile is drawn on the drop.
+  if (drag?.started) { drag.stale = true; return }
   const columns = columnsInOrder(board)
   const cards = Object.values(board.cards)
   const flags = new Map(cards.map((c) => [c.id, flagsOf(c)]))
@@ -201,10 +210,11 @@ function render() {
   g.setTabBadge(attention || null).catch((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
 
   const waitingCount = cards.filter((c) => flags.get(c.id).waiting).length
-  $('summary').textContent = [t.count(cards.length), waitingCount ? t.waitingCount(waitingCount) : null].filter(Boolean).join(' · ')
+  $('summary').textContent = cards.length ? [t.count(cards.length), waitingCount ? t.waitingCount(waitingCount) : null].filter(Boolean).join(' · ') : ''
   $('filters').replaceChildren(
-    ...[['all', t.all], ['attention', attention ? `${t.attention} ${attention}` : t.attention]].map(([key, label]) =>
-      h('button', { role: 'tab', 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } }, label)),
+    ...[['all', t.all, cards.length], ['attention', t.attention, attention]].map(([key, label, n]) =>
+      h('button', { role: 'tab', class: key === 'attention' && n ? 'attn' : null, 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } },
+        label, n ? h('small', { text: String(n) }) : null)),
   )
 
   // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
@@ -212,67 +222,172 @@ function render() {
   const focusedAdd = document.hasFocus() ? document.activeElement?.dataset.addCard : null
   $('board').replaceChildren(
     ...columns.map((c) => columnView(c, flags)),
-    h('div', { class: 'add-column' }, h('button', { onclick: addColumn, text: t.addColumn })),
+    h('div', { class: 'add-column' }, h('button', { class: 'plain', onclick: addColumn }, icon('plus'), t.addColumn)),
   )
+  $('board').classList.toggle('empty', cards.length === 0)
+  $('empty-board')?.remove()
+  if (!cards.length) $('board').after(h('gugu-empty', { id: 'empty-board', icon: 'layout-grid' }, h('strong', { text: t.emptyBoard }), h('small', { text: t.emptyBoardHint }),
+    h('button', { class: 'primary', onclick: newCard }, icon('plus'), t.newCard)))
+  if (landed && board.columns[board.cards[landed]?.column]?.role === 'done') landed = null
   if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
   if (selected && !board.cards[selected]) closeCard()
   else if (selected) updateDrawer()
   while (pendingNewCards > 0) { pendingNewCards--; newCard() }
 }
 
+/** A column's status ring: empty, half, three quarters by its role; done is gugu's check. */
+const ring = (role) => (role === 'done' ? icon('circle-check') : h('span', { class: 'ring', 'aria-hidden': 'true' }))
+
 function columnView(column, flags) {
   const all = cardsIn(board, column.id)
   const cards = filter === 'attention' ? all.filter((c) => flags.get(c.id).attention) : all
   if (!collapsed.has(column.id)) collapsed.set(column.id, column.role === 'todo' || column.role === 'done')
   const list = h('ul', { class: 'cards', 'data-col': column.id })
-  list.append(...cards.map((card) => h('li', {}, cardView(card, flags.get(card.id)))))
-  list.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    list.classList.add('over')
-  })
-  list.addEventListener('dragleave', () => list.classList.remove('over'))
-  list.addEventListener('drop', (event) => {
-    event.preventDefault()
-    list.classList.remove('over')
-    const id = event.dataTransfer.getData('text/plain')
-    if (!board.cards[id]) return
-    // Dropped above the first card whose middle is below the pointer; by its id, never by an index (others move too).
-    const below = [...list.querySelectorAll('.card')].find((el) => el.dataset.card !== id && el.getBoundingClientRect().top + el.offsetHeight / 2 > event.clientY)
-    quietly(change({ type: 'card.move', card: id, column: column.id, ...(below ? { before: below.dataset.card } : {}) }))
-  })
-  const title = h('span', { text: columnTitle(column), title: t.columnName, ondblclick: () => renameColumn(column, title) })
+  list.append(...cards.map((card) => h('li', {}, cardView(card, flags.get(card.id), column))))
+  const title = h('span', { class: 'name', text: columnTitle(column), title: t.columnName, ondblclick: () => renameColumn(column, title) })
   const toggle = h('button', { class: 'toggle', 'aria-label': `${columnTitle(column)} · ${t.toggle}`, 'aria-expanded': collapsed.get(column.id) ? 'false' : 'true', onclick: () => { collapsed.set(column.id, !collapsed.get(column.id)); render() } },
     icon(collapsed.get(column.id) ? 'chevron-right' : 'chevron-down'))
-  return h('section', { class: `col${collapsed.get(column.id) ? ' collapsed' : ''}`, 'data-role': column.role ?? '', 'aria-label': columnTitle(column) },
-    h('h2', {}, toggle, title, h('small', { text: String(cards.length) })),
+  const menuId = `col-menu-${column.id}`
+  const menu = h('div', { id: menuId, class: 'menu', popover: 'auto' },
+    h('button', { class: 'plain', text: t.renameColumn, onclick: () => { menu.hidePopover?.(); renameColumn(column, title) } }),
+    h('button', { class: 'plain', text: t.deleteColumn, disabled: all.length > 0, title: all.length ? t.deleteColumnHint : undefined,
+      onclick: () => { menu.hidePopover?.(); quietly(change({ type: 'column.delete', column: column.id })) } }))
+  const hint = cards.length ? null : h('p', { class: 'hint' },
+    column.role === 'done' ? h('span', { class: 'drop-hint' }, icon('arrow-down-to-line'), t.dropToDone) : null,
+    h('span', { class: column.role === 'done' ? 'none-hint' : null, text: t.noCards }))
+  return h('section', { class: `col${collapsed.get(column.id) ? ' collapsed' : ''}`, 'data-role': column.role ?? '', 'data-col': column.id, 'aria-label': columnTitle(column) },
+    h('h2', {}, toggle, ring(column.role), title, h('small', { text: String(cards.length) }),
+      h('span', { class: 'tools' },
+        h('button', { class: 'plain', 'aria-label': `${columnTitle(column)} · ${t.addCard}`, onclick: () => openAdd(column.id) }, icon('plus')),
+        h('button', { class: 'plain', 'aria-label': `${columnTitle(column)} · ${t.more}`, popovertarget: menuId }, icon('ellipsis'))),
+      menu),
     list,
+    hint,
     h('button', { class: 'add', 'data-add-card': column.id, onclick: () => openAdd(column.id) }, icon('plus'), t.addCard),
   )
 }
 
-function cardView(card, flags) {
+function cardView(card, flags, column) {
   const tasks = taskLinks(card)
   const others = otherLinks(card).length
-  const machines = [...new Set(tasks.map(([, l]) => agentBySession(l.session)?.deviceLabel).filter(Boolean))]
+  const owners = [...new Set(tasks.map(([, l]) => l.agent).filter(Boolean))]
   const titleId = `c-${card.id}`
-  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}`, draggable: 'true', 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => openCard(card.id) },
-    h('strong', { id: titleId, text: card.title }),
+  const done = column.role === 'done'
+  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}${landed === card.id ? ' landed' : ''}`, 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => { if (Date.now() - carriedAt > 400) openCard(card.id) } },
+    h('span', { class: 'top' },
+      done ? icon('check-circle-2') : null,
+      h('strong', { id: titleId, text: card.title }),
+      owners.length ? h('span', { class: 'who' }, owners.map((agent) => h('gugu-avatar', { user: agent, size: 'xs', label: agentById(agent)?.title ?? undefined }))) : null),
     card.waitingOn ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn) })) : null,
-    typeof card.progress === 'number' ? h('span', { class: 'bar', role: 'img', 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
     h('span', { class: 'meta' },
-      tasks.map(([, l]) => (l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null)),
       tasks.map(([, l]) => stateBadge(l)),
-      machines.map((m) => h('span', { text: m })),
-      others ? h('span', {}, icon('paperclip'), ` ${others}`) : null,
+      card.due ? h('span', { class: 'chip', title: t.due }, icon('calendar-clock'), card.due) : null,
+      others ? h('span', { class: 'chip', title: t.links }, icon('paperclip'), String(others)) : null,
       h('span', { class: 'spacer' }),
+      typeof card.progress === 'number' && card.progress < 100 ? h('span', { class: 'bar', role: 'img', title: `${t.progress} ${card.progress}%`, 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
       card.updatedAt ? h('gugu-time', { datetime: card.updatedAt, title: flags.stale ? t.stale : undefined }) : null),
   )
-  el.addEventListener('dragstart', (event) => {
-    event.dataTransfer.setData('text/plain', card.id)
-    el.classList.add('dragging')
-  })
-  el.addEventListener('dragend', () => el.classList.remove('dragging'))
+  el.addEventListener('pointerdown', (event) => pickUp(event, el, card))
   return el
+}
+
+// ── carrying a card ──────────────────────────────────────────────────────────
+// Wide only (narrow, a card moves with its column picker). The card lifts and follows the pointer; the column under
+// it lights up and shows where the card will land; dropped, it is one card.move. Into a done column, the card flashes
+// once and a note offers to undo, which moves it back where it was.
+
+
+function pickUp(event, el, card) {
+  if (event.button !== 0 || narrow() || event.pointerType === 'touch') return
+  const from = el.getBoundingClientRect()
+  drag = { card: card.id, el, x: event.clientX, y: event.clientY, dx: event.clientX - from.left, dy: event.clientY - from.top, width: from.width, height: from.height, started: false, stale: false, target: null, before: null }
+  el.setPointerCapture?.(event.pointerId)
+  el.addEventListener('pointermove', carry)
+  el.addEventListener('pointerup', drop, { once: true })
+  el.addEventListener('pointercancel', cancelDrag, { once: true })
+}
+
+function carry(event) {
+  if (!drag) return
+  if (!drag.started) {
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return
+    drag.started = true
+    drag.ghost = drag.el.cloneNode(true)
+    drag.ghost.removeAttribute('id')
+    drag.ghost.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'))
+    drag.ghost.classList.add('lifted')
+    drag.ghost.setAttribute('aria-hidden', 'true')
+    drag.ghost.style.width = `${drag.width}px`
+    document.body.append(drag.ghost)
+    drag.slot = h('li', { class: 'slot', style: `height:${drag.height}px` })
+    drag.el.closest('li').classList.add('carried')
+    document.body.classList.add('carrying')
+  }
+  drag.ghost.style.transform = `translate(${event.clientX - drag.dx}px, ${event.clientY - drag.dy}px) rotate(-1.5deg)`
+  const col = document.elementsFromPoint(event.clientX, event.clientY).map((node) => node.closest?.('section.col')).find(Boolean) ?? null
+  for (const other of $('board').querySelectorAll('section.col.over')) if (other !== col) other.classList.remove('over')
+  if (!col) { drag.slot.remove(); drag.target = null; return }
+  col.classList.add('over')
+  const list = col.querySelector('.cards')
+  // Above the first card whose middle is below the pointer; by its id, never by an index (others move too).
+  const below = [...list.querySelectorAll('li:not(.carried):not(.slot) > .card')].find((card) => { const r = card.getBoundingClientRect(); return r.top + r.height / 2 > event.clientY }) ?? null
+  if (below) list.insertBefore(drag.slot, below.parentElement)
+  else list.append(drag.slot)
+  drag.target = col.dataset.col
+  drag.before = below?.dataset.card ?? null
+}
+
+function endDrag() {
+  const d = drag
+  drag = null
+  d.el.removeEventListener('pointermove', carry)
+  d.ghost?.remove()
+  d.slot?.remove()
+  document.body.classList.remove('carrying')
+  for (const col of $('board').querySelectorAll('section.col.over')) col.classList.remove('over')
+  d.el.closest('li')?.classList.remove('carried')
+  return d
+}
+
+function cancelDrag() {
+  if (!drag) return
+  const d = endDrag()
+  if (d.started && d.stale) render()
+}
+
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && drag?.started) { event.stopPropagation(); cancelDrag() } }, true)
+
+function drop() {
+  if (!drag) return
+  const d = endDrag()
+  if (!d.started) return // a click: it opens the card
+  carriedAt = Date.now() // the click that ends a carry is not a click on the card
+  const card = board.cards[d.card]
+  if (!card || !d.target || !board.columns[d.target]) { render(); return }
+  const was = { column: card.column, before: cardsIn(board, card.column).map((c) => c.id).find((id, i, ids) => ids[i - 1] === card.id) ?? null }
+  if (was.column === d.target && (was.before === d.before || d.before === card.id)) { render(); return }
+  const toDone = board.columns[d.target].role === 'done' && board.columns[was.column]?.role !== 'done'
+  if (toDone) landed = card.id
+  quietly(change({ type: 'card.move', card: card.id, column: d.target, ...(d.before ? { before: d.before } : {}) }).then(() => {
+    if (toDone) showDone(card, was)
+  }))
+}
+
+/** "… done · Undo", for a few seconds: undo moves the card back to its column and place, if they are still there. */
+let doneNote = null
+function showDone(card, was) {
+  clearTimeout(doneNote?.timer)
+  doneNote?.el.remove()
+  const undo = h('button', { text: t.undo, onclick: () => {
+    close()
+    if (!board.cards[card.id] || !board.columns[was.column]) return
+    const before = was.before && board.cards[was.before]?.column === was.column ? { before: was.before } : {}
+    quietly(change({ type: 'card.move', card: card.id, column: was.column, ...before }))
+  } })
+  const el = h('p', { class: 'done-note', role: 'status' }, icon('check-circle-2'), h('span', { text: t.doneNote(card.title) }), undo)
+  const close = () => { clearTimeout(doneNote?.timer); el.remove(); doneNote = null }
+  doneNote = { el, timer: setTimeout(close, 6000) }
+  $('main').append(el)
 }
 
 function renameColumn(column, span) {
@@ -527,7 +642,7 @@ async function updateDrawer(force = false) {
       const missing = agentsKnown && !row
       const status = h('span', { class: 'muted', role: 'status', text: missing ? t.taskUnavailable : '' })
       return h('li', {},
-        link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : icon('bot'),
+        link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : null,
         h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
         stateBadge(link),
         status,

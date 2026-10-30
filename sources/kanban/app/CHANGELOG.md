@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- A lighter, denser board after Linear's: each card is its title with the assignee beside it and one line of facts (task status, due date, attachments, a small progress bar, when it changed); each column has a status ring and its count, with add and more on hover.
+- Carrying a card: it lifts and follows the pointer, the column under it lights up and shows where it will land. Dropped into Done, it flashes once and a note offers Undo.
+- Empty columns and an empty board say so; the empty board offers New card.
+- Narrow panels and phones show the board as a list: sections with rows, in progress first.
+- A linked task without an agent is named in text (the host no longer has the `bot` icon).
+
 ## 1.1.4
 
 - Explicitly declare shared board state as App data when created or opened, so folders can hide it by default. Linked documents remain ordinary files. Requires App API 18.
