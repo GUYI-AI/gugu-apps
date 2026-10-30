@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { publicOf, newRound, pendingQuestions, giveUpNeeded, hintWaiting, checkQuestion } from '../app/game.js'
+import { publicOf, newRound, pendingQuestions, giveUpNeeded, hintWaiting, checkQuestion, summaryOf } from '../app/game.js'
 
 const bank = JSON.parse(readFileSync(new URL('../app/bank/puzzles.json', import.meta.url), 'utf8'))
 const index = readFileSync(new URL('../app/bank/index.json', import.meta.url), 'utf8')
@@ -53,4 +53,19 @@ test('a question is one short line; a guess may be longer', () => {
   assert.throws(() => checkQuestion('ask', '啊'.repeat(121)))
   assert.equal(checkQuestion('guess', '啊'.repeat(300)).length, 300)
   assert.equal(checkQuestion('ask', ' 他是自杀吗？ '), '他是自杀吗？')
+})
+
+test('a round\'s summary counts asks, names players without the host, and carries no solution', () => {
+  const round = newRound({ puzzle, host: 'user:h', at: 1 })
+  round.status = 'revealed'
+  round.bottom = 'the secret'
+  round.questions = {
+    a: { by: 'user:1', kind: 'ask', text: 'q', at: 1, verdict: 'no' },
+    b: { by: 'user:2', kind: 'guess', text: 'g', at: 2, verdict: 'wrong' },
+    c: { by: 'user:h', kind: 'ask', text: 'self', at: 3 },
+  }
+  round.giveUp = { 'user:3': 4 }
+  const s = summaryOf(round)
+  assert.deepEqual({ ...s, players: [...s.players].sort() }, { title: 't', status: 'revealed', asked: 2, players: ['user:1', 'user:2', 'user:3'], host: 'user:h' })
+  assert.ok(!JSON.stringify(s).includes('the secret'))
 })

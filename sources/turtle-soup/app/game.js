@@ -12,6 +12,7 @@ export const ASK_VERDICTS = ['yes', 'no', 'irrelevant', 'partly', 'unclear']
 export const GUESS_VERDICTS = ['solved', 'close', 'wrong']
 export const VERDICT_LABEL = { yes: '是', no: '不是', irrelevant: '无关', partly: '是也不是', unclear: '请换个问法', solved: '还原成功', close: '接近', wrong: '方向不对' }
 export const DIFFICULTY_LABEL = { easy: '简单', medium: '中等', hard: '困难' }
+export const STATUS_LABEL = { waiting: '等主持', playing: '进行中', solved: '已还原', revealed: '看了汤底' }
 export const MAX_QUESTION = 120
 export const MAX_GUESS = 400
 export const MAX_HINTS = 3
@@ -91,3 +92,17 @@ export function playersOf(round) {
 
 /** Give-up votes needed to reveal: a majority of the players (one when playing alone). */
 export const giveUpNeeded = (round) => Math.floor(playersOf(round).length / 2) + 1
+
+/** Questions asked so far (guesses at the story not counted). */
+export const askedCount = (round) => Object.values(round.questions ?? {}).filter((q) => q.kind === 'ask').length
+
+/** A round as a line in the lobby's history: what anyone in the chat may see of it, nothing of the solution. */
+export function summaryOf(round) {
+  return {
+    title: round.puzzle?.title ?? '',
+    status: round.status,
+    asked: askedCount(round),
+    players: playersOf(round),
+    host: round.host,
+  }
+}
