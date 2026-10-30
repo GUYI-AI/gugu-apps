@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto'
 const pad = (n) => String(n).padStart(2, '0')
 const dayOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const PAGE_ONLY = { ui: { visibility: ['app'] } }
+// 00:00–23:59: compared as text, two such clocks order as their times do.
+const isClock = (s) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s))
 
 // A day that is on the calendar: 2026-02-31 parses, but no month shows it.
 function checkDay(date) {
@@ -68,16 +70,22 @@ export const record = {
       tags: { type: 'array', items: { type: 'string' } },
       date: { type: 'string', description: 'YYYY-MM-DD; today when left out.' },
       time: { type: 'string', description: 'HH:MM; for a memory, now when left out.' },
+      end: { type: 'string', description: 'HH:MM, after `time`: when it ends, for something that lasts (a meeting from 14:00 to 15:00). Needs `time`.' },
     },
   },
-  async run({ kind, title, detail, tags, date, time }, { agent, session }) {
+  async run({ kind, title, detail, tags, date, time, end }, { agent, session }) {
     if (kind !== 'todo' && kind !== 'memory') throw new Error("kind must be 'todo' or 'memory'")
     const line = String(title || '').trim()
     if (!line) throw new Error('title is empty')
     const now = new Date()
     const day = checkDay(date || dayOf(now))
     const at = time || (kind === 'memory' ? `${pad(now.getHours())}:${pad(now.getMinutes())}` : undefined)
-    if (at !== undefined && !/^\d{2}:\d{2}$/.test(at)) throw new Error(`time must be HH:MM, got ${JSON.stringify(time)}`)
+    if (at !== undefined && !isClock(at)) throw new Error(`time must be HH:MM, got ${JSON.stringify(time)}`)
+    if (end !== undefined && end !== null && end !== '') {
+      if (!isClock(end)) throw new Error(`end must be HH:MM, got ${JSON.stringify(end)}`)
+      if (at === undefined) throw new Error('end needs a time to start from')
+      if (end <= at) throw new Error(`end must be after time (${at}), got ${end}`)
+    } else end = undefined
     return change((journal) => {
       const list = journal.days[day] || (journal.days[day] = [])
       // The same line twice on a day is the same entry: a retried call adds nothing.
@@ -90,10 +98,11 @@ export const record = {
       }
       if (kind === 'todo') entry.done = false
       if (at) entry.time = at
+      if (end) entry.end = end
       if (detail) entry.detail = String(detail)
       if (Array.isArray(tags) && tags.length) entry.tags = tags.map(String).slice(0, 5)
       list.push(entry)
-      return `Recorded ${kind} on ${day}${at ? ` ${at}` : ''}: ${line}`
+      return `Recorded ${kind} on ${day}${at ? ` ${at}` : ''}${end ? `–${end}` : ''}: ${line}`
     })
   },
 }

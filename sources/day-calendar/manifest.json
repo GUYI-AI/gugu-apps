@@ -1,10 +1,10 @@
 {
   "id": "day-calendar",
   "name": "Calendar",
-  "description": "The person's calendar: record writes a to-do or a memory on a day. It shows in the task page's side panel as a month with the chosen day's to-dos and memories.",
+  "description": "The person's calendar: record writes a to-do or a memory on a day, at a time or for a span. It shows as a time axis: one day in the task page's side panel, a week in a full tab.",
   "subtitle": "Calendar, to-dos and notes",
   "author": "咕咕",
-  "version": "0.4.6",
+  "version": "0.5.0",
   "apiVersion": 12,
   "platforms": [
     "desktop"
@@ -13,13 +13,13 @@
   "localized": {
     "zh-CN": {
       "name": "日历",
-      "description": "任务页右侧栏里的日历：上面一个月，下面是选中那天的待办和记事。你自己记，或者让 agent 帮你记。",
-      "subtitle": "月历、待办与记事"
+      "description": "按时间轴看的日历：侧栏里是一天，整页是一周；待办和记事按钟点排开，没写时间的放在「全天」。你自己记，或者让 agent 帮你记。",
+      "subtitle": "时间轴上的待办与记事"
     },
     "en": {
       "name": "Calendar",
-      "description": "A calendar in the task page's side panel: a month on top, the chosen day's to-dos and memories below, written by you or by an agent.",
-      "subtitle": "Calendar, to-dos and notes"
+      "description": "A calendar on a time axis: one day in the side panel, a week in a full tab; to-dos and memories at their hour, untimed ones in the all-day row, written by you or by an agent.",
+      "subtitle": "To-dos and notes on a time axis"
     }
   },
   "entry": "main.html",
