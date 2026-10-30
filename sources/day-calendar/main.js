@@ -137,6 +137,8 @@
   const range = () => (mode() === 'week' ? weekOf(selected) : [selected])
   const HOUR = () => (wide() ? 44 : 48)
   const GUTTER = () => (wide() ? 52 : 48)
+  // One day's column in pixels: the page less the month rail (wide), the gutter, over the days shown.
+  const dayWidth = () => (window.innerWidth - (wide() ? 245 : 0) - GUTTER()) / range().length
 
   function showErr(msg, kind) {
     errKind = msg ? kind : null
@@ -258,24 +260,27 @@
     const H = HOUR()
     const top = (s / 60) * H
     const height = Math.max(((end - s) / 60) * H - 2, 20)
-    const oneLine = height < 34 || it.n > 2 || (wide() && mode() === 'week' && it.n > 1)
     const w = 100 / it.n
     const range = e.end ? `${e.time}–${e.end}` : e.time
-    // Side by side in a week column there is room for the title only: the check and the agent mark move to the card.
-    const narrow = wide() && mode() === 'week' && it.n > 1
+    // Side by side in a week column too narrow for a check and a few words, a block shows its title only (the check and
+    // the agent mark are in its card); hovered or focused it spreads over the whole column with the full title and time.
+    const narrow = wide() && mode() === 'week' && it.n > 1 && dayWidth() / it.n < 110
+    const oneLine = narrow || height < 34 || it.n > 2
     const check = e.kind === 'todo' && !narrow
       ? el('input', { type: 'checkbox', checked: !!e.done, 'aria-label': t().toggle, onclick: (ev) => { ev.stopPropagation(); toggleDone(date, e) } })
       : null
     const agent = e.by && !narrow ? icon('zap', t().byAgent) : null
     const showTime = !(wide() && mode() === 'week') && it.n === 1
-    const kids = oneLine
+    const kids = narrow
+      ? [el('span', { class: 'line' }, el('span', { class: 'title', text: e.title })), el('span', { class: 'sub', text: range })]
+      : oneLine
       ? [el('span', { class: 'line' }, check, el('span', { class: 'title', text: e.title }), agent, showTime ? el('span', { class: 'at', text: e.time }) : null)]
       : [el('span', { class: 'line' }, check, el('span', { class: 'title', text: e.title }), agent),
         el('span', { class: 'sub', text: [range, ...(Array.isArray(e.tags) ? e.tags : [])].join(' · ') })]
     const cls = ['ev', e.kind === 'todo' ? 'todo' : 'memory', e.done ? 'done' : '', oneLine ? 'short' : '', narrow ? 'narrow' : '', shownEntry && shownEntry.id === e.id ? 'open' : ''].join(' ')
     return el('div', {
       class: cls, role: 'button', tabindex: '0', 'data-id': e.id, title: `${range} ${e.title}`,
-      style: `top:${top + 1}px;height:${height}px;left:calc(${it.col * w}% + 2px);width:calc(${w}% - 4px)`,
+      style: `top:${top + 1}px;height:${height}px;--h:${height}px;left:calc(${it.col * w}% + 2px);width:calc(${w}% - 4px)`,
       onclick: (ev) => { ev.stopPropagation(); openEntry(date, e) },
       onkeydown: (ev) => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) openEntry(date, e) },
       onpointerdown: (ev) => ev.stopPropagation(),

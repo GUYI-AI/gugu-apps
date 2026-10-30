@@ -119,6 +119,13 @@ button.plain {
 .ev gugu-icon { width: 12px; height: 12px; flex: none; color: var(--em-foreground-muted); }
 .ev.short { justify-content: center; padding-block: 0; }
 .ev.narrow { padding-inline: 6px 3px; }
+.ev.narrow .sub { display: none; }
+.ev.narrow:is(:hover, :focus-visible) {
+  left: 2px !important; width: calc(100% - 4px) !important; height: auto !important; min-height: var(--h);
+  padding-block: 3px; justify-content: flex-start; z-index: 5; outline: 1px solid var(--em-border-1); outline-offset: -1px;
+}
+.ev.narrow:is(:hover, :focus-visible) .title { white-space: normal; overflow-wrap: anywhere; }
+.ev.narrow:is(:hover, :focus-visible) .sub { display: block; }
 .ev.draft { background: var(--em-background-1); box-shadow: inset 3px 0 0 var(--em-accent-9), var(--em-shadow-lift); z-index: 3; cursor: default; }
 .ev.draft .title { color: var(--em-foreground-muted); font-weight: 400; }
 @media (hover: hover) { .ev:not(.draft):hover { background-image: linear-gradient(var(--em-hover), var(--em-hover)); } .ev.memory:hover { background: linear-gradient(var(--em-hover), var(--em-hover)), linear-gradient(var(--em-background-info), var(--em-background-info)), var(--em-background); } }

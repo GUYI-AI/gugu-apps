@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Week view: entries side by side in a narrow day column spread over the whole column on hover or keyboard focus, with the full title and the time; where a column has room, they keep their check and agent mark.
+
 ## 0.5.0
 
 - A time axis instead of a month and two lists: hour scale, an ink line and tag for now, each entry a block at its hour (to-do, checked to-do, memory), overlapping entries side by side, to-dos without a time in an all-day row.
