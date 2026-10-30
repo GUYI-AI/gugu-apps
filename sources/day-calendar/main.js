@@ -469,8 +469,7 @@
     const hours = el('div', { class: 'hours' })
     for (let i = 1; i < 24; i++) {
       // The hour's label steps aside for the time of now.
-      if (keys.includes(today) && Math.abs(i * 60 - now) < 14) continue
-      hours.append(el('span', { style: `top:${i * H}px`, text: `${pad(i)}:00` }))
+      hours.append(el('span', { 'data-h': String(i), style: `top:${i * H}px`, text: `${pad(i)}:00`, hidden: keys.includes(today) && nearNow(i, now) }))
     }
     const grid = el('div', { class: 'grid', style: `grid-template-columns:${tpl};height:${24 * H}px` }, hours, keys.map((k) => column(k, keys)))
     if (keys.includes(today)) {
@@ -488,6 +487,19 @@
     }
     const scroller = el('div', { class: 'scroller', id: 'scroller', onscroll: (ev) => { scrollTop = ev.target.scrollTop } }, grid)
     return { scroller, tpl, keys }
+  }
+
+  const nearNow = (hour, now) => Math.abs(hour * 60 - now) < 14
+
+  // The minute moves only the line of now, its tag and the hour label it hides: an open card, what is typed in it and
+  // the scroll stay as they are.
+  function moveNow() {
+    const H = HOUR(), now = nowMins()
+    for (const n of document.querySelectorAll('.now, .now-all, .now-label')) n.style.top = `${(now / 60) * H}px`
+    const label = document.querySelector('.now-label')
+    if (!label) return
+    label.textContent = hm(now)
+    for (const span of document.querySelectorAll('.hours span')) span.hidden = nearNow(Number(span.dataset.h), now)
   }
 
   // Where a range opens: a little before now when today is in it, else an hour before its first timed entry, else 08:00.
@@ -689,17 +701,24 @@
       if (!shown || document.visibilityState === 'hidden') return
       if (await load() && !draft) render()
     }, 3000)
-    // The minute moves the line of now; a new day moves "today" along.
+    // The minute moves the line of now; a new day moves "today" along (a redraw, held while a new entry is being written).
     let today = keyOf(new Date())
     let minute = nowMins()
+    let dayPending = false
     setInterval(() => {
       const k = keyOf(new Date())
       const m = nowMins()
-      if (k === today && m === minute) return
-      if (k !== today && selected === today) selected = k
-      today = k
+      if (k === today && m === minute && !(dayPending && !draft)) return
+      if (k !== today) {
+        if (selected === today) selected = k
+        today = k
+        dayPending = true
+      }
       minute = m
-      if (!draft) render()
+      if (dayPending && !draft) {
+        dayPending = false
+        render()
+      } else moveNow()
     }, 15 * 1000)
   }
   start()
