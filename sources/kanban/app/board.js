@@ -84,7 +84,7 @@ let filter = 'all'
 let selected = null
 let drag = null // a card being carried (wide only)
 let landed = null // the card just dropped into a done column: drawn once with .landed
-let carriedAt = 0
+let carried = false // the press under way carried a card: the click that ends it is not a click on the card
 let visible = ctx.layout?.visible ?? true
 const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
 const waiting = new Map()
@@ -273,7 +273,7 @@ function cardView(card, flags, column) {
   const owners = [...new Set(tasks.map(([, l]) => l.agent).filter(Boolean))]
   const titleId = `c-${card.id}`
   const done = column.role === 'done'
-  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}${landed === card.id ? ' landed' : ''}`, 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => { if (Date.now() - carriedAt > 400) openCard(card.id) } },
+  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}${landed === card.id ? ' landed' : ''}`, 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => { if (carried) carried = false; else openCard(card.id) } },
     h('span', { class: 'top' },
       done ? icon('check-circle-2') : null,
       h('strong', { id: titleId, text: card.title }),
@@ -312,6 +312,7 @@ function carry(event) {
   if (!drag.started) {
     if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return
     drag.started = true
+    carried = true
     drag.ghost = drag.el.cloneNode(true)
     drag.ghost.removeAttribute('id')
     drag.ghost.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'))
@@ -352,18 +353,19 @@ function endDrag() {
 function cancelDrag() {
   if (!drag) return
   const d = endDrag()
-  if (!d.started) return
-  carriedAt = Date.now() // the release after Esc is not a click on the card either
-  if (d.stale) render()
+  if (d.started && d.stale) render()
 }
 
+// A new press, or a card clicked from the keyboard, is a click of its own: whatever an earlier carry left is forgotten
+// (a carry cancelled by the system, or dropped where no click follows, leaves its mark until then).
+document.addEventListener('pointerdown', () => { carried = false }, true)
+document.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') carried = false }, true)
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && drag?.started) { event.stopPropagation(); cancelDrag() } }, true)
 
 function drop() {
   if (!drag) return
   const d = endDrag()
   if (!d.started) return // a click: it opens the card
-  carriedAt = Date.now() // the click that ends a carry is not a click on the card
   const card = board.cards[d.card]
   if (!card || !d.target || !board.columns[d.target]) { render(); return }
   const was = { column: card.column, before: cardsIn(board, card.column).map((c) => c.id).find((id, i, ids) => ids[i - 1] === card.id) ?? null }
