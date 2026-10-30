@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5
+
+- Market: in-client captures of 0.5.4 replace the 0.4 images: the side panel beside an agent's `record` turn (light and dark) and the week view (light and dark); the promotional image is re-rendered with the side panel. No code change.
+
 ## 0.5.4
 
 - Where the time axis opens on a range with today: an hour before today's first timed entry (an hour before now when there is none), not earlier than 07:00, and the line of now always on screen when the two disagree. Before, it opened five and a half hours before now, which at 09:00 meant a screen of empty early morning.

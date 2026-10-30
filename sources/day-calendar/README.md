@@ -2,9 +2,10 @@
 
 # 日历
 
-![在任务中让 agent 用日历记下会议，右侧日历同步显示当天的待办](screenshots/1.jpg)
-![另一个任务记下的记事与手动勾选的待办汇总在同一天](screenshots/2.jpg)
+![在任务里让 agent 记下明天下午的看房，右侧栏是今天的时间轴](screenshots/side.png)
+![深色下的侧栏：周条、全天、时间轴与现在线](screenshots/side-dark.png)
 ![整页打开是一周：左边小月历和图例，时间轴上按钟点排开待办与记事，agent 记的带 ⚡](screenshots/week.png)
+![深色下的周视图](screenshots/week-dark.png)
 
 按时间轴看的日历。任务页右侧栏里是一天：上面一行这一周，下面是从早到晚的时间轴；整页打开是一周，左边一个小月历。
 
