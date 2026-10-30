@@ -758,10 +758,11 @@ async function showFile(lid, link) {
       d.unbind = g.bind.codemirror(view, f)
     }
     if (!MARKDOWN.test(name)) return editor(box)
-    // Markdown reads rendered; 编辑 swaps in the editor, bound to the file (others' typing stays).
+    // Markdown reads rendered; 编辑 swaps in the editor, bound to the file (others' typing stays). A file's front matter
+    // reads as the host draws it for a file (a property list); a card's own note is not a file and has none.
     const md = await g.markdown()
     const shown = h('div')
-    const draw = () => md.render(shown, f.text, { density: 'comfortable', file: f.entry })
+    const draw = () => md.render(shown, f.text, { density: 'comfortable', frontmatter: true, file: f.entry })
     draw()
     const off = f.onChange(draw)
     const edit = h('button', { text: t.edit, onclick: () => {
