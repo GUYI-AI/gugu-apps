@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { highlightView } from '../app/lib/highlight-view.js'
+import { discussionLabel, highlightView } from '../app/lib/highlight-view.js'
+import { fmt, stringsFor } from '../app/lib/strings.js'
 
 const data = {
   highlights: {
@@ -41,4 +42,19 @@ test('filtering never changes the shared notes or reference map and supports an 
   assert.equal(JSON.stringify(data), before)
   assert.equal(messages.get('lower').length, 2)
   assert.deepEqual(highlightView(undefined, new Map(), undefined), { rows: [], counts: { all: 0, mine: 0, discussed: 0 } })
+})
+
+test('a card carries one discussion count: chat citations, plus comments only while it is folded', () => {
+  const zh = stringsFor('zh-CN')
+  const label = (n) => discussionLabel(n, zh, fmt)
+  assert.equal(label({ messages: 2, comments: 3 }), '群里讨论过 2 次 · 3 条评论')
+  assert.equal(label({ messages: 2, comments: 3, selected: true }), '群里讨论过 2 次')
+  assert.equal(label({ comments: 3 }), '3 条评论')
+  assert.equal(label({ comments: 3, selected: true }), '')
+  assert.equal(label({}), '')
+  assert.equal(discussionLabel({ messages: 1, comments: 1 }, stringsFor('en'), fmt), 'Discussed 1 time in the chat · 1 comment')
+})
+
+test('both languages carry the same words', () => {
+  assert.deepEqual(Object.keys(stringsFor('zh-CN')).sort(), Object.keys(stringsFor('en')).sort())
 })

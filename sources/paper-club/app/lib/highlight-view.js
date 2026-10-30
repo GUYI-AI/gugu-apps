@@ -21,3 +21,12 @@ export function highlightView(data, discussed, userId, filter = 'all') {
   const counts = Object.fromEntries(Object.entries(matches).map(([key, match]) => [key, rows.filter(match).length]))
   return { rows: rows.filter(matches[filter]), counts }
 }
+
+/** A card's one discussion count, at the end of its meta line: how often the chat cited it, and — while the card is
+ * folded — how many comments it holds (an open card shows the comments themselves). */
+export function discussionLabel({ messages = 0, comments = 0, selected = false }, t, fmt) {
+  const parts = []
+  if (messages) parts.push(fmt(t.discussed, { n: messages }))
+  if (comments && !selected) parts.push(fmt(t.commentCount, { n: comments }))
+  return parts.join(' · ')
+}

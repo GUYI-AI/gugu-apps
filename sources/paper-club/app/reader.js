@@ -15,7 +15,7 @@ import { openPdf, pdfjs } from './lib/pdf.js'
 import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry } from './lib/paper.js'
 import { fmt, stringsFor } from './lib/strings.js'
 import { createReview } from './lib/review.js'
-import { highlightView } from './lib/highlight-view.js'
+import { discussionLabel, highlightView } from './lib/highlight-view.js'
 import { importFailure, importInto, uploadInto } from './lib/import-box.js'
 
 const $ = (id) => document.getElementById(id)
@@ -633,7 +633,7 @@ async function commentSelection() {
   const id = await markSelection({ color: 'yellow' })
   if (!id) return
   openThread(id)
-  setTimeout(() => document.querySelector('#side-body textarea')?.focus(), 50)
+  setTimeout(() => document.querySelector('#side-body .reply input')?.focus(), 50)
 }
 
 function onPageClick(event) {
@@ -757,7 +757,7 @@ function drawReaders() {
       avatar.setAttribute('user', p.userId)
       avatar.setAttribute('size', 'xs')
       const where = document.createElement('small')
-      where.textContent = p.state?.page ? String(p.state.page) : ''
+      where.textContent = p.state?.page ? fmt(state.t.onPage, { n: p.state.page }) : ''
       b.append(avatar, where)
       b.onclick = () => {
         state.follow = state.follow === p.userId ? null : p.userId
@@ -800,7 +800,9 @@ function drawSide() {
   $('highlight-filters').hidden = state.tab !== 'highlights'
   for (const button of document.querySelectorAll('[data-highlight-filter]')) {
     const filter = button.dataset.highlightFilter
-    button.textContent = fmt(state.t[`${filter}Highlights`], { n: view.counts[filter] })
+    const count = document.createElement('small')
+    count.textContent = String(view.counts[filter])
+    button.replaceChildren(state.t[`${filter}Highlights`], count)
     button.setAttribute('aria-pressed', String(filter === state.highlightFilter))
   }
   const body = $('side-body')
@@ -846,39 +848,42 @@ function drawHighlights(body, view) {
       const q = document.createElement('blockquote')
       q.className = `c-${h.color ?? 'yellow'}`
       q.textContent = h.quote
-      const meta = document.createElement('small')
-      meta.className = 'muted thread-meta'
-      const source = document.createElement('span')
-      source.textContent = `${fmt(t.page, { n: h.page })} · ${memberName(h.by, h.name)}`
-      const replies = document.createElement('span')
-      replies.textContent = comments.length ? fmt(t.commentCount, { n: comments.length }) : ''
-      meta.append(source, replies)
-      head.append(q, meta)
+      head.append(q)
       head.onclick = () => {
         state.focus = selected ? null : id
         if (!selected) scrollToPage(h.page, h.rects?.[0]?.[1] ?? 0)
         drawAllMarks()
         drawSide()
       }
-      card.append(head)
+      // One quiet line under the quote: its page, who marked it, and (bottom right) the one count of its discussion.
+      const meta = document.createElement('div')
+      meta.className = 'thread-meta'
+      const page = document.createElement('small')
+      page.className = 'page-pill'
+      page.textContent = fmt(t.page, { n: h.page })
+      meta.append(page, h.by ? avatarNamed(h.by) : Object.assign(document.createElement('small'), { textContent: memberName(h.by, h.name) }))
+      const label = discussionLabel({ messages: messages.length, comments: comments.length, selected }, t, fmt)
+      if (label) meta.append(discussionCount(id, label, messages.length > 0))
+      card.append(head, meta)
+      if (selected && canWrite() && h.by === state.notes.presence.self.userId) card.append(moreMenu(id))
       if (selected) {
         for (const c of comments) {
           const row = document.createElement('div')
           row.className = 'comment'
-          const avatar = document.createElement('gugu-avatar')
-          avatar.setAttribute('user', c.by)
-          avatar.setAttribute('size', 'xs')
-          const text = document.createElement('p')
-          text.textContent = c.text
+          const who = document.createElement('div')
+          who.className = 'comment-who'
           const when = document.createElement('gugu-time')
           when.setAttribute('datetime', c.at)
-          row.append(avatar, text, when)
+          who.append(avatarNamed(c.by), when)
+          const text = document.createElement('p')
+          text.textContent = c.text
+          row.append(who, text)
           card.append(row)
         }
       }
-      if (messages.length) card.append(discussionOf(id, messages))
-      else if (selected && !state.place?.chat) card.append(note(t.noChatInSession))
-      else if (selected && !messagesReadable()) card.append(note(t.noMessagesHere))
+      if (selected && state.openDiscussion === id && messages.length) card.append(discussionOf(messages))
+      else if (selected && !messages.length && !state.place?.chat) card.append(note(t.noChatInSession))
+      else if (selected && !messages.length && !messagesReadable()) card.append(note(t.noMessagesHere))
       if (selected && canWrite()) card.append(replyBox(id, h))
       return card
     }),
@@ -895,27 +900,38 @@ function note(text) {
 /** Whether this page can read the chat's messages: a gugu with gugu.messages, and chat:read granted. */
 const messagesReadable = () => typeof gugu.messages?.search === 'function' && (state.ctx?.capabilities ?? []).includes('chat:read')
 
-/** 「Discussed N times in the chat」, unfolding to those messages; one clicked is shown in the chat (gugu.showMessage). */
-function discussionOf(id, said) {
-  const t = state.t
-  const box = document.createElement('div')
-  box.className = 'discussion'
-  const toggle = document.createElement('button')
-  toggle.type = 'button'
-  toggle.className = 'discussion-toggle'
+/** A member's face and name (the host's element: an agent's carries ⚡). */
+function avatarNamed(userId) {
+  const avatar = document.createElement('gugu-avatar')
+  avatar.setAttribute('user', userId)
+  avatar.setAttribute('size', 'xs')
+  avatar.setAttribute('name', '')
+  return avatar
+}
+
+/** The card's discussion count; where the chat cited it, a click selects the card and unfolds those messages. */
+function discussionCount(id, label, cited) {
+  if (!cited) return Object.assign(document.createElement('small'), { className: 'discussion-count', textContent: label })
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'discussion-count'
   const expanded = state.focus === id && state.openDiscussion === id
-  toggle.setAttribute('aria-expanded', String(expanded))
-  toggle.textContent = fmt(t.discussed, { n: said.length })
-  toggle.onclick = () => {
+  button.setAttribute('aria-expanded', String(expanded))
+  button.textContent = label
+  button.onclick = () => {
     state.focus = id
     state.openDiscussion = expanded ? null : id
     drawAllMarks()
     drawSide()
   }
-  box.append(toggle)
-  if (!expanded) return box
+  return button
+}
+
+/** The chat's messages citing a passage; one clicked is shown in the chat (gugu.showMessage). */
+function discussionOf(said) {
+  const t = state.t
   const list = document.createElement('ul')
-  list.className = 'list'
+  list.className = 'list discussion'
   for (const m of said) {
     const li = document.createElement('li')
     const row = document.createElement('button')
@@ -934,7 +950,46 @@ function discussionOf(id, said) {
     li.append(row)
     list.append(li)
   }
-  box.append(list)
+  return list
+}
+
+/** ⋯ on the marker's own selected card: deleting is there, not beside the reply. */
+function moreMenu(id) {
+  const t = state.t
+  const box = document.createElement('div')
+  box.className = 'more'
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.className = 'more-toggle'
+  toggle.setAttribute('aria-label', t.more)
+  toggle.title = t.more
+  toggle.innerHTML = '<gugu-icon name="more-horizontal"></gugu-icon>'
+  const menu = document.createElement('div')
+  menu.className = 'more-menu'
+  menu.popover = 'auto'
+  menu.id = `more-${id}`
+  toggle.setAttribute('popovertarget', menu.id)
+  const remove = document.createElement('button')
+  remove.type = 'button'
+  remove.className = 'danger'
+  remove.textContent = t.remove
+  remove.onclick = () => {
+    menu.hidePopover()
+    state.notes.transact(() => {
+      delete state.notes.data.highlights[id]
+      for (const [cid, c] of Object.entries(state.notes.data.comments)) if (c.on === id) delete state.notes.data.comments[cid]
+    })
+    state.focus = null
+  }
+  menu.append(remove)
+  // Placed under its button by hand: the popover sits in the top layer, outside the card's box.
+  menu.addEventListener('toggle', (event) => {
+    if (event.newState !== 'open') return
+    const r = toggle.getBoundingClientRect()
+    menu.style.top = `${r.bottom + 4}px`
+    menu.style.right = `${document.documentElement.clientWidth - r.right}px`
+  })
+  box.append(toggle, menu)
   return box
 }
 
@@ -942,43 +997,26 @@ function replyBox(id, h) {
   const t = state.t
   const form = document.createElement('form')
   form.className = 'reply'
-  const box = document.createElement('textarea')
-  box.rows = 2
+  const box = document.createElement('input')
+  box.type = 'text'
   box.placeholder = t.reply
+  box.enterKeyHint = 'send'
   box.setAttribute('aria-label', t.reply)
-  const row = document.createElement('div')
-  row.className = 'row'
-  const send = document.createElement('button')
-  send.type = 'submit'
-  send.className = 'primary'
-  send.textContent = t.send
   const ask = document.createElement('button')
   ask.type = 'button'
   ask.textContent = t.ask
   ask.onclick = () => askAbout(id, h, fmt(t.askText, { n: h.page })).catch((e) => say(fmt(t.failed, { e: e.message }), 'error'))
-  const remove = document.createElement('button')
-  remove.type = 'button'
-  remove.className = 'danger'
-  remove.textContent = t.remove
-  remove.hidden = h.by !== state.notes.presence.self.userId
-  remove.onclick = () => {
-    state.notes.transact(() => {
-      delete state.notes.data.highlights[id]
-      for (const [cid, c] of Object.entries(state.notes.data.comments)) if (c.on === id) delete state.notes.data.comments[cid]
-    })
-    state.focus = null
+  form.append(box, ask)
+  // Enter sends (a form with one text field submits on Enter); an IME's Enter only commits the composition.
+  box.onkeydown = (event) => {
+    if (event.key === 'Enter' && event.isComposing) event.preventDefault()
   }
-  row.append(send, ask, remove)
-  form.append(box, row)
   form.onsubmit = (event) => {
     event.preventDefault()
     const text = box.value.trim()
     if (!text) return
     state.notes.data.comments[newId()] = { on: id, by: state.notes.presence.self.userId, name: state.notes.presence.self.name, text, at: new Date().toISOString() }
     box.value = ''
-  }
-  box.onkeydown = (event) => {
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) form.requestSubmit()
   }
   return form
 }
