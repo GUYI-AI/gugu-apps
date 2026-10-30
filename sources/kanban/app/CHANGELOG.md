@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+
+- A press that carried a card never opens it on release, however long after Esc the mouse comes up: the press is marked when the carry starts and its click is ignored, in place of 1.2.1's 400 ms window. A drop uses the same mark.
+
 ## 1.2.1
 
 - Cancelling a carried card with Esc no longer opens it when the mouse is released.

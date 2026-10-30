@@ -96,6 +96,7 @@ test('commands received before the first local board state execute once when it 
 })
 
 async function openChatBoard(board, tag) {
+  const changed = []
   const { window, document } = parseHTML(html)
   document.hasFocus = () => false
   window.gugu = {
@@ -107,7 +108,8 @@ async function openChatBoard(board, tag) {
     files: {
       open: async () => ({
         entry: { id: 'board', chat: 'chat' }, data: board, toJSON: () => structuredClone(board),
-        presence: { self: { userId: 'person' } }, onChange() {}, onStatus() {}, close() {},
+        presence: { self: { userId: 'person' } }, onChange(fn) { changed.push(fn) }, onStatus() {}, close() {},
+        transact(fn) { fn(); for (const g of changed) g({ local: true }) },
       }),
     },
   }
@@ -153,31 +155,68 @@ test('a task without an agent is named in text, with no icon the host does not h
   }
 })
 
-test('Esc cancels a carry, and the release that follows does not open the card', async () => {
+async function wideBoard(tag) {
   const board = emptyBoard()
   let n = 0
   const by = { by: 'person', now: '2026-10-25T00:00:00.000Z', id: () => `id${++n}` }
   const { card } = applyOp(board, { type: 'card.create', title: 'Carried', column: 'review' }, by)
-  try {
-    const document = await openChatBoard(board, 'esc-cancel')
-    const { window } = globalThis
-    Object.defineProperty(document.getElementById('shell'), 'clientWidth', { value: 1200 }) // wide: cards can be carried
-    window.HTMLElement.prototype.getBoundingClientRect ??= function () { return { left: 0, top: 0, width: 240, height: 64 } }
-    document.elementsFromPoint = () => []
-    const pointer = (type, x, y) => Object.assign(new window.Event(type, { bubbles: true }), { button: 0, pointerType: 'mouse', pointerId: 1, clientX: x, clientY: y })
-    const shown = document.querySelector(`[data-card="${card}"]`)
-    shown.dispatchEvent(pointer('pointerdown', 10, 10))
-    shown.dispatchEvent(pointer('pointermove', 40, 30))
-    assert.ok(document.querySelector('.card.lifted'), 'the card is carried')
-    document.dispatchEvent(Object.assign(new window.Event('keydown', { bubbles: true }), { key: 'Escape' }))
-    assert.equal(document.querySelector('.card.lifted'), null, 'Esc puts it down')
-    shown.dispatchEvent(pointer('pointerup', 40, 30))
-    shown.click() // the browser's click at the end of that press
+  const document = await openChatBoard(board, tag)
+  const { window } = globalThis
+  Object.defineProperty(document.getElementById('shell'), 'clientWidth', { value: 1200 }) // wide: cards can be carried
+  window.HTMLElement.prototype.getBoundingClientRect ??= function () { return { left: 0, top: 0, width: 240, height: 64 } }
+  document.elementsFromPoint = () => []
+  const pointer = (type, x, y) => Object.assign(new window.Event(type, { bubbles: true }), { button: 0, pointerType: 'mouse', pointerId: 1, clientX: x, clientY: y })
+  const shown = () => document.querySelector(`[data-card="${card}"]`)
+  /** One press on the card: down, optional moves, (something), up, then the click the browser sends at its end. */
+  const press = async (moves, between = () => {}) => {
+    const el = shown()
+    el.dispatchEvent(pointer('pointerdown', 10, 10))
+    for (const [x, y] of moves) el.dispatchEvent(pointer('pointermove', x, y))
+    await between()
+    el.dispatchEvent(pointer('pointerup', 40, 30))
+    el.click()
     await new Promise(setImmediate)
+  }
+  return { board, card, document, window, press }
+}
+
+const clear = () => { delete globalThis.window; delete globalThis.document }
+
+test('Esc cancels a carry, and its release — however long after — does not open the card', async () => {
+  const realNow = Date.now
+  try {
+    const { board, card, document, window, press } = await wideBoard('esc-cancel')
+    await press([[40, 30]], () => {
+      assert.ok(document.querySelector('.card.lifted'), 'the card is carried')
+      document.dispatchEvent(Object.assign(new window.Event('keydown', { bubbles: true }), { key: 'Escape' }))
+      assert.equal(document.querySelector('.card.lifted'), null, 'Esc puts it down')
+      const later = realNow() + 1500
+      Date.now = () => later // released 1.5 s after Esc
+    })
     assert.equal(document.getElementById('drawer').hidden, true, 'the card stays closed')
     assert.equal(board.cards[card].column, 'review')
+    await press([])
+    assert.equal(document.getElementById('drawer').hidden, false, 'the next plain click opens it')
   } finally {
-    delete globalThis.window
-    delete globalThis.document
+    Date.now = realNow
+    clear()
+  }
+})
+
+test('a plain click opens the card; a carry dropped on Done moves it without opening it', async () => {
+  try {
+    const { board, card, document, press } = await wideBoard('carry-drop')
+    await press([])
+    assert.equal(document.getElementById('drawer').hidden, false, 'a press without a carry is a click')
+    document.querySelector('#drawer .head button').click()
+    assert.equal(document.getElementById('drawer').hidden, true)
+    const done = document.querySelector('section.col[data-role="done"]')
+    document.elementsFromPoint = () => [done]
+    await press([[40, 30], [60, 40]])
+    assert.equal(board.cards[card].column, 'done', 'dropped on Done')
+    assert.equal(document.getElementById('drawer').hidden, true, 'the drop is not a click')
+    assert.ok(document.querySelector('.done-note'), 'Done offers Undo')
+  } finally {
+    clear()
   }
 })
