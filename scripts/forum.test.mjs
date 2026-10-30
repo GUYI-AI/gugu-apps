@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { test } from 'node:test'
-import { assignmentStatus, FORUM_ERRORS, bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from '../sources/forum/core.mjs'
+import { assignmentStatus, FORUM_ERRORS, bountyLabel, bountyTone, forumError, latestRequest, settlementWindow, timeLeft, validateAwards } from '../sources/forum/core.mjs'
 
 const DAY = 86400000
 const created = Date.parse('2026-10-01T00:00:00Z')
@@ -45,6 +45,26 @@ test('截止后的宽限期与等待结算不显示仍进行中', () => {
   assert.equal(bountyLabel(bounty, deadline + 1), '已截止，仍可采纳')
   assert.equal(bountyLabel(bounty, deadline + DAY + 1), '采纳期限已过，等待结算')
   assert.equal(bountyLabel({ ...bounty, status: 'burned' }), '已结束，赏金已作废')
+})
+test('bounty tone follows the deadline and the inclusive one-day grace boundary', () => {
+  assert.equal(bountyTone(null, deadline), '')
+  assert.equal(bountyTone(bounty, deadline - 1), 'open')
+  assert.equal(bountyTone(bounty, deadline), 'open')
+  assert.equal(bountyTone(bounty, deadline + 1), 'late')
+  assert.equal(bountyTone(bounty, deadline + DAY), 'late')
+  assert.equal(bountyTone(bounty, deadline + DAY + 1), 'ended')
+  for (const status of ['awarded', 'refunded', 'burned', 'unknown']) {
+    assert.equal(bountyTone({ ...bounty, status }, created), status === 'awarded' ? 'awarded' : 'ended')
+  }
+})
+test('countdown rounds up to a minute and keeps coarse day/hour boundaries', () => {
+  for (const [remaining, expected] of [
+    [-1, ''], [0, ''], [1, '剩 1 分钟'], [59000, '剩 1 分钟'],
+    [59 * 60000, '剩 59 分钟'], [59 * 60000 + 1, '剩 1 小时'],
+    [DAY - 1, '剩 1 天'], [DAY, '剩 1 天'], [2 * DAY, '剩 2 天'],
+    [2 * DAY + 3 * 3600000, '剩 2 天 3 小时'], [5 * 3600000, '剩 5 小时'],
+  ]) assert.equal(timeLeft(new Date(deadline).toISOString(), deadline - remaining), expected)
+  assert.equal(timeLeft('invalid', created), '')
 })
 test('旧筛选、旧帖与订阅前读取的迟到结果失效', () => {
   const requests = latestRequest()

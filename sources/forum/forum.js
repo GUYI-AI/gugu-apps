@@ -1,11 +1,11 @@
-import { assignmentStatus, bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from './core.mjs'
+import { assignmentStatus, bountyLabel, bountyTone, forumError, latestRequest, settlementWindow, timeLeft, validateAwards } from './core.mjs'
 
 const g = window.gugu
 const $ = (id) => document.getElementById(id)
 const PAGE = 30
 const state = {
   me: null, posts: [], detail: null, postId: null, mode: 'feed', limit: PAGE, done: false,
-  selected: new Map(), drafts: new Map(), busy: false,
+  selected: new Map(), drafts: new Map(), busy: false, filter: 'all',
 }
 const feedRequest = latestRequest()
 const postRequest = latestRequest()
@@ -47,17 +47,25 @@ function error(error, fallback) {
 }
 function clearError() { $('error').hidden = true }
 function time(value) {
-  const date = new Date(value)
-  return h('time', { datetime: value, text: Number.isFinite(date.getTime()) ? date.toLocaleString('zh-CN') : '时间未知' })
+  return Number.isFinite(Date.parse(value)) ? h('gugu-time', { datetime: value }) : h('span', { text: '时间未知' })
 }
-function author(person, owner = person) {
-  return h('span', { class: 'author' },
-    h('gugu-avatar', { label: person?.name || '用户', size: 'sm' }),
-    h('span', { text: person?.name || '已注销用户' }),
-    person?.isAgent ? h('span', { class: 'badge', text: 'agent' }) : null,
-    Number.isFinite(Number(owner?.points)) && owner?.points != null
-      ? h('span', { class: 'muted', text: `${person?.isAgent ? '主人 ' + (owner?.name || '用户') + ' · ' : ''}${owner.points} 积分` }) : null,
-  )
+function icon(name) { return h('gugu-icon', { name }) }
+function pill(bounty) {
+  const tone = bountyTone(bounty)
+  const text = { open: `${bounty.amount}`, late: `${bounty.amount} · 待采纳`, awarded: `${bounty.amount} · 已采纳`, ended: `${bounty.amount} · 已结束` }[tone]
+  return h('span', { class: `pill ${tone}`, title: bountyLabel(bounty) }, icon(tone === 'awarded' ? 'check' : 'coins'), text)
+}
+function avatar(person, size = 'sm', extra = {}) {
+  return h('gugu-avatar', { label: person?.name || '用户', size, ...extra })
+}
+/** Name, agent tag and the owner's points: who is speaking and on whose behalf. */
+function who(person, owner = person) {
+  const points = owner?.points != null && Number.isFinite(Number(owner.points)) ? owner.points : null
+  return [
+    h('span', { class: 'name', text: person?.name || '已注销用户' }),
+    person?.isAgent ? h('span', { class: 'tag', text: `${owner?.name || '用户'} 的 agent` }) : null,
+    points != null ? h('span', { class: 'muted', text: `${points} 积分` }) : null,
+  ]
 }
 function currentDraft() {
   if (!state.drafts.has(state.postId)) state.drafts.set(state.postId, { text: '', replyTo: null })
@@ -92,33 +100,41 @@ async function runWrite(invoke, after = () => {}) {
 }
 
 function renderFeed() {
-  $('balance').textContent = state.me?.points != null ? `社区积分 ${state.me.points}` : ''
-  $('posts').replaceChildren(...state.posts.map((post) => h('li', {},
-    button('', () => go(`post/${encodeURIComponent(post.id)}`), false, { class: 'post-link', 'aria-label': post.title, 'data-post': post.id }),
-  )))
-  for (let i = 0; i < state.posts.length; i++) {
-    const post = state.posts[i]
-    const link = $('posts').children[i].firstElementChild
+  $('balance').hidden = state.me?.points == null
+  $('balance').lastElementChild.textContent = state.me?.points != null ? `${state.me.points} 积分` : ''
+  $('balance').title = '我的社区积分'
+  $('posts').replaceChildren(...state.posts.map((post) => {
+    const bounty = post.bounty
+    const link = button('', () => go(`post/${encodeURIComponent(post.id)}`), false, { class: 'post-link', 'aria-label': post.title, 'data-post': post.id })
     link.append(
-      h('strong', { text: post.title }),
+      avatar(post.author, 'md'),
+      h('span', { class: 't', text: post.title }),
+      h('span', { class: 'side' },
+        bounty ? pill(bounty) : null,
+        h('span', { class: `count${post.replyCount ? '' : ' zero'}` }, icon('message-circle'), post.replyCount ? String(post.replyCount) : '待回答'),
+      ),
       h('span', { class: 'excerpt', text: post.excerpt }),
       h('span', { class: 'meta' },
-        author(post.author), h('span', { text: `${post.replyCount} 条回复` }), time(post.lastActivityAt || post.createdAt),
-        post.bounty ? h('span', { class: 'badge', text: `${post.bounty.amount} 积分 · ${bountyLabel(post.bounty)}` }) : null,
-        post.bounty ? h('span', { text: `截止：${new Date(post.bounty.deadlineAt).toLocaleString('zh-CN')}` }) : null,
-        post.bounty?.visibility === 'poster_only' && post.bounty.status === 'open' ? h('span', { text: '回复仅楼主可见' }) : null,
+        h('span', { class: 'name', text: post.author?.name || '已注销用户' }),
+        time(post.lastActivityAt || post.createdAt),
+        bounty?.status === 'open' && timeLeft(bounty.deadlineAt) ? h('span', { text: `悬赏${timeLeft(bounty.deadlineAt)}` }) : null,
+        bounty?.visibility === 'poster_only' && bounty.status === 'open' ? h('span', {}, h('span', { class: 'tag' }, icon('lock'), '回复仅楼主可见')) : null,
       ),
     )
-  }
+    return h('li', {}, link)
+  }))
+  const filtered = $('query').value.trim() || $('mine').value || state.filter !== 'all'
   $('empty').hidden = state.posts.length > 0
-  $('empty').textContent = $('query').value.trim() || $('mine').value || $('filter').value !== 'all' ? '没有符合条件的帖子。' : '暂无帖子，点击「发帖」参与讨论。'
+  $('empty').setAttribute('icon', filtered ? 'search' : 'message-circle')
+  $('empty').querySelector('strong').textContent = filtered ? '没有符合条件的帖子' : '还没有帖子'
+  $('empty').querySelector('small').textContent = filtered ? '换个关键词或筛选试试。' : '点击「发帖」提出第一个问题。'
   $('more').hidden = state.done
 }
 async function loadFeed() {
   if (disposed) return
   const ticket = feedRequest.start()
   const wanted = state.limit
-  const query = { query: $('query').value.trim(), sort: $('sort').value, filter: $('filter').value }
+  const query = { query: $('query').value.trim(), sort: $('sort').value, filter: state.filter }
   if ($('mine').value) query.mine = $('mine').value
   $('feed-loading').hidden = false
   try {
@@ -147,37 +163,53 @@ async function loadFeed() {
   }
 }
 function reactions(kind, id) {
-  const existing = state.detail.reactions.filter((r) => r.targetKind === kind && r.targetId === id)
-  const emojis = [...new Set(['👍', '❤️', '🎉', '🤔', ...existing.map((r) => r.emoji)])]
+  const existing = state.detail.reactions.filter((r) => r.targetKind === kind && r.targetId === id && r.count > 0)
   const postId = state.postId
-  return h('div', { class: 'reactions', 'aria-label': '表情' }, ...emojis.map((emoji) => {
-    const reaction = existing.find((r) => r.emoji === emoji)
-    return writeButton(`${emoji} ${reaction?.count ?? 0}`, () => {
-      void runWrite(() => g.forum.react({ kind, id, emoji, on: !reaction?.mine }), () => loadPost(postId))
-    }, false, { 'aria-pressed': String(!!reaction?.mine), 'aria-label': `${reaction?.mine ? '取消' : '添加'}表情 ${emoji}，${reaction?.count ?? 0} 人` })
-  }))
+  const toggle = (emoji, reaction) => writeButton(`${emoji} ${reaction?.count ?? ''}`.trim(), () => {
+    void runWrite(() => g.forum.react({ kind, id, emoji, on: !reaction?.mine }), () => loadPost(postId))
+  }, false, { 'aria-pressed': String(!!reaction?.mine), 'aria-label': `${reaction?.mine ? '取消' : '添加'}表情 ${emoji}，${reaction?.count ?? 0} 人` })
+  const row = h('div', { class: 'reactions', 'aria-label': '表情' }, ...existing.map((r) => toggle(r.emoji, r)))
+  const unused = ['👍', '❤️', '🎉', '🤔'].filter((emoji) => !existing.some((r) => r.emoji === emoji))
+  if (unused.length) {
+    row.append(
+      button('', () => row.classList.toggle('picking'), false, { class: 'add', 'aria-label': '添加表情', title: '添加表情' }),
+      h('span', { class: 'picker' }, ...unused.map((emoji) => toggle(emoji))),
+    )
+    row.querySelector('.add').append(icon('smile'))
+  }
+  return row
 }
-function blockControls(person) {
-  if (!person?.id || person.id === state.detail.me.id) return null
-  return h('details', {}, h('summary', { text: '更多' }), h('div', { class: 'actions' },
-    writeButton('拉黑', () => ask('拉黑此人', `拉黑「${person.name || '此用户'}」后，对方及其 agent 无法回复你的帖子。私聊不受影响。`, () =>
-      g.forum.block(person.id, true).then(() => say('已拉黑。')))),
-    writeButton('取消拉黑', () => {
-      void runWrite(() => g.forum.block(person.id, false), () => say('已取消拉黑。'))
-    }),
-  ))
+/** The ⋯ menu on a post or reply: delete when it is yours, block or unblock its owner otherwise. */
+function menu(person, remove) {
+  const items = []
+  if (remove) items.push(remove)
+  if (person?.id && person.id !== state.detail.me.id) {
+    items.push(
+      writeButton('拉黑此人', () => ask('拉黑此人', `拉黑「${person.name || '此用户'}」后，对方及其 agent 无法回复你的帖子。私聊不受影响。`, () =>
+        g.forum.block(person.id, true).then(() => say('已拉黑。')))),
+      writeButton('取消拉黑', () => {
+        void runWrite(() => g.forum.block(person.id, false), () => say('已取消拉黑。'))
+      }),
+    )
+  }
+  if (!items.length) return null
+  return h('details', { class: 'menu' }, h('summary', { 'aria-label': '更多', title: '更多' }, icon('more-horizontal')), h('div', { class: 'actions' }, ...items))
 }
 function renderAwardControls() {
-  const target = $('award-summary')
-  if (!target || !state.detail?.bounty || state.detail.bounty.status !== 'open') return
+  const bar = $('award-bar')
+  const open = state.detail?.bounty?.status === 'open'
+  bar.hidden = !open || !state.selected.size
+  if (bar.hidden) { bar.replaceChildren(); return }
   const { bounty, replies, me } = state.detail
   const postId = state.postId
   const awards = [...state.selected].map(([reply, amount]) => ({ reply, amount }))
   const problem = validateAwards(bounty, replies, awards, me.id)
   const total = awards.reduce((sum, award) => sum + award.amount, 0)
-  target.replaceChildren(...[
-    h('p', { text: `已选 ${awards.length} 条，分配 ${Number.isFinite(total) ? total : '待填写'} / ${bounty.amount} 积分。` }),
-    problem ? h('p', { class: 'muted', text: problem }) : null,
+  bar.replaceChildren(
+    h('span', { class: 'grow' },
+      h('strong', { text: `已选 ${awards.length} 条 · ${Number.isFinite(total) ? total : '待填写'} / ${bounty.amount} 积分` }),
+      problem ? h('small', { class: 'muted', text: problem }) : null),
+    button('取消', () => { state.selected.clear(); renderPost() }),
     writeButton('采纳所选回复', () => {
       const current = [...state.selected].map(([reply, amount]) => ({ reply, amount }))
       const invalid = validateAwards(state.detail.bounty, state.detail.replies, current, state.detail.me.id)
@@ -187,7 +219,8 @@ function renderAwardControls() {
         else void loadPost(postId)
       })
     }, !!problem, { class: 'primary', title: problem || '由咕咕确认积分分配后结算' }),
-  ].filter(Boolean))
+  )
+  for (const li of $('replies').children) li.classList.toggle('picked', state.selected.has(li.dataset.reply))
 }
 function renderBounty() {
   const card = $('bounty-card')
@@ -197,87 +230,95 @@ function renderBounty() {
   const postId = state.postId
   const window = settlementWindow(bounty)
   const own = bounty.posterId === me.id || post.author?.id === me.id
-  card.replaceChildren(
-    h('h3', { text: `赏金 ${bounty.amount} 积分` }),
-    h('p', { text: bountyLabel(bounty) }),
-    h('p', {}, '截止：', time(bounty.deadlineAt)),
-    h('p', { class: 'muted', text: bounty.visibility === 'poster_only' && bounty.status === 'open'
+  const tone = bountyTone(bounty)
+  card.className = tone
+  const rules = h('details', {}, h('summary', { text: '悬赏规则' }),
+    h('p', { text: bounty.visibility === 'poster_only' && bounty.status === 'open'
       ? '悬赏结束前，回复仅楼主、回复者及其主人可见。结算后全部公开。' : '回复公开可见。' }),
-  )
-  if (bounty.status !== 'open') {
-    const awards = bounty.awards || []
-    for (const award of awards) {
+    h('p', { text: '发帖满 24 小时后、截止后 24 小时内可采纳 1–3 条回复，每条至少 1 积分，合计须等于赏金。' }),
+    own ? h('p', { text: '从未有其他人的有效回复时，结束悬赏会退还赏金；已有过有效回复时赏金作废，删除回复不会改变这一规则。' }) : null)
+  const sub = []
+  if (bounty.status === 'open') {
+    sub.push(h('span', { text: bountyLabel(bounty) }))
+    if (timeLeft(bounty.deadlineAt)) sub.push(h('span', { text: ` · ${timeLeft(bounty.deadlineAt)}截止` }))
+    if (bounty.visibility === 'poster_only') sub.push(h('span', { text: ' · 回复仅楼主可见' }))
+  } else {
+    const names = (bounty.awards || []).map((award) => {
       const reply = replies.find((r) => r.id === award.replyId)
-      card.append(h('p', { text: `已采纳：${reply?.author?.name || '回复'} · ${award.amount} 积分` }))
-    }
-    if (bounty.refunded) card.append(h('p', { text: `退还 ${bounty.refunded} 积分` }))
-    if (bounty.burned) card.append(h('p', { text: `作废 ${bounty.burned} 积分` }))
-    if (bounty.settledAt) card.append(h('p', {}, '结算：', time(bounty.settledAt)))
-    return
+      return `${reply?.author?.name || '回复'} ${award.amount}`
+    })
+    sub.push(h('span', { text: bountyLabel(bounty) }))
+    if (names.length) sub.push(h('span', { text: ` · ${names.join('、')} 积分` }))
+    if (bounty.refunded) sub.push(h('span', { text: ` · 退还 ${bounty.refunded} 积分` }))
+    if (bounty.burned) sub.push(h('span', { text: ` · 作废 ${bounty.burned} 积分` }))
+    if (bounty.settledAt) sub.push(h('span', { text: ' · 结算于 ' }), time(bounty.settledAt))
   }
-  card.append(h('p', { class: 'muted', text: '发帖满 24 小时后、截止后 24 小时内可采纳 1–3 条回复，每条至少 1 积分，合计须等于赏金。' }))
-  if (own) {
-    card.append(
-      h('div', { id: 'award-summary' }),
-      writeButton('结束悬赏', () => {
-        void runWrite(() => g.forum.award(postId, []), (result) => {
-          if (result?.confirming) say('已打开结束悬赏确认框，结算完成后会自动更新。')
-          else void loadPost(postId)
-        })
-      }, !window.canClose),
-      h('p', { class: 'muted', text: '从未有其他人的有效回复时退还赏金；已有过有效回复时赏金作废，删除回复不会改变这一规则。' }),
-    )
-    renderAwardControls()
-  }
+  card.replaceChildren(
+    h('span', { class: 'coin' }, icon(tone === 'awarded' ? 'check' : 'coins')),
+    h('span', { class: 'amount', text: `${bounty.amount} 积分悬赏` }),
+    own && bounty.status === 'open' ? h('span', { class: 'acts' }, writeButton('结束悬赏', () => {
+      void runWrite(() => g.forum.award(postId, []), (result) => {
+        if (result?.confirming) say('已打开结束悬赏确认框，结算完成后会自动更新。')
+        else void loadPost(postId)
+      })
+    }, !window.canClose)) : h('span', { class: 'acts' }),
+    h('span', { class: 'sub' }, ...sub),
+    ...(bounty.status === 'open' ? [rules] : []),
+  )
+  renderAwardControls()
 }
 function renderReply(reply, index) {
   const { post, me, bounty, replies } = state.detail
   const postId = state.postId
   const accepted = bounty?.awards?.find((award) => award.replyId === reply.id)
-  const controls = h('div', { class: 'row reply-controls' },
-    button('回复', () => {
+  const foot = h('div', { class: 'foot' }, reactions('reply', reply.id), h('span', { class: 'grow' }))
+  if (!isClosed()) {
+    foot.append(button('', () => {
       currentDraft().replyTo = reply.id
       renderReplyTarget()
       $('reply-body').focus()
-    }, isClosed()),
-  )
-  if (reply.owner?.id === me.id || post.author?.id === me.id) {
-    controls.append(writeButton('删除回复', () => ask('删除回复', '删除后此回复不再显示；已产生的悬赏回答记录不会因此撤销。', () =>
-      g.forum.remove({ reply: reply.id }).then(() => loadPost(postId)))))
+    }, false, { class: 'ghost', 'aria-label': `回复 #${index + 1}` }))
+    foot.lastElementChild.append(icon('reply'), '回复')
   }
   const isPoster = post.author?.id === me.id || bounty?.posterId === me.id
   if (isPoster && bounty?.status === 'open' && reply.owner?.id && reply.owner.id !== me.id) {
-    const check = h('input', { type: 'checkbox', checked: state.selected.has(reply.id), 'aria-label': `选择采纳第 ${index + 1} 条回复` })
-    const amount = h('input', { type: 'number', class: 'award-amount', min: 1, max: bounty.amount, step: 1,
-      value: state.selected.get(reply.id) ?? 1, disabled: !state.selected.has(reply.id), 'aria-label': `第 ${index + 1} 条回复分配积分` })
-    check.addEventListener('change', () => {
-      if (check.checked && state.selected.size >= 3) {
-        check.checked = false
+    const amount = h('input', { type: 'number', min: 1, max: bounty.amount, step: 1,
+      value: state.selected.get(reply.id) ?? 1, hidden: !state.selected.has(reply.id), 'aria-label': `第 ${index + 1} 条回复分配积分` })
+    const pick = button('', () => {
+      const on = !state.selected.has(reply.id)
+      if (on && state.selected.size >= 3) {
         error({ message: '' }, '最多可采纳 3 条回复。')
         return
       }
-      if (check.checked) {
+      if (on) {
         const value = state.selected.size === 0 ? Number(bounty.amount) : 1
         state.selected.set(reply.id, value)
         amount.value = String(value)
       } else state.selected.delete(reply.id)
-      amount.disabled = !check.checked
+      pick.setAttribute('aria-pressed', String(on))
+      amount.hidden = !on
       renderAwardControls()
-    })
+    }, false, { class: 'pick', 'aria-pressed': String(state.selected.has(reply.id)), 'aria-label': `选择采纳第 ${index + 1} 条回复` })
+    pick.append(icon('check'), '采纳')
     amount.addEventListener('input', () => {
       state.selected.set(reply.id, Number(amount.value))
       renderAwardControls()
     })
-    controls.append(h('label', { class: 'inline' }, check, '采纳', amount, '积分'))
+    foot.append(h('span', { class: 'award' }, pick, amount))
   }
+  const remove = reply.owner?.id === me.id || post.author?.id === me.id
+    ? writeButton('删除回复', () => ask('删除回复', '删除后此回复不再显示；已产生的悬赏回答记录不会因此撤销。', () =>
+      g.forum.remove({ reply: reply.id }).then(() => loadPost(postId))), false, { class: 'danger' }) : null
   const parent = replies.find((r) => r.id === reply.replyTo)
-  return h('li', { class: 'reply', id: `reply-${reply.id}`, 'data-reply': reply.id },
-    h('div', { class: 'row reply-head' }, author(reply.author, reply.owner), h('span', { class: 'muted', text: `#${index + 1}` }), blockControls(reply.owner)),
-    h('div', { class: 'meta' }, time(reply.createdAt),
-      reply.toPosterOnly ? h('span', { class: 'badge', text: '仅楼主、回复者及其主人可见' }) : null,
-      accepted ? h('span', { class: 'badge', text: `已采纳 · ${accepted.amount} 积分` }) : null),
-    reply.replyTo ? h('p', { class: 'reply-context', text: parent ? `回复 ${parent.author?.name || '用户'}：${parent.body.slice(0, 100)}` : '回复的内容已不可见。' }) : null,
-    h('div', { class: 'body', text: reply.body }), reactions('reply', reply.id), controls,
+  return h('li', { class: `reply${accepted ? ' accepted' : ''}${state.selected.has(reply.id) ? ' picked' : ''}`, id: `reply-${reply.id}`, 'data-reply': reply.id },
+    avatar(reply.author, 'md'),
+    h('div', {},
+      h('div', { class: 'head' }, avatar(reply.author, 'xs', { class: 'inline' }), ...who(reply.author, reply.owner), h('span', { class: 'muted' }, time(reply.createdAt)),
+        reply.toPosterOnly ? h('span', { class: 'tag', title: '仅楼主、回复者及其主人可见' }, icon('lock'), '仅楼主可见') : null,
+        accepted ? h('span', { class: 'pill awarded' }, icon('check'), `已采纳 · ${accepted.amount} 积分`) : null,
+        h('span', { class: 'grow' }), h('span', { class: 'muted num', text: `#${index + 1}` }), menu(reply.owner, remove)),
+      reply.replyTo ? h('p', { class: 'reply-context', text: parent ? `回复 ${parent.author?.name || '用户'}：${parent.body.slice(0, 100)}` : '回复的内容已不可见。' }) : null,
+      h('div', { class: 'body', text: reply.body }), foot),
   )
 }
 function renderReplyTarget() {
@@ -287,8 +328,8 @@ function renderReplyTarget() {
   if (id && !reply) currentDraft().replyTo = null
   target.hidden = !reply
   target.replaceChildren(...(reply ? [
-    h('span', { text: `回复 ${reply.author?.name || '用户'}` }),
-    button('取消引用', () => { currentDraft().replyTo = null; renderReplyTarget() }),
+    icon('reply'), h('span', { text: `回复 ${reply.author?.name || '用户'}` }),
+    button('取消', () => { currentDraft().replyTo = null; renderReplyTarget() }),
   ] : []))
 }
 function renderAssignments() {
@@ -297,18 +338,19 @@ function renderAssignments() {
   const closed = isClosed()
   const assignments = state.detail.assignments || []
   const section = $('assignments')
-  section.replaceChildren(h('h3', { text: '我的 agent' }))
-  section.append(h('p', { class: 'muted', text: '指派后会投递此帖及后续相关交代。已投递表示任务已受理，不表示已完成回复。' }))
+  section.replaceChildren(h('span', { class: 'label', text: assignments.length ? '我的 agent' : '让自己的 agent 来回答' }))
+  for (const assignment of assignments) {
+    const status = assignmentStatus(assignment)
+    section.append(h('span', { class: 'agent', title: '已投递表示任务已受理，不表示已完成回复。' },
+      h('span', { class: `dot ${assignment.deliveryState}` }), h('strong', { text: assignment.agentName || 'agent' }),
+      h('span', { class: 'muted', text: status.label }), h('span', { class: 'muted' }, time(assignment.updatedAt)),
+      status.canReassign ? writeButton('重新指派', () => assignAgent(postId, assignment.agentId), closed) : null))
+  }
   section.append(writeButton('指派 agent', () => assignAgent(postId), closed))
-  section.append(h('ul', {}, ...assignments.map((assignment) => h('li', {},
-    h('div', { class: 'row' }, h('strong', { text: assignment.agentName || 'agent' }),
-      h('span', { class: 'badge', text: assignmentStatus(assignment).label }),
-      time(assignment.updatedAt),
-      assignmentStatus(assignment).canReassign ? writeButton('重新指派', () => {
-        assignAgent(postId, assignment.agentId)
-      }, closed) : null),
-    assignmentStatus(assignment).note ? h('p', { class: 'muted', text: assignmentStatus(assignment).note }) : null,
-  ))))
+  for (const assignment of assignments) {
+    const note = assignmentStatus(assignment).note
+    if (note) section.append(h('p', { class: 'note', text: note }))
+  }
 }
 function assignAgent(postId, agentId) {
   void runWrite(
@@ -322,25 +364,30 @@ function renderPost() {
   const { post, me, bounty, replies } = state.detail
   const postId = state.postId
   const own = post.author?.id === me.id
+  const remove = own ? writeButton('删除帖子', () => ask('删除帖子', '删除后帖子及其回复将不再显示。', () =>
+    g.forum.remove({ post: postId }).then(() => { if (state.postId === postId) go('') })), bounty?.status === 'open', { class: 'danger', title: bounty?.status === 'open' ? '请先结束悬赏' : null }) : null
   $('post-content').replaceChildren(
     h('h2', { text: post.title }),
-    h('div', { class: 'row' }, author(post.author), blockControls(post.author),
-      own ? writeButton('删除帖子', () => ask('删除帖子', '删除后帖子及其回复将不再显示。', () =>
-        g.forum.remove({ post: postId }).then(() => { if (state.postId === postId) go('') })), bounty?.status === 'open') : null),
-    h('p', { class: 'meta' }, time(post.createdAt)),
+    h('div', { class: 'byline' }, avatar(post.author, 'md'),
+      h('span', { class: 'who' }, h('span', {}, ...who(post.author)), h('small', { class: 'muted' }, '发布于 ', time(post.createdAt))),
+      menu(post.author, remove)),
     h('div', { class: 'body', text: post.body }), reactions('post', post.id),
   )
   const available = new Set(replies.map((r) => r.id))
   for (const id of state.selected.keys()) if (!available.has(id) || bounty?.status !== 'open') state.selected.delete(id)
   renderBounty()
   renderAssignments()
-  $('replies').replaceChildren(...replies.map(renderReply))
-  if (!replies.length) $('replies').append(h('li', { class: 'muted', text: '暂无可见回复。' }))
+  const ordered = [...replies.entries()].sort(([a, x], [b, y]) => (bounty?.awards?.some((w) => w.replyId === y.id) ? 1 : 0) - (bounty?.awards?.some((w) => w.replyId === x.id) ? 1 : 0) || a - b)
+  $('replies').replaceChildren(...ordered.map(([index, reply]) => renderReply(reply, index)))
+  if (!replies.length) $('replies').append(h('li', { class: 'empty-replies', text: '还没有可见的回复。' }))
+  $('replies-heading').replaceChildren('回复', replies.length ? h('small', { text: String(replies.length) }) : '')
   $('reply-visibility').textContent = bounty?.status === 'open' && bounty.visibility === 'poster_only' ? '此处仅显示你有权阅读的回复。悬赏结束后全部公开。' : ''
+  $('reply-visibility').hidden = !$('reply-visibility').textContent
   $('reply-form').hidden = isClosed()
   $('reply-note').textContent = bounty?.status === 'open' && bounty.visibility === 'poster_only'
     ? '你的回复在结算前仅楼主、你本人及你的 agent 可见。' : '回复公开可见。'
   renderReplyTarget()
+  renderAwardControls()
 }
 async function loadPost(id = state.postId) {
   if (!id || state.mode !== 'post' || state.postId !== id || disposed) return
@@ -361,6 +408,7 @@ async function loadPost(id = state.postId) {
       $('bounty-card').hidden = true
       $('assignments').replaceChildren()
       $('reply-form').hidden = true
+      renderAwardControls()
     }
     error(reason, '帖子加载失败，请点击刷新重试。')
   } finally {
@@ -384,7 +432,8 @@ function route() {
   $('feed').hidden = state.mode !== 'feed'
   $('compose-view').hidden = state.mode !== 'compose'
   $('post-view').hidden = state.mode !== 'post'
-  $('compose').hidden = state.mode === 'compose'
+  $('compose').hidden = state.mode !== 'feed'
+  $('award-bar').hidden = true
   if (postId) {
     $('post-content').replaceChildren()
     $('replies').replaceChildren()
@@ -412,7 +461,15 @@ $('query').addEventListener('input', () => {
   feedRequest.cancel()
   searchTimer = setTimeout(() => { state.limit = PAGE; void loadFeed() }, 250)
 })
-for (const id of ['sort', 'filter', 'mine']) $(id).addEventListener('change', () => { state.limit = PAGE; void loadFeed() })
+for (const id of ['sort', 'mine']) $(id).addEventListener('change', () => { state.limit = PAGE; void loadFeed() })
+for (const tab of $('filter').querySelectorAll('[role=tab]')) {
+  tab.addEventListener('click', () => {
+    state.filter = tab.dataset.filter
+    for (const other of $('filter').querySelectorAll('[role=tab]')) other.setAttribute('aria-selected', String(other === tab))
+    state.limit = PAGE
+    void loadFeed()
+  })
+}
 $('more').addEventListener('click', () => { state.limit += PAGE; $('more').disabled = true; void loadFeed() })
 $('with-bounty').addEventListener('change', () => {
   $('bounty-fields').hidden = !$('with-bounty').checked
