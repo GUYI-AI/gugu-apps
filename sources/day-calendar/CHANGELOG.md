@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2
+
+- The line of now keeps moving while a new entry's card is open: the minute moves only the line, its time tag and the hour label it covers, never the card, its text or the scroll.
+
 ## 0.5.1
 
 - Week view: entries side by side in a narrow day column spread over the whole column on hover or keyboard focus, with the full title and the time; where a column has room, they keep their check and agent mark.
