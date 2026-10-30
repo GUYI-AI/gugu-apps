@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.4
+
+- The market's first image shows the current board: the promo now frames the 1.2.0 board screenshot (`screenshots/1.jpg`) in place of the earlier English board with gray columns.
+
 ## 1.2.3
 
 - A markdown file shown in a card reads its front matter as the host draws it for a file: a property list instead of a heading. A card's own note is not a file and is drawn as before.
