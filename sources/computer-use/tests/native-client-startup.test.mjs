@@ -56,6 +56,8 @@ test('one same-lane startup subscriber cancels without ending the other subscrib
   const b = client.callTool('list_apps', {}, { lane: 'shared' });
   stop.abort(); await a;
   assert.equal((await b).structuredContent.ok, true);
+  // The fixture reports its call over IPC, which can land after the socket reply that resolved `b`.
+  await until(() => events.some(value => value.type === 'call'), 'the remaining subscriber reaches the daemon');
   assert.equal(events.filter(value => value.type === 'call').length, 1);
 });
 test('retiring one initializing owner preserves another live owner and its daemon', async t => {
