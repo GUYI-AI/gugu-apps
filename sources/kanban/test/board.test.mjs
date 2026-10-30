@@ -94,3 +94,61 @@ test('commands received before the first local board state execute once when it 
     delete globalThis.document
   }
 })
+
+async function openChatBoard(board, tag) {
+  const { window, document } = parseHTML(html)
+  document.hasFocus = () => false
+  window.gugu = {
+    getContext: async () => ({ locale: 'en', file: { id: 'board' }, chat: { id: 'chat', name: 'Chat', members: [] } }),
+    onContextChanged() {},
+    onCommand() {},
+    getAppState: async () => null,
+    setTabBadge: async () => {},
+    files: {
+      open: async () => ({
+        entry: { id: 'board', chat: 'chat' }, data: board, toJSON: () => structuredClone(board),
+        presence: { self: { userId: 'person' } }, onChange() {}, onStatus() {}, close() {},
+      }),
+    },
+  }
+  globalThis.window = window
+  globalThis.document = document
+  await import(`../app/board.js?${tag}`)
+  return document
+}
+
+test('an empty board says so and offers a new card; Done invites a drop', async () => {
+  try {
+    const document = await openChatBoard(emptyBoard(), 'empty')
+    const empty = document.getElementById('empty-board')
+    assert.equal(empty?.tagName, 'GUGU-EMPTY')
+    assert.equal(empty.querySelector('button.primary').textContent, 'New card')
+    assert.equal(document.querySelector('section.col[data-role="done"] .drop-hint').textContent, 'Drop here to mark done')
+    assert.deepEqual([...document.querySelectorAll('section.col > h2 small')].map((n) => n.textContent), ['0', '0', '0', '0'])
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
+
+test('a task without an agent is named in text, with no icon the host does not have', async () => {
+  const board = emptyBoard()
+  let n = 0
+  const by = { by: 'person', now: '2026-10-25T00:00:00.000Z', id: () => `id${++n}` }
+  const { card } = applyOp(board, { type: 'card.create', title: 'Draft', column: 'done', links: [{ kind: 'task', session: 's1', title: 'Old task' }] }, by)
+  try {
+    const document = await openChatBoard(board, 'no-agent')
+    assert.equal(document.getElementById('empty-board'), null)
+    const shown = document.querySelector(`[data-card="${card}"]`)
+    assert.ok(shown.closest('section.col[data-role="done"]'))
+    assert.equal(shown.querySelector('.top gugu-icon').getAttribute('name'), 'check-circle-2', 'a done card carries the check')
+    shown.click()
+    await new Promise(setImmediate)
+    const row = document.querySelector('#drawer .links li')
+    assert.match(row.textContent, /Old task/)
+    assert.equal(row.querySelector('gugu-icon[name="bot"], gugu-avatar'), null)
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
