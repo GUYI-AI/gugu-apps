@@ -7,6 +7,7 @@ import {
   newRound, ended, questionsInOrder, hintsGiven, hintWaiting, checkQuestion, giveUpNeeded, somethingWaits, playersOf,
   askedCount, summaryOf,
 } from './game.js'
+import { followRounds } from './rounds.js'
 
 const $ = (sel) => document.querySelector(sel)
 const status = $('#status')
@@ -71,6 +72,12 @@ async function loadBank() {
 
 // A lobby drawn later than another wins: a round read for an older one lands nowhere.
 let lobbyDrawn = 0
+// The chat's file changes the lobby follows while it shows (followRounds); stopped when it goes.
+let following = null
+function stopFollowing() {
+  following?.stop()
+  following = null
+}
 
 async function showLobby() {
   $('#round').hidden = true
@@ -78,27 +85,23 @@ async function showLobby() {
   lobby.hidden = false
   document.body.dataset.view = 'lobby'
   window.gugu.setTabTitle('海龟汤').catch((e) => console.warn('setTabTitle', e)) // only the tab's name
+  stopFollowing()
   const drawn = ++lobbyDrawn
   if (!ctx.chat) {
     await showEveryRound(lobby, drawn)
     return
   }
   put(lobby, h('p', { className: 'muted', textContent: '正在读这个群的牌局…' }))
-  const [puzzles, rounds] = await Promise.all([
-    loadBank().then((b) => b.puzzles, (e) => { fail('题库读不到', e); return [] }),
-    window.gugu.files.list({ chat: ctx.chat.id }).then(
-      (entries) => entries.filter((e) => e.type !== 'folder' && e.name.endsWith(FILE_SUFFIX)).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))),
-      (e) => { fail('读不到这个群的文件', e); return [] }),
-  ])
+  const puzzles = await loadBank().then((b) => b.puzzles, (e) => { fail('题库读不到', e); return [] })
   if (drawn !== lobbyDrawn) return
+  const rounds = history(drawn, (entry) => openRound(entry), (entry) => (entry.createdBy?.name ? `${entry.createdBy.name} 开的` : ''),
+    h('gugu-empty', { icon: 'message-circle' }, h('strong', { textContent: '这个群还没开过汤' }), h('small', { textContent: '在上面选好题，点「开汤」' })))
   put(lobby,
     newRoundForm(puzzles),
-    h('section', { className: 'stack', ariaLabel: '这个群的牌局' },
-      h('h5', { textContent: '这个群的牌局' }),
-      rounds.length
-        ? history(rounds, drawn, (entry) => openRound(entry), (entry) => (entry.createdBy?.name ? `${entry.createdBy.name} 开的` : ''))
-        : h('gugu-empty', { icon: 'message-circle' }, h('strong', { textContent: '这个群还没开过汤' }), h('small', { textContent: '在上面选好题，点「开汤」' }))),
+    h('section', { className: 'stack', ariaLabel: '这个群的牌局' }, h('h5', { textContent: '这个群的牌局' }), rounds.el),
   )
+  following = followRounds(window.gugu.files, ctx.chat.id, rounds.draw)
+  following.ready.catch((e) => fail('读不到这个群的文件', e))
 }
 
 /**
@@ -107,56 +110,90 @@ async function showLobby() {
  */
 async function showEveryRound(lobby, drawn) {
   put(lobby, h('p', { className: 'muted', textContent: '正在找你的牌局…' }))
-  let rounds = []
+  let found = []
   try {
-    rounds = await window.gugu.files.search({ query: FILE_SUFFIX, suffixes: ['.json'], limit: 50 })
-    rounds = rounds.filter((e) => e.name.endsWith(FILE_SUFFIX))
+    found = await window.gugu.files.search({ query: FILE_SUFFIX, suffixes: ['.json'], limit: 50 })
+    found = found.filter((e) => e.name.endsWith(FILE_SUFFIX))
   } catch (e) {
     fail('找不到牌局', e)
   }
   if (drawn !== lobbyDrawn) return
   const go = (entry) => window.gugu.files.openWith(entry).catch((e) => fail('打不开这一局', e))
+  const rounds = history(drawn, go, (entry) => entry.chatName ?? '',
+    h('gugu-empty', { icon: 'message-circle' },
+      h('strong', { textContent: '牌局在聊天里开' }),
+      h('small', { textContent: '在群聊或和 agent 的私聊里打开海龟汤，选好题点「开汤」，大家就在那里一起猜。' })))
   put(lobby,
     h('header', { className: 'stage' },
       h('h2', { textContent: '海龟汤' }),
       h('p', { className: 'lead', textContent: '主持人知道汤底，只回答「是 / 不是 / 无关 / 是也不是」。问出关键，还原整个故事。' })),
-    h('section', { className: 'stack', ariaLabel: '我的牌局' },
-      h('h5', { textContent: '我的牌局' }),
-      rounds.length
-        ? history(rounds, drawn, go, (entry) => entry.chatName ?? '')
-        : h('gugu-empty', { icon: 'message-circle' },
-            h('strong', { textContent: '牌局在聊天里开' }),
-            h('small', { textContent: '在群聊或和 agent 的私聊里打开海龟汤，选好题点「开汤」，大家就在那里一起猜。' }))),
+    h('section', { className: 'stack', ariaLabel: '我的牌局' }, h('h5', { textContent: '我的牌局' }), rounds.el),
   )
+  rounds.draw(found, found)
 }
 
 /**
- * Rounds as rows, drawn at once from what the list knows (name, who, when); then each of the latest ones is read once,
- * in the background, for its status, questions and players — the lobby never waits for them.
+ * Rounds as rows, kept by id: `draw(rounds, changed)` adds, moves and drops rows at once from what the entries know
+ * (name, who, when); each new or changed round is then read once in the background for its status, questions and
+ * players — the lobby never waits for them. `empty` shows while there is none.
  */
-function history(entries, drawn, open, whoLine) {
+function history(drawn, open, whoLine, empty) {
+  const el = h('div', {}, h('p', { className: 'muted', textContent: '正在读牌局…' }))
+  const ul = h('ul', { className: 'list games' })
+  const rows = new Map()
   const subOf = (entry, s) => {
     const words = [whoLine(entry), s ? `已问 ${s.asked}` : ''].filter(Boolean).join(' · ')
     return [words, words ? ' · ' : null, h('gugu-time', { datetime: entry.updatedAt ?? entry.createdAt })]
   }
-  const rows = entries.map((entry) => {
-    const title = h('strong', { textContent: roundName(entry) })
-    const sub = h('span', {}, subOf(entry))
-    const side = h('span', { className: 'side' })
-    const row = h('li', { tabIndex: 0, role: 'button', ariaLabel: roundName(entry), onclick: () => open(entry), onkeydown: (ev) => ev.key === 'Enter' && open(entry) },
-      h('div', {}, title, sub),
-      side)
-    return { entry, title, sub, side, row }
-  })
-  for (const r of rows.slice(0, 20)) {
+  const rowOf = (entry) => {
+    const r = { entry, summary: null, reading: false, again: false }
+    const go = () => open(r.entry)
+    r.title = h('strong', { textContent: roundName(entry) })
+    r.sub = h('span', {}, subOf(entry))
+    r.side = h('span', { className: 'side' })
+    r.row = h('li', { tabIndex: 0, role: 'button', ariaLabel: roundName(entry), onclick: go, onkeydown: (ev) => ev.key === 'Enter' && go() },
+      h('div', {}, r.title, r.sub),
+      r.side)
+    return r
+  }
+  // One read per row at a time; a change while it reads asks for one more.
+  const summarize = (r) => {
+    if (r.reading) { r.again = true; return }
+    r.reading = true
     readSummary(r.entry).then((s) => {
       if (drawn !== lobbyDrawn) return
+      r.summary = s
       if (s.title) r.title.textContent = s.title // the file's name carries when it began; the row says that already
       put(r.sub, subOf(r.entry, s))
       put(r.side, faces(s.players, 3), h('mark', { className: `chip st-${s.status}`, textContent: STATUS_LABEL[s.status] ?? s.status }))
     }, (e) => console.warn('round summary', r.entry.name, e)) // the row still opens; it only shows less
+      .finally(() => {
+        r.reading = false
+        if (r.again && drawn === lobbyDrawn) { r.again = false; summarize(r) }
+      })
   }
-  return h('ul', { className: 'list games' }, rows.map((r) => r.row))
+  const draw = (rounds, changed) => {
+    const ids = new Set(rounds.map((e) => e.id))
+    for (const [id, r] of rows) if (!ids.has(id)) { r.row.remove(); rows.delete(id) }
+    const toRead = []
+    const changedIds = new Set(changed.map((e) => e.id))
+    for (const entry of rounds) { // newest first: the 20 read below are the latest
+      if (!changedIds.has(entry.id)) continue
+      let r = rows.get(entry.id)
+      if (r) {
+        r.entry = entry
+        put(r.sub, subOf(entry, r.summary))
+      } else rows.set(entry.id, (r = rowOf(entry)))
+      toRead.push(r)
+    }
+    // Moved only when the order changed: a row moved in the DOM loses the focus someone had on it.
+    const want = rounds.map((e) => rows.get(e.id).row)
+    if (want.length !== ul.children.length || want.some((row, i) => ul.children[i] !== row)) ul.replaceChildren(...want)
+    const show = rounds.length ? ul : empty
+    if (el.firstChild !== show) put(el, show)
+    for (const r of toRead.slice(0, 20)) summarize(r)
+  }
+  return { el, draw }
 }
 
 /** A round file read once, for the lobby's row: never kept open. */
@@ -256,6 +293,7 @@ async function openRound(entry) {
   }
   const f = current
   offs.push(f.onChange(drawRound), f.onStatus(drawRound), f.presence.onChange(drawRound))
+  stopFollowing()
   lobbyDrawn++
   $('#lobby').hidden = true
   $('#round').hidden = false
