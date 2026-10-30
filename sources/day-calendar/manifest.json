@@ -19,7 +19,7 @@
     "en": {
       "name": "Calendar",
       "description": "A calendar on a time axis: one day in the side panel, a week in a full tab; to-dos and memories at their hour, untimed ones in the all-day row, written by you or by an agent.",
-      "subtitle": "To-dos and notes on a time axis"
+      "subtitle": "To-dos and notes by the hour"
     }
   },
   "entry": "main.html",
