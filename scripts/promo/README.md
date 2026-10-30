@@ -17,7 +17,7 @@ All product images below already existed in the corresponding App before this ar
 | `computer-use.html` | `screenshots/settings.jpg` | `91f9445add380dd3d187f122f5f9a7499717b5d854b962017d34e916c27bf066` |
 | `day-calendar.html` | `screenshots/side.png` | `78e9df4611db4ee671d483c98c6d045770afe5af2482ea2e22e304e49b354acd` |
 | `forum.html` | `screenshots/compose.jpg` | `b99d6d2a5af4d6033b601b52c86ae087438f460c279d7c5d11fac8236ed1c37d` |
-| `kanban.html` | `screenshots/1.jpg` | `3cf96007477abf83181cab90d42503bed5a7062cade28aada1dfaf5fbe948727` |
+| `kanban.html` | `screenshots/1.jpg` | `d6ebdf117d10c533efb984be017840f6aca80c5a95536055326e8140920e582b` |
 | `office.html` | `screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
 | `omnisearch.html` | `screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |
 | `paper-club.html` | `screenshots/1.jpg` | `4bdfec7a8a7d7fd6611d5318083a9f0485d84a34b2e1771e073fd33f235c4fe5` |
