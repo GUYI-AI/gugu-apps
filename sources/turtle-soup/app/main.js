@@ -329,18 +329,18 @@ function statusBar(round) {
   const given = hintsGiven(round)
   const solver = round.solvedBy && round.questions[round.solvedBy]?.by
   const lead = {
-    waiting: h('span', { className: 'host' }, `等 ${nameOf(round.host)} 接手主持…`),
-    playing: h('span', { className: 'host' }, h('gugu-avatar', { user: round.host, size: 'sm' }), `主持 ${nameOf(round.host)}`),
-    solved: h('span', { className: 'host' }, solver ? h('gugu-avatar', { user: solver, size: 'sm' }) : null, `${solver ? nameOf(solver) : ''} 还原成功`),
-    revealed: h('span', { className: 'host' }, '大家放弃了，汤底揭晓'),
+    waiting: h('span', { className: 'host' }, h('span', { className: 'name', textContent: `等 ${nameOf(round.host)} 接手主持…` })),
+    playing: h('span', { className: 'host' }, h('gugu-avatar', { user: round.host, size: 'sm' }), h('span', { className: 'name', textContent: `主持 ${nameOf(round.host)}` })),
+    solved: h('span', { className: 'host' }, solver ? h('gugu-avatar', { user: solver, size: 'sm' }) : null, h('span', { className: 'name', textContent: `${solver ? nameOf(solver) : ''} 还原成功` })),
+    revealed: h('span', { className: 'host' }, h('span', { className: 'name', textContent: '大家放弃了，汤底揭晓' })),
   }[round.status] ?? h('span', { className: 'host', textContent: round.status })
   return h('div', { className: 'statusbar', role: 'group', ariaLabel: '这一局' },
     lead,
     h('span', { textContent: `${ended(round) ? '共问' : '已问'} ${asked}` }),
     p.hintCount ? h('span', { className: 'hints', ariaLabel: `提示 ${given}/${p.hintCount}` },
-      '提示', h('span', { className: 'cells' }, Array.from({ length: p.hintCount }, (_, i) => h('i', { className: i < given ? 'on' : '' })))) : null,
+      h('span', { className: 'word', textContent: '提示' }), h('span', { className: 'cells' }, Array.from({ length: p.hintCount }, (_, i) => h('i', { className: i < given ? 'on' : '' })))) : null,
     h('span', { className: 'grow' }),
-    faces(playersOf(round)))
+    faces(playersOf(round), 3))
 }
 
 function drawRound() {
@@ -395,7 +395,7 @@ function drawControls() {
   askBtn = h('button', { type: 'submit', className: 'primary', textContent: '提问' })
   guessBtn = h('button', { type: 'button', textContent: '还原', onclick: () => submit('guess') })
   actions = h('span', { className: 'actions' })
-  const form = h('form', { className: 'ask' }, input, h('div', { className: 'bar' }, actions, h('span', { className: 'grow' }), guessBtn, askBtn))
+  const form = h('form', { className: 'ask' }, input, h('div', { className: 'bar' }, actions, guessBtn, askBtn))
   form.onsubmit = (ev) => { ev.preventDefault(); submit('ask') }
   input.onkeydown = (ev) => {
     if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); submit('ask') }

@@ -56,16 +56,26 @@ body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
 .start:disabled { opacity: .6; }
 
 /* The status line under the case. */
-.statusbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-sm) var(--em-spacing-lg); color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
-.statusbar .host { display: inline-flex; align-items: center; gap: var(--em-spacing-sm); color: var(--em-foreground); font-weight: 600; font-size: var(--em-font-body); }
+/* One line at any width: the host's name gives way first, the players' faces never wrap (a few, then +N). */
+.statusbar { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--em-spacing-md); color: var(--em-foreground-muted); font-size: var(--em-font-caption); white-space: nowrap; }
+.statusbar > * { flex-shrink: 0; }
+.statusbar .host { display: inline-flex; align-items: center; gap: var(--em-spacing-sm); flex-shrink: 1; min-width: 0; color: var(--em-foreground); font-weight: 600; font-size: var(--em-font-body); }
+.statusbar .name { overflow: hidden; text-overflow: ellipsis; }
 .hints { display: inline-flex; align-items: center; gap: var(--em-spacing-sm); }
 .cells { display: inline-flex; gap: 4px; }
 .cells i { width: 22px; height: 6px; border-radius: 3px; background: var(--em-border-1); }
 .cells i.on { background: var(--em-foreground-warning); }
 .faces { display: inline-flex; align-items: center; }
 .faces gugu-avatar { border-radius: 50%; box-shadow: 0 0 0 2px var(--em-background); }
-.faces gugu-avatar + gugu-avatar { margin-inline-start: -6px; }
+.faces gugu-avatar + gugu-avatar { margin-inline-start: -8px; }
 .faces small { margin-inline-start: var(--em-spacing-xs); }
+/* A phone's width: the hint cells say it without the word (it stays their label), so the host's name keeps its room. */
+@media (max-width: 440px) {
+  .statusbar { gap: var(--em-spacing-sm); }
+  .hints .word { display: none; }
+  .cells i { width: 14px; }
+  .games .faces { display: none; } /* the row's who-and-when line keeps its room; the round shows its players */
+}
 
 /* Questions: each verdict is a stamp. */
 .qa { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--em-spacing-sm); }
@@ -91,7 +101,9 @@ body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
 #controls { margin-top: auto; }
 .ask { margin: 0; display: grid; gap: var(--em-spacing-sm); padding: var(--em-spacing-md); border: 1px solid var(--em-border-1); border-radius: var(--em-radius-xl); background: var(--em-background); }
 .ask textarea { width: 100%; min-height: 56px; border: 0; box-shadow: none; outline: none; resize: none; background: transparent; padding: 0; }
-.ask .bar, .ask .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-sm); }
+/* 提问 keeps its place at the row's end at any width; the secondary words wrap among themselves on the left. */
+.ask .bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--em-spacing-sm); }
+.ask .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--em-spacing-xs); }
 button.link { border-color: transparent; background: transparent; color: var(--em-foreground-muted); padding-inline: 6px; }
 button.link.danger { color: var(--em-foreground-destructive); }
 button.link:disabled { background: transparent; }
