@@ -134,9 +134,13 @@ async function openPaper(file) {
   if (!state.notes) await findNotes()
   // Nobody marked it yet: the notes file someone else makes (or an agent's tool) is picked up the moment it appears.
   if (!state.notes) {
-    const stop = gugu.files.onChanged(state.place, ({ entries }) => {
+    // A chat tells its entries; a working copy the paths that changed (below the PDF's folder).
+    const name = notesNameOf(state.entry.name)
+    const folder = folderOf(state.entry)
+    const place = state.place.workspace && folder ? { ...state.place, folder } : state.place
+    const stop = gugu.files.onChanged(place, ({ entries, changes }) => {
       if (state.notes) return stop?.()
-      if ((entries ?? []).some((e) => e.name === notesNameOf(state.entry.name))) findNotes()
+      if ((entries ?? []).some((e) => e.name === name) || (changes ?? []).some((c) => c.path.split('/').pop() === name)) findNotes()
     })
   }
   const title = state.notes?.data.meta?.title || (await state.doc.getMetadata().catch(() => null))?.info?.Title || state.entry.name.replace(/\.pdf$/i, '')

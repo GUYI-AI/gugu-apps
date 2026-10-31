@@ -45,7 +45,9 @@ async function start() {
     gugu.onContextChanged((next) => { if (next.layout?.visible) refresh() })
     return refresh()
   }
-  gugu.files.onChanged(state.place, () => refresh())
+  // A chat's change is its own; a working copy's is any path in it: only one in the folder on screen redraws the shelf.
+  const inFolder = (path) => path.split('/').slice(0, -1).join('/') === state.folder
+  gugu.files.onChanged(state.place, (change) => { if (!change.changes || change.changes.some((c) => inFolder(c.path))) refresh() })
   gugu.onContextChanged((next) => {
     state.ctx = { ...state.ctx, ...next }
   })
