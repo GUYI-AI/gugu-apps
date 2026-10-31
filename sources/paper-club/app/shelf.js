@@ -29,7 +29,7 @@ async function start() {
   $('ref').setAttribute('aria-label', t.importPlaceholder)
   $('import-go').textContent = t.import
   $('upload').textContent = t.upload
-  state.place = ctx.workspace ? { workspace: ctx.workspace.id } : ctx.chat ? { chat: ctx.chat.id } : null
+  state.place = placeOf(ctx)
   state.library = !state.place
   if (ctx.workspace) {
     $('import').hidden = true
@@ -42,16 +42,30 @@ async function start() {
     $('target').onchange = () => { remember($('target').value); refresh() }
     $('list-title').textContent = t.library
     // Every chat's folder can change: the list is read again when the page is looked at again.
-    gugu.onContextChanged((next) => { if (next.layout?.visible) refresh() })
+    gugu.onContextChanged((next) => { if (!followPlace(next) && next.layout?.visible) refresh() })
     return refresh()
   }
   // A chat's change is its own; a working copy's is any path in it: only one in the folder on screen redraws the shelf.
   const inFolder = (path) => path.split('/').slice(0, -1).join('/') === state.folder
   gugu.files.onChanged(state.place, (change) => { if (!change.changes || change.changes.some((c) => inFolder(c.path))) refresh() })
-  gugu.onContextChanged((next) => {
-    state.ctx = { ...state.ctx, ...next }
-  })
+  gugu.onContextChanged((next) => { followPlace(next) })
   await refresh()
+}
+
+/** Where the shelf is: a session's working copy, else a chat, else (null) the person's library. */
+function placeOf(ctx) {
+  return ctx.workspace ? { workspace: ctx.workspace.id } : ctx.chat ? { chat: ctx.chat.id } : null
+}
+
+/**
+ * A tab can be told where it is after it first asked (a tab moved to a task is bound a moment later): when the place a
+ * change brings is not the one this page set up, the page starts again from the context it has now.
+ */
+function followPlace(next) {
+  state.ctx = { ...state.ctx, ...next }
+  if (JSON.stringify(placeOf(state.ctx)) === JSON.stringify(state.place)) return false
+  location.reload()
+  return true
 }
 
 let refreshing = null
