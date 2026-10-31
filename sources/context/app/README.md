@@ -1,35 +1,5 @@
-![上下文：项目的上下文健康一眼看清](screenshots/promo.png)
+# 上下文
 
-# 上下文 / Context
+项目的上下文健康与记忆容量
 
-![主图：上方是要处理的项目、最满的记忆索引、7 天任务和可清理项，下面每个项目一行，带热度、健康、容量](screenshots/1.jpg)
-![深色主题的项目详情：三块指标，下面是扣了健康的诊断，可预览改动](screenshots/2.jpg)
-![诊断列表：每条写明扣分、口径和证据；可以清理的不扣健康；最后是各电脑开工时拿到的规矩](screenshots/3.jpg)
-
-按项目查看 Claude 和 Codex 的任务热度、上下文健康和加载容量。项目使用紧凑的五列列表，保留像素头像与十格条；总览显示待处理项目、最高容量、任务数和可清理项，浅色和深色随咕咕主题变化。
-
-- 自动发现本机配置根，按 realpath 去重。项目归属、worktree 和远程仓库身份复用宿主任务历史；同一仓库跨机器合卡。
-- 主图按近 7 天任务或项目级上下文收录，按热度最多显示 8 个项目，其余目录列成文字列表。宿主的独立任务和失去项目关联的记忆目录在全局卡汇总，清理不扣健康。
-- 21 条程序检查直接读取文件和宿主的上下文摘要，不消耗模型额度。3 条语义检查只提供复制提示。
-- 修复先显示完整改动。确认后保存改前快照，再比文件哈希、realpath 和修改时间；文件改变就拒绝。近重复、description/type 缺项和规则含义不会自动推断。
-- 任务热度与跨机器读数使用 App API 17 的宿主程序调用及任务索引/读取接口。需要在每台参与的机器安装并启用同一版本的 App。索引更新或无法读取时明确显示未测。
-
-在 App 的「设置」页补充配置根或项目路径，每行一个。配置根自动包含 `CLAUDE_CONFIG_DIR`、`~/.claude`、`~/.rec/claude/accounts/*/config`、`CODEX_HOME` 和 `~/.codex`。
-
-`pixel-kit.css` 和 `pixel-kit.js` 集中定义稳定的项目像素头像、十格条和共享着色阈值。界面使用宿主的细边框与圆角；详情按健康问题、清理项、机器和 agent 判断排列，保留证据分页和完整预览确认。
-
-## 命令行
-
-```sh
-node tools.js --diagnose /absolute/path/to/memory
-node tools.js --diagnose /absolute/path/to/project
-node tools.js --diagnose /absolute/path/to/memory --context-export /absolute/path/to/context-export.json
-```
-
-CLI 不解析 transcript。导出文件支持宿主 `sessions.read({view:'context'})` 的单份投影、投影数组或 `{sessions:[…]}`；没有导出时只报告静态检查，历史检查显示待测。热度还需要导出带宿主首条消息时间计算出的 `hot` / `sources`；未提供则显示未知。输出全部为 JSONL，最后一行是 `type: "summary"`。R17 仅输出唯一路径、涉及文件及分类计数，逐项证据在 App 的分页工具中读取。
-
-R17 的 `count` 与 `metrics.missingPaths` 都只算 missing、deleted-worktree、moved-or-shorthand 三类确认不存在的唯一路径；临时路径和无法核实分别列出。`evidenceCount` 是按文件与路径去重的证据条数，同一个失效路径出现在两份记忆里只算一个失效、两条证据；没有失效但有无法核实项时仍可展开证据。
-
-Codex 容量只累计仓库根到工作目录的项目指令（每层优先 AGENTS.override.md），全局指令单独列出，不占项目的 32 KiB。R19 从 MEMORY.md 直接收录的 feedback 索引文字提词，拆分连字符标识符，去停用词和高频词；3–8 条共同出现的稀有词组或单个明确代码标识符形成候选，不跨组传递合并。相关常驻指令同时列为证据，不预置主题词表。
-
-程序不读取凭据或认证文件，不发送消息，不派 agent。修复快照保存在 App 数据夹 `snapshots/`，保留原始字节、路径和时间；同一项目的诊断报告刷新覆盖，原始 transcript 始终由宿主管理。
+What people read about this App in the market is in `store/`: `about*.md`, `screenshots/` and `whats-new.md` (this version's changes). What agents read is `contributes.instructions` in `manifest.json`, its tools and its skills. This README and `CHANGELOG.md` are for the repository and are never shown in gugu.

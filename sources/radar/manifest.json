@@ -1,21 +1,16 @@
 {
   "id": "radar",
   "name": "雷达",
-  "description": "让 agent 关注别的 agent:它出问题、需要人、或者做完的时候,雷达发一条提醒过去。agent 自己用 watch / unwatch / watching 关注;页签上是一张图,看得到谁在关注谁、每条路提醒过几次、有没有送到。可关注同一账号各台电脑上的 agent。",
+  "defaultLocale": "zh-CN",
   "subtitle": "关注 agent 的运行状态",
-  "localized": {
-    "en": {
-      "subtitle": "Watch agents and get alerts"
-    }
-  },
   "author": "咕咕",
-  "version": "0.2.1",
-  "apiVersion": 15,
+  "version": "0.3.0",
+  "apiVersion": 24,
   "platforms": [
     "desktop"
   ],
   "engines": {
-    "gugu": ">=0.2.58"
+    "gugu": ">=0.3.1"
   },
   "entry": "radar.html",
   "icon": "icon.png",
@@ -43,7 +38,14 @@
       {
         "tools": "tools.js"
       }
-    ]
+    ],
+    "instructions": "radar__watch(target, level, notify) alerts when an agent errs, needs a person or finishes; unwatch and watching manage watches."
   },
-  "license": "MIT"
+  "license": "MIT",
+  "localized": {
+    "en": {
+      "name": "Radar",
+      "subtitle": "Watch agents and get alerts"
+    }
+  }
 }

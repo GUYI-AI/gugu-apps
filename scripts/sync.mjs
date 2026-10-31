@@ -4,11 +4,13 @@
 // 字节不同 → 报红,❌ 覆盖。这把钥匙能写整个发布桶(桌面安装包、server 包也在里面),
 // 所以「只写 market/ 下面」在 put 这一处硬守,不靠调用方自觉。
 //
-// 每一版的顺序:包 → 图标 / README / 图 → meta。meta 最后写:它在,就说明这一版的文件都齐了,下次直接跳过。
+// 每一版的顺序:包 → 图标 / 截图 → meta。meta 最后写:它在,就说明这一版的文件都齐了,下次直接跳过 —— 已发布的版本
+// 从不重判,新规矩(store/ 的产品页内容)只管新登记的版本。
 import { createHash } from 'node:crypto';
 import { parseArgs } from 'node:util';
 import OSS from 'ali-oss';
-import { bundleKey, fail, MARKET_BASE_URL, metaKey, readApps, rebuildVersion } from './lib.mjs';
+import { bundleKey, fail, metaKey, readApps, rebuildVersion } from './lib.mjs';
+import { loadClientContract } from './client-contract.mjs';
 
 export const MARKET_PREFIX = 'market/';
 export const INDEX_KEY = `${MARKET_PREFIX}index.json`;
@@ -75,22 +77,22 @@ export function ossClient() {
   });
 }
 
-/** 一版:没有 meta 就重打、核 sha、写文件、最后写 meta;回 meta。 */
-async function syncVersion(client, app, version, dryRun, log) {
+/**
+ * 一版:没有 meta 就重打、核 sha、写文件、最后写 meta;回 meta。meta 带上产品页内容(客户端 marketListing 读它):
+ * about(各语言)与截图地址;这一版改了什么是 releaseNotes(目录里也有一份,版本历史由它拼)。
+ */
+async function syncVersion(client, app, version, dryRun, log, contract) {
   const key = MARKET_PREFIX + metaKey(app.id, version);
   const existing = await readJson(client, key);
   if (existing) return existing;
-  const { bytes, inspected } = await rebuildVersion(app, version, MARKET_BASE_URL);
+  const { bytes, inspected } = await rebuildVersion(app, version, await contract());
   const counts = { written: 0, same: 0 };
   const put = async (relativeKey, body, type) => {
     counts[await putObject(client, MARKET_PREFIX + relativeKey, body, type, dryRun)] += 1;
   };
   await put(bundleKey(app.id, version), bytes, 'application/zip');
   if (inspected.icon) await put(inspected.icon.key, inspected.icon.bytes, 'image/png');
-  if (inspected.readme) {
-    for (const media of inspected.readme.media) await put(media.key, media.bytes, media.contentType);
-    await put(inspected.readme.key, Buffer.from(inspected.readme.text), 'text/markdown; charset=utf-8');
-  }
+  for (const shot of inspected.screenshots) await put(shot.key, shot.bytes, shot.contentType);
   const meta = {
     publishedAt: new Date().toISOString(),
     manifest: inspected.manifest,
@@ -98,7 +100,8 @@ async function syncVersion(client, app, version, dryRun, log) {
     minAppVersion: inspected.minAppVersion,
     releaseNotes: inspected.releaseNotes,
     icon: inspected.icon?.key ?? null,
-    readme: inspected.readme?.key ?? null,
+    about: inspected.about,
+    screenshots: inspected.screenshots.map((shot) => shot.key),
   };
   await put(metaKey(app.id, version), Buffer.from(JSON.stringify(meta)), 'application/json; charset=utf-8');
   log(`synced ${app.id}@${version.version}: ${counts.written} written, ${counts.same} already there`);
@@ -128,7 +131,8 @@ export function buildIndex(apps, metas) {
             bytes: version.bytes,
             bundle: bundleKey(app.id, version),
             icon: meta.icon,
-            readme: meta.readme,
+            // 读不懂产品页内容的老客户端仍要这一键(它们的目录 schema 要它):老版本的 meta 里有,新登记的没有 README。
+            readme: meta.readme ?? null,
             source: { repo: version.repo, path: version.path, commit: version.commit },
             yanked: version.yanked,
           };
@@ -137,12 +141,15 @@ export function buildIndex(apps, metas) {
   };
 }
 
-export async function sync({ client, dir = 'apps', dryRun = false, log = console.log }) {
+export async function sync({ client, dir = 'apps', dryRun = false, log = console.log, loadContract = loadClientContract }) {
   const apps = readApps(dir);
   const metas = new Map();
+  // 只有要写新 meta 时才取钉住的客户端规矩:一趟全是已发布版本的 sync 不碰网络。
+  let contract;
+  const contractOnce = async () => (contract ??= await loadContract());
   for (const app of apps) {
     for (const version of app.versions) {
-      metas.set(`${app.id}@${version.version}`, await syncVersion(client, app, version, dryRun, log));
+      metas.set(`${app.id}@${version.version}`, await syncVersion(client, app, version, dryRun, log, contractOnce));
     }
   }
   const index = buildIndex(apps, metas);

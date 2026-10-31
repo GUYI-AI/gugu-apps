@@ -1,29 +1,17 @@
 {
   "id": "kanban",
   "name": "协作看板",
-  "description": "人和 agent 共用的看板：本机看板记录这台电脑上的工作，群看板供群成员和各自的 agent 共同推进。卡片可关联任务并显示运行状态、进度和等待事项；agent 通过工具认领、更新和推进卡片。",
+  "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
-  "localized": {
-    "zh": {
-      "name": "协作看板",
-      "description": "人和 agent 共用的看板：本机看板记录这台电脑上的工作，群看板供群成员和各自的 agent 共同推进。卡片可关联任务并显示运行状态、进度和等待事项；agent 通过工具认领、更新和推进卡片。",
-      "subtitle": "人和 agent 共用的看板"
-    },
-    "en": {
-      "name": "Teamboard",
-      "description": "A board people and agents share: this computer's board for your own work, and a chat's board everyone in it and their agents move forward together. Cards link tasks and show their status, progress and what they wait on; agents claim, update and move cards with tools.",
-      "subtitle": "A board for people and agents"
-    }
-  },
   "author": "咕咕",
-  "version": "1.2.4",
-  "apiVersion": 18,
+  "version": "1.3.0",
+  "apiVersion": 24,
   "platforms": [
     "desktop",
     "phone"
   ],
   "engines": {
-    "gugu": ">=0.2.58"
+    "gugu": ">=0.3.1"
   },
   "entry": "board.html",
   "icon": "icon.png",
@@ -78,11 +66,18 @@
         "tools": "tools.js"
       }
     ],
-    "skills": "skills"
+    "skills": "skills",
+    "instructions": "Read skill kanban first. kanban__list, claim, update, move and comment work cards on this computer's board or a chat's .board.json."
   },
   "examples": [
     "把这件事添加到我的看板",
     "群看板上有哪些卡片在等人处理？"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "localized": {
+    "en": {
+      "name": "Teamboard",
+      "subtitle": "A board for people and agents"
+    }
+  }
 }

@@ -39,7 +39,7 @@
   名单就写在这里,客户端代码里不点名;已经有 App 的老用户不受影响,装过、卸了的也不会再装回来。
   **只能标在本仓自己的 App 上**(代码在 `sources/` 里,每一版的 `repo` 都是本仓):不问人就装的只能是 gugu 自己的。verify 拦,咕咕客户端也照这一条判。
 - 已经上线的版本行,除了加 `yanked`,一个字段都不许改、不许删。
-- json 里不写能从包里推出来的东西(manifest、更新说明、README、图标),CI 从包里取。
+- json 里不写能从源码推出来的东西(manifest、`store/` 的产品页内容、图标),CI 从源码取。
 
 **测试用的 App 测完一律 `unlisted`**:`main` 上 listed 的只能是准备给用户看的 App。
 
@@ -59,11 +59,12 @@
 ## CI
 
 - `verify`(PR):先跑 `npm test` 和每个自带测试的 App 的测试(见上一节);再照每个新版本的 `repo@commit` 把 `path` 重新打包,sha256 与字节数逐字节对上;
-  `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;`CHANGELOG.md` 有 `## <版本>` 这一节;图标是 PNG(≤ 32 KiB、≤ 512px);
-  `description` 的第一句在 agent 读到的 `<gugu_apps>` 里那一行(`- 名字 (id): 第一句`)不超过 120 字 —— 超过就被截成半句。
+  `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;上架要的东西照**钉住的咕咕客户端提交**里的规矩判(`.github/gugu-app-contract.json`
+  钉的那一版 `app-listing.ts`、`app-platforms.ts`,本仓不抄一份):`subtitle`、`defaultLocale`、源码顶层 `store/`(`about.md` 与每种
+  `localized` 语言的 `about.<语言>.md`、`screenshots/` 1–8 张、`whats-new.md`)、图标。`store/` 不进包;README.md、CHANGELOG.md 只给仓库看。
   源码仓要是公开仓,或者本仓自己;提交必须在源码仓默认分支的历史里(GitHub 按 sha 也给 fork 里的提交,不核就会把 fork 的代码记成「代码在 owner/repo」)。
 - `sync`(合并到 `main`,environment `mirror`):写 `market/bundles|meta|media/…`,每个文件只写一次
-  (同名同字节跳过,不同字节报红),最后覆盖 `market/index.json`。只写 `market/` 下面,由 `scripts/sync.mjs` 的 `putObject` 硬守。
+  (同名同字节跳过,不同字节报红),meta 带上这一版的 `about`(各语言)、截图地址和 `releaseNotes`(= `store/whats-new.md`);已发布的版本从不重判、meta 不改写。最后覆盖 `market/index.json`。只写 `market/` 下面,由 `scripts/sync.mjs` 的 `putObject` 硬守。
 
 打包器(`scripts/lib.mjs` 的 `packDir`)是市场字节的唯一来源:文件按路径排序、时间戳固定、不要目录条目、拒绝符号链接,
 `jszip` 锁在 `package-lock.json`。改它等于改所有已发布版本的 sha256 —— 别改。

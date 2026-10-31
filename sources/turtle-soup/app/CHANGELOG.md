@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.2.11
 
 - 市场封面和产品页截图重拍：在真实咕咕客户端的群里开局，人和 agent 一起提问、判定、还原（浅色、2× 像素）。App 本身没有改动。

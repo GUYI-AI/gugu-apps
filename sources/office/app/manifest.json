@@ -1,32 +1,26 @@
 {
   "id": "office",
   "name": "咕咕办公",
-  "description": "Its skill office reads and changes a chat folder's .pptx and .xlsx: the same file, its next version. In the App a person picks what should change and puts it in the composer as pills, slide and shape or a sheet's cells; a pill clicked opens the file there.",
-  "subtitle": "Slides and sheets with agents",
-  "localized": {
-    "zh": {
-      "name": "咕咕办公",
-      "description": "打开群文件夹里的演示稿和表格，点选或框选要改的地方，一起交给 agent 去改；改好的是同一个文件的下一版。它自己的一页在群里打开时列出、搜索本群的文件，一键新建空白演示稿或表格，在左栏打开时列出最近打开的文件，都能搜索所有群的文件。",
-      "subtitle": "与 agent 协作修改演示稿和表格"
-    },
-    "en": {
-      "name": "Gugu Office",
-      "description": "Open the decks and spreadsheets in a chat's folder, pick or box what should change, and hand it to an agent; what it changes is the same file's next version. Opened in a chat, its page lists that chat's files and makes blank ones; elsewhere, those opened lately.",
-      "subtitle": "Slides and sheets with agents"
-    }
-  },
+  "defaultLocale": "zh-CN",
+  "subtitle": "与 agent 协作修改演示稿和表格",
   "author": "咕咕",
-  "version": "0.2.11",
-  "apiVersion": 16,
+  "version": "0.3.0",
+  "apiVersion": 24,
   "platforms": [
     "desktop",
     "phone"
   ],
-  "engines": { "gugu": ">=0.2.57" },
+  "engines": {
+    "gugu": ">=0.3.1"
+  },
   "entry": "index.html",
   "icon": "icon.png",
   "permissions": {
-    "capabilities": ["files:read", "files:write", "agents:tools"]
+    "capabilities": [
+      "files:read",
+      "files:write",
+      "agents:tools"
+    ]
   },
   "contributes": {
     "tabs": [
@@ -34,8 +28,18 @@
         "name": "main",
         "title": "咕咕办公",
         "icon": "icon.png",
-        "opensFiles": { "chat": [".pptx", ".xlsx", ".xlsm"] },
-        "fileIcons": { ".pptx": "pptx.png", ".xlsx": "xlsx.png", ".xlsm": "xlsx.png" }
+        "opensFiles": {
+          "chat": [
+            ".pptx",
+            ".xlsx",
+            ".xlsm"
+          ]
+        },
+        "fileIcons": {
+          ".pptx": "pptx.png",
+          ".xlsx": "xlsx.png",
+          ".xlsm": "xlsx.png"
+        }
       },
       {
         "name": "home",
@@ -45,6 +49,13 @@
         "sideWidth": 480
       }
     ],
-    "skills": "skills"
+    "skills": "skills",
+    "instructions": "Read skill office before changing a chat's .pptx or .xlsx: it edits the same file, saved as its next version."
+  },
+  "localized": {
+    "en": {
+      "name": "Gugu Office",
+      "subtitle": "Slides and sheets with agents"
+    }
   }
 }

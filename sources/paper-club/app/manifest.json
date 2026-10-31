@@ -1,29 +1,17 @@
 {
   "id": "paper-club",
   "name": "论文共读",
-  "description": "Read papers alone or as a chat's reading group: highlights, threads, sourced answers, study cards. Its tools read a paper (a chat's or a project's on this computer), cite a passage as a link back to it, comment, add cards and import arXiv or DOI papers; skill paper-club says how.",
-  "subtitle": "Read papers together in a chat",
-  "localized": {
-    "zh": {
-      "name": "论文共读",
-      "description": "一个人读，或在群里开读书会：从 arXiv、DOI 导入或上传 PDF，划线、讨论，选一段直接问 agent，它回答里的每个出处点一下就回到原文。一个人用时论文放在本机的项目文件夹里，问本机的任务；在群里时放在群文件夹里，问群里的 agent。学习卡记下每个人的复习和掌握度。",
-      "subtitle": "论文共读、划线讨论与学习卡"
-    },
-    "en": {
-      "name": "Paper Club",
-      "description": "Read papers alone or with a chat: import from arXiv or a DOI or upload a PDF, highlight and discuss it, and ask an agent about a passage — every source it cites opens the paper there. Alone, papers stay in a project folder on this computer; cards keep each person's reviews.",
-      "subtitle": "Read papers together in a chat"
-    }
-  },
+  "defaultLocale": "zh-CN",
+  "subtitle": "论文共读、划线讨论与学习卡",
   "author": "咕咕",
-  "version": "0.3.9",
-  "apiVersion": 15,
+  "version": "0.4.0",
+  "apiVersion": 24,
   "platforms": [
     "desktop",
     "phone"
   ],
   "engines": {
-    "gugu": ">=0.2.57"
+    "gugu": ">=0.3.1"
   },
   "entry": "shelf.html",
   "icon": "icon.png",
@@ -85,6 +73,13 @@
         "tools": "tools.js"
       }
     ],
-    "skills": "skills"
+    "skills": "skills",
+    "instructions": "Read skill paper-club first. paper-club__read, evidence and cite answer from a paper with links back to the passage; add_cards, import_paper."
+  },
+  "localized": {
+    "en": {
+      "name": "Paper Club",
+      "subtitle": "Read papers together in a chat"
+    }
   }
 }
