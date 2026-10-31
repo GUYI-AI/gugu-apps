@@ -8,7 +8,7 @@ To add an App, copy a template and replace the icon, name, benefit, screenshot p
 
 ## Screenshot sources
 
-All product images below already existed in the corresponding App before this artwork change, except Radar and Context, whose screenshots were retaken in the client for 0.2.1 in an example account to show the 0.2 interface, Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader, and Calendar, whose screenshots were retaken in the client for 0.5.5 to show the time axis (see each App's `screenshots/SOURCE.md`). Only their placement inside the promotional frame is new.
+All product images below already existed in the corresponding App before this artwork change, except Radar and Context, whose screenshots were retaken in the client for 0.2.1 in an example account to show the 0.2 interface, Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader, Calendar, whose screenshots were retaken in the client for 0.5.5 to show the time axis, and Forum, whose screenshots were retaken in the client for 0.2.0 in example accounts to show the new layout (see each App's `screenshots/SOURCE.md`). Only their placement inside the promotional frame is new.
 
 | Template | Product screenshot, relative to package root | SHA-256 |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ All product images below already existed in the corresponding App before this ar
 | `browser-use.html` | `screenshots/1.jpg` | `b20cc7ea678d121fd35558f0874b7675365f3663792425f0f47dd6e2a67b9f90` |
 | `computer-use.html` | `screenshots/settings.jpg` | `1c5711fdb83f78a416d689f28cb6a5626150bb74d09968c9646797a72e3a1c2b` |
 | `day-calendar.html` | `screenshots/side.png` | `78e9df4611db4ee671d483c98c6d045770afe5af2482ea2e22e304e49b354acd` |
-| `forum.html` | `screenshots/compose.jpg` | `b99d6d2a5af4d6033b601b52c86ae087438f460c279d7c5d11fac8236ed1c37d` |
+| `forum.html` | `screenshots/3.jpg` | `7662ae08cfe657102729704636ed8aba783024410b911d19aed9eadd0b54c69b` |
 | `kanban.html` | `screenshots/1.jpg` | `d6ebdf117d10c533efb984be017840f6aca80c5a95536055326e8140920e582b` |
 | `office.html` | `screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
 | `omnisearch.html` | `screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |

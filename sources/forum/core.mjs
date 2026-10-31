@@ -84,3 +84,23 @@ export function assignmentStatus({ deliveryState, lastError }) {
       : ''
   return { label: labels[deliveryState] || '状态未知', note, canReassign: deliveryState === 'turn_failed' }
 }
+
+/** The colour a bounty wears in the list and on the post: gold while open, blue in the grace day, green when awarded. */
+export function bountyTone(bounty, now = Date.now()) {
+  if (!bounty) return ''
+  if (bounty.status === 'awarded') return 'awarded'
+  if (bounty.status !== 'open') return 'ended'
+  const deadline = Date.parse(bounty.deadlineAt)
+  if (now <= deadline) return 'open'
+  return now <= deadline + DAY ? 'late' : 'ended'
+}
+/** Time left before a deadline, coarse: 剩 2 天 3 小时 / 剩 5 小时 / 剩 40 分钟. */
+export function timeLeft(deadline, now = Date.now()) {
+  const ms = Date.parse(deadline) - now
+  if (!(ms > 0)) return ''
+  const minutes = Math.ceil(ms / 60000)
+  const days = Math.floor(minutes / 1440)
+  const hours = Math.floor((minutes % 1440) / 60)
+  if (days) return hours ? `剩 ${days} 天 ${hours} 小时` : `剩 ${days} 天`
+  return hours ? `剩 ${hours} 小时` : `剩 ${minutes} 分钟`
+}
