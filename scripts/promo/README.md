@@ -22,4 +22,4 @@ All product images below already existed in the corresponding App before this ar
 | `omnisearch.html` | `screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |
 | `paper-club.html` | `screenshots/1.jpg` | `4bdfec7a8a7d7fd6611d5318083a9f0485d84a34b2e1771e073fd33f235c4fe5` |
 | `radar.html` | `screenshots/1.jpg` | `d4f58bc74dabf211407cabdd9436cc35503a36bc06d7de33a1ce22dc5bd69d49` |
-| `turtle-soup.html` | `screenshots/1.jpg` | `242c3f9a7f3c06801b5fed8d59d3c913395e05a8f8f40f7ba6d253fe3c668970` |
+| `turtle-soup.html` | `screenshots/1.jpg` | `ac5df95fc41ff375b0516b61e9bc1b34a248e9bd335152f015c1f4cca503f0cc` |
