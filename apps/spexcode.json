@@ -39,6 +39,15 @@
       "sha256": "e5196f544e113f9591d48b89d1e5133e82b2b931b250e7c86b54a6cbaa0f56db",
       "bytes": 1150429,
       "yanked": null
+    },
+    {
+      "version": "0.8.0",
+      "repo": "shuxueshuxue/Spexcode",
+      "path": "distribution/gugu/spexcode",
+      "commit": "ceb081b613331cdc27dde9191041530edde37f1b",
+      "sha256": "a2143fbaa9211b2020d8109b8480055dc62aaac51c84dcfbae080a2361099a3f",
+      "bytes": 173739,
+      "yanked": null
     }
   ]
 }

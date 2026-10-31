@@ -129,6 +129,15 @@
       "sha256": "618202781a3720ce816fb8343b31289ba2f24e7daee6d252323c0212c39e82d7",
       "bytes": 3439451,
       "yanked": null
+    },
+    {
+      "version": "0.4.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "9bcdf853c29c72f333899386239d760dfbdad966",
+      "sha256": "3817b765ad2a0ca621bb720b8d0f5ed4cd29d5d33367b98639d4781d6579b85c",
+      "bytes": 2273142,
+      "yanked": null
     }
   ]
 }
