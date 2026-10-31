@@ -1,7 +1,7 @@
 {
   "id": "context",
   "name": "上下文",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "apiVersion": 17,
   "platforms": ["desktop"],
   "engines": { "gugu": ">=0.2.58" },

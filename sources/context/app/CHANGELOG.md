@@ -1,3 +1,11 @@
+## 0.2.1
+
+- 市场截图换成 0.2 界面的客户端实拍。
+
+## 0.2.0
+
+- 项目改为紧凑列表与总览，保留像素头像和十格条，统一详情与诊断样式。
+
 ## 0.1.1
 
 - Answer within the host's request timeout on busy or remote computers: reading stops at a time budget, resumes on the next call and shows progress.

@@ -1,113 +1,159 @@
-/* 雷达's tab. Only gugu's tokens (--em-*), so light and dark follow by themselves. */
+/* 雷达's tab — mock after Linear Inbox / GitHub notifications. Only gugu's tokens (--em-*). */
 body {
   margin: 0; height: 100vh; overflow: hidden; background: var(--em-background);
-  display: grid; grid-template-columns: minmax(0, 1fr) clamp(280px, 28%, 380px); grid-template-rows: auto auto minmax(0, 1fr);
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 34%, 420px); grid-template-rows: auto auto minmax(0, 1fr);
 }
-/* hidden stays hidden, whatever display a rule below gives the element */
 [hidden] { display: none !important; }
 
-/* the header is there only when there is a choice to make: in a task, this task or everyone (and how far out) */
-#bar { display: flex; align-items: center; gap: var(--em-spacing-lg); padding: var(--em-spacing-sm) var(--em-spacing-lg); border-bottom: 1px solid var(--em-border); }
+/* ---------- one bar: scope · counts by state · the background's heartbeat ---------- */
+#bar { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--em-spacing-md); padding: 6px var(--em-spacing-lg); border-bottom: 1px solid var(--em-border); min-height: 44px; box-sizing: border-box; flex-wrap: wrap; }
 #modes { margin: 0; }
-#depth-box { flex-direction: row; align-items: center; gap: var(--em-spacing-sm); }
-#depth-box select { width: auto; }
-#alert { margin: 0; padding: var(--em-spacing-xs) var(--em-spacing-lg); border-radius: 0; }
-#bar, #alert { grid-column: 1 / -1; }
+#depth-box { display: flex; flex-direction: row; align-items: center; gap: 6px; font-size: var(--em-font-caption); color: var(--em-foreground-muted); }
+#depth-box select { width: auto; height: 28px; }
+#counts { display: flex; gap: 4px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+#counts li { display: inline-flex; align-items: center; gap: 6px; margin: 0; height: 24px; padding: 0 8px; border-radius: var(--em-radius-capsule); font-size: var(--em-font-caption); color: var(--em-foreground-muted); font-variant-numeric: tabular-nums; }
+#counts li b { color: var(--em-foreground); font-weight: 600; }
+#counts li.hot { background: color-mix(in oklab, var(--node) 14%, transparent); }
+#counts li.hot b { color: var(--node); }
+#counts .dot, #watch-list .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--node); flex: none; }
+#pulse { display: inline-flex; align-items: center; gap: 6px; color: var(--em-foreground-passive); font-size: var(--em-font-caption); padding-left: var(--em-spacing-sm); border-left: 1px solid var(--em-border); }
+#pulse .beat { width: 6px; height: 6px; border-radius: 50%; background: var(--em-foreground-success); box-shadow: 0 0 0 3px color-mix(in oklab, var(--em-foreground-success) 22%, transparent); }
+#pulse.late .beat { background: var(--em-foreground-warning); box-shadow: 0 0 0 3px color-mix(in oklab, var(--em-foreground-warning) 22%, transparent); }
+#refresh { width: 26px; height: 26px; }
+#alert { grid-column: 1 / -1; margin: 0; padding: var(--em-spacing-xs) var(--em-spacing-lg); border-radius: 0; }
 
-/* the graph is the page; the reminders are a column beside it, or under it when the page is narrow */
-#stage { grid-area: 3 / 1; position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; }
-/* the empty note shares the graph's cell, so it sits in the middle of the graph (the legend is the row under it) */
+/* ---------- the graph ---------- */
+#stage { grid-area: 3 / 1; position: relative; display: grid; overflow: hidden; }
 #graph, #empty-all { grid-area: 1 / 1; }
-#graph { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#graph { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; user-select: none; }
 #graph:active { cursor: grabbing; }
-#graph, #legend { user-select: none; -webkit-user-select: none; }
-#side { grid-area: 3 / 2; overflow-y: auto; padding: var(--em-spacing-md) var(--em-spacing-lg); border-left: 1px solid var(--em-border); display: flex; flex-direction: column; gap: var(--em-spacing-lg); }
-#side-head { display: flex; align-items: center; justify-content: space-between; gap: var(--em-spacing-sm); }
-#side h5 { margin: 0; }
-#side .list li { padding-left: 0; padding-right: 0; }
-/* a reminder's whole sentence, wrapped, never cut */
-#log .list li > div > * { white-space: normal; word-break: keep-all; overflow-wrap: anywhere; }
-#legend { margin: 0; padding: var(--em-spacing-sm) var(--em-spacing-lg); list-style: none; display: flex; flex-wrap: wrap; gap: var(--em-spacing-xs) var(--em-spacing-md); font-size: var(--em-font-caption); color: var(--em-foreground-muted); }
-#legend li { display: flex; align-items: center; gap: 6px; margin: 0; }
-#legend .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--node); }
-#legend .line { width: 18px; height: 0; border-top: 1.5px solid var(--em-foreground-muted); display: inline-block; }
-#tip { position: absolute; z-index: 2; pointer-events: none; padding: var(--em-spacing-sm) var(--em-spacing-md); border: 1px solid var(--em-border); border-radius: var(--em-radius-xl); background: var(--em-background-1); font-size: var(--em-font-caption); line-height: var(--em-lh-caption, 1.5); max-width: 280px; }
+#hint { position: absolute; left: var(--em-spacing-lg); bottom: var(--em-spacing-md); display: flex; align-items: center; gap: 6px; color: var(--em-foreground-passive); font-size: var(--em-font-caption); pointer-events: none; }
+#hint .line { width: 16px; border-top: 1.5px solid currentColor; }
+#tip { position: absolute; z-index: 2; pointer-events: none; padding: var(--em-spacing-sm) var(--em-spacing-md); border: 1px solid var(--em-border); border-radius: var(--em-radius-xl); background: var(--em-background-1); box-shadow: var(--em-shadow-lift); font-size: var(--em-font-caption); line-height: var(--em-lh-caption, 1.5); max-width: 280px; }
 #tip p { margin: 0 0 2px; }
-#empty { position: absolute; left: 0; right: 0; top: 64%; text-align: center; color: var(--em-foreground-muted); margin: 0; pointer-events: none; background: none; }
+#empty { position: absolute; left: 0; right: 0; top: 62%; text-align: center; color: var(--em-foreground-muted); margin: 0; pointer-events: none; }
+#empty-all { place-self: center; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; max-width: 340px; padding: var(--em-spacing-lg); }
+#empty-all .sweep { width: 96px; height: 96px; margin-bottom: var(--em-spacing-sm); }
+#empty-all .sweep circle { fill: none; stroke: var(--em-border-1); stroke-width: 1.2; }
+#empty-all .sweep .me { fill: var(--em-foreground-passive); stroke: none; }
+#empty-all small { color: var(--em-foreground-muted); }
+#empty-all code { white-space: nowrap; margin-top: var(--em-spacing-sm); font-size: 11.5px; padding: 4px 8px; border-radius: var(--em-radius-control); background: var(--em-background-3); }
+
+/* ---------- the side: what was said (inbox), and who watches whom ---------- */
+#side { grid-area: 3 / 2; overflow-y: auto; border-left: 1px solid var(--em-border); display: flex; flex-direction: column; }
+#side section { padding: var(--em-spacing-md) var(--em-spacing-md) var(--em-spacing-sm); }
+#side section + section { border-top: 1px solid var(--em-border); }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: var(--em-spacing-sm); padding: 0 4px; margin-bottom: 6px; }
+#side h5 { margin: 0; font-size: var(--em-font-caption); color: var(--em-foreground-muted); font-weight: 600; }
+.chips { display: flex; gap: 2px; margin: 0; padding: 0; border: 0; background: none; }
+.chips > [role=tab] { height: 24px; padding: 0 8px; font-size: var(--em-font-caption); border-radius: var(--em-radius-capsule); color: var(--em-foreground-muted); background: none; }
+.chips > [role=tab][aria-selected=true] { background: var(--em-selected); color: var(--em-foreground); }
+.chips > [role=tab] span { margin-left: 4px; color: var(--em-foreground-passive); font-variant-numeric: tabular-nums; }
+.day { margin: 10px 4px 4px; font-size: 11px; color: var(--em-foreground-passive); font-weight: 600; }
+.day:first-child { margin-top: 2px; }
+
+/* one reminder: a tinted glyph for what happened, who it was about, where it went, when */
+.note { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 7px 8px; border-radius: var(--em-radius-control); }
+.note:hover { background: var(--em-hover); }
+.glyph { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: var(--tone); background: color-mix(in oklab, var(--tone) 13%, transparent); }
+.glyph gugu-icon { width: 15px; height: 15px; }
+.ev-failed { --tone: var(--em-foreground-destructive); }
+.ev-stuck { --tone: var(--em-foreground-warning); }
+.ev-waiting { --tone: var(--em-foreground-warning); }
+.ev-done { --tone: var(--em-foreground-success); }
+.ev-gone { --tone: var(--em-foreground-passive); }
+.note .what { font-size: var(--em-font-body); line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note .what strong { font-weight: 600; }
+.note .what em { font-style: normal; color: var(--tone); margin-left: 4px; }
+.note .to { font-size: var(--em-font-caption); color: var(--em-foreground-muted); line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note .bad { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 11.5px; line-height: 18px; padding: 0 6px; border-radius: var(--em-radius-control); color: var(--em-foreground-destructive); background: var(--em-background-destructive); }
+.note gugu-time, .note time { font-size: var(--em-font-caption); color: var(--em-foreground-passive); line-height: 20px; font-variant-numeric: tabular-nums; }
+
+/* one watch: whom, from when, how often it spoke; stopping shows on hover */
+.watch { position: relative; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: var(--em-radius-control); min-height: 32px; }
+.watch:hover { background: var(--em-hover); }
+.watch .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watch .who small { color: var(--em-foreground-passive); margin-left: 6px; }
+.level { font-size: 11.5px; line-height: 20px; padding: 0 7px; border-radius: var(--em-radius-capsule); border: 1px solid var(--em-border-1); color: var(--em-foreground-muted); white-space: nowrap; }
+.watch .sent { font-size: var(--em-font-caption); color: var(--em-foreground-passive); min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+.watch .stop { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0; pointer-events: none; height: 24px; font-size: var(--em-font-caption); padding: 0 8px; }
+.watch:hover .stop, .watch:focus-within .stop { opacity: 1; pointer-events: auto; }
+.watch .sent { grid-column: 4; grid-row: 1; }
+.watch:hover .sent, .watch:focus-within .sent, .watch:hover .level, .watch:focus-within .level { visibility: hidden; }
+
+/* a picked agent or path: a property sheet, Linear-style */
+#detail { background: var(--em-background-1); }
+#detail h4 { margin: 0 4px 2px; display: flex; align-items: center; gap: 8px; font-size: var(--em-font-heading); }
+#detail .say { margin: 0 4px 10px; color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
+#detail dl { display: grid; grid-template-columns: 72px 1fr; gap: 6px 10px; margin: 0 4px 10px; font-size: var(--em-font-caption); }
+#detail dt { color: var(--em-foreground-passive); } #detail dd { margin: 0; }
+#detail .acts { display: flex; gap: 6px; margin: 0 4px 4px; }
+
+/* narrow: the graph on top, a fixed band; the inbox reads below */
 @media (max-width: 720px) {
-  body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; }
-  #side { grid-area: 4 / 1; max-height: 40vh; border-left: 0; border-top: 1px solid var(--em-border); }
+  body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 360px minmax(0, 1fr); }
+  #side { grid-area: 4 / 1; border-left: 0; border-top: 1px solid var(--em-border); }
+  #counts { margin-left: 0; order: 3; width: 100%; }
+  #pulse { margin-left: auto; border-left: 0; }
+  #depth-box span { display: none; }
 }
 
 .failed { color: var(--em-foreground-destructive); }
-a.button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
-.sentence { margin: 0; white-space: normal; flex: 1; }
 
-/* ---------- still, faint rings behind the graph: they only mark the center ---------- */
-.ring { fill: none; stroke: var(--em-border-1); stroke-width: 1; opacity: 0.55; vector-effect: non-scaling-stroke; }
-
-/* ---------- agents ---------- */
+/* ---------- graph ---------- */
+.ring { fill: none; stroke: var(--em-border-1); stroke-width: 1; opacity: 0.5; vector-effect: non-scaling-stroke; }
 .status-working { --node: var(--em-foreground-info); }
 .status-needs_user { --node: var(--em-foreground-warning); }
 .status-idle { --node: var(--em-foreground-success); }
 .status-error { --node: var(--em-foreground-destructive); }
 .status-none, .status-gone, .status-null { --node: var(--em-foreground-passive); }
 .node { cursor: pointer; transition: opacity 0.22s ease; }
-.node-dot { fill: var(--node); stroke: var(--em-background); stroke-width: 2.5; transition: fill 0.4s ease; }
-.node-halo { fill: none; stroke: var(--em-accent-9); stroke-width: 2; display: none; }
+.node-dot { fill: var(--node); stroke: var(--em-background); stroke-width: 3; transition: fill 0.4s ease; }
+.node-halo { fill: none; stroke: var(--em-foreground); stroke-width: 1.5; display: none; }
 .node.center .node-halo { display: inline; }
-.node-label { fill: var(--em-foreground); font-size: var(--em-font-caption); paint-order: stroke; stroke: var(--em-background); stroke-width: 6px; stroke-linejoin: round; }
+.node-label { fill: var(--em-foreground); font-size: 12px; font-weight: 500; paint-order: stroke; stroke: var(--em-background); stroke-width: 5px; stroke-linejoin: round; }
 .node:focus-visible .node-dot { stroke: var(--em-accent-9); stroke-width: 3; }
 .node-aura, .node-ping { fill: none; stroke: var(--node); display: none; transform-box: fill-box; transform-origin: center; pointer-events: none; }
-/* working: a ring that breathes */
 .status-working .node-aura { display: inline; stroke-width: 3; animation: radar-breathe 2.4s ease-in-out infinite; }
-/* waiting for someone: a slow pulse going out */
 .status-needs_user .node-ping { display: inline; stroke-width: 2; animation: radar-ping 2.8s ease-out infinite; }
-/* idle: quiet, a little faded */
-.status-idle .node-dot { fill-opacity: 0.72; }
 .status-idle .node-label { fill: var(--em-foreground-muted); }
-/* gone: see-through, a dashed edge */
-.status-gone { opacity: 0.55; }
-.status-gone .node-dot { fill-opacity: 0.18; stroke: var(--em-foreground-passive); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.status-gone { opacity: 0.6; }
+.status-gone .node-dot { fill-opacity: 0.15; stroke: var(--em-foreground-passive); stroke-width: 1.5; stroke-dasharray: 3 3; }
 .status-gone .node-label { fill: var(--em-foreground-passive); }
-/* trouble: red, and one shake when it turns */
 .node-body.shake { animation: radar-shake 0.5s ease-in-out 1; }
 .node-body.entering { animation: radar-fade-in 0.5s ease-out 1; }
-.node-body.entering .node-dot { transform-box: fill-box; transform-origin: center; animation: radar-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1; }
 .node.leaving { opacity: 0; pointer-events: none; }
-
-/* ---------- paths ---------- */
 .edge { transition: opacity 0.22s ease; }
-.edge-line { fill: none; stroke: var(--em-foreground-muted); stroke-width: 1.5; stroke-opacity: 0.75; transition: stroke 0.3s ease, stroke-width 0.2s ease; }
-.edge-failed .edge-line { stroke: var(--em-foreground-destructive); stroke-opacity: 1; }
+.edge-line { fill: none; stroke: var(--em-foreground-passive); stroke-width: 1.5; transition: stroke 0.3s ease, stroke-width 0.2s ease; }
+.edge-failed .edge-line { stroke: var(--em-foreground-destructive); stroke-dasharray: 4 3; }
 .edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
-.edge-badge rect { fill: var(--em-background-1); stroke: var(--em-border-1); stroke-width: 1; }
-.edge-badge text { fill: var(--em-foreground); font-size: 11px; font-weight: 600; }
-.edge-failed .edge-badge rect { stroke: var(--em-foreground-destructive); }
+.edge-badge rect { fill: var(--em-background); stroke: var(--em-border-1); stroke-width: 1; }
+.edge-badge text { fill: var(--em-foreground-muted); font-size: 10.5px; font-weight: 600; }
+.edge-failed .edge-badge rect { stroke: var(--em-foreground-destructive); fill: var(--em-background-destructive); }
 .edge-failed .edge-badge text { fill: var(--em-foreground-destructive); }
 .edge-badge-hop { transform-box: fill-box; transform-origin: center; }
 .edge-badge-hop.hop { animation: radar-hop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 1; }
-.arrowhead.edge-path { fill: var(--em-foreground-muted); }
+.arrowhead.edge-path { fill: var(--em-foreground-passive); }
 .arrowhead.edge-failed { fill: var(--em-foreground-destructive); }
-.edge.selected .edge-line { stroke-width: 3; }
+.edge.selected .edge-line { stroke-width: 3; stroke: var(--em-foreground); }
 .flight { fill: var(--em-foreground-info); stroke: var(--em-background); stroke-width: 1.5; }
 .flight-failed { fill: var(--em-foreground-destructive); }
-
-/* ---------- focus: the pointer's neighbourhood stays, the rest steps back ---------- */
 #graph.focusing .node:not(.lit) { opacity: 0.14; }
 #graph.focusing .edge:not(.lit) { opacity: 0.06; }
-#graph.focusing .edge.lit .edge-line { stroke-width: 2.5; stroke-opacity: 1; }
-
+#graph.focusing .edge.lit .edge-line { stroke-width: 2.5; }
 @keyframes radar-breathe { 0%, 100% { transform: scale(0.92); opacity: 0.18; } 50% { transform: scale(1.3); opacity: 0.55; } }
 @keyframes radar-ping { 0% { transform: scale(1); opacity: 0.75; } 80%, 100% { transform: scale(2.4); opacity: 0; } }
 @keyframes radar-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
 @keyframes radar-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes radar-pop { from { transform: scale(0.3); } to { transform: scale(1); } }
 @keyframes radar-hop { 0% { transform: scale(1); } 40% { transform: scale(1.7); } 100% { transform: scale(1); } }
-
-/* 减少动态效果: the same picture, standing still */
 @media (prefers-reduced-motion: reduce) {
   *, *::before { animation: none !important; transition: none !important; }
   .status-working .node-aura { opacity: 0.35; transform: scale(1.15); }
   .status-needs_user .node-ping { opacity: 0.5; transform: scale(1.5); }
 }
+body:has(#side[hidden]) #stage { grid-column: 1 / -1; }
+
+#detail .list { list-style: none; padding: 0; }
+#detail .sentence { font-size: var(--em-font-caption); }
+.muted { color: var(--em-foreground-muted); }

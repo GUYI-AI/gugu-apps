@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- The market images show the current settings page in Chinese: `screenshots/settings.jpg` is retaken in 0.2.4, and the promo frames it in place of the 0.2.1 English page.
+
 ## 0.2.4
 
 - Declare desktop support for the human interface (App API 12).
