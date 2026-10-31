@@ -30,10 +30,10 @@
     .name-en { position: absolute; left: 100px; bottom: 96px; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.18em; color: var(--accent); }
     .product {
       position: absolute;
-      left: 632px;
-      top: 166px;
-      width: 888px;
-      height: 568px;
+      left: 440px;
+      top: 118px;
+      width: 1130px;
+      height: 664px;
       margin: 0;
       padding: 18px;
       overflow: hidden;
@@ -42,17 +42,29 @@
       background: rgb(255 255 255 / 0.1);
       box-shadow: 0 30px 70px rgb(0 0 0 / 0.2);
     }
-    .screen { height: 530px; overflow: hidden; border-radius: 9px; background: white; }
-    .screen img { display: block; width: 100%; height: auto; }
+    .screen { position: relative; height: 628px; overflow: hidden; border-radius: 9px; background: white; }
+    /* Two windows onto the same real screenshot (1.jpg, 2280 × 1700 at 2× device pixels): no redraw, crop and scale only. */
+    .crop { position: absolute; overflow: hidden; background: white; }
+    .crop img { position: absolute; display: block; width: 2280px; height: 1700px; transform-origin: 0 0; }
+    .crop.panel { right: 14px; top: 2px; width: 552px; height: 624px; }
+    .crop.panel img { transform: scale(0.6) translate(-1326px, -110px); }
+    .crop.ask { left: 24px; top: 214px; width: 497px; height: 52px; }
+    .crop.ask img { transform: scale(0.54) translate(-380px, -1032px); }
+    .crop.bubble { left: 6px; top: 288px; width: 518px; height: 119px; }
+    .crop.bubble img { transform: scale(0.54) translate(-20px, -1140px); }
   </style>
-  <main class="promo" aria-label="海龟汤：围绕线索提问逐步还原真相">
+  <main class="promo" aria-label="海龟汤：人和 agent 一起问，一起猜">
     <div class="brand">
       <img class="icon" src="../../sources/turtle-soup/app/icon.png" alt="" />
       <h1>海龟汤</h1>
-      <p class="message">围绕线索提问<br />逐步还原真相</p>
+      <p class="message">人和 agent<br />一起问，一起猜</p>
     </div>
     <figure class="product" aria-label="海龟汤真实界面截图">
-      <div class="screen"><img src="../../sources/turtle-soup/app/screenshots/1.jpg" alt="海龟汤已发布的真实产品画面" /></div>
+      <div class="screen">
+        <div class="crop ask"><img src="../../sources/turtle-soup/app/screenshots/1.jpg" alt="许知夏在群里问 agent" /></div>
+        <div class="crop bubble"><img src="../../sources/turtle-soup/app/screenshots/1.jpg" alt="agent 年糕在群里接话" /></div>
+        <div class="crop panel"><img src="../../sources/turtle-soup/app/screenshots/1.jpg" alt="右栏海龟汤：汤面和人与 agent 的提问判定" /></div>
+      </div>
     </figure>
     <p class="name-en">TURTLE SOUP</p>
   </main>

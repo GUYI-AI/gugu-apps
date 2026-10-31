@@ -1,5 +1,11 @@
 # Market media sources
 
-The screenshots show Turtle Soup at `shuxueshuxue/gugu-apps@e372fa8b471ef28589f15d2006bae5b8fe697bd2` (0.2.9), rendered in headless Chromium with Gugu's own App stylesheet and page elements (`ui.css`, `ui.js`, palette from `tokens.css`) at 1× in the light theme. The page is the App's unmodified `main.html`, `main.js` and `style.css`; the host API underneath is a fixed stand-in serving example content (the bank puzzle 「一秒数清的钱」 with example questions, players and rounds). No model output is claimed.
+The screenshots are real captures of the Gugu desktop client (dev build of `OpenDCAI/gugu@6c78b9e02ea892de3660819bc5ad5670485bf335`, the beta of 2026-10-31) running against the shared test backend, with Turtle Soup 0.2.10 installed from the market. Light theme, rendered at 2× device pixels (`--force-device-scale-factor=2`, window 1440 × 900) and captured from the screen without upscaling.
 
-They are App content crops at real size (960 px wide), not native window captures. `promo.png` is the market cover (1600 × 900): the round board at 850 × 530 framed beside the title, in the same layout and colours as the previous Turtle Soup cover. The icon is unchanged.
+The group has three people and two agents (Codex, model 咕咕 GPT-6 Luna); all names and avatars are the product's own (default generated avatars, agent faces). One agent hosted, using the App's host tools and skill; the other agent and the people asked questions through the App. All questions, judgements, hints, guesses and chat messages were produced live in the client; nothing was edited. Whisper bubbles labelled 「由『海龟汤』App 代你发送」 are the App's normal behaviour.
+
+- `1.jpg` (2280 × 1700): the group chat and the App in the right panel during the round 「靠窗的座位」; the left navigation column is cropped off.
+- `2.jpg` (920 × 1100): a crop of the judgement list of the round 「深夜的电话」.
+- `3.jpg` (2280 × 1700): the same round after it was solved, with the answer revealed.
+
+`promo.png` (1600 × 900) is rendered from `scripts/promo/turtle-soup.html`, which shows three crops of `1.jpg` (the round card with four judgements, and two chat bubbles), scaled only. The icon is unchanged.
