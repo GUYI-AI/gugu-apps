@@ -65,6 +65,15 @@
       "sha256": "f1303df26fad98a27ece1d79ccc33c2313ee3f42f3299cfb4d6a6f1ca2d2cb3a",
       "bytes": 811334,
       "yanked": null
+    },
+    {
+      "version": "0.7.13",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "0614a9078a10cdca8bc451220622eb07d2e1ffd2",
+      "sha256": "4716acff8ec9a3e7685ff005d9d7d7f4ef682d44f535c6558df91828fc2a0d78",
+      "bytes": 811565,
+      "yanked": null
     }
   ]
 }
