@@ -11,28 +11,14 @@ import JSZip from 'jszip';
 // 与咕咕客户端同值(apps/desktop/src/session/shared/extensions/market.ts):客户端装的时候还会再判一遍。
 export const MAX_BUNDLE_BYTES = 25 * 1024 * 1024;
 export const MAX_BUNDLE_ENTRIES = 2000;
-export const MAX_ICON_PNG_BYTES = 32 * 1024;
-export const MAX_ICON_PIXELS = 512;
-export const MAX_README_CHARS = 40_000;
-export const MAX_RELEASE_NOTES_CHARS = 4000;
-export const MAX_MEDIA_BYTES = 1024 * 1024;
 export const BUNDLE_SKIP_NAMES = new Set(['.DS_Store', '.git', 'node_modules', '.gugu-market.json']);
-export const MEDIA_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' };
+// 与客户端 app-listing.ts 的 STORE_DIR 同名:源码顶层的这个目录是市场的产品页内容,❌ 进包(客户端打 .guguext 时也跳过它)。
+export const STORE_DIR = 'store';
+const MEDIA_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
 
 // 本仓自己:代码就在这里(sources/)的 App 是 gugu 自己的。首启默认组(firstRun)只对它们生效 —— 咕咕客户端照这一个名字判,
 // 这里的 verify 也照它判(客户端 apps/desktop/src/session/shared/extensions/first-run.ts 的 GUGU_APPS_REPO)。
 export const INDEX_REPO = 'shuxueshuxue/gugu-apps';
-
-// 与咕咕客户端同值(apps/desktop/electron/capability-bundle.ts 的 GUGU_APPS_LINE_MAX_CHARS,apps/desktop/electron/mcp/first-sentence.ts):
-// agent 读到的 <gugu_apps> 里,一个 App 一行「- 名字 (id): description 的第一句」,超过这么多字就被截掉、接一个「…」——
-// agent 只看到半句(10-13 实测:转录里都是「(id, n…」)。description 是写给 agent 的;写给人的在 localized 里。
-export const GUGU_APPS_LINE_MAX_CHARS = 120;
-// 名字下面那一句(manifest 的 subtitle,可写在 localized 里):与咕咕客户端 manifest.ts 同值,一行写得下。
-export const SUBTITLE_MAX_CHARS = 30;
-/** 第一句:拉丁文到「.」后面跟空白或结尾为止(「v1.2」不算),中文到「。」。 */
-export const firstSentence = (description) => /^[\s\S]*?(?:\.(?=\s|$)|。)/.exec(description)?.[0] ?? description;
-/** 这一版在 agent 的 <gugu_apps> 里那一行(没截之前)。 */
-export const guguAppsLine = (manifest) => `- ${manifest.name} (${manifest.id})${manifest.description ? `: ${firstSentence(manifest.description)}` : ''}`;
 
 const APP_ID = /^[a-z0-9][a-z0-9-]*$/;
 const SEMVER = /^\d+\.\d+\.\d+$/;
@@ -155,7 +141,7 @@ function collectFiles(root) {
   const walk = (dir) => {
     // Published bundles use the release runner's en-US collation, regardless of this machine's locale.
     for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name, 'en-US'))) {
-      if (BUNDLE_SKIP_NAMES.has(entry.name)) continue;
+      if (BUNDLE_SKIP_NAMES.has(entry.name) || (dir === root && entry.name === STORE_DIR)) continue;
       const full = join(dir, entry.name);
       // 符号链接不进包:包要自足。跟随它等于把链接指向的东西打进 App。
       if (entry.isSymbolicLink()) fail(`包里有符号链接,拒绝打包: ${relative(root, full)}`);
@@ -193,62 +179,19 @@ function bundleFile(root, relativePath) {
   return full;
 }
 
-/** CHANGELOG.md 里 `## x.y.z` 那一节(与客户端 changelogSectionFor 同一个读法)。 */
-export function changelogSectionFor(markdown, version) {
-  const lines = markdown.split(/\r?\n/);
-  const heading = /^##\s+\[?v?(\d+\.\d+\.\d+)\]?(?:\s|$)/;
-  const start = lines.findIndex((line) => heading.exec(line)?.[1] === version) + 1;
-  if (start === 0) return null;
-  let end = lines.findIndex((line, index) => index >= start && /^##\s/.test(line));
-  if (end === -1) end = lines.length;
-  const body = lines.slice(start, end).join('\n').trim();
-  return body === '' ? null : body;
-}
-
-function iconPng(root, manifest) {
-  if (!manifest.icon) return null;
-  const bytes = readFileSync(bundleFile(root, manifest.icon));
-  if (bytes.byteLength > MAX_ICON_PNG_BYTES) fail(`图标超过 32 KiB: ${manifest.icon}`);
-  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  if (bytes.byteLength < 24 || !bytes.subarray(0, 8).equals(signature)) fail(`市场的图标必须是 PNG: ${manifest.icon}`);
-  const [width, height] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
-  if (width > MAX_ICON_PIXELS || height > MAX_ICON_PIXELS) fail(`图标 ${width}×${height} 超过 ${MAX_ICON_PIXELS}px: ${manifest.icon}`);
-  return bytes;
+/** 源码顶层 store/ 里的一个文件;没有就 null。 */
+function storeFile(dir, name) {
+  const full = join(dir, STORE_DIR, name);
+  return existsSync(full) ? readFileSync(bundleFile(join(dir, STORE_DIR), name)) : null;
 }
 
 /**
- * README.md(可选):它引用的包内图片 → `media/<id>/<sha256>.<ext>`,文里的相对路径改写成 `${mediaBase}media/…`。
- * 回 { text, media: [{ key, bytes, contentType }] };没有 README 就 null。
+ * 一版 App 目录里市场要的全部东西,并照钉住的客户端提交里的规矩(app-listing.ts、app-platforms.ts)判过:
+ * 回 { manifest, apiVersion, minAppVersion, releaseNotes, icon, about, screenshots }。
+ * releaseNotes = store/whats-new.md(这一版改了什么);about = { 语言: 文本 }(store/about.md 记在 defaultLocale 下);
+ * icon / screenshots 的 key 是下载站 media/ 下按内容命名的地址。README.md、CHANGELOG.md 是仓库的,这里 ❌ 读。
  */
-function readmeWithMedia(root, id, mediaBase) {
-  const file = join(root, 'README.md');
-  if (!existsSync(file)) return null;
-  let text = readFileSync(file, 'utf8');
-  const media = new Map();
-  const rewrite = (src) => {
-    if (/^(https?:|data:|#)/i.test(src)) return src;
-    const clean = src.split(/[?#]/)[0];
-    const ext = extname(clean).toLowerCase();
-    const contentType = MEDIA_TYPES[ext];
-    if (!contentType) fail(`README 里引用了不支持的图片类型: ${src}(只收 png/jpg/webp/gif)`);
-    const bytes = readFileSync(bundleFile(root, clean));
-    if (bytes.byteLength > MAX_MEDIA_BYTES) fail(`README 里的图片超过 1 MiB: ${src}`);
-    const key = `media/${id}/${sha256(bytes)}${ext}`;
-    media.set(key, { key, bytes, contentType });
-    return `${mediaBase}${key}`;
-  };
-  text = text.replace(/(!\[[^\]]*\]\()([^)\s]+)((?:\s+"[^"]*")?\))/g, (_, open, src, close) => `${open}${rewrite(src)}${close}`);
-  text = text.replace(/(<img\b[^>]*\bsrc=")([^"]+)(")/g, (_, open, src, close) => `${open}${rewrite(src)}${close}`);
-  if (text.length > MAX_README_CHARS) fail(`README 超过 ${MAX_README_CHARS} 字`);
-  return { text, media: [...media.values()] };
-}
-
-/**
- * 一版 App 目录里市场要的全部东西,并把能在发布前判的都判了。
- * 回 { manifest, apiVersion, minAppVersion, releaseNotes, icon, readme }:
- * icon = { key, bytes } | null,readme = { key, text, media } | null。
- */
-export function inspectAppDir(dir, id, version, mediaBase) {
+export function inspectAppDir(dir, id, version, contract) {
   const manifestPath = join(dir, 'manifest.json');
   if (!existsSync(manifestPath)) fail('包里没有 manifest.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -258,55 +201,41 @@ export function inspectAppDir(dir, id, version, mediaBase) {
   if (!Number.isInteger(manifest.apiVersion)) fail('manifest.apiVersion 要是整数');
   const minAppVersion = ENGINES_RANGE.exec(manifest.engines?.gugu ?? '')?.[2];
   if (!minAppVersion) fail('manifest 缺 engines.gugu(例如 ">=0.2.40"):市场靠它替每台机器挑能装的版本');
-  const line = guguAppsLine(manifest);
-  if ([...line].length > GUGU_APPS_LINE_MAX_CHARS) {
-    fail(
-      `description 的第一句太长:agent 在 <gugu_apps> 里读到的那一行有 ${[...line].length} 字,超过 ${GUGU_APPS_LINE_MAX_CHARS} 会被截成半句 —— ` +
-        `把第一句写短(它说给 agent 听这个 App 做什么;写给人的放 localized):${line}`
-    );
-  }
-  const subtitles = [['subtitle', manifest.subtitle], ...Object.entries(manifest.localized ?? {}).map(([tag, text]) => [`localized.${tag}.subtitle`, text?.subtitle])];
-  for (const [where, subtitle] of subtitles) {
-    if (subtitle !== undefined && (typeof subtitle !== 'string' || subtitle.trim() === '' || [...subtitle].length > SUBTITLE_MAX_CHARS)) {
-      fail(`${where} 要是 1–${SUBTITLE_MAX_CHARS} 字的一句话(市场上名字下面那一行,放不下会被截断):${JSON.stringify(subtitle)}`);
-    }
-  }
-  // 与咕咕客户端 manifest.ts 同一条:写了 subtitle 就要 apiVersion 8,只认得 7 的客户端(0.2.57-beta.113.1 / 115.1)才会拿到上一版。
-  if (subtitles.some(([, subtitle]) => subtitle !== undefined) && manifest.apiVersion < 8) fail('写了 subtitle 就要 apiVersion 8');
   if (manifest.entry) bundleFile(dir, manifest.entry);
-  const tabs = manifest.contributes?.tabs ?? [];
-  for (const tab of tabs) {
-    if (tab.hostPage === 'settings') {
-      if (manifest.apiVersion < 5) fail('宿主配置页需要 App API 5');
-    } else bundleFile(dir, tab.entry ?? manifest.entry ?? 'index.html');
+  for (const tab of manifest.contributes?.tabs ?? []) if (tab.hostPage !== 'settings') bundleFile(dir, tab.entry ?? manifest.entry ?? 'index.html');
+  const about = {};
+  const storeDir = join(dir, STORE_DIR);
+  const storeNames = existsSync(storeDir) ? readdirSync(storeDir) : [];
+  for (const name of storeNames) {
+    const tag = /^about(?:\.([A-Za-z0-9-]+))?\.md$/.exec(name);
+    if (tag) about[tag[1] ?? manifest.defaultLocale] = storeFile(dir, name).toString('utf8').trim();
   }
-  if (!manifest.entry && tabs.every((tab) => tab.hostPage === 'settings')) {
-    const toolsOnly = manifest.apiVersion >= 5 && manifest.permissions?.capabilities?.includes('agents:tools') &&
-      ((manifest.contributes?.mcpServers?.length ?? 0) > 0 || manifest.contributes?.skills);
-    if (!toolsOnly) bundleFile(dir, 'index.html');
-  }
-  const changelog = join(dir, 'CHANGELOG.md');
-  if (!existsSync(changelog)) fail('包里没有 CHANGELOG.md —— 每一版都要写「这版改了什么」(首版写「首次发布」也行)');
-  const releaseNotes = changelogSectionFor(readFileSync(changelog, 'utf8'), version);
-  if (!releaseNotes) fail(`CHANGELOG.md 里没有 "## ${version}" 这一节,或这一节是空的`);
-  if (releaseNotes.length > MAX_RELEASE_NOTES_CHARS) fail(`"## ${version}" 这一节超过 ${MAX_RELEASE_NOTES_CHARS} 字`);
-  const iconBytes = iconPng(dir, manifest);
-  const readme = readmeWithMedia(dir, id, mediaBase);
+  const shotsDir = join(storeDir, 'screenshots');
+  const screenshots = (existsSync(shotsDir) ? readdirSync(shotsDir).sort((a, b) => a.localeCompare(b, 'en-US')) : [])
+    .map((name) => ({ name, bytes: readFileSync(bundleFile(shotsDir, name)) }));
+  const whatsNew = storeFile(dir, 'whats-new.md')?.toString('utf8').trim() ?? null;
+  const icon = manifest.icon ? readFileSync(bundleFile(dir, manifest.icon)) : null;
+  const problems = [...contract.appListingProblems({ manifest, about, screenshots, whatsNew, icon }), ...contract.appPlatformProblems(manifest)];
+  if (problems.length) fail(problems.join('; '));
   return {
     manifest,
     apiVersion: manifest.apiVersion,
     minAppVersion,
-    releaseNotes,
-    icon: iconBytes ? { key: `media/${id}/${sha256(iconBytes)}.png`, bytes: iconBytes } : null,
-    readme: readme ? { key: `media/${id}/readme-${sha256(Buffer.from(readme.text))}.md`, ...readme } : null,
+    releaseNotes: whatsNew,
+    about,
+    icon: icon ? { key: `media/${id}/${sha256(icon)}.png`, bytes: icon } : null,
+    screenshots: screenshots.map(({ name, bytes }) => {
+      const ext = extname(name).toLowerCase();
+      return { key: `media/${id}/${sha256(bytes)}${ext}`, bytes, contentType: MEDIA_TYPES[ext] };
+    }),
   };
 }
 
 /**
- * 照记录把这一版重新打一遍,核 sha256 与字节数;对上了再从包目录里取市场要的东西。
- * 回 { bytes, inspected };对不上就抛,并写出期望值与实际值。
+ * 照记录把这一版重新打一遍,核 sha256 与字节数;给了 `contract` 就再从源码目录里取市场要的东西,照它判过(新登记的版本)。
+ * 已发布的版本只核字节:它们的 meta 早已写好、❌ 改写,新规矩只管新登记的。回 { bytes, inspected };对不上就抛,写出期望值与实际值。
  */
-export async function rebuildVersion(app, version, mediaBase) {
+export async function rebuildVersion(app, version, contract = null) {
   const source = fetchSource(version);
   try {
     const bytes = await packDir(source.dir);
@@ -317,10 +246,8 @@ export async function rebuildVersion(app, version, mediaBase) {
           `记录 sha256=${version.sha256} bytes=${version.bytes},实际 sha256=${actual.sha256} bytes=${actual.bytes}`
       );
     }
-    return { bytes, inspected: inspectAppDir(source.dir, app.id, version.version, mediaBase) };
+    return { bytes, inspected: contract ? inspectAppDir(source.dir, app.id, version.version, contract) : null };
   } finally {
     source.cleanup();
   }
 }
-
-export const MARKET_BASE_URL = process.env.GUGU_MARKET_BASE_URL ?? 'https://download.gugu.nextmind.space/market/';

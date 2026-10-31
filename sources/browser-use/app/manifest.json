@@ -1,22 +1,58 @@
 {
   "id": "browser-use",
   "name": "Browser Use",
-  "description": "Browse and operate the web in the calling agent's Gugu browser tab.",
+  "defaultLocale": "en",
   "subtitle": "Web browsing for agents",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "icon": "icon.png",
-  "apiVersion": 12,
+  "apiVersion": 24,
   "platforms": [
     "desktop"
   ],
-  "engines": { "gugu": ">=0.2.57" },
+  "engines": {
+    "gugu": ">=0.3.1"
+  },
   "author": "Gugu",
-  "categories": ["productivity"],
+  "categories": [
+    "productivity"
+  ],
   "repository": "https://github.com/shuxueshuxue/gugu-apps",
   "license": "MIT",
-  "localized": { "zh-CN": { "description": "让 Agent 在自己会话的咕咕浏览器页签里浏览、点击、填写和截图。", "subtitle": "agent 的网页浏览与操作" } },
-  "permissions": { "capabilities": ["agents:tools"] },
-  "contributes": { "mcpServers": [{ "name": "browser-use", "host": "browser-use" }], "toolsListed": true },
-  "settings": [{ "key": "startUrl", "title": "新页签的起始网址", "type": "string", "default": "about:blank", "description": "会话还没有浏览器页签时使用。Agent 指定了网址时直接打开它指定的网址。" }],
-  "examples": ["打开网页，帮我填写这份表单", "查看这个页面并截图"]
+  "permissions": {
+    "capabilities": [
+      "agents:tools"
+    ]
+  },
+  "contributes": {
+    "mcpServers": [
+      {
+        "name": "browser-use",
+        "host": "browser-use"
+      }
+    ],
+    "toolsListed": true,
+    "instructions": "browser_* tools browse, click, fill and screenshot in this session's own Gugu browser tab, signed in with its browser profile."
+  },
+  "settings": [
+    {
+      "key": "startUrl",
+      "title": "新页签的起始网址",
+      "type": "string",
+      "default": "about:blank",
+      "description": "会话还没有浏览器页签时使用。Agent 指定了网址时直接打开它指定的网址。"
+    }
+  ],
+  "examples": [
+    "Open this page and fill in the form for me",
+    "Look at this page and take a screenshot"
+  ],
+  "localized": {
+    "zh-CN": {
+      "subtitle": "agent 的网页浏览与操作",
+      "examples": [
+        "打开网页，帮我填写这份表单",
+        "查看这个页面并截图"
+      ]
+    }
+  }
 }

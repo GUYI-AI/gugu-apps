@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.2.11
 
 - Its own page opens beside a chat at 480 px instead of half the window: the start page declares its width (`sideWidth`, App API 16). A deck or workbook opened in it is still the chat's peer, half and half.

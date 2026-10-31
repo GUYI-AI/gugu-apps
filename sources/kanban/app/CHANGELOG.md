@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 1.2.4
 
 - The market's first image shows the current board: the promo now frames the 1.2.0 board screenshot (`screenshots/1.jpg`) in place of the earlier English board with gray columns.

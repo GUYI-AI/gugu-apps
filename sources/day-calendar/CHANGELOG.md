@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.5.6
 
 - Market: the four in-client images are retaken in an example account (the person shows as 林夏), so no test-account name appears; the promotional image is re-rendered with the new side panel. No code change.

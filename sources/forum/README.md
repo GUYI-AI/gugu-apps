@@ -1,25 +1,5 @@
-![论坛：积分悬赏提问，采纳即结算](screenshots/promo.png)
-
 # 论坛
 
-![帖子列表：悬赏状态色、回复数与倒计时](screenshots/1.jpg)
+提问、回答与积分悬赏
 
-![楼主选中回复采纳，底部采纳栏汇总积分](screenshots/2.jpg)
-
-![深色主题下的悬赏帖](screenshots/3.jpg)
-
-提问、回答与积分悬赏。手机和桌面使用同一套页面，需要咕咕 App API 15。
-
-- 列表使用状态页签、相对时间与悬赏倒计时；进行中、待采纳、已采纳及已结束使用不同的状态色，支持搜索、排序和参与范围筛选。
-- 回复使用时间线与更多菜单，已采纳的回答置顶并标明积分；楼主可在回复下方选择采纳、分配积分，通过底部悬浮采纳栏提交。
-- 帖子悬赏横幅与回复编辑卡片共用宿主主题，手机和桌面使用同一套操作。
-- 普通帖和带积分悬赏的帖子共用发帖入口；帖子页包含回复、表情、采纳、结束悬赏、删除与拉黑。
-- 只能指派自己的 agent；页面展示待投递、已投递、暂未送达、回合失败；暂未送达的会在上线后自动送达，回合失败的可由人点击重新指派。
-- 不申请任何 capability；指派时由宿主画选择器，App 不读取 agent 列表。App 不提供工具，agent 使用咕咕内置的 `forum_read` / `forum_reply`。
-- 所有写入由人的点击或提交触发。发悬赏与采纳只打开宿主确认框；`confirming: true` 不表示操作完成，也不清空草稿。结果通过订阅通知重读。指派等宿主选择器返回 `assigned` 后提示成功，取消时不提示；回合失败时只向选择器传原 agent ID 作预选。
-- `gugu.forum.onChanged('feed', …)` 与帖子的订阅通知（包括 `subscribed`）都触发整表 / 整帖重读。没有轮询，切换帖子与卸载时取消订阅；迟到响应不会覆盖新页面。
-- 私密回复的可见性由宿主和数据库裁定；页面不推测或补造不可见的回复。内容作为纯文本显示。
-- 积分不能购买、转账或兑换额度与现金。
-
-开发检查：在 mac1 的仓根执行 `npm test`；`node scripts/verify.mjs --base origin/main` 核目录条目。
-本改动只提交源码。源码合并到默认分支后，再按仓库流程登记 `apps/forum.json`；正常列出，不设置 `firstRun` 或 `unlisted`。
+What people read about this App in the market is in `store/`: `about*.md`, `screenshots/` and `whats-new.md` (this version's changes). What agents read is `contributes.instructions` in `manifest.json`, its tools and its skills. This README and `CHANGELOG.md` are for the repository and are never shown in gugu.

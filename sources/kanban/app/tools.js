@@ -30,7 +30,7 @@ async function withBoard({ chat, board }, fn) {
   if (chat === undefined && board === undefined) return fn({ read: readNow, apply: async (op, who) => (await applyToBoard(op, who)).result })
   const f = board === undefined
     ? await openChatBoard(gugu.files, chat)
-    : filled(await gugu.files.open({ id: board, ...(chat === undefined ? {} : { chat }) }, { appData: true }))
+    : filled(await gugu.files.open({ id: board, ...(chat === undefined ? {} : { chat }) }))
   try {
     let wrote = false
     const answer = await fn({

@@ -1,3 +1,7 @@
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.2.1
 
 - 市场截图换成 0.2 界面的客户端实拍。

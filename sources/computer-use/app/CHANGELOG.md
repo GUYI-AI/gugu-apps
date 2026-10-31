@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.2.5
 
 - The market images show the current settings page in Chinese: `screenshots/settings.jpg` is retaken in 0.2.4, and the promo frames it in place of the 0.2.1 English page.

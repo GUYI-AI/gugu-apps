@@ -1,3 +1,7 @@
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.2.1
 
 - 关注列表的「不再关注」悬停时盖在档位上，不再常驻占宽，任务名能多显示一截。

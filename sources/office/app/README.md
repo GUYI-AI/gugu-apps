@@ -1,7 +1,5 @@
-![咕咕办公：批注演示文稿编辑电子表格](screenshots/promo.png)
-
 # 咕咕办公
 
-![agent 按框选的内容修改演示稿，并保存为同一文件的新版本](screenshots/1.jpg)
-![在演示稿中点选与框选要修改的形状](screenshots/2.jpg)
-![在表格中框选单元格，放入输入框交给 agent](screenshots/3.jpg)
+与 agent 协作修改演示稿和表格
+
+What people read about this App in the market is in `store/`: `about*.md`, `screenshots/` and `whats-new.md` (this version's changes). What agents read is `contributes.instructions` in `manifest.json`, its tools and its skills. This README and `CHANGELOG.md` are for the repository and are never shown in gugu.

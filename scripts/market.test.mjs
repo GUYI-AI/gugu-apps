@@ -2,13 +2,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
-import { CLIENT_CONTRACT_URL, loadAppPlatformContract } from './app-platforms.mjs';
-import { packDir, sha256 } from './lib.mjs';
+import { clientContractUrl, loadClientContract } from './client-contract.mjs';
+import { inspectAppDir, packDir, sha256 } from './lib.mjs';
 import { INDEX_KEY, putObject, sync } from './sync.mjs';
 
 const work = mkdtempSync(join(tmpdir(), 'gugu-apps-test-'));
@@ -19,17 +19,23 @@ const contractTransport = join(work, 'client-contract-transport.mjs');
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim();
 const PNG_1x1 = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
 let publicationApiVersion;
+let contract;
 
-/** 一个源码仓 owner/probe:App 目录 apps/probe,每次 commit 回 sha。 */
-function commitProbe(version, extra = {}) {
+/**
+ * 一个源码仓 owner/probe:App 目录 apps/probe,每次 commit 回 sha。产品页内容在顶层 store/(不进包);`store` 改写它(null = 不写那一项)。
+ * README.md、CHANGELOG.md 只给仓库看:写着,市场不读。
+ */
+function commitProbe(version, extra = {}, store = {}) {
   const dir = join(sources, 'owner', 'probe', 'apps', 'probe');
-  mkdirSync(join(dir, 'shots'), { recursive: true });
-  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ apiVersion: publicationApiVersion, platforms: ['desktop'], id: 'probe', name: 'Probe', version, entry: 'index.html', icon: 'icon.png', engines: { gugu: '>=0.2.40' }, contributes: { tabs: [{ name: 'main', title: 'Main' }] }, ...extra }));
+  rmSync(join(dir, 'store'), { recursive: true, force: true });
+  mkdirSync(join(dir, 'store', 'screenshots'), { recursive: true });
+  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ apiVersion: publicationApiVersion, platforms: ['desktop'], id: 'probe', name: 'Probe', defaultLocale: 'en', subtitle: 'A probe', version, entry: 'index.html', icon: 'icon.png', engines: { gugu: '>=0.2.40' }, contributes: { tabs: [{ name: 'main', title: 'Main' }] }, ...extra }));
   writeFileSync(join(dir, 'index.html'), `<!doctype html><p>${version}</p>`);
   writeFileSync(join(dir, 'icon.png'), PNG_1x1);
-  writeFileSync(join(dir, 'shots', 'main.png'), PNG_1x1);
-  writeFileSync(join(dir, 'README.md'), '# Probe\n\n![main](shots/main.png)\n');
-  writeFileSync(join(dir, 'CHANGELOG.md'), `## ${version}\n\n第 ${version} 版\n\n## 0.0.1\n\nold\n`);
+  const files = { 'about.md': 'Probe probes.', 'whats-new.md': `第 ${version} 版`, 'screenshots/1-main.png': PNG_1x1, ...store };
+  for (const [name, content] of Object.entries(files)) if (content !== null) writeFileSync(join(dir, 'store', name), content);
+  writeFileSync(join(dir, 'README.md'), '# Probe\n\nFor the repository.\n');
+  writeFileSync(join(dir, 'CHANGELOG.md'), `## ${version}\n\nrepository notes\n`);
   const repo = join(sources, 'owner', 'probe');
   git(repo, 'add', '-A');
   git(repo, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', version);
@@ -94,13 +100,29 @@ class FakeOss {
 
 let v1;
 let v2;
+/**
+ * The download site as it is: 0.1.0 published before store/ (its meta, written then, has a README and no listing).
+ * Published versions are never inspected again, so sync reads that meta as it stands.
+ */
+function publishedOss() {
+  const oss = new FakeOss();
+  oss.objects.set('market/meta/probe/0.1.0.json', Buffer.from(JSON.stringify({
+    publishedAt: '2026-10-01T00:00:00.000Z', manifest: { id: 'probe', version: '0.1.0', apiVersion: 3 }, apiVersion: 3, minAppVersion: '0.2.40',
+    releaseNotes: 'old', icon: null, readme: 'media/probe/readme-old.md',
+  })));
+  return oss;
+}
 before(async () => {
-  // Fetch the pinned client source once. Every CLI process executes those exact bytes; there is no test capability table.
-  const response = await fetch(CLIENT_CONTRACT_URL);
-  assert.equal(response.ok, true, `pinned client contract: HTTP ${response.status}`);
-  const source = await response.text();
-  publicationApiVersion = (await loadAppPlatformContract(async () => new Response(source))).APP_PLATFORMS_API_VERSION;
-  writeFileSync(contractTransport, `globalThis.fetch = async (url) => { if (String(url) !== ${JSON.stringify(CLIENT_CONTRACT_URL)}) throw new Error('unexpected contract URL'); return new Response(${JSON.stringify(source)}); };\n`);
+  // Fetch the pinned client sources once. Every CLI process executes those exact bytes; there is no test copy of a rule.
+  const sourcesByUrl = {};
+  for (const file of ['app-platforms.ts', 'app-listing.ts']) {
+    const response = await fetch(clientContractUrl(file));
+    assert.equal(response.ok, true, `pinned client contract ${file}: HTTP ${response.status}`);
+    sourcesByUrl[clientContractUrl(file)] = await response.text();
+  }
+  contract = await loadClientContract(async (url) => new Response(sourcesByUrl[url]));
+  publicationApiVersion = contract.APP_PLATFORMS_API_VERSION;
+  writeFileSync(contractTransport, `const sources = ${JSON.stringify(sourcesByUrl)};\nglobalThis.fetch = async (url) => { if (!(String(url) in sources)) throw new Error('unexpected contract URL'); return new Response(sources[String(url)]); };\n`);
   mkdirSync(join(sources, 'owner', 'probe'), { recursive: true });
   git(join(sources, 'owner', 'probe'), 'init', '-q');
   v1 = await recordFor(commitProbe('0.1.0', { apiVersion: 3, platforms: undefined }), '0.1.0');
@@ -162,36 +184,42 @@ test('verify:提交不在源码仓默认分支的历史里(只在 fork / 别的�
   assert.equal(verify(base).ok, true);
 });
 
-test('verify:description 的第一句在 <gugu_apps> 里会被截成半句就红(说出那一行和字数);写短了绿', async () => {
+test('verify:新登记的一版照钉住的客户端 app-listing.ts 判 store/:缺关于 / 关于里有图 / 没截图 / 缺新功能 / 缺副标题都红,齐了绿', async () => {
   const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
   const base = git(index, 'rev-parse', 'HEAD');
-  // 「- Probe (probe): 」17 字 + 第一句 104 字 = 121:多一字。第二句再长也不算(只有第一句进那一行)。
-  const long = await recordFor(commitProbe('0.4.0', { description: `${'a'.repeat(103)}. ${'b'.repeat(300)}.` }), '0.4.0');
-  writeIndex({ ...app, versions: [...app.versions, long] });
-  const red = verify(base);
-  assert.equal(red.ok, false);
-  assert.match(red.out, /description 的第一句太长:agent 在 <gugu_apps> 里读到的那一行有 121 字,超过 120/);
-  const fits = await recordFor(commitProbe('0.4.1', { description: `${'a'.repeat(102)}. ${'b'.repeat(300)}.` }), '0.4.1');
-  writeIndex({ ...app, versions: [...app.versions, fits] });
-  assert.equal(verify(base).ok, true, '对照:120 字整,不截');
-  writeIndex(app);
+  const cases = [
+    [{}, { 'about.md': null }, /store\/about\.md: missing/],
+    [{}, { 'about.md': 'Look ![shot](screenshots/1-main.png)' }, /store\/about\.md: text only/],
+    [{}, { 'screenshots/1-main.png': null }, /store\/screenshots\/: 1–8 images, found 0/],
+    [{}, { 'whats-new.md': null }, /store\/whats-new\.md: missing/],
+    [{ subtitle: undefined }, {}, /subtitle: a listed App needs one/],
+    [{ localized: { 'zh-CN': { subtitle: '探针' } } }, {}, /store\/about\.zh-CN\.md: missing/],
+  ];
+  try {
+    for (const [i, [extra, store, refusal]] of cases.entries()) {
+      const version = `0.4.${i}`;
+      writeIndex({ ...app, versions: [...app.versions, await recordFor(commitProbe(version, extra, store), version)] });
+      const red = verify(base);
+      assert.equal(red.ok, false, version);
+      assert.match(red.out, refusal);
+    }
+    const fits = await recordFor(commitProbe('0.4.9', { localized: { 'zh-CN': { subtitle: '探针' } } }, { 'about.zh-CN.md': '探针。' }), '0.4.9');
+    writeIndex({ ...app, versions: [...app.versions, fits] });
+    assert.equal(verify(base).ok, true, '对照:两种语言的关于、截图、新功能都有');
+  } finally {
+    writeIndex(app);
+  }
 });
 
-test('verify:subtitle(含 localized 里的)超过 30 字就红,说出是哪一处;没写 apiVersion 8 也红;30 字整绿', async () => {
-  const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
-  const base = git(index, 'rev-parse', 'HEAD');
-  const old = await recordFor(commitProbe('0.4.9', { apiVersion: 7, subtitle: '一句话' }), '0.4.9');
-  writeIndex({ ...app, versions: [...app.versions, old] });
-  assert.match(verify(base).out, /写了 subtitle 就要 apiVersion 8/);
-  const long = await recordFor(commitProbe('0.5.0', { apiVersion: 8, subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(31) } } }), '0.5.0');
-  writeIndex({ ...app, versions: [...app.versions, long] });
-  const red = verify(base);
-  assert.equal(red.ok, false);
-  assert.match(red.out, /localized\.en\.subtitle 要是 1–30 字的一句话/);
-  const fits = await recordFor(commitProbe('0.5.1', { subtitle: '一'.repeat(30), localized: { en: { subtitle: 'x'.repeat(30) } } }), '0.5.1');
-  writeIndex({ ...app, versions: [...app.versions, fits] });
-  assert.equal(verify(base).ok, true, '对照:30 字整');
-  writeIndex(app);
+test('打包:源码顶层 store/ 不进包,改它不动 sha256;更深处叫 store 的目录照常进包', async () => {
+  const dir = join(sources, 'owner', 'probe', 'apps', 'probe');
+  const before = sha256(await packDir(dir));
+  writeFileSync(join(dir, 'store', 'about.md'), 'changed');
+  assert.equal(sha256(await packDir(dir)), before);
+  mkdirSync(join(dir, 'lib', 'store'), { recursive: true });
+  writeFileSync(join(dir, 'lib', 'store', 'state.js'), 'export {}');
+  assert.notEqual(sha256(await packDir(dir)), before);
+  rmSync(join(dir, 'lib'), { recursive: true, force: true });
 });
 
 test('verify:firstRun 标在代码不在本仓里的 App 上就红;不标绿', () => {
@@ -231,9 +259,18 @@ test('publication: add-version and verify execute the same pinned platform rule;
       }
       writeIndex(app);
     }
-    assert.equal(verify(base).ok, true, 'the immutable API 3 package has no platforms and is still accepted as history');
+    assert.equal(verify(base).ok, true, 'the immutable API 3 package has no platforms and no store/, and is still accepted as history');
   } finally {
     writeIndex(app);
+  }
+});
+
+test('本仓每个 App 的源码都照钉住的客户端规矩可上架(store/、subtitle、defaultLocale、平台)', () => {
+  const root = new URL('../sources/', import.meta.url).pathname;
+  for (const id of readdirSync(root)) {
+    const dir = existsSync(join(root, id, 'app', 'manifest.json')) ? join(root, id, 'app') : join(root, id);
+    const { version } = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
+    assert.equal(inspectAppDir(dir, id, version, contract).manifest.id, id);
   }
 });
 
@@ -315,30 +352,36 @@ test('putObject:HEAD 权限 / 网络错误直接报错,不 PUT、不重试', asy
   }
 });
 
-test('sync:写齐包 / 图标 / README 与图 / meta / index;重跑除 index 外 0 次写入;下架的不进 index', async () => {
+test('sync:写齐包 / 图标 / 截图 / meta(关于、截图、新功能)/ index;重跑除 index 外 0 次写入;下架的不进 index', async () => {
   const appsDir = join(index, 'apps');
-  const oss = new FakeOss();
+  const oss = publishedOss();
   const quiet = () => {};
-  const first = await sync({ client: oss, dir: appsDir, log: quiet });
+  const first = await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract });
   const keys = [...oss.objects.keys()].sort();
   assert.ok(keys.includes(`market/bundles/probe/0.2.0-${v2.sha256}.zip`));
   assert.ok(keys.some((key) => /^market\/media\/probe\/[0-9a-f]{64}\.png$/.test(key)));
-  assert.ok(keys.some((key) => /^market\/media\/probe\/readme-[0-9a-f]{64}\.md$/.test(key)));
-  assert.ok(keys.includes('market/meta/probe/0.1.0.json') && keys.includes(INDEX_KEY));
+  assert.ok(!keys.some((key) => /readme/.test(key)), 'README is the repository\'s, not the market\'s');
+  assert.ok(keys.includes('market/meta/probe/0.2.0.json') && keys.includes(INDEX_KEY));
   const zip = oss.objects.get(`market/bundles/probe/0.2.0-${v2.sha256}.zip`);
   assert.equal(sha256(zip), v2.sha256);
-  const readmeKey = keys.find((key) => key.includes('/readme-'));
-  assert.match(oss.objects.get(readmeKey).toString(), /!\[main\]\(https:\/\/download\.gugu\.nextmind\.space\/market\/media\/probe\/[0-9a-f]{64}\.png\)/);
+  const meta = JSON.parse(oss.objects.get('market/meta/probe/0.2.0.json').toString());
+  assert.deepEqual(meta.about, { en: 'Probe probes.' });
+  assert.equal(meta.releaseNotes, '第 0.2.0 版');
+  assert.equal(meta.screenshots.length, 1);
+  assert.ok(oss.objects.has(`market/${meta.screenshots[0]}`));
+  // Clients before App model v2 still parse every row: `readme` stays, null for a version without one.
+  assert.equal(first.apps[0].versions[1].readme, null);
+  assert.equal(first.apps[0].versions[0].readme, 'media/probe/readme-old.md', 'a published version\'s meta is read as it stands');
   assert.deepEqual(first.apps[0].versions.map((version) => [version.version, version.yanked]), [['0.1.0', { reason: '坏了' }], ['0.2.0', null]]);
   assert.equal(first.apps[0].versions[1].minAppVersion, '0.2.40');
 
   oss.puts = [];
-  await sync({ client: oss, dir: appsDir, log: quiet });
+  await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract });
   assert.deepEqual(oss.puts, [INDEX_KEY]);
 
   const app = JSON.parse(readFileSync(join(appsDir, 'probe.json'), 'utf8'));
   writeIndex({ ...app, unlisted: true });
-  const unlisted = await sync({ client: oss, dir: appsDir, log: quiet });
+  const unlisted = await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract });
   assert.deepEqual(unlisted.apps, []);
   assert.ok(oss.objects.has(`market/bundles/probe/0.2.0-${v2.sha256}.zip`), '下架不删文件');
   writeIndex(app);
@@ -346,16 +389,16 @@ test('sync:写齐包 / 图标 / README 与图 / meta / index;重跑除 index 外
 
 test('sync:标了 firstRun 的在 index 里带 firstRun: true;没标 / 标 false 的不写这一键;写成别的值报红', async () => {
   const appsDir = join(index, 'apps');
-  const oss = new FakeOss();
+  const oss = publishedOss();
   const quiet = () => {};
   const app = JSON.parse(readFileSync(join(appsDir, 'probe.json'), 'utf8'));
   try {
     writeIndex({ ...app, firstRun: true });
-    assert.equal((await sync({ client: oss, dir: appsDir, log: quiet })).apps[0].firstRun, true);
+    assert.equal((await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract })).apps[0].firstRun, true);
     writeIndex({ ...app, firstRun: false });
-    assert.equal('firstRun' in (await sync({ client: oss, dir: appsDir, log: quiet })).apps[0], false);
+    assert.equal('firstRun' in (await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract })).apps[0], false);
     writeIndex(app);
-    assert.equal('firstRun' in (await sync({ client: oss, dir: appsDir, log: quiet })).apps[0], false);
+    assert.equal('firstRun' in (await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract })).apps[0], false);
     writeIndex({ ...app, firstRun: 'yes' });
     await assert.rejects(sync({ client: oss, dir: appsDir, log: quiet }), /firstRun 是 true \/ false/);
   } finally {
@@ -365,16 +408,16 @@ test('sync:标了 firstRun 的在 index 里带 firstRun: true;没标 / 标 false
 
 test('sync:标了 featured 的在 index 里带 featured: true;没标 / 标 false 的不写这一键;写成别的值报红', async () => {
   const appsDir = join(index, 'apps');
-  const oss = new FakeOss();
+  const oss = publishedOss();
   const quiet = () => {};
   const app = JSON.parse(readFileSync(join(appsDir, 'probe.json'), 'utf8'));
   try {
     writeIndex({ ...app, featured: true });
-    assert.equal((await sync({ client: oss, dir: appsDir, log: quiet })).apps[0].featured, true);
+    assert.equal((await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract })).apps[0].featured, true);
     writeIndex({ ...app, featured: false });
-    assert.equal('featured' in (await sync({ client: oss, dir: appsDir, log: quiet })).apps[0], false);
+    assert.equal('featured' in (await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract })).apps[0], false);
     writeIndex(app);
-    assert.equal('featured' in (await sync({ client: oss, dir: appsDir, log: quiet })).apps[0], false);
+    assert.equal('featured' in (await sync({ client: oss, dir: appsDir, log: quiet, loadContract: async () => contract })).apps[0], false);
     writeIndex({ ...app, featured: 'yes' });
     await assert.rejects(sync({ client: oss, dir: appsDir, log: quiet }), /featured 是 true \/ false/);
   } finally {
@@ -383,8 +426,8 @@ test('sync:标了 featured 的在 index 里带 featured: true;没标 / 标 false
 });
 
 test('sync:下载站上同名文件字节不同 → 报红,❌ 覆盖', async () => {
-  const oss = new FakeOss();
-  const key = `market/bundles/probe/0.1.0-${v1.sha256}.zip`;
+  const oss = publishedOss();
+  const key = `market/bundles/probe/0.2.0-${v2.sha256}.zip`;
   oss.objects.set(key, Buffer.from('somebody else'));
   await assert.rejects(sync({ client: oss, dir: join(index, 'apps'), log: () => {} }), /字节不同/);
   assert.equal(oss.objects.get(key).toString(), 'somebody else');
