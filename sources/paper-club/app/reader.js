@@ -12,7 +12,7 @@
 // (gugu.messages.search by file), kept per highlight by its pill's `at.h`. Nothing is pushed, so it is read again when
 // the page opens, shows again or gets the focus back (from the chat's composer), and when a thread or the side opens.
 import { openPdf, pdfjs } from './lib/pdf.js'
-import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry } from './lib/paper.js'
+import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry, projectOf } from './lib/paper.js'
 import { fmt, stringsFor } from './lib/strings.js'
 import { createReview } from './lib/review.js'
 import { discussionLabel, highlightView } from './lib/highlight-view.js'
@@ -25,7 +25,7 @@ const state = {
   t: stringsFor(navigator.language),
   ctx: null,
   entry: null, // the PDF's entry
-  place: null, // { chat }, { project } or { session }
+  place: null, // { chat } or { workspace } (a session's working copy, a project's folder)
   doc: null,
   notes: null, // the notes file's live handle, once there is one
   notesBusy: null, // the create in flight
@@ -75,13 +75,10 @@ async function start() {
   }
 }
 
-/** The library page's link: `?file=<id>&chat=<id>` (or `&project=` / `&session=`) — the entry, found in its place's list. */
+/** The library page's link: `?file=<id>&chat=<id>` (or `&workspace=<id>`) — the file, named in its place. */
 async function fileFromAddress(asked) {
-  const key = ['chat', 'project', 'session'].find((k) => asked.get(k))
-  const place = { [key]: asked.get(key) }
-  const entry = (await gugu.files.list(place)).find((e) => e.id === asked.get('file'))
-  if (!entry) throw new Error(state.t.gone)
-  return entry
+  const key = ['chat', 'workspace'].find((k) => asked.get(k))
+  return { [key]: asked.get(key), id: asked.get('file') }
 }
 
 function labels() {
@@ -119,14 +116,13 @@ async function openPaper(file) {
   if (isNotes(pdfHandle.entry)) {
     const notes = pdfHandle
     attachNotes(notes)
-    const entries = await gugu.files.list(placeOfEntry(notes.entry))
-    const pdf = entries.find((e) => e.id === notes.data.pdf)
-    if (!pdf) throw new Error(state.t.gone)
-    pdfHandle = await gugu.files.open(pdf)
+    pdfHandle = await gugu.files.open({ ...placeOfEntry(notes.entry), id: notes.data.pdf }).catch((error) => {
+      throw error?.code === 'not-found' ? new Error(state.t.gone) : error
+    })
   }
   state.entry = pdfHandle.entry
   state.place = placeOfEntry(state.entry)
-  $('sel-new-task').hidden = !state.place.project
+  $('sel-new-task').hidden = !projectOf(state.place)
   pdfHandle.onStatus?.(() => { if (pdfHandle.status === 'gone') say(state.t.gone, 'error') })
   const bytes = new Uint8Array(await (await pdfHandle.blob()).arrayBuffer())
   try {
@@ -591,15 +587,15 @@ async function askAgent() {
  */
 function askAbout(id, h, text) {
   if (state.place.chat) return gugu.dispatch(text, { draft: true, refs: [refOf(id, h)] })
-  if (state.place.project) return askTask(h, text)
+  if (projectOf(state.place)) return askTask(h, text)
   say(state.t.sessionNoPill)
-  const agent = state.ctx.session?.agentId
+  const agent = state.ctx.workspace?.agentId
   return gugu.dispatch(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { draft: true, ...(agent ? { to: { agent } } : {}) })
 }
 
 /** A project's PDF: the passage's words, page, project and path, with the project's name. */
 async function projectWords(h, text) {
-  const project = state.place.project
+  const project = projectOf(state.place)
   const name = (await gugu.projects.list()).projects.find((p) => p.id === project)?.name ?? project
   return { name, words: fmt(state.t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }) }
 }
@@ -620,7 +616,7 @@ async function askNewTask() {
   say(state.t.askStarting)
   try {
     const { name, words } = await projectWords(state.notes.data.highlights[id], fmt(state.t.askText, { n: picked.page }))
-    await gugu.dispatch(words, { to: { new: true }, spawn: { project: state.place.project, title: $('title').textContent } })
+    await gugu.dispatch(words, { to: { new: true }, spawn: { project: projectOf(state.place), title: $('title').textContent } })
     say(fmt(state.t.askStarted, { project: name }))
   } catch (error) {
     say(fmt(state.t.askFailed, { e: error.message }), 'error')

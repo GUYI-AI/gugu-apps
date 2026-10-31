@@ -439,7 +439,7 @@ function renderNewCard() {
   const column = h('select', { id: 'new-card-column', name: 'column' }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, text: columnTitle(c) })))
   column.value = creating.column
   const note = h('textarea', { id: 'new-card-note', name: 'note', rows: 4 })
-  const attach = ctx.session ? h('input', { type: 'checkbox', checked: true }) : null
+  const attach = ctx.workspace?.sessionId ? h('input', { type: 'checkbox', checked: true }) : null
   const submit = h('button', { type: 'submit', text: t.addCard })
   const root = h('form', { id: 'new-card-form', class: 'stack new-card' },
     h('label', { class: 'stack' }, t.cardTitle, title), h('label', { class: 'stack' }, t.column, column),
@@ -451,7 +451,7 @@ function renderNewCard() {
     if (!title.value.trim() || submit.disabled) return
     submit.disabled = true
     try {
-      const links = attach?.checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
+      const links = attach?.checked ? [{ kind: 'task', session: ctx.workspace.sessionId, ...(ctx.workspace.agentId ? { agent: ctx.workspace.agentId } : {}) }] : []
       const result = await change({ type: 'card.create', title: title.value.trim(), note: note.value, links, column: column.value })
       await g.modal.close(result)
     } catch (error) { showAlert(error?.message ?? String(error)) }
@@ -719,8 +719,8 @@ const TEXT = /\.(txt|json|jsonc|ya?ml|toml|csv|tsv|log|ini|env|xml|js|mjs|cjs|ts
 const drawable = (name) => IMAGE.test(name) || VIDEO.test(name) || MARKDOWN.test(name) || TEXT.test(name)
 const nameOf = (link) => (link.kind === 'chatfile' ? (link.name ?? link.file) : link.path)
 function refOf(link) {
-  if (link.kind === 'file') return { session: link.session, id: link.path }
-  if (link.kind === 'project') return { project: link.project, id: link.path }
+  if (link.kind === 'file') return { workspace: `session:${link.session}`, id: link.path }
+  if (link.kind === 'project') return { workspace: `project:${link.project}`, id: link.path }
   return { id: link.file }
 }
 
@@ -809,30 +809,49 @@ function pickTask(card) {
   })
 }
 
+/**
+ * One working copy's files, a folder at a time — gugu lists a working copy one folder per call, so the picker walks it
+ * the way a file panel does: a folder opens in place, ".." goes up, the box filters the folder on screen.
+ */
+function browseWorkingCopy({ list, filter, workspace, label, onPick, onError }) {
+  const fileFilter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
+  filter.replaceWith(fileFilter)
+  fileFilter.focus()
+  let folder = ''
+  let entries = []
+  const draw = () => {
+    const q = fileFilter.value.trim().toLowerCase()
+    const rows = entries.filter((e) => !q || e.name.toLowerCase().includes(q)).slice(0, 80)
+    const up = folder.split('/').slice(0, -1).join('/')
+    list.replaceChildren(
+      h('li', { class: 'muted', text: [label, folder].filter(Boolean).join(' / ') }),
+      ...(folder ? [h('li', {}, h('button', { class: 'card', onclick: () => open(up) }, h('span', { text: '..' })))] : []),
+      ...(rows.length
+        ? rows.map((e) => h('li', {}, h('button', { class: 'card', onclick: () => (e.type === 'folder' ? open(e.path) : onPick(e)) }, h('span', { text: e.type === 'folder' ? `${e.name}/` : e.name }))))
+        : [h('li', { class: 'muted', text: t.noFiles })]))
+  }
+  const open = async (next) => {
+    const listed = await g.files.list({ workspace, folder: next }).catch((error) => { onError(error); return null })
+    if (!listed) return
+    folder = next
+    entries = [...listed].sort((a, b) => (a.type === 'folder') === (b.type === 'folder') ? a.name.localeCompare(b.name) : a.type === 'folder' ? -1 : 1)
+    fileFilter.value = ''
+    draw()
+  }
+  fileFilter.addEventListener('input', draw)
+  void open('')
+}
+
 function pickTaskFile(card) {
   openPicker(t.chooseTask, async ({ list, filter, done }) => {
-    taskRows(list, filter, async (a) => {
-      const entries = await g.files.list({ session: a.sessionId }).catch((error) => {
+    taskRows(list, filter, (a) => browseWorkingCopy({
+      list, filter, workspace: `session:${a.sessionId}`, label: a.title ?? a.sessionId,
+      onPick: (e) => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'file', session: a.sessionId, path: e.path } }).then(done)),
+      onError: (error) => {
         if (error?.code === 'not-found') list.replaceChildren(h('li', { class: 'muted', role: 'status', text: t.taskFilesUnavailable }))
         else showAlert(error?.message ?? String(error))
-        return null
-      })
-      if (!entries) return
-      const files = entries.filter((e) => e.type !== 'folder')
-      // The same box now filters this task's files (a fresh input: the task list's listener goes with the old one).
-      const fileFilter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
-      filter.replaceWith(fileFilter)
-      fileFilter.focus()
-      const draw = () => {
-        const q = fileFilter.value.trim().toLowerCase()
-        const rows = files.filter((e) => !q || e.path.toLowerCase().includes(q)).slice(0, 80)
-        list.replaceChildren(...(rows.length
-          ? rows.map((e) => h('li', {}, h('button', { class: 'card', onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'file', session: a.sessionId, path: e.path } }).then(done)) }, h('span', { text: e.path }))))
-          : [h('li', { class: 'muted', text: t.noFiles })]))
-      }
-      fileFilter.addEventListener('input', draw)
-      draw()
-    })
+      },
+    }))
   })
 }
 
@@ -848,24 +867,11 @@ function pickProjectFile(card) {
     }
     filter.addEventListener('input', drawProjects)
     drawProjects()
-    const pickIn = async (project) => {
-      const entries = await g.files.list({ project: project.id }).catch((error) => { showAlert(error.message); return null })
-      if (!entries) return
-      const files = entries.filter((e) => e.type !== 'folder')
-      // The same box now filters this project's files (a fresh input: the project list's listener goes with the old one).
-      const fileFilter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
-      filter.replaceWith(fileFilter)
-      fileFilter.focus()
-      const draw = () => {
-        const q = fileFilter.value.trim().toLowerCase()
-        const rows = files.filter((e) => !q || e.path.toLowerCase().includes(q)).slice(0, 80)
-        list.replaceChildren(...(rows.length
-          ? rows.map((e) => h('li', {}, h('button', { class: 'card', onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'project', project: project.id, path: e.path, title: project.name } }).then(done)) }, h('span', { text: `${project.name} / ${e.path}` }))))
-          : [h('li', { class: 'muted', text: t.noFiles })]))
-      }
-      fileFilter.addEventListener('input', draw)
-      draw()
-    }
+    const pickIn = (project) => browseWorkingCopy({
+      list, filter, workspace: project.workspace, label: project.name,
+      onPick: (e) => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'project', project: project.id, path: e.path, title: project.name } }).then(done)),
+      onError: (error) => showAlert(error?.message ?? String(error)),
+    })
   })
 }
 
@@ -1039,19 +1045,22 @@ g.onContextChanged(async () => {
     askAgents()
     if (desktop) {
       g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
-      if (!ctx.chat && !ctx.file) fillSwitcher()
+      if (!boardChat() && !ctx.file) fillSwitcher()
     }
   }
   visible = now
   render()
 })
 
+/** The chat whose board this page shows: a chat's panel. A task's tab has its private chat too, and shows this computer's board, as before. */
+function boardChat() { return ctx.workspace ? null : ctx.chat }
+
 placed()
 if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
 if (creating?.file) await showChatBoard(() => g.files.open(creating.file))
 else if (creating && desktop) showLocalBoard()
 else if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
-else if (ctx.chat) await showChatBoard(() => openChatBoard(g.files, ctx.chat.id))
+else if (boardChat()) await showChatBoard(() => openChatBoard(g.files, boardChat().id))
 else if (desktop) {
   showLocalBoard()
   fillSwitcher()

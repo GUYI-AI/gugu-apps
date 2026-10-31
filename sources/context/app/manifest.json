@@ -2,8 +2,8 @@
   "id": "context",
   "name": "上下文",
   "defaultLocale": "zh-CN",
-  "version": "0.3.0",
-  "apiVersion": 24,
+  "version": "0.4.0",
+  "apiVersion": 25,
   "platforms": [
     "desktop"
   ],

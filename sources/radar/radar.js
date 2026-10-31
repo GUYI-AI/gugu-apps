@@ -51,7 +51,7 @@ window.radarFrames = () => graph.stats()
 
 let saved = new Map() // agentId -> its title when it was watched (an archived one is no longer listed)
 const titleOf = (agentId) => agents.get(agentId)?.title ?? saved.get(agentId) ?? agentId
-const centerId = () => (mode === 'local' ? ctx?.session?.agentId ?? null : null)
+const centerId = () => (mode === 'local' ? ctx?.workspace?.agentId ?? null : null)
 
 async function load() {
   const [rawState, files, reading] = await Promise.all([g.readData('state.json'), g.listData('subs'), g.listAgents({ report: true })])
@@ -288,10 +288,10 @@ function renderBar() {
   $('pulse').classList.toggle('late', age > 2 * 60_000)
   $('alert').hidden = problems.length === 0
   $('alert').textContent = problems.join(' ')
-  $('modes').hidden = !ctx?.session?.agentId
+  $('modes').hidden = !ctx?.workspace?.agentId
   $('mode-local').setAttribute('aria-selected', String(mode === 'local'))
   $('mode-all').setAttribute('aria-selected', String(mode === 'all'))
-  $('depth-box').hidden = mode !== 'local' || !ctx?.session?.agentId
+  $('depth-box').hidden = mode !== 'local' || !ctx?.workspace?.agentId
   const nodes = model().nodes
   $('counts').hidden = nodes.length === 0
   const n = (st) => nodes.filter((x) => (agents.get(x.id)?.status ?? 'gone') === st).length
@@ -356,9 +356,9 @@ if (desktop) g.onBackgroundMessage((message) => {
 })
 if (desktop) g.onAgentsChanged(() => void refresh())
 if (desktop) g.onContextChanged((next) => {
-  const moved = next?.session?.agentId !== ctx?.session?.agentId
+  const moved = next?.workspace?.agentId !== ctx?.workspace?.agentId
   ctx = next
-  if (moved) { mode = ctx?.session?.agentId ? 'local' : 'all'; selected = null; graph.fit() }
+  if (moved) { mode = ctx?.workspace?.agentId ? 'local' : 'all'; selected = null; graph.fit() }
   W = wordsFor(ctx?.locale)
   renderWords()
   render()
@@ -374,7 +374,7 @@ if (desktop) g.onContextChanged((next) => {
     document.body.prepend(h('gugu-empty', { id: 'desktop-only' }, h('strong', {}, W.desktopOnly)))
     return
   }
-  mode = ctx?.session?.agentId ? 'local' : 'all'
+  mode = ctx?.workspace?.agentId ? 'local' : 'all'
   renderBar()
   await refresh()
   setInterval(renderBar, 30_000)

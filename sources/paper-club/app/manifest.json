@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "论文共读、划线讨论与学习卡",
   "author": "咕咕",
-  "version": "0.4.0",
-  "apiVersion": 24,
+  "version": "0.5.0",
+  "apiVersion": 25,
   "platforms": [
     "desktop",
     "phone"

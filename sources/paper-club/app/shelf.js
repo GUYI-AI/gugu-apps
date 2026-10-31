@@ -6,17 +6,18 @@
 //   project (gugu.projects, a desktop's) or a chat — and opens in the reader.
 // - a chat: that chat's papers, imports go there. (Today a chat's side panel holds only the folder and Apps opened for a
 //   file — GroupAppSlot — so this is for when it holds Apps of their own; the code is the same.)
-// - a session: the working copy's PDFs.
+// - a session's tab: its working copy's PDFs, a folder at a time (gugu lists a working copy one folder per call). A
+//   session's tab has its private chat too; the working copy is what this tab is about.
 // An arXiv id, a DOI or a link imports a paper (lib/import-box.js), or a PDF is uploaded. A paper clicked opens right
 // here in the same reader a chat's panel uses (reader.html?file=…), with everything it does; its due cards, on Cards.
 import { importFailure, importInto, uploadInto } from './lib/import-box.js'
-import { isNotes, isPdf, placeOfEntry } from './lib/paper.js'
+import { isNotes, isPdf, PAPERS_FOLDER, placeOfEntry } from './lib/paper.js'
 import { isDue, mastery } from './lib/review.js'
 import { fmt, stringsFor } from './lib/strings.js'
 
 const $ = (id) => document.getElementById(id)
 const MAX_OPEN = 40 // notes files opened for their counts; past that, a row says only its name
-const state = { t: stringsFor(navigator.language), ctx: null, place: null, library: false, entries: [], notes: new Map(), me: null, targets: [], projects: new Map(), note: null }
+const state = { t: stringsFor(navigator.language), ctx: null, place: null, folder: '', library: false, entries: [], notes: new Map(), me: null, targets: [], projects: new Map(), note: null }
 const TARGET_KEY = 'paper-club.target' // the place an import goes, remembered on this screen
 
 async function start() {
@@ -28,9 +29,9 @@ async function start() {
   $('ref').setAttribute('aria-label', t.importPlaceholder)
   $('import-go').textContent = t.import
   $('upload').textContent = t.upload
-  state.place = ctx.chat ? { chat: ctx.chat.id } : ctx.session ? { session: ctx.session.id } : null
+  state.place = ctx.workspace ? { workspace: ctx.workspace.id } : ctx.chat ? { chat: ctx.chat.id } : null
   state.library = !state.place
-  if (ctx.session && !ctx.chat) {
+  if (ctx.workspace) {
     $('import').hidden = true
     $('list-title').hidden = false
     $('list-title').textContent = t.sessionShelf
@@ -56,7 +57,8 @@ async function refresh() {
   if (refreshing) return refreshing
   refreshing = (async () => {
     try {
-      state.entries = state.library ? await libraryEntries() : await gugu.files.list(state.place)
+      state.entries = state.library ? await libraryEntries()
+        : await gugu.files.list(state.place.workspace ? { ...state.place, folder: state.folder } : state.place)
       await openNotes()
       draw()
     } catch (error) {
@@ -78,19 +80,21 @@ async function libraryEntries() {
     gugu.files.search({ query: '.paper', suffixes: ['.json'], limit: 200 }),
     typeof gugu.projects?.list === 'function' ? gugu.projects.list().then((r) => r.projects) : null,
   ])
-  state.projects = new Map((projects ?? []).map((p) => [p.id, p.name]))
+  state.projects = new Map((projects ?? []).map((p) => [p.workspace, p.name]))
   const chats = new Map()
   for (const e of [...pdfs, ...notes]) if (e.chat && !chats.has(e.chat)) chats.set(e.chat, e.chatName ?? e.chat)
   drawTargets(chats, projects)
   const place = targetPlace()
-  const here = place?.project ? (await gugu.files.list(place)).filter((e) => isPdf(e) || isNotes(e)) : []
+  // A project's folder lists a folder at a time: its top (uploads) and 论文/ (imports), the two places papers land there.
+  const listed = (folder) => gugu.files.list({ ...place, folder }).catch((error) => (error?.code === 'not-found' ? [] : Promise.reject(error)))
+  const here = place?.workspace ? (await Promise.all(['', PAPERS_FOLDER].map(listed))).flat().filter((e) => isPdf(e) || isNotes(e)) : []
   return [...here, ...pdfs, ...notes]
 }
 
 function drawTargets(chats, projects) {
   const t = state.t
   state.targets = [
-    ...(projects ?? []).map((p) => ({ value: `project:${p.id}`, place: { project: p.id }, label: fmt(t.onThisComputer, { name: p.name }) })),
+    ...(projects ?? []).map((p) => ({ value: `project:${p.id}`, place: { workspace: p.workspace }, label: fmt(t.onThisComputer, { name: p.name }) })),
     ...[...chats].map(([id, name]) => ({ value: `chat:${id}`, place: { chat: id }, label: name })),
   ]
   const select = $('target')
@@ -143,10 +147,12 @@ function draw() {
   // The library's note (no project here, or none yet) is its empty page when there are no papers, a line above them when there are.
   $('note').hidden = !(state.note && pdfs.length)
   $('note').textContent = state.note ?? ''
-  if (!pdfs.length) return empty(state.library ? state.note ?? t.libraryEmpty : state.ctx.chat ? t.shelfEmpty : t.sessionEmpty)
+  const folders = state.place?.workspace ? state.entries.filter((e) => e.type === 'folder').sort((a, b) => a.name.localeCompare(b.name)) : []
+  if (!pdfs.length && !folders.length && !state.folder) return empty(state.library ? state.note ?? t.libraryEmpty : state.place?.chat ? t.shelfEmpty : t.sessionEmpty)
   $('list-title').hidden = false
   $('empty').replaceChildren()
   $('papers').replaceChildren(
+    ...folderRows(folders),
     ...pdfs.map((pdf) => {
       const f = notesOf(pdf)
       const meta = f?.data.meta ?? {}
@@ -164,7 +170,7 @@ function draw() {
         meta.authors?.length ? `${meta.authors[0]}${meta.authors.length > 1 ? ' …' : ''}` : null,
         marks ? fmt(t.marks, { n: marks }) : null,
         readers ? `${readers} ${t.readingNow}` : null,
-        state.library ? (pdf.project ? fmt(t.onThisComputer, { name: state.projects.get(pdf.project) ?? pdf.project }) : pdf.chatName) : null,
+        state.library ? (pdf.workspace ? fmt(t.onThisComputer, { name: state.projects.get(pdf.workspace) ?? pdf.workspace }) : pdf.chatName) : null,
         due(f) ? fmt(t.dueCount, { n: due(f) }) : null,
       ].filter(Boolean).join(' · ')
       text.append(title, sub)
@@ -199,6 +205,26 @@ function draw() {
   )
 }
 
+/** A working copy's folders as rows that open in place, and ".." up from a folder: its PDFs are read a folder at a time. */
+function folderRows(folders) {
+  if (!state.place?.workspace) return []
+  const row = (label, folder) => {
+    const li = document.createElement('li')
+    li.tabIndex = 0
+    li.setAttribute('role', 'button')
+    li.className = 'folder'
+    const name = document.createElement('strong')
+    name.textContent = label
+    li.append(name)
+    const go = () => { state.folder = folder; refresh() }
+    li.onclick = go
+    li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go() } }
+    return li
+  }
+  const up = state.folder.split('/').slice(0, -1).join('/')
+  return [...(state.folder ? [row(`.. (${state.folder})`, up)] : []), ...folders.map((f) => row(`${f.name}/`, f.path))]
+}
+
 /** This person's cards on a paper that are due now. */
 function due(f) {
   const cards = Object.keys(f?.data.cards ?? {})
@@ -206,7 +232,7 @@ function due(f) {
   return cards.filter((id) => isDue(mine[id])).length
 }
 
-/** The reader for one paper, in this page: its file (and its chat, project or session) in the address, a tab to start on. */
+/** The reader for one paper, in this page: its file (and its chat or working copy) in the address, a tab to start on. */
 function readerUrl(pdf, tab) {
   const q = new URLSearchParams({ file: pdf.id, ...placeOfEntry(pdf), from: 'shelf', ...(tab ? { tab } : {}) })
   return `reader.html?${q}`

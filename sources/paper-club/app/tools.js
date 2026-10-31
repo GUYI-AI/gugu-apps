@@ -38,14 +38,13 @@ const PROJECT = { type: 'string', description: "With path: the project on this c
 /**
  * The PDF's handle and its notes file's (null when nobody marked it yet): from a chat file the agent handed (the PDF or
  * its notes), or from a path: in a project's folder (`project`), else in the calling session's working copy (`session`: the
- * call's stamp, a { session } place).
+ * call's stamp).
  */
 async function openPaper(id, path, session, project) {
   if (!id && !path) throw new Error('Give paper (a chat file) or path (a PDF on this computer).')
   if (!id) {
     if (!project && !session) throw new Error('path names a PDF in your session\'s working copy, and this call has no session: give project too.')
-    // The stamp is the session's id (a string); a { session } place is taken as it is too.
-    const place = project ? { project } : typeof session === 'string' ? { session } : session
+    const place = { workspace: project ? `project:${project}` : `session:${session}` }
     const pdf = await gugu.files.open({ ...place, name: path })
     return { pdf, notes: await findNotes(pdf.entry) }
   }
@@ -355,13 +354,15 @@ export const import_paper = {
     if (!chat === !project) throw new Error('Give chat or project: where the paper goes.')
     const ref = parseRef(input)
     if (!ref) throw new Error(`Not a paper this can find: ${input}. Give ${IMPORT_HOSTS}.`)
-    const place = chat ? { chat } : { project }
+    const place = chat ? { chat } : { workspace: `project:${project}` }
     const result = await importPaper(ref, {
       fetch: (url, init) => fetch(url, init),
       upload: async (file) => (await gugu.files.upload(...into(place, PAPERS_FOLDER, file)))[0],
       create: (name, inFolder, data) => gugu.files.create(placed(place, inFolder, name), data),
       existing: async (meta) => {
-        const entries = await gugu.files.list(place)
+        // A chat lists all its files; a project's folder one folder, and an import puts its PDF in 论文/ there.
+        const entries = await gugu.files.list(chat ? place : { ...place, folder: PAPERS_FOLDER })
+          .catch((error) => (error?.code === 'not-found' && !chat ? [] : Promise.reject(error)))
         for (const entry of entries.filter(isNotes)) {
           const f = await gugu.files.open(entry)
           const same = sameWork(f.data.meta, meta)

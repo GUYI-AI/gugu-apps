@@ -4,8 +4,8 @@
   "defaultLocale": "en",
   "subtitle": "To-dos and notes by the hour",
   "author": "咕咕",
-  "version": "0.6.0",
-  "apiVersion": 24,
+  "version": "0.7.0",
+  "apiVersion": 25,
   "platforms": [
     "desktop"
   ],

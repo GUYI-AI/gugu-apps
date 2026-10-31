@@ -354,7 +354,7 @@ g.onContextChanged(async () => {
   const previous = ctx
   ctx = await g.getContext()
   // Coming back to the tab shows what is already here; recalculating is the person's 「重新计算」.
-  if (previous.session?.deviceId !== ctx.session?.deviceId) render()
+  if (previous.workspace?.deviceId !== ctx.workspace?.deviceId) render()
 })
 if (loadSnapshot()) render()
 else await refresh()

@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "关注 agent 的运行状态",
   "author": "咕咕",
-  "version": "0.3.0",
-  "apiVersion": 24,
+  "version": "0.4.0",
+  "apiVersion": 25,
   "platforms": [
     "desktop"
   ],

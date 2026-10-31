@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0
+
+App interface 25: a task's or project's files are picked a folder at a time (`files.list({ workspace, folder })`); file links open as `{ workspace: 'session:<id>' | 'project:<id>', id }`; a task's tab (which now also has its private chat) keeps this computer's board; `ctx.workspace` replaces `ctx.session`.
+
 ## 1.3.0
 
 App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
