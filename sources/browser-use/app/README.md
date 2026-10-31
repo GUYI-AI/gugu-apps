@@ -12,6 +12,4 @@
 
 人点进正在操作的网页或按「停止」后，Agent 会暂停；只有人点「让 Agent 继续」才会恢复。卸载或停用此 App 后，Agent 无法继续调用它的工具，手动浏览网页照常可用。
 
-本 App 需要支持 App API 5 的咕咕。包中只有声明与说明，网页操作由咕咕宿主的原生桥执行，工具来自 Apache-2.0 授权的 Playwright MCP。
-
-源码：本仓 `sources/browser-use/`，安装包目录 `app/`。
+网页操作由咕咕自己完成，工具来自 Apache-2.0 授权的 Playwright MCP。

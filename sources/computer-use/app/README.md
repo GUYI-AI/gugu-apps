@@ -14,4 +14,4 @@
 
 macOS 上要给咕咕「辅助功能」与「屏幕录制」两项系统授权：点开这个 App，在「系统授权」那里点「授权」，两项一起问；屏幕录制打开后要重启咕咕才生效。没有授权时操作会失败，原因写在那一步的工具结果里。
 
-需要支持 App API 5 的咕咕。源码在本仓 `sources/computer-use/`，安装包目录 `app/`；「电脑」页签用的光标动画来自 trycua 的 cursor-motion（MIT，见 `CURSOR-LICENSE.md`）。
+「电脑」页签用的光标动画来自 trycua 的 cursor-motion（MIT）。

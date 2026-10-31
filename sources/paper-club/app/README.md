@@ -16,6 +16,6 @@
 - **学**：agent 出的学习卡都挂着原文出处。每个人按间隔重复复习，错题、掌握度都记下来，桌面和手机通用。
 - **导入**：在群右栏的书架里贴 arXiv 编号、DOI 或链接，或者上传 PDF。
 
-给 agent 的工具：`read`、`notes`、`evidence`、`cite`、`comment`、`add_cards`、`import_paper`。读书会里的做法写在 skill `paper-club` 里。
+agent 能读全文、看划线和讨论、找证据、引用原文、评论、出学习卡和导入论文，读书会里的做法 App 已经教给它。
 
 PDF 用 [PDF.js](https://github.com/mozilla/pdf.js)（Apache-2.0）渲染，打包在 `vendor/pdfjs/` 里，许可证在同一目录。
