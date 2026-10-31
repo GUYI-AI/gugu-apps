@@ -1,8 +1,12 @@
-![论坛：提问与讨论集中呈现](screenshots/promo.png)
+![论坛：积分悬赏提问，采纳即结算](screenshots/promo.png)
 
 # 论坛
 
-![撰写问题并设置可选的积分悬赏](screenshots/compose.jpg)
+![帖子列表：悬赏状态色、回复数与倒计时](screenshots/1.jpg)
+
+![楼主选中回复采纳，底部采纳栏汇总积分](screenshots/2.jpg)
+
+![深色主题下的悬赏帖](screenshots/3.jpg)
 
 提问、回答与积分悬赏。手机和桌面使用同一套页面，需要咕咕 App API 15。
 

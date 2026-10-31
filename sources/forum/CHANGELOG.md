@@ -4,6 +4,7 @@
 
 - Refine bounty status, reply timelines and accepted-answer ordering, with inline selection and a sticky award bar.
 - Use compact filters, relative time and responsive composer layouts with the host theme.
+- Retake the market screenshots and promotional artwork in the client for the new layout.
 
 ## 0.1.5
 
