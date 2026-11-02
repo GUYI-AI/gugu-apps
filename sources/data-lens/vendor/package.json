@@ -1,0 +1,10 @@
+{
+  "name": "gugu-data-lens-vendor",
+  "private": true,
+  "description": "What vendor/build.mjs bundles into app/vendor/: pinned with this lockfile, installed with npm ci into a throwaway folder.",
+  "dependencies": {
+    "@observablehq/plot": "0.6.17",
+    "sql.js": "1.15.2",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

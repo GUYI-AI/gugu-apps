@@ -1,0 +1,55 @@
+/* Only layout and the tokens gugu gives (guide apps-ui): fonts, colours and controls are gugu's own. */
+body.card-body { margin: 0; height: 100vh; overflow: hidden; }
+body.explore-body { margin: 0; padding: var(--em-spacing-md); }
+.notice { margin: var(--em-spacing-md); }
+
+.card-view { display: flex; flex-direction: column; height: 100vh; padding: var(--em-spacing-sm) var(--em-spacing-md); box-sizing: border-box; gap: var(--em-spacing-xs); }
+.card-view header { display: flex; flex-direction: column; min-width: 0; }
+.card-view header > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage { flex: 1; min-height: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+/* Plot's tip on gugu's surface, in either theme: Plot sets --plot-background (white) on its own svg, under :where. */
+.stage svg { --plot-background: var(--em-background-1); }
+.stage svg g[aria-label="tip"] text { fill: var(--em-foreground); }
+.stage > * { flex: none; }
+.stage > .table-scroll, .stage > .kpis { flex: 1; min-height: 0; }
+.stage svg [aria-label="tip"] path { stroke: var(--em-border); }
+.stage g[aria-label="bar"] rect:hover, .stage g[aria-label="bar"] rect:has(+ :hover) { fill: var(--em-foreground); }
+.explore-stage { min-height: 320px; height: 50vh; }
+.actions { justify-content: flex-end; align-items: center; gap: var(--em-spacing-xs); }
+.actions small { margin-right: auto; }
+/* A phone's card (~270 px): the two buttons as icons; their words stay, for screen readers only. */
+@media (max-width: 319px) {
+  .actions button .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .actions button gugu-icon { margin-inline-end: 0; }
+}
+
+.table-scroll { height: 100%; overflow: auto; scrollbar-color: var(--em-border) transparent; }
+.table-scroll::-webkit-scrollbar-corner { background: transparent; }
+.table-scroll table { margin: 0; }
+.table-scroll thead th { position: sticky; top: 0; background: var(--em-background-1); }
+.table-scroll td, .table-scroll th { white-space: nowrap; }
+.table-scroll .num { text-align: right; }
+button.sort { display: inline-flex; align-items: center; gap: 2px; background: none; border: 0; padding: 0; height: auto; min-height: 0; font: inherit; color: inherit; cursor: pointer; }
+/* Over a number column the arrow goes first, so the heading's words end where the numbers do. */
+th.num button.sort { flex-direction: row-reverse; }
+th[aria-sort="none"] button.sort gugu-icon { visibility: hidden; }
+
+.kpis { display: flex; flex-wrap: wrap; gap: var(--em-spacing-lg); align-content: center; height: 100%; }
+.kpi { display: flex; flex-direction: column; }
+.kpi strong { font-size: var(--em-font-page); line-height: var(--em-lh-page); font-variant-numeric: tabular-nums; }
+
+.stage svg { display: block; max-width: 100%; margin: 0 auto; }
+/* Legends: Plot's swatches for bars and dots, and the App's own lines for a line chart; a gap after each mark. */
+.stage .legend { display: flex; flex-wrap: wrap; gap: var(--em-spacing-sm); font-size: var(--em-font-caption); line-height: var(--em-lh-caption); }
+.stage .legend span { display: inline-flex; align-items: center; gap: var(--em-spacing-xs); }
+.stage .legend svg { display: inline; margin: 0; }
+.stage [class$="-swatch"] > svg { margin-right: var(--em-spacing-xs); }
+.explore textarea { width: 100%; box-sizing: border-box; }
+.explore .run { justify-content: flex-end; }
+.explore .fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--em-spacing-sm); }
+.explore .fields label { display: flex; flex-direction: column; min-width: 0; }
+.explore .fields select { width: 100%; }
+@media (max-width: 560px) { .explore .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.explore .status { justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: var(--em-spacing-sm); }
+.explore .status [role] { margin: 0; }
+.truncated { color: var(--em-foreground-warning); }

@@ -1,0 +1,17 @@
+{
+  "name": "gugu-app-data-lens",
+  "private": true,
+  "type": "module",
+  "description": "Data Lens. app/ is the App, what the market packs; vendor/ rebuilds the libraries in app/vendor/; test/ is its tests.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node vendor/build.mjs --check && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "playwright": "1.59.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}
