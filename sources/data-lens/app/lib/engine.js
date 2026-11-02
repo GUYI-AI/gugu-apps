@@ -64,7 +64,7 @@ function rowsOfWorkbook(content) {
 /** First row the header; every column typed by what its values are (all numbers: INTEGER or REAL, else TEXT). */
 function loadTable(db, table, rows) {
   const [head = [], ...body] = rows
-  const width = Math.max(head.length, ...body.map((r) => r.length))
+  const width = body.reduce((w, r) => Math.max(w, r.length), head.length)
   const names = []
   for (let i = 0; i < width; i++) {
     const base = String(head[i] ?? '').trim() || `col_${i + 1}`

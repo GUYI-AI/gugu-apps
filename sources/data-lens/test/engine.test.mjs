@@ -68,3 +68,10 @@ test('what is not a data file, or too big, is refused with a code', async () => 
   await assert.rejects(load('fake.sqlite', new TextEncoder().encode('not a database at all')), { code: 'unreadable' })
   await assert.rejects(load('huge.csv', 'a'.repeat(LIMITS.bytes + 1)), { code: 'too-large' })
 })
+
+test('a sheet with hundreds of thousands of rows loads without running out of stack', async () => {
+  const csv = 'n,v\n' + Array.from({ length: 300000 }, (_, i) => `${i},${i % 7}`).join('\n')
+  const { db, tables } = await load('long.csv', csv)
+  assert.equal(tables[0].rows, 300000)
+  assert.deepEqual(rows(db, 'SELECT count(*), max(n) FROM t'), [[300000, 299999]])
+})
