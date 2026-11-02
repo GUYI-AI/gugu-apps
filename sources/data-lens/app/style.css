@@ -1,0 +1,28 @@
+/* Only layout and the tokens gugu gives (guide apps-ui): fonts, colours and controls are gugu's own. */
+body.card-body { margin: 0; height: 100vh; overflow: hidden; }
+body.explore-body { margin: 0; padding: var(--em-spacing-md); }
+.notice { margin: var(--em-spacing-md); }
+
+.card-view { display: flex; flex-direction: column; height: 100vh; padding: var(--em-spacing-sm) var(--em-spacing-md); box-sizing: border-box; gap: var(--em-spacing-xs); }
+.card-view header { display: flex; flex-direction: column; min-width: 0; }
+.card-view header > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+.explore-stage { min-height: 320px; height: 50vh; }
+.actions { justify-content: flex-end; align-items: center; gap: var(--em-spacing-xs); }
+.actions small { margin-right: auto; }
+
+.table-scroll { height: 100%; overflow: auto; }
+.table-scroll table { width: 100%; border-collapse: collapse; }
+.table-scroll thead th { position: sticky; top: 0; background: var(--em-background-1); }
+.table-scroll td, .table-scroll th { padding: 2px var(--em-spacing-sm); white-space: nowrap; }
+.table-scroll td.num { text-align: right; font-variant-numeric: tabular-nums; }
+button.sort { all: unset; cursor: pointer; font-weight: 600; }
+th[aria-sort="ascending"] button.sort::after { content: " ↑"; }
+th[aria-sort="descending"] button.sort::after { content: " ↓"; }
+
+.kpis { display: flex; flex-wrap: wrap; gap: var(--em-spacing-lg); align-content: center; height: 100%; }
+.kpi { display: flex; flex-direction: column; }
+.kpi strong { font-size: var(--em-font-page); line-height: var(--em-lh-page); font-variant-numeric: tabular-nums; }
+
+.stage svg { display: block; max-width: 100%; }
+.explore textarea { width: 100%; box-sizing: border-box; }
