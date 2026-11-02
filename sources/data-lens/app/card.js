@@ -60,12 +60,12 @@ async function showCard(ctx) {
 async function showPicker(ctx) {
   const entries = (await gugu.files.list({ chat: ctx.chat.id })).filter((e) => e.type !== 'folder' && kindOf(e.name))
   if (!entries.length) {
-    root.replaceChildren(el('gugu-empty', { icon: 'table' }, el('strong', { text: t('none') }), el('small', { text: t('noneHint') })))
+    root.replaceChildren(el('gugu-empty', { icon: 'bar-chart-3' }, el('strong', { text: t('none') }), el('small', { text: t('noneHint') })))
     return
   }
   root.replaceChildren(el('h3', { text: t('pick') }), el('ul', { class: 'list' }, ...entries.map((entry) =>
     el('li', {}, el('button', { type: 'button', onclick: () => gugu.files.openWith(entry).catch(report) },
-      el('gugu-icon', { name: 'table' }), el('div', {}, el('strong', { text: entry.name }), el('span', { text: `v${entry.version}` })))))))
+      el('gugu-icon', { name: 'bar-chart-3' }), el('div', {}, el('strong', { text: entry.name }), el('span', { text: `v${entry.version}` })))))))
 }
 
 function report(error) {

@@ -6,8 +6,10 @@ body.explore-body { margin: 0; padding: var(--em-spacing-md); }
 .card-view { display: flex; flex-direction: column; height: 100vh; padding: var(--em-spacing-sm) var(--em-spacing-md); box-sizing: border-box; gap: var(--em-spacing-xs); }
 .card-view header { display: flex; flex-direction: column; min-width: 0; }
 .card-view header > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Plot's tip on gugu's surface, in either theme. */
-.stage { flex: 1; min-height: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; --plot-background: var(--em-background-1); }
+.stage { flex: 1; min-height: 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+/* Plot's tip on gugu's surface, in either theme: Plot sets --plot-background (white) on its own svg, under :where. */
+.stage svg { --plot-background: var(--em-background-1); }
+.stage svg g[aria-label="tip"] text { fill: var(--em-foreground); }
 .stage > * { flex: none; }
 .stage > .table-scroll, .stage > .kpis { flex: 1; min-height: 0; }
 .stage svg [aria-label="tip"] path { stroke: var(--em-border); }
@@ -21,12 +23,15 @@ body.explore-body { margin: 0; padding: var(--em-spacing-md); }
   .actions button gugu-icon { margin-inline-end: 0; }
 }
 
-.table-scroll { height: 100%; overflow: auto; }
+.table-scroll { height: 100%; overflow: auto; scrollbar-color: var(--em-border) transparent; }
+.table-scroll::-webkit-scrollbar-corner { background: transparent; }
 .table-scroll table { margin: 0; }
 .table-scroll thead th { position: sticky; top: 0; background: var(--em-background-1); }
 .table-scroll td, .table-scroll th { white-space: nowrap; }
-.table-scroll td.num { text-align: right; }
-button.sort { background: none; border: 0; padding: 0; height: auto; min-height: 0; font: inherit; color: inherit; cursor: pointer; }
+.table-scroll .num { text-align: right; }
+button.sort { display: inline-flex; align-items: center; gap: 2px; background: none; border: 0; padding: 0; height: auto; min-height: 0; font: inherit; color: inherit; cursor: pointer; }
+/* Over a number column the arrow goes first, so the heading's words end where the numbers do. */
+th.num button.sort { flex-direction: row-reverse; }
 th[aria-sort="none"] button.sort gugu-icon { visibility: hidden; }
 
 .kpis { display: flex; flex-wrap: wrap; gap: var(--em-spacing-lg); align-content: center; height: 100%; }
@@ -40,5 +45,6 @@ th[aria-sort="none"] button.sort gugu-icon { visibility: hidden; }
 .explore .fields label { display: flex; flex-direction: column; min-width: 0; }
 .explore .fields select { width: 100%; }
 @media (max-width: 560px) { .explore .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.explore .status { justify-content: space-between; align-items: center; }
+.explore .status { justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: var(--em-spacing-sm); }
+.explore .status [role] { margin: 0; }
 .truncated { color: var(--em-foreground-warning); }

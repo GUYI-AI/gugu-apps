@@ -73,6 +73,8 @@ async function open(page, ctx, { width = 420, height = 360 } = {}) {
   tab.on('pageerror', (e) => errors.push(e.message))
   await tab.addInitScript((setup) => { window.__setup = setup }, ctx)
   await tab.goto(`${origin}/${page}`)
+  // GUGU_UI_CSS: the host's own stylesheet (a gugu checkout's app-runtime/ui/ui.css), for layout as the host lays it out.
+  if (process.env.GUGU_UI_CSS) await tab.addStyleTag({ path: process.env.GUGU_UI_CSS })
   return { tab, errors }
 }
 
@@ -219,10 +221,32 @@ test('charts draw in gugu\'s inks, read from its tokens: muted bars, border grid
     [{ kind: 'bar', x: 'region', y: 'total' }, async (tab) => {
       assert.deepEqual(await tab.evaluate(() => [...new Set([...document.querySelectorAll('.stage g[aria-label="bar"]')].map((g) => g.getAttribute('fill')))]), ['rgb(100, 100, 100)'])
       assert.equal(await tab.evaluate(() => document.querySelector('.stage g[aria-label="y-grid"]').getAttribute('stroke')), 'rgb(220, 220, 220)')
+      // The tip sits on gugu's surface, not Plot's white: a dark theme's background-1 here.
+      await tab.addStyleTag({ content: ':root { --em-background-1: rgb(30, 30, 30) }' })
+      const bar = await tab.locator('.stage g[aria-label="bar"] rect').first().boundingBox()
+      await tab.mouse.move(bar.x + bar.width / 2, bar.y + bar.height / 2)
+      await tab.waitForSelector('.stage g[aria-label="tip"] path')
+      assert.equal(await tab.evaluate(() => getComputedStyle(document.querySelector('.stage g[aria-label="tip"] path')).fill), 'rgb(30, 30, 30)')
+      assert.equal(await tab.evaluate(() => getComputedStyle(document.querySelector('.stage g[aria-label="tip"] text')).fill), 'rgb(10, 10, 10)')
     }],
     [{ kind: 'heatmap', x: 'month', y: 'region', value: 'total' }, async (tab) => {
       const fills = await tab.evaluate(() => [...document.querySelectorAll('.stage g[aria-label="cell"] rect')].map((r) => r.getAttribute('fill')))
-      assert.ok(fills.includes('rgb(10, 10, 10)') && fills.includes('rgb(240, 240, 240)'), `ramp ends at the tokens: ${fills.join(' ')}`)
+      assert.ok(fills.includes('rgb(10, 10, 10)'), `the largest cell is the foreground: ${fills.join(' ')}`)
+      assert.ok(!fills.includes('rgb(240, 240, 240)'), 'the smallest cell stands off the background-3 behind it')
+      // Every cell's text is the better-contrasted of background and foreground on that cell.
+      const worse = await tab.evaluate(() => {
+        const rgb = (c) => c.match(/\d+/g).slice(0, 3).map(Number)
+        const lum = (x) => x.map((c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0)
+        const ratio = (a, b) => { const [p, q] = [lum(a), lum(b)].sort((m, n) => n - m); return (p + 0.05) / (q + 0.05) }
+        const cells = [...document.querySelectorAll('.stage g[aria-label="cell"] rect')].map((r) => ({ box: r.getBoundingClientRect(), fill: rgb(r.getAttribute('fill')) }))
+        return [...document.querySelectorAll('.stage g[aria-label="text"]')].flatMap((g) => [...g.querySelectorAll('text')].map((t) => {
+          const b = t.getBoundingClientRect(), cx = b.x + b.width / 2, cy = b.y + b.height / 2
+          const cell = cells.find(({ box }) => cx > box.left && cx < box.right && cy > box.top && cy < box.bottom)
+          const mine = rgb(g.getAttribute('fill')), other = mine[0] === 10 ? [255, 255, 255] : [10, 10, 10]
+          return ratio(cell.fill, mine) >= ratio(cell.fill, other) ? null : t.textContent
+        })).filter(Boolean)
+      })
+      assert.deepEqual(worse, [])
       assert.deepEqual(await tab.evaluate(() => [...document.querySelectorAll('.stage g[aria-label="text"]')].map((g) => g.getAttribute('fill')).sort()), ['rgb(10, 10, 10)', 'rgb(255, 255, 255)'])
     }],
   ]) {
@@ -263,5 +287,30 @@ test('a table groups the digits of amounts, not of ids or order numbers', async 
   const cells = await tab.locator('tbody tr').first().locator('td').allInnerTexts()
   assert.deepEqual(cells.slice(0, 2), ['59001', '59001'])
   assert.match(cells[2], /,/)
+  // The host draws a gugu-icon 16 px wide (ui.css); this stand-in page has no such style of its own.
+  await tab.addStyleTag({ content: 'gugu-icon { display: inline-block; width: 16px; height: 16px; }' })
+  const edges = await tab.evaluate(() => [...document.querySelectorAll('thead th')].map((th, i) => {
+    const words = document.createRange()
+    words.selectNodeContents(th.querySelector('button').firstChild)
+    return Math.abs(words.getBoundingClientRect().right - document.querySelectorAll('tbody tr:first-child td')[i].getBoundingClientRect().right)
+  }))
+  assert.ok(edges.every((d) => d <= 12), `number headings end where their numbers end (cell padding apart): ${edges}`)
+  await tab.close()
+})
+
+test('up to three series: told apart by ink and dash, and named in a legend', async () => {
+  const data = { file: 'shop', sql: "SELECT substr(day, 1, 7) AS month, region, sum(amount) AS total FROM orders GROUP BY 1, 2", view: { kind: 'line', x: 'month', y: 'total', color: 'region' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm13', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+  await tab.waitForSelector('.stage svg g[aria-label="line"]')
+  const legend = await tab.evaluate(() => [...document.querySelectorAll('.stage [class$="-swatches"] span, .stage [class*="-swatch"]')].map((e) => e.textContent.trim()).filter(Boolean))
+  assert.ok(legend.length >= 3, `a legend names the series: ${JSON.stringify(legend)}`)
+  const inside = await tab.evaluate(() => {
+    const stage = document.querySelector('.stage').getBoundingClientRect()
+    const legend = document.querySelector('.stage div[class*="swatches"]').getBoundingClientRect()
+    const plot = document.querySelector('.stage svg').getBoundingClientRect()
+    return legend.height > 0 && legend.top >= stage.top - 1 && plot.bottom <= stage.bottom + 1
+  })
+  assert.ok(inside, 'legend and chart both fit the card')
+  assert.equal(await tab.locator('.stage svg g[aria-label="line"]').count(), 3)
   await tab.close()
 })

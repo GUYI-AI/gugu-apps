@@ -94,7 +94,7 @@ try {
     el('div', { class: 'row run' }, el('button', { type: 'button', class: 'primary', onclick: run }, t('run'))),
     el('fieldset', {}, el('legend', { text: t('view') }),
       el('div', { class: 'fields' }, field(t('kind'), kindPick), ...Object.entries(fields).map(([f, select]) => field(f, select)))),
-    el('div', { class: 'row status' }, status, el('button', { type: 'button', onclick: askForCard }, el('gugu-icon', { name: 'send' }), t('send'))),
+    el('div', { class: 'row status' }, status, el('button', { type: 'button', onclick: askForCard }, el('gugu-icon', { name: 'message-circle' }), t('send'))),
     stage))
   const read = await readFile(ctx.file)
   entry = read.entry

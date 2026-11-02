@@ -38,12 +38,16 @@ function datesIn({ columns, rows }, candidates) {
 export function draw(host, view, result, size) {
   host.replaceChildren()
   if (!result.rows.length) {
-    host.append(el('gugu-empty', { icon: 'table' }, el('strong', { text: t('noRows') }), el('small', { text: t('noRowsHint') })))
+    host.append(el('gugu-empty', { icon: 'bar-chart-3' }, el('strong', { text: t('noRows') }), el('small', { text: t('noRowsHint') })))
     return
   }
   if (view.kind === 'table') return host.append(table(result))
   if (view.kind === 'kpi') return host.append(kpi(result))
-  host.append(chart(view, result, size, inks(host)))
+  const ink = inks(host)
+  host.append(chart(view, result, size, ink))
+  // A legend (or the host's margins) above the chart: the chart gives up what overflows, so both fit the room.
+  const over = Math.ceil(host.firstChild.getBoundingClientRect().height - size.height)
+  if (over > 0 && size.height - over > 80) host.replaceChildren(chart(view, result, { ...size, height: size.height - over }, ink))
 }
 
 /**
@@ -61,6 +65,23 @@ function inks(host) {
   }
 }
 
+/** A CSS colour as [r, g, b], whatever notation the theme writes it in: the browser paints one pixel of it. */
+let pixel
+function rgbOf(color) {
+  pixel ??= new OffscreenCanvas(1, 1).getContext('2d', { willReadFrequently: true })
+  pixel.clearRect(0, 0, 1, 1)
+  pixel.fillStyle = color
+  pixel.fillRect(0, 0, 1, 1)
+  return [...pixel.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+}
+
+/** WCAG contrast ratio of two [r, g, b]. */
+function contrast(a, b) {
+  const lum = (rgb) => rgb.map((c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0)
+  const [l1, l2] = [lum(a), lum(b)].sort((p, q) => q - p)
+  return (l1 + 0.05) / (l2 + 0.05)
+}
+
 /** Series beyond these three inks are not told apart: the view says so instead of drawing them alike. */
 const SERIES = 3
 
@@ -73,9 +94,10 @@ function table({ columns, rows }) {
   const plain = columns.map((c) => /(^|_)(id|no|year)$|id$|号$|编号|年份?$/i.test(c))
   const fill = () => body.replaceChildren(...sorted.map((row) => el('tr', {}, ...row.map((v, i) =>
     el('td', { text: plain[i] && Number.isInteger(v) ? String(v) : show(v), class: typeof v === 'number' ? 'num' : '' })))))
+  const numeric = columns.map((_, i) => rows.some((r) => typeof r[i] === 'number') && rows.every((r) => r[i] === null || typeof r[i] === 'number'))
   const heads = columns.map((c, i) => {
     const arrow = el('gugu-icon', { name: 'arrow-up', 'aria-hidden': 'true' })
-    const th = el('th', { scope: 'col', 'aria-sort': 'none' }, el('button', { type: 'button', class: 'sort', onclick: () => {
+    const th = el('th', { scope: 'col', 'aria-sort': 'none', class: numeric[i] ? 'num' : '' }, el('button', { type: 'button', class: 'sort', onclick: () => {
       dir = by === i ? -dir : 1
       by = i
       sorted = [...rows].sort((a, b) => compare(a[i], b[i]) * dir)
@@ -110,7 +132,7 @@ function chart(view, result, { width, height }, ink) {
   const categories = new Set(data.map((d) => d[x])).size
   const longLabels = data.some((d) => String(d[x]).length > 6)
   if (color && view.kind !== 'heatmap' && new Set(data.map((d) => d[color])).size > SERIES) {
-    return el('gugu-empty', { icon: 'table' }, el('strong', { text: t('manySeries', SERIES) }), el('small', { text: t('manySeriesHint') }))
+    return el('gugu-empty', { icon: 'bar-chart-3' }, el('strong', { text: t('manySeries', SERIES) }), el('small', { text: t('manySeriesHint') }))
   }
   const base = { width, height, style: { background: 'transparent', color: ink.muted, fontSize: ink.font }, marginLeft: 48, marginBottom: 32 }
   const mark = color ?? ink.muted
@@ -118,7 +140,7 @@ function chart(view, result, { width, height }, ink) {
   // Categories in the order the query returned them (its ORDER BY), not alphabetical; numbers in short form (25万, 250K)
   // so a 420 px card never clips an axis label.
   const ordinal = (key) => (dates.has(key) || data.every((d) => typeof d[key] === 'number' || d[key] === null) ? {} : { domain: [...new Set(data.map((d) => d[key]))] })
-  const amount = { grid: true, tickFormat: (v) => compact.format(v) }
+  const amount = { grid: true, nice: true, tickFormat: (v) => compact.format(v) }
   const rule = { stroke: ink.border }
   let marks
   let options = {}
@@ -141,16 +163,23 @@ function chart(view, result, { width, height }, ink) {
   } else if (view.kind === 'heatmap') {
     // Every cell carries its value, so no legend: in a fixed-height card it would push the grid out of view.
     const values = data.map((d) => d[value]).filter((v) => typeof v === 'number')
-    const middle = (Math.min(...values) + Math.max(...values)) / 2
+    const [lo, hi] = [Math.min(...values), Math.max(...values)]
+    // The ramp starts 15 % of the way to the foreground: the smallest cell still stands off the card behind it.
+    const start = lo - ((hi - lo) * 0.15) / 0.85
+    const [from, to] = [rgbOf(ink.low), rgbOf(ink.fg)]
+    const fillOf = (v) => { const k = hi === start ? 1 : (v - start) / (hi - start); return from.map((c, i) => c + (to[i] - c) * k) }
+    // Each cell's text in whichever of background and foreground reads better on that cell's own fill.
+    const [bg, fg] = [rgbOf(ink.bg), rgbOf(ink.fg)]
+    const onBg = (d) => typeof d[value] === 'number' && contrast(fillOf(d[value]), bg) > contrast(fillOf(d[value]), fg)
     // A row at most 44 px high: a few rows stay cells, not slabs, and sit in the middle of the card.
     const rows = new Set(data.map((d) => d[y])).size
     options = { height: Math.min(height, 32 + 44 * rows), marginTop: 28, marginBottom: 4, padding: 0.05,
       marginLeft: Math.min(120, 16 + 7 * Math.max(...data.map((d) => String(d[y]).length))),
-      x: { ...ordinal(x), label: null, axis: 'top' }, y: { ...ordinal(y), label: null }, color: { range: [ink.low, ink.fg], interpolate: 'rgb' } }
+      x: { ...ordinal(x), label: null, axis: 'top' }, y: { ...ordinal(y), label: null }, color: { domain: [start, hi], range: [ink.low, ink.fg], interpolate: 'rgb' } }
     const label = (d) => (typeof d[value] === 'number' ? compact.format(d[value]) : show(d[value]))
     marks = [Plot.cell(data, { x, y, fill: value, inset: 0.5, ...tip }),
-      Plot.text(data.filter((d) => d[value] > middle), { x, y, text: label, fill: ink.bg }),
-      Plot.text(data.filter((d) => !(d[value] > middle)), { x, y, text: label, fill: ink.fg })]
+      Plot.text(data.filter(onBg), { x, y, text: label, fill: ink.bg }),
+      Plot.text(data.filter((d) => !onBg(d)), { x, y, text: label, fill: ink.fg })]
   }
   if (color && view.kind !== 'heatmap') {
     options.color = { legend: true, range: [ink.fg, ink.muted, ink.passive] }
