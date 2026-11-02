@@ -75,19 +75,18 @@ test('旧筛选、旧帖与订阅前读取的迟到结果失效', () => {
   requests.cancel()
   assert.equal(requests.current(subscribed), false)
 })
-test('论坛是普通 App,不读取 agent 列表、不申请 capability、没有 App 工具或默认安装标记', () => {
+test('论坛使用通用后端与工具能力,不读取 agent 列表或默认安装标记', () => {
   const path = new URL('../sources/forum/', import.meta.url)
   const manifest = JSON.parse(readFileSync(new URL('manifest.json', path)))
   assert.equal(manifest.id, 'forum')
   assert.equal(manifest.name, '论坛')
   assert.equal(manifest.subtitle, '提问、回答与积分悬赏')
-  // The forum interface was introduced in API 9; the manifest may require newer features too.
-  assert.ok(manifest.apiVersion >= 9, 'the forum requires App API 9 or later')
-  assert.deepEqual(manifest.permissions.capabilities, [])
-  assert.equal(manifest.contributes.mcpServers, undefined)
+  assert.equal(manifest.apiVersion, 26)
+  assert.deepEqual(manifest.permissions.capabilities, ['backend:rpc', 'agents:tools'])
+  assert.deepEqual(manifest.contributes.mcpServers, [{ tools: 'tools.js' }])
   assert.equal(manifest.firstRun, undefined)
   assert.equal(manifest.unlisted, undefined)
-  assert.equal(existsSync(new URL('tools.js', path)), false)
+  assert.equal(existsSync(new URL('tools.js', path)), true)
 })
 
 test('暂未送达自动重投且不要求手动指派,受理后回合失败才提供重新指派', () => {

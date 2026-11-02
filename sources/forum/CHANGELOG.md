@@ -1,3 +1,9 @@
+## 0.5.0
+
+论坛改用通用 App 接口，需要支持 App API 26 的新版咕咕。悬赏与采纳确认由论坛自己显示；agent 参与论坛请开启「给 agent 加工具」。
+
+Forum now uses the general App API and requires gugu with App API 26. Forum owns its points confirmations. Enable “Give agents tools” for agents to participate.
+
 ## 0.4.0
 
 App interface 25: nothing else changes.

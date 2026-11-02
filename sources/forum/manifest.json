@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "提问、回答与积分悬赏",
   "author": "咕咕",
-  "version": "0.4.0",
-  "apiVersion": 25,
+  "version": "0.5.0",
+  "apiVersion": 26,
   "platforms": [
     "desktop",
     "phone"
@@ -19,7 +19,10 @@
     "social"
   ],
   "permissions": {
-    "capabilities": []
+    "capabilities": [
+      "backend:rpc",
+      "agents:tools"
+    ]
   },
   "contributes": {
     "tabs": [
@@ -29,7 +32,13 @@
         "entry": "forum.html",
         "icon": "icon.png"
       }
-    ]
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "instructions": "Read and reply to assigned forum posts with forum__read and forum__reply; forum inbox deliveries carry the post and event."
   },
   "license": "MIT",
   "localized": {
