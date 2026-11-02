@@ -1,3 +1,7 @@
+## 0.5.0
+
+App interface 25: places are `{ chat }` or `{ workspace }` (a session's working copy, a project's folder); a task's shelf walks its working copy a folder at a time; the library reads a project's top and 论文/; a task's tab keeps its working copy's shelf although it now has a private chat too; tools take the same places.
+
 ## 0.4.0
 
 App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.

@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "情境推理游戏",
   "author": "咕咕",
-  "version": "0.3.0",
-  "apiVersion": 24,
+  "version": "0.4.0",
+  "apiVersion": 25,
   "platforms": [
     "desktop",
     "phone"
@@ -59,7 +59,15 @@
   "localized": {
     "en": {
       "name": "Turtle Soup",
-      "subtitle": "A lateral-thinking puzzle game"
+      "subtitle": "A lateral-thinking puzzle game",
+      "tabs": {
+        "main": {
+          "title": "Turtle Soup"
+        },
+        "round": {
+          "title": "Turtle Soup"
+        }
+      }
     }
   }
 }

@@ -82,7 +82,7 @@ const nativePlayback = new FramePlayback({
 });
 
 const visible = () => context?.layout?.visible !== false;
-const sessionId = () => context?.session?.id ?? null;
+const sessionId = () => context?.workspace?.sessionId ?? null;
 
 function describe(action) {
   const verb = text.verbs[action.tool] ?? text.other;
@@ -241,7 +241,7 @@ async function start() {
     read: () => gugu.getContext(),
     subscribe: (receive) => gugu.onContextChanged(receive),
     accept(next) {
-      const moved = (next.session?.id ?? null) !== sessionId();
+      const moved = (next.workspace?.sessionId ?? null) !== sessionId();
       context = next;
       text = textFor(context.locale);
       if (moved) reset();
