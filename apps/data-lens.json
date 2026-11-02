@@ -1,0 +1,16 @@
+{
+  "id": "data-lens",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/data-lens/app",
+      "commit": "1bac05bb0aa2e7aeb0d4022ed45c7019f76bd32a",
+      "sha256": "c3f3c46c820aabf2f554873e389deae7e623cf720935503ba2a62ab62554bd80",
+      "bytes": 766440,
+      "yanked": null
+    }
+  ]
+}
