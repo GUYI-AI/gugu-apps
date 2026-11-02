@@ -3,9 +3,9 @@
   "name": "Browser Use",
   "defaultLocale": "en",
   "subtitle": "Web browsing for agents",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "icon": "icon.png",
-  "apiVersion": 24,
+  "apiVersion": 25,
   "platforms": [
     "desktop"
   ],

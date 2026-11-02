@@ -6,7 +6,7 @@
 //   import_paper, the agents' tool;
 // - anything else on a phone, or into a session's working copy: said plainly, nothing half done.
 import { importPaper, ImportError, into, placed, sameWork } from './importer.js'
-import { isNotes, parseRef, PAPERS_FOLDER } from './paper.js'
+import { isNotes, parseRef, PAPERS_FOLDER, projectOf } from './paper.js'
 
 const PAGE_HOSTS = /^https:\/\/(arxiv\.org|export\.arxiv\.org|api\.semanticscholar\.org|api\.openalex\.org)\//
 
@@ -15,20 +15,23 @@ export async function importInto(place, input) {
   const ref = parseRef(input)
   if (!ref) throw new ImportError('bad-ref', input)
   // Not arXiv, on a desktop: the program fetches it (it reaches any host) — into a chat, or a project's folder.
-  if (!ref.arxiv && !place.session && typeof gugu.callProgram === 'function') {
-    const answer = await gugu.callProgram('import_paper', { ...place, ref: input })
+  const inSession = place.workspace?.startsWith('session:')
+  if (!ref.arxiv && !inSession && typeof gugu.callProgram === 'function') {
+    const answer = await gugu.callProgram('import_paper', { ...(place.chat ? { chat: place.chat } : { project: projectOf(place) }), ref: input })
     if (answer.isError) throw new Error(answer.content?.map((c) => c.text).join(' ') || 'import failed')
     return { title: answer.structuredContent?.title ?? input, pdf: answer.structuredContent?.pdf ?? null }
   }
   const result = await importPaper(ref, {
     fetch: (url, init) => {
-      if (!/^https:\/\/arxiv\.org\//.test(url) && !PAGE_HOSTS.test(url)) throw new ImportError(place.session ? 'session-arxiv-only' : 'needs-desktop', url)
+      if (!/^https:\/\/arxiv\.org\//.test(url) && !PAGE_HOSTS.test(url)) throw new ImportError(inSession ? 'session-arxiv-only' : 'needs-desktop', url)
       return fetch(url, init)
     },
     upload: async (file) => (await gugu.files.upload(...into(place, PAPERS_FOLDER, file)))[0],
     create: (name, inFolder, data) => gugu.files.create(placed(place, inFolder, name), data),
     existing: async (meta) => {
-      const entries = await gugu.files.list(place)
+      // A chat lists all its files; a working copy one folder, and an import puts its PDF in 论文/ there (not there yet: none).
+      const entries = await gugu.files.list(place.chat ? place : { ...place, folder: PAPERS_FOLDER })
+        .catch((error) => (error?.code === 'not-found' && !place.chat ? [] : Promise.reject(error)))
       for (const entry of entries.filter(isNotes)) {
         const f = await gugu.files.open(entry)
         const same = sameWork(f.data.meta, meta)
