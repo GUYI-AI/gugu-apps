@@ -26,7 +26,7 @@ const schema = el('details', {}, el('summary', { text: t('tables') }))
 /** The status line: what the last step said; a failure as an alert, a truncated result in the warning ink, not one. */
 function say(text, role = 'status', warning = null) {
   status.setAttribute('role', role)
-  status.replaceChildren(text, warning ? el('span', { class: 'truncated', text: ` · ${warning}` }) : '')
+  status.replaceChildren(text, warning ? el('span', { class: 'truncated', text: warning }) : '')
 }
 
 function currentView() {
@@ -59,7 +59,7 @@ async function run() {
   try {
     result = await lens.query(sqlBox.value)
     fillFields(result.columns)
-    say(t('rows', show(result.rows.length)), 'status', result.truncated ? t('truncated', show(result.rows.length)) : null)
+    say(t(result.truncated ? 'firstRows' : 'rows', show(result.rows.length)), 'status', result.truncated ? t('cut') : null)
     repaint()
   } catch (error) {
     result = null

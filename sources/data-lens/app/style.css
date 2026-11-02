@@ -39,6 +39,11 @@ th[aria-sort="none"] button.sort gugu-icon { visibility: hidden; }
 .kpi strong { font-size: var(--em-font-page); line-height: var(--em-lh-page); font-variant-numeric: tabular-nums; }
 
 .stage svg { display: block; max-width: 100%; margin: 0 auto; }
+/* Legends: Plot's swatches for bars and dots, and the App's own lines for a line chart; a gap after each mark. */
+.stage .legend { display: flex; flex-wrap: wrap; gap: var(--em-spacing-sm); font-size: var(--em-font-caption); line-height: var(--em-lh-caption); }
+.stage .legend span { display: inline-flex; align-items: center; gap: var(--em-spacing-xs); }
+.stage .legend svg { display: inline; margin: 0; }
+.stage [class$="-swatch"] > svg { margin-right: var(--em-spacing-xs); }
 .explore textarea { width: 100%; box-sizing: border-box; }
 .explore .run { justify-content: flex-end; }
 .explore .fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--em-spacing-sm); }

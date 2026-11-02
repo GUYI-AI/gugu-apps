@@ -32,7 +32,7 @@ async function showCard(ctx) {
   lens.close()
   const view = checkView(card.view, result.columns)
 
-  const meta = [view.title ? entry.name : null, `v${version}`, t('rows', show(result.rows.length))].filter(Boolean)
+  const meta = [view.title ? entry.name : null, `v${version}`, t(result.truncated ? 'firstRows' : 'rows', show(result.rows.length))].filter(Boolean)
   
   const stage = el('div', { class: 'stage' })
   const newer = el('small', { class: 'muted' })
@@ -50,7 +50,7 @@ async function showCard(ctx) {
   )
   root.replaceChildren(el('article', { class: 'card-view', 'aria-label': view.title ?? entry.name },
     el('header', {}, el('strong', { text: view.title ?? entry.name }), el('small', {}, meta.join(' · '),
-      result.truncated ? el('span', { class: 'truncated', text: ` · ${t('truncated', show(result.rows.length))}` }) : null)),
+      result.truncated ? el('span', { class: 'truncated', text: t('cut') }) : null)),
     stage, actions))
   const paint = () => draw(stage, view, result, { width: stage.clientWidth, height: stage.clientHeight })
   paint()

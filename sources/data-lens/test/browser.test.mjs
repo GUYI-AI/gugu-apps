@@ -302,11 +302,24 @@ test('up to three series: told apart by ink and dash, and named in a legend', as
   const data = { file: 'shop', sql: "SELECT substr(day, 1, 7) AS month, region, sum(amount) AS total FROM orders GROUP BY 1, 2", view: { kind: 'line', x: 'month', y: 'total', color: 'region' } }
   const { tab } = await open('card.html', { widget: { messageId: 'm13', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
   await tab.waitForSelector('.stage svg g[aria-label="line"]')
-  const legend = await tab.evaluate(() => [...document.querySelectorAll('.stage [class$="-swatches"] span, .stage [class*="-swatch"]')].map((e) => e.textContent.trim()).filter(Boolean))
-  assert.ok(legend.length >= 3, `a legend names the series: ${JSON.stringify(legend)}`)
+  // Each legend entry draws its series' own line: the same ink and the same dash as the line in the chart.
+  const pairs = await tab.evaluate(() => {
+    const lines = [...document.querySelectorAll('.stage svg g[aria-label="line"]')].map((g) => {
+      const path = g.querySelector('path')
+      return `${path.getAttribute('stroke') ?? g.getAttribute('stroke')}|${g.getAttribute('stroke-dasharray') ?? ''}`
+    })
+    const legend = [...document.querySelectorAll('.stage .legend span')].map((s) => {
+      const line = s.querySelector('svg line')
+      return { name: s.textContent.trim(), look: `${line.getAttribute('stroke')}|${line.getAttribute('stroke-dasharray') ?? ''}` }
+    })
+    return { lines, legend }
+  })
+  assert.equal(pairs.legend.length, 3, JSON.stringify(pairs))
+  assert.deepEqual(pairs.legend.map((l) => l.look), pairs.lines, 'legend lines look like the chart lines')
+  assert.equal(new Set(pairs.legend.map((l) => l.look)).size, 3, 'three different looks')
   const inside = await tab.evaluate(() => {
     const stage = document.querySelector('.stage').getBoundingClientRect()
-    const legend = document.querySelector('.stage div[class*="swatches"]').getBoundingClientRect()
+    const legend = document.querySelector('.stage .legend').getBoundingClientRect()
     const plot = document.querySelector('.stage svg').getBoundingClientRect()
     return legend.height > 0 && legend.top >= stage.top - 1 && plot.bottom <= stage.bottom + 1
   })

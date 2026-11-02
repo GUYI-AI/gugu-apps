@@ -82,6 +82,21 @@ function contrast(a, b) {
   return (l1 + 0.05) / (l2 + 0.05)
 }
 
+const DASHES = [null, '6 3', '2 3']
+
+/** A legend's line: 16 px of a series' stroke and dash. */
+function sample(stroke, dash) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('width', '16')
+  svg.setAttribute('height', '8')
+  svg.setAttribute('aria-hidden', 'true')
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+  for (const [k, v] of Object.entries({ x1: 0, y1: 4, x2: 16, y2: 4, stroke, 'stroke-width': 1.5 })) line.setAttribute(k, v)
+  if (dash) line.setAttribute('stroke-dasharray', dash)
+  svg.append(line)
+  return svg
+}
+
 /** Series beyond these three inks are not told apart: the view says so instead of drawing them alike. */
 const SERIES = 3
 
@@ -181,13 +196,20 @@ function chart(view, result, { width, height }, ink) {
       Plot.text(data.filter(onBg), { x, y, text: label, fill: ink.bg }),
       Plot.text(data.filter((d) => !onBg(d)), { x, y, text: label, fill: ink.fg })]
   }
+  let legend = null
   if (color && view.kind !== 'heatmap') {
-    options.color = { legend: true, range: [ink.fg, ink.muted, ink.passive] }
-    // Lines told apart by dash as well as ink: three inks are close in a light theme.
-    if (view.kind === 'line') marks[0] = [...new Set(data.map((d) => d[color]))].map((series, i) =>
-      Plot.lineY(data.filter((d) => d[color] === series), { x, y, stroke: color, strokeDasharray: [null, '6 3', '2 3'][i], ...tip }))
+    // Series in the query's order, each with its own ink (and, for lines, its own dash): the same order everywhere.
+    const series = [...new Set(data.map((d) => d[color]))]
+    const inksOf = [ink.fg, ink.muted, ink.passive]
+    options.color = { domain: series, range: inksOf, legend: view.kind !== 'line' }
+    if (view.kind === 'line') {
+      // Lines told apart by dash as well as ink (three inks are close), and a legend that draws the same line.
+      marks[0] = series.map((s, i) => Plot.lineY(data.filter((d) => d[color] === s), { x, y, stroke: color, strokeDasharray: DASHES[i], ...tip }))
+      legend = el('div', { class: 'legend' }, ...series.map((s, i) => el('span', {}, sample(inksOf[i], DASHES[i]), show(s))))
+    }
   }
-  const plot = Plot.plot({ ...base, ...options, marks: marks.flat().filter(Boolean) })
+  const drawn = Plot.plot({ ...base, ...options, marks: marks.flat().filter(Boolean) })
+  const plot = legend ? el('div', {}, legend, drawn) : drawn
   // Grid lines at the border's ink: Plot draws them in currentColor at a set opacity.
   for (const line of plot.querySelectorAll('g[aria-label$="grid"]')) line.setAttribute('stroke', ink.border), line.setAttribute('stroke-opacity', '1')
   return plot
