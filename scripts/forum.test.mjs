@@ -81,7 +81,7 @@ test('论坛使用通用后端与工具能力,不读取 agent 列表或默认安
   assert.equal(manifest.id, 'forum')
   assert.equal(manifest.name, '论坛')
   assert.equal(manifest.subtitle, '提问、回答与积分悬赏')
-  assert.equal(manifest.apiVersion, 26)
+  assert.equal(manifest.apiVersion, 28)
   assert.deepEqual(manifest.permissions.capabilities, ['backend:rpc', 'agents:tools'])
   assert.deepEqual(manifest.contributes.mcpServers, [{ tools: 'tools.js' }])
   assert.equal(manifest.firstRun, undefined)
