@@ -107,6 +107,7 @@ try {
   for (const select of Object.values(fields)) select.addEventListener('change', repaint)
   new ResizeObserver(() => repaint()).observe(stage)
   if (first) await run()
+  performance.mark('data-lens:drawn')
 } catch (error) {
   say(error.message ?? String(error), 'alert')
 }
