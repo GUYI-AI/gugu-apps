@@ -2,7 +2,7 @@
   "id": "data-lens",
   "name": "Data Lens",
   "defaultLocale": "en",
-  "subtitle": "Charts and tables from a chat's data files",
+  "subtitle": "Charts from chat data files",
   "author": "咕咕",
   "version": "0.1.0",
   "apiVersion": 26,

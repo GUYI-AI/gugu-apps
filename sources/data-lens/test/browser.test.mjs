@@ -97,6 +97,41 @@ test('a bar card from a SQLite file: engine in its worker, chart drawn, no CSP v
   await tab.close()
 })
 
+test('bars keep the query\'s order and axis numbers stay short enough for a 420 px card', async () => {
+  const data = { file: 'shop', sql: 'SELECT region, sum(amount) * 1000 AS total FROM orders GROUP BY 1 ORDER BY 2 ASC', view: { kind: 'bar', x: 'region', y: 'total' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm6', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+  await tab.waitForSelector('.stage svg g[aria-label="bar"] rect')
+  const ticks = await tab.evaluate(() => ({
+    x: [...document.querySelectorAll('.stage svg g[aria-label="x-axis tick label"] text')].map((t) => t.textContent),
+    y: [...document.querySelectorAll('.stage svg g[aria-label="y-axis tick label"] text')].map((t) => t.textContent),
+  }))
+  const sums = await tab.evaluate(() => [...document.querySelectorAll('.stage svg g[aria-label="bar"] rect')].map((r) => Number(r.getAttribute('height'))))
+  assert.deepEqual(sums, [...sums].sort((a, b) => a - b), 'bars ascend, as the query orders them')
+  assert.equal(ticks.x.length, 3)
+  assert.ok(ticks.y.every((t) => t.length <= 5), `short y ticks: ${ticks.y.join(' ')}`)
+  await tab.close()
+})
+
+test('a heatmap fits the card: every cell and both axes inside the drawing, readable text on dark cells', async () => {
+  const data = { file: 'shop', sql: "SELECT region, substr(day, 1, 7) AS month, sum(amount) AS total FROM orders GROUP BY 1, 2", view: { kind: 'heatmap', x: 'month', y: 'region', value: 'total' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm7', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+  await tab.waitForSelector('.stage svg g[aria-label="cell"] rect')
+  const fit = await tab.evaluate(() => {
+    const stage = document.querySelector('.stage').getBoundingClientRect()
+    const inside = (e) => { const r = e.getBoundingClientRect(); return r.top >= stage.top - 1 && r.bottom <= stage.bottom + 1 }
+    return {
+      cells: document.querySelectorAll('.stage svg g[aria-label="cell"] rect').length,
+      cellsInside: [...document.querySelectorAll('.stage svg g[aria-label="cell"] rect')].every(inside),
+      ticksInside: [...document.querySelectorAll('.stage svg [aria-label$="tick label"] text')].every(inside),
+      whiteText: document.querySelectorAll('.stage svg g[aria-label="text"][fill="white"] text').length,
+    }
+  })
+  assert.equal(fit.cells, 9)
+  assert.ok(fit.cellsInside && fit.ticksInside, JSON.stringify(fit))
+  assert.ok(fit.whiteText > 0)
+  await tab.close()
+})
+
 test('a card pinned to an older version reads that version and says the file moved on', async () => {
   const data = { file: 'gugu-file://shop?v=1', sql: 'SELECT count(*) AS n FROM orders', view: { kind: 'kpi' } }
   const { tab } = await open('card.html', { widget: { messageId: 'm2', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 3 } } })
@@ -115,6 +150,7 @@ test('a workbook card and a CSV table; untrusted text stays text', async () => {
   assert.equal(await tab.locator('header strong').innerText(), '<img src=x onerror="window.__pwned=1">')
   assert.equal(await tab.evaluate(() => window.__pwned), undefined)
   await tab.locator('th button', { hasText: '销售额' }).click()
+  assert.equal(await tab.locator('th[aria-sort="ascending"] gugu-icon').getAttribute('name'), 'arrow-up')
   assert.equal(await tab.locator('th[aria-sort="ascending"]').count(), 1)
   await tab.close()
 })
@@ -142,7 +178,21 @@ test('the buttons: open the file, and draft a question — both only on a click'
   const s = await seen(tab)
   assert.deepEqual(s.openedWith, [{ chat: 'chat:1', id: 'csv' }])
   assert.equal(s.dispatched.length, 1)
-  assert.deepEqual(s.dispatched[0].options, { draft: true, to: { chat: 'chat:1' } })
+  assert.deepEqual(s.dispatched[0].options.to, { chat: 'chat:1' })
+  assert.equal(s.dispatched[0].options.draft, true)
+  assert.equal(s.dispatched[0].options.refs[0].file.id, 'csv', 'the draft carries the file as a ref, not only its name')
+  await tab.close()
+})
+
+test('a newer version saved to the chat is said on the card as it happens, and the card keeps its pinned version', async () => {
+  const data = { file: 'gugu-file://shop?v=1', sql: 'SELECT count(*) AS n FROM orders', view: { kind: 'kpi' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm8', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+  await tab.waitForSelector('.kpi strong')
+  assert.doesNotMatch(await tab.locator('.actions').innerText(), /v2/)
+  await tab.evaluate(() => window.__change({ kind: 'entries', entries: [{ id: 'other', version: 9 }, { id: 'shop', name: 'shop.sqlite', version: 2 }], gone: [] }))
+  assert.match(await tab.locator('.actions').innerText(), /v2/)
+  assert.equal(await tab.locator('.kpi strong').innerText(), '300')
+  assert.deepEqual((await seen(tab)).readVersion, [])
   await tab.close()
 })
 
@@ -152,7 +202,7 @@ test('the explore page: tables listed, a query run, a view switched, a card draf
   assert.match(await tab.locator('details summary').innerText(), /\(2\)/)
   await tab.locator('textarea').fill('SELECT region, sum(amount) AS total FROM orders GROUP BY 1')
   await tab.getByRole('button', { name: /Run|运行/ }).click()
-  await tab.locator('select[aria-label="View"]').selectOption('bar')
+  await tab.getByLabel('Kind').selectOption('bar')
   await tab.waitForSelector('.stage svg g[aria-label="bar"] rect')
   await tab.getByRole('button', { name: /card|卡片/ }).click()
   const s = await seen(tab)
@@ -160,5 +210,58 @@ test('the explore page: tables listed, a query run, a view switched, a card draf
   assert.match(s.dispatched[0].text, /"file":"gugu-file:\/\/shop\?v=2"/)
   assert.match(s.dispatched[0].text, /"view":\{"kind":"bar","x":"region","y":"total"\}/)
   assert.deepEqual(errors, [])
+  await tab.close()
+})
+
+test('charts draw in gugu\'s inks, read from its tokens: muted bars, border grid, a heatmap ramp from background-3 to foreground', async () => {
+  const tokens = '--em-foreground: rgb(10, 10, 10); --em-foreground-muted: rgb(100, 100, 100); --em-foreground-passive: rgb(160, 160, 160); --em-border: rgb(220, 220, 220); --em-background: rgb(255, 255, 255); --em-background-3: rgb(240, 240, 240)'
+  for (const [view, check] of [
+    [{ kind: 'bar', x: 'region', y: 'total' }, async (tab) => {
+      assert.deepEqual(await tab.evaluate(() => [...new Set([...document.querySelectorAll('.stage g[aria-label="bar"]')].map((g) => g.getAttribute('fill')))]), ['rgb(100, 100, 100)'])
+      assert.equal(await tab.evaluate(() => document.querySelector('.stage g[aria-label="y-grid"]').getAttribute('stroke')), 'rgb(220, 220, 220)')
+    }],
+    [{ kind: 'heatmap', x: 'month', y: 'region', value: 'total' }, async (tab) => {
+      const fills = await tab.evaluate(() => [...document.querySelectorAll('.stage g[aria-label="cell"] rect')].map((r) => r.getAttribute('fill')))
+      assert.ok(fills.includes('rgb(10, 10, 10)') && fills.includes('rgb(240, 240, 240)'), `ramp ends at the tokens: ${fills.join(' ')}`)
+      assert.deepEqual(await tab.evaluate(() => [...document.querySelectorAll('.stage g[aria-label="text"]')].map((g) => g.getAttribute('fill')).sort()), ['rgb(10, 10, 10)', 'rgb(255, 255, 255)'])
+    }],
+  ]) {
+    const sql = view.kind === 'bar' ? 'SELECT region, sum(amount) AS total FROM orders GROUP BY 1' : 'SELECT region, substr(day, 1, 7) AS month, sum(amount) AS total FROM orders GROUP BY 1, 2'
+    const { tab } = await open('card.html', { widget: { messageId: 'm9', data: { file: 'shop', sql, view }, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+    await tab.addStyleTag({ content: `:root { ${tokens} }` })
+    await tab.waitForSelector('.stage svg g[aria-label="cell"] rect, .stage svg g[aria-label="bar"] rect')
+    // Drawn before the tokens arrived on this stand-in page: the next paint reads them, as a theme change would.
+    await tab.setViewportSize({ width: 421, height: 360 })
+    await tab.waitForFunction(() => !document.querySelector('.stage svg [fill="currentColor"]'))
+    await check(tab)
+    await tab.close()
+  }
+})
+
+test('more series than three inks: the card says so instead of drawing them alike', async () => {
+  const data = { file: 'shop', sql: "SELECT substr(day, 1, 7) AS month, region || n AS series, sum(amount) AS total FROM orders, (SELECT 1 AS n UNION SELECT 2) GROUP BY 1, 2", view: { kind: 'line', x: 'month', y: 'total', color: 'series' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm10', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+  await tab.waitForSelector('.stage gugu-empty')
+  assert.match(await tab.locator('.stage').innerText(), /More than 3 series/)
+  await tab.close()
+})
+
+test('on a phone-wide card the buttons are icons, still named', async () => {
+  const data = { file: 'shop', sql: 'SELECT count(*) AS n FROM orders', view: { kind: 'kpi' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm11', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } }, { width: 268, height: 360 })
+  await tab.waitForSelector('.kpi strong')
+  assert.ok((await tab.locator('.actions .label').first().boundingBox()).width <= 1, 'the words are hidden from sight')
+  assert.equal(await tab.getByRole('button', { name: 'Open' }).count(), 1)
+  assert.equal(await tab.getByRole('button', { name: 'Ask an agent' }).count(), 1)
+  await tab.close()
+})
+
+test('a table groups the digits of amounts, not of ids or order numbers', async () => {
+  const data = { file: 'shop', sql: 'SELECT id + 59000 AS 订单号, id + 59000 AS order_id, amount * 1000 AS total FROM orders LIMIT 1', view: { kind: 'table' } }
+  const { tab } = await open('card.html', { widget: { messageId: 'm12', data, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
+  await tab.waitForSelector('table tbody tr')
+  const cells = await tab.locator('tbody tr').first().locator('td').allInnerTexts()
+  assert.deepEqual(cells.slice(0, 2), ['59001', '59001'])
+  assert.match(cells[2], /,/)
   await tab.close()
 })

@@ -39,6 +39,11 @@
       async list() {
         return Object.entries(setup.files ?? {}).map(([id, f]) => ({ id, name: f.name, version: f.version, type: 'file' }))
       },
+      onChanged(place, fn) {
+        seen.listeners = (seen.listeners ?? 0) + 1
+        window.__change = (change) => fn(change)
+        return () => {}
+      },
       async openWith(entry) {
         seen.openedWith.push(entry)
       },

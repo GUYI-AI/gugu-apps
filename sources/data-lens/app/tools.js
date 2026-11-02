@@ -24,9 +24,10 @@ async function open(file, version, sheet) {
         content = typeof kept === 'string' ? kept : new Uint8Array(await kept.arrayBuffer())
       } else if (typeof f.blob === 'function') {
         content = new Uint8Array(await (await f.blob()).arrayBuffer())
-      } else {
-        for (let n = 0; typeof f.text !== 'string' && n < 100; n++) await new Promise((done) => setTimeout(done, 50))
+      } else if (typeof f.text === 'string') {
         content = f.text
+      } else {
+        throw new DataError('unreadable', `${entry.name} has no content`)
       }
       opened.set(key, { entry: { id: entry.id, name: entry.name, latest: entry.version }, version: v, ...(await load(entry.name, content, { sheet })) })
       while (opened.size > KEEP) {

@@ -17,15 +17,16 @@ let tables = []
 let result = null
 
 const sqlBox = el('textarea', { rows: '4', spellcheck: 'false', 'aria-label': 'SQL' })
-const kindPick = el('select', { 'aria-label': 'View' }, ...VIEW_KINDS.map((k) => el('option', { value: k, text: k })))
-const fields = Object.fromEntries(['x', 'y', 'color', 'value'].map((f) => [f, el('select', { 'aria-label': f })]))
+const kindPick = el('select', {}, ...VIEW_KINDS.map((k) => el('option', { value: k, text: k })))
+const fields = Object.fromEntries(['x', 'y', 'color', 'value'].map((f) => [f, el('select', {})]))
 const stage = el('div', { class: 'stage explore-stage' })
-const status = el('p', { role: 'status', class: 'muted' })
-const schema = el('details', {}, el('summary', { text: t('table') }))
+const status = el('small', { role: 'status' })
+const schema = el('details', {}, el('summary', { text: t('tables') }))
 
-function say(text, role = 'status') {
+/** The status line: what the last step said; a failure as an alert, a truncated result in the warning ink, not one. */
+function say(text, role = 'status', warning = null) {
   status.setAttribute('role', role)
-  status.textContent = text
+  status.replaceChildren(text, warning ? el('span', { class: 'truncated', text: ` · ${warning}` }) : '')
 }
 
 function currentView() {
@@ -37,7 +38,7 @@ function currentView() {
 function fillFields(columns) {
   for (const [f, select] of Object.entries(fields)) {
     const was = select.value
-    select.replaceChildren(el('option', { value: '', text: `${f}: —` }), ...columns.map((c) => el('option', { value: c, text: `${f}: ${c}` })))
+    select.replaceChildren(el('option', { value: '', text: '—' }), ...columns.map((c) => el('option', { value: c, text: c })))
     select.value = columns.includes(was) ? was : ''
   }
   if (!fields.x.value && columns[0]) fields.x.value = columns[0]
@@ -58,7 +59,7 @@ async function run() {
   try {
     result = await lens.query(sqlBox.value)
     fillFields(result.columns)
-    say([t('rows', show(result.rows.length)), result.truncated ? t('truncated', show(result.rows.length)) : null].filter(Boolean).join(' · '))
+    say(t('rows', show(result.rows.length)), 'status', result.truncated ? t('truncated', show(result.rows.length)) : null)
     repaint()
   } catch (error) {
     result = null
@@ -74,10 +75,12 @@ function askForCard() {
 }
 
 function drawSchema() {
-  schema.replaceChildren(el('summary', { text: `${t('table')} (${tables.length})` }), el('ul', { class: 'list' }, ...tables.map((table) =>
+  const FEW = 4
+  schema.replaceChildren(el('summary', { text: `${t('tables')} (${tables.length})` }), el('ul', { class: 'list' }, ...tables.map((table) =>
     el('li', {}, el('button', { type: 'button', onclick: () => { sqlBox.value = `SELECT * FROM ${quote(table.name)} LIMIT 200`; run() } },
       el('div', {}, el('strong', { text: `${table.name} · ${t('rows', show(table.rows))}` }),
-        el('span', { text: table.columns.map((c) => `${c.name} ${c.type}`).join(', ') })))))))
+        el('span', { text: table.columns.slice(0, FEW).map((c) => c.name).join(', ') + (table.columns.length > FEW ? ', …' : ''),
+          title: table.columns.map((c) => `${c.name} ${c.type}`).join(', ') })))))))
 }
 
 try {
@@ -85,11 +88,14 @@ try {
   setLocale(ctx.locale)
   if (!ctx.file) throw new Error(t('pick'))
   say(t('loading'))
+  const field = (name, select) => el('label', {}, name, select)
   root.replaceChildren(el('div', { class: 'stack explore' }, schema,
     el('label', {}, t('sql'), sqlBox),
-    el('div', { class: 'row' }, el('button', { type: 'button', class: 'primary', onclick: run }, t('run')), kindPick, ...Object.values(fields)),
-    status, stage,
-    el('div', { class: 'row' }, el('button', { type: 'button', onclick: askForCard }, el('gugu-icon', { name: 'send' }), t('send')))))
+    el('div', { class: 'row run' }, el('button', { type: 'button', class: 'primary', onclick: run }, t('run'))),
+    el('fieldset', {}, el('legend', { text: t('view') }),
+      el('div', { class: 'fields' }, field(t('kind'), kindPick), ...Object.entries(fields).map(([f, select]) => field(f, select)))),
+    el('div', { class: 'row status' }, status, el('button', { type: 'button', onclick: askForCard }, el('gugu-icon', { name: 'send' }), t('send'))),
+    stage))
   const read = await readFile(ctx.file)
   entry = read.entry
   version = read.version

@@ -32,16 +32,25 @@ async function showCard(ctx) {
   lens.close()
   const view = checkView(card.view, result.columns)
 
-  const meta = [entry.name, `v${version}`, t('rows', show(result.rows.length))]
-  if (result.truncated) meta.push(t('truncated', show(result.rows.length)))
+  const meta = [view.title ? entry.name : null, `v${version}`, t('rows', show(result.rows.length))].filter(Boolean)
+  
   const stage = el('div', { class: 'stage' })
+  const newer = el('small', { class: 'muted' })
+  const latest = (n) => { newer.textContent = n > version ? t('newer', n) : '' }
+  latest(entry.version)
+  // The chat tells its files as they change: a newer version of this one is said here, the card still draws its own.
+  gugu.files.onChanged?.({ chat: ctx.chat.id }, (change) => {
+    const fresh = change.kind === 'entries' && change.entries?.find((e) => e.id === card.id)
+    if (fresh) latest(fresh.version)
+  })
   const actions = el('div', { class: 'row actions' },
-    version !== entry.version ? el('small', { class: 'muted', text: t('newer', entry.version) }) : null,
-    el('button', { type: 'button', onclick: () => gugu.files.openWith({ chat: ctx.chat.id, id: card.id }).catch(report) }, el('gugu-icon', { name: 'maximize-2' }), t('open')),
-    el('button', { type: 'button', onclick: () => gugu.dispatch(t('askDraft', entry.name, card.sql), { draft: true, to: { chat: ctx.chat.id } }).catch(report) }, el('gugu-icon', { name: 'message-circle' }), t('ask')),
+    newer,
+    el('button', { type: 'button', onclick: () => gugu.files.openWith({ chat: ctx.chat.id, id: card.id }).catch(report) }, el('gugu-icon', { name: 'maximize-2' }), el('span', { class: 'label', text: t('open') })),
+    el('button', { type: 'button', onclick: () => gugu.dispatch(t('askDraft', entry.name, card.sql), { draft: true, to: { chat: ctx.chat.id }, refs: [{ file: entry }] }).catch(report) }, el('gugu-icon', { name: 'message-circle' }), el('span', { class: 'label', text: t('ask') })),
   )
   root.replaceChildren(el('article', { class: 'card-view', 'aria-label': view.title ?? entry.name },
-    el('header', {}, el('strong', { text: view.title ?? entry.name }), el('small', { class: 'muted', text: meta.join(' · ') })),
+    el('header', {}, el('strong', { text: view.title ?? entry.name }), el('small', {}, meta.join(' · '),
+      result.truncated ? el('span', { class: 'truncated', text: ` · ${t('truncated', show(result.rows.length))}` }) : null)),
     stage, actions))
   const paint = () => draw(stage, view, result, { width: stage.clientWidth, height: stage.clientHeight })
   paint()
