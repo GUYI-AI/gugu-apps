@@ -4,7 +4,7 @@
   "defaultLocale": "en",
   "subtitle": "Charts from chat data files",
   "author": "咕咕",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "apiVersion": 26,
   "platforms": [
     "desktop",
