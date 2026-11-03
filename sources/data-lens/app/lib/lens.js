@@ -1,12 +1,13 @@
-// The page's handle on the engine in worker.js: load a file, run queries. A query that runs longer than QUERY_MS ends
-// the worker (a chat member's SQL must not hang anyone's chat); the next call starts a new one and loads the file again.
+// The page's handle on the engine in worker.js: load a file, run queries. A file's bytes go to the worker by transfer and
+// the page keeps no copy. A query that runs longer than QUERY_MS ends the worker (a chat member's SQL must not hang
+// anyone's chat); the next call starts a new one and loads the file again through the `reread` it was given.
 const QUERY_MS = 20_000
 
 export class Lens {
   #worker = null
   #next = 0
   #waiting = new Map()
-  #loaded = null
+  #source = null
 
   #start() {
     if (this.#worker) return this.#worker
@@ -33,26 +34,36 @@ export class Lens {
     this.#waiting.clear()
   }
 
-  #ask(message, ms) {
+  #ask(message, ms, transfer = []) {
     const worker = this.#start()
     const id = ++this.#next
     return new Promise((resolve, reject) => {
       const timer = ms ? setTimeout(() => this.#fail('timeout', `the query ran longer than ${ms / 1000} s and was stopped`), ms) : null
       this.#waiting.set(id, { resolve, reject, timer })
-      worker.postMessage({ ...message, id })
+      worker.postMessage({ ...message, id }, transfer)
     })
   }
 
-  /** content: bytes (ArrayBuffer) or a CSV's text. → [{ name, columns, rows }] */
-  async load(name, content, sheet) {
-    this.#loaded = { name, content, sheet }
-    const copy = typeof content === 'string' ? content : content.slice(0)
-    return (await this.#ask({ op: 'load', name, content: copy, sheet })).tables
+  /**
+   * content: bytes (Uint8Array or ArrayBuffer, handed to the worker: the caller's array is empty afterwards) or a CSV's
+   * text. reread: () => Promise<content> of the same version, for when the worker has to load it again; without one, a
+   * stopped worker is not loaded again. → [{ name, columns, rows }]
+   */
+  async load(name, content, sheet, reread = null) {
+    this.#source = reread ? { name, sheet, reread } : null
+    if (typeof content === 'string') return (await this.#ask({ op: 'load', name, content, sheet })).tables
+    let bytes = content instanceof Uint8Array ? content : new Uint8Array(content)
+    // Only a view on the whole of its buffer is handed over as it is; a part of a larger one is copied first.
+    if (bytes.byteOffset !== 0 || bytes.byteLength !== bytes.buffer.byteLength) bytes = bytes.slice()
+    return (await this.#ask({ op: 'load', name, content: bytes, sheet }, 0, [bytes.buffer])).tables
   }
 
   /** → { columns, rows, truncated } */
   async query(sql, limit) {
-    if (!this.#worker && this.#loaded) await this.load(this.#loaded.name, this.#loaded.content, this.#loaded.sheet)
+    if (!this.#worker && this.#source) {
+      const { name, sheet, reread } = this.#source
+      await this.load(name, await reread(), sheet, reread)
+    }
     return (await this.#ask({ op: 'query', sql, limit }, QUERY_MS)).result
   }
 

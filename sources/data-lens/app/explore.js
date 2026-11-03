@@ -99,7 +99,7 @@ try {
   const read = await readFile(ctx.file)
   entry = read.entry
   version = read.version
-  tables = await lens.load(entry.name, read.content)
+  tables = await lens.load(entry.name, read.content, undefined, () => readFile(ctx.file, read.version).then((again) => again.content))
   drawSchema()
   const first = tables.find((x) => x.name === 't') ?? tables[0]
   sqlBox.value = first ? `SELECT * FROM ${quote(first.name)} LIMIT 200` : ''
@@ -107,6 +107,7 @@ try {
   for (const select of Object.values(fields)) select.addEventListener('change', repaint)
   new ResizeObserver(() => repaint()).observe(stage)
   if (first) await run()
+  performance.mark('data-lens:drawn')
 } catch (error) {
   say(error.message ?? String(error), 'alert')
 }

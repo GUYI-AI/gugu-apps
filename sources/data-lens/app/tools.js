@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 globalThis.require ??= createRequire(import.meta.url)
 const { load, query, DataError } = await import('./lib/engine.js')
 const { cardOf, checkView, dataBytes, DATA_BYTES, viewOf } = await import('./lib/spec.js')
+const { contentOf } = await import('./lib/bytes.js')
 
 /** The last few files opened, by id@version: a schema, then a query, then a card read the file once. */
 const opened = new Map()
@@ -22,12 +23,8 @@ async function open(file, version, sheet) {
       if (v !== entry.version) {
         const kept = await gugu.files.readVersion({ id: file }, v)
         content = typeof kept === 'string' ? kept : new Uint8Array(await kept.arrayBuffer())
-      } else if (typeof f.blob === 'function') {
-        content = new Uint8Array(await (await f.blob()).arrayBuffer())
-      } else if (typeof f.text === 'string') {
-        content = f.text
       } else {
-        throw new DataError('unreadable', `${entry.name} has no content`)
+        content = await contentOf(f, entry.name).catch((error) => { throw new DataError('unreadable', error.message) })
       }
       opened.set(key, { entry: { id: entry.id, name: entry.name, latest: entry.version }, version: v, ...(await load(entry.name, content, { sheet })) })
       while (opened.size > KEEP) {

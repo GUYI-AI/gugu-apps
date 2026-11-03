@@ -1,1 +1,1 @@
-First version: data cards from CSV, workbooks and SQLite files in a chat, an explore page, and tools for agents.
+Dates from workbooks and CSV files now come out in local time, as the sheet shows them, instead of UTC. Large files are read in pieces and handed to the data engine instead of copied, so a big workbook takes less memory. Since 0.1.1: sheets with hundreds of thousands of rows load instead of failing with "Maximum call stack size exceeded".

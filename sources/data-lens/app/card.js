@@ -54,6 +54,7 @@ async function showCard(ctx) {
     stage, actions))
   const paint = () => draw(stage, view, result, { width: stage.clientWidth, height: stage.clientHeight })
   paint()
+  performance.mark('data-lens:drawn')
   new ResizeObserver(() => paint()).observe(stage)
 }
 
