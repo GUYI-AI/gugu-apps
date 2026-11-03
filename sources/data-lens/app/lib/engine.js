@@ -91,8 +91,12 @@ function cell(value) {
   if (value === null || value === undefined || value === '') return null
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) return null
-    const iso = value.toISOString()
-    return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 19).replace('T', ' ')
+    // SheetJS builds dates in the reader's local time (a CSV's 2026-01-01 is local midnight), so they are written out in
+    // local time too: UTC would move them by the time zone, across midnight east of Greenwich.
+    const two = (n) => String(n).padStart(2, '0')
+    const day = `${value.getFullYear()}-${two(value.getMonth() + 1)}-${two(value.getDate())}`
+    const [h, m, s] = [value.getHours(), value.getMinutes(), value.getSeconds()]
+    return h || m || s ? `${day} ${two(h)}:${two(m)}:${two(s)}` : day
   }
   if (typeof value === 'boolean') return value ? 1 : 0
   if (typeof value === 'number') return Number.isFinite(value) ? value : null

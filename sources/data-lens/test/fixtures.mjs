@@ -12,9 +12,9 @@ export function workbook() {
   const book = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([
     ['区域', '销售额', '下单日'],
-    ['华东', 100, new Date(Date.UTC(2026, 0, 3))],
-    ['华南', 250.25, new Date(Date.UTC(2026, 1, 4))],
-    ['华北', null, new Date(Date.UTC(2026, 2, 5))],
+    ['华东', 100, new Date(2026, 0, 3)],
+    ['华南', 250.25, new Date(2026, 1, 4)],
+    ['华北', null, new Date(2026, 2, 5)],
   ], { cellDates: true }), '销售 2026')
   XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([['name', 'n'], ['a', 1], ['b', 2]]), 'Other')
   return new Uint8Array(XLSX.write(book, { type: 'array', bookType: 'xlsx' }))
