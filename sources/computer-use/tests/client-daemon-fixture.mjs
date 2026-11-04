@@ -6,7 +6,21 @@ const { mode, socket, phase } = JSON.parse(process.argv[2]);
 const sockets = new Set();
 const event = (type, extra = {}) => process.send?.({ type, ...extra });
 const answer = (connection, result) => connection.write(JSON.stringify({ ok: true, result }) + '\n');
-function stop() { for (const socket of sockets) socket.destroy(); process.exit(0); }
+let stopping = false;
+function stop() {
+  if (stopping) return;
+  stopping = true;
+  // A real daemon exit closes its owner sockets. Let this fixture report those
+  // close events before exiting, rather than losing their IPC messages to exit().
+  const closed = [...sockets].map(socket => new Promise(resolve => {
+    socket.once('close', resolve);
+    socket.destroy();
+  }));
+  void Promise.all(closed).then(() => {
+    if (process.connected) process.send({ type: 'retired' }, () => process.exit(0));
+    else process.exit(0);
+  });
+}
 process.on('SIGTERM', stop);
 process.stdin.on('end', stop);
 if (mode === 'serve') {
