@@ -1,7 +1,7 @@
 import { AsyncResource } from 'node:async_hooks';
 import { PNG } from 'pngjs';
 import { cursorOnWindow, resolveComputerWindow } from '../app/program/native-runtime.mjs';
-import { createPreviewInput } from './preview-input.mjs';
+import { createPreviewInput, pictureCoordinateKey } from './preview-input.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const positive = value => Number.isSafeInteger(value) && value > 0;
@@ -63,6 +63,7 @@ export function createComputerPreview({ projection, native, tools, control, show
     }
     state = { session: caller.session, caller: { ...caller, signal: undefined, remainingMs: undefined },
       abort: new AbortController(), actions: [], frames: [], target: null, epoch: 0,
+      coordinateRevision: 0, coordinateKey: null,
       lastAt: -Infinity, took: 0, capture: null, publishing: Promise.resolve(), source: null, opening: true, problem: null };
     state.input = createPreviewInput({ state: () => state, valid, tools, control, now,
       refresh: () => detached(async () => {
@@ -106,10 +107,18 @@ export function createComputerPreview({ projection, native, tools, control, show
       const frame = projectionPng(image.data);
       if (result.structuredContent?.screenshot_width !== frame.width || result.structuredContent?.screenshot_height !== frame.height) cursor = null;
       const target = state.target && { ...state.target };
+      const raw = result.structuredContent, bounds = raw?.window_bounds;
+      // Include the native window size: equal PNG dimensions can still represent
+      // a different scale. Do not revive an old intent if the size later returns.
+      const coordinateKey = pictureCoordinateKey(frame.width, frame.height, bounds);
+      if (state.coordinateKey !== coordinateKey) {
+        state.coordinateKey = coordinateKey;
+        state.coordinateRevision++;
+      }
+      const coordinateRevision = state.coordinateRevision;
       const sequence = await state.source.publish(frame);
       if (!valid(state) || state.epoch !== epoch) return;
-      const raw = result.structuredContent;
-      state.frames.push({ sequence, width: frame.width, height: frame.height, cursor, epoch,
+      state.frames.push({ sequence, width: frame.width, height: frame.height, cursor, epoch, coordinateRevision, coordinateKey,
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
         at, target });
       state.frames = state.frames.slice(-32);

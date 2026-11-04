@@ -117,3 +117,95 @@ test('an uncertain or throwing native operation is never automatically retried',
   assert.equal((await f.handler.input({ kind: 'text', text: 'blocked' }, f.context())).status, 'rejected');
   assert.equal(f.calls.length, 3);
 });
+
+test('move and release cannot reuse a down from a different picture coordinate space', async () => {
+  for (const action of ['move', 'up']) {
+    const f = fixture();
+    await f.handler.input(f.pointer('down'), f.context());
+    f.state.frames.push({ ...f.state.frames[0], sequence: 2, width: 1600 });
+    const context = { ...f.context(), frame: { sequence: 2, width: 1600, height: 400 } };
+    const result = await f.handler.input(f.pointer(action), context);
+    assert.equal(result.status, 'rejected');
+    assert.match(result.reason, /picture|coordinates|gesture/i);
+    assert.equal(f.calls.length, 0, 'coordinate-space rejection must happen before native calibration');
+  }
+});
+
+test('resizing away and back cannot revive a gesture from an earlier coordinate revision', async () => {
+  const f = fixture();
+  f.state.frames[0].coordinateRevision = 1;
+  await f.handler.input(f.pointer('down'), f.context());
+  f.state.frames.push({ ...f.state.frames[0], sequence: 2, width: 1600, coordinateRevision: 2 },
+    { ...f.state.frames[0], sequence: 3, coordinateRevision: 3 });
+  assert.equal((await f.handler.input(f.pointer('up'), f.context('viewer-a', 3))).status, 'rejected');
+  assert.equal(f.calls.length, 0);
+});
+
+test('a new capture in the same coordinate space preserves a valid gesture', async () => {
+  const f = fixture();
+  f.state.frames[0].coordinateRevision = 1;
+  await f.handler.input(f.pointer('down'), f.context());
+  f.state.frames.push({ ...f.state.frames[0], sequence: 2 });
+  assert.equal((await f.handler.input(f.pointer('up'), f.context('viewer-a', 2))).status, 'applied');
+  assert.equal(f.calls[1].name, 'click');
+});
+
+test('wheel, keys, IME and paste all reject an acknowledged frame from a superseded coordinate space', async () => {
+  for (const input of [
+    { kind: 'wheel', x: .5, y: .5, deltaX: 0, deltaY: 240 },
+    { kind: 'key', action: 'down', key: 'ArrowLeft' },
+    { kind: 'text', text: '中文', source: 'ime' },
+    { kind: 'text', text: '中文粘贴', source: 'paste' },
+  ]) {
+    const f = fixture();
+    f.state.frames.push({ ...f.state.frames[0], sequence: 2, width: 1600 });
+    assert.equal((await f.handler.input(input, f.context())).status, 'rejected');
+    assert.equal(f.calls.length, 0);
+  }
+});
+
+test('a coordinate-space change during native calibration refuses dispatch even if dimensions return', async () => {
+  const f = fixture();
+  f.state.frames[0].coordinateRevision = 1;
+  const pending = Promise.withResolvers();
+  const original = f.handler;
+  // Use the real adapter with a held viewer-lane observation to exercise its dispatch boundary.
+  const calls = [];
+  const handler = createPreviewInput({ state: () => f.state, valid: () => true, now: () => 1000, refresh() {},
+    tools: { async call(name, args) { calls.push(name); return name === 'get_window_state' ? pending.promise : { content: [] }; } } });
+  try {
+    await handler.input(f.pointer('down'), f.context());
+    const input = handler.input(f.pointer('up'), f.context());
+    await new Promise(resolve => setImmediate(resolve));
+    f.state.frames.push({ ...f.state.frames[0], sequence: 2, coordinateRevision: 2 });
+    pending.resolve({ structuredContent: { pid: 44, window_id: 77, screenshot_width: 800, screenshot_height: 400 } });
+    assert.equal((await input).status, 'rejected');
+    assert.deepEqual(calls, ['get_window_state']);
+  } finally { handler.close(); original.close(); }
+});
+
+test('native calibration rejects changed window scale even when PNG dimensions match', async () => {
+  const f = fixture(), calls = [];
+  f.state.frames[0].coordinateKey = JSON.stringify([800, 400, 800, 400]);
+  const handler = createPreviewInput({ state: () => f.state, valid: () => true, now: () => 1000, refresh() {},
+    tools: { async call(name) { calls.push(name); return { structuredContent: {
+      pid: 44, window_id: 77, screenshot_width: 800, screenshot_height: 400,
+      window_bounds: { x: 0, y: 0, width: 1600, height: 800 } } }; } } });
+  try {
+    await handler.input(f.pointer('down'), f.context());
+    assert.equal((await handler.input(f.pointer('up'), f.context())).status, 'rejected');
+    assert.deepEqual(calls, ['get_window_state']);
+  } finally { handler.close(); }
+});
+
+test('an invalidated gesture keeps rejecting remaining moves and its release until a new down', async () => {
+  const f = fixture();
+  await f.handler.input(f.pointer('down'), f.context());
+  f.handler.invalidate();
+  for (const action of ['move', 'move', 'up']) {
+    assert.equal((await f.handler.input(f.pointer(action), f.context())).status, 'rejected');
+  }
+  assert.equal(f.calls.length, 0);
+  await f.handler.input(f.pointer('down'), f.context());
+  assert.equal((await f.handler.input(f.pointer('up'), f.context())).status, 'applied');
+});

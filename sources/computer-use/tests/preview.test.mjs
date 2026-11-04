@@ -74,6 +74,31 @@ test('live capture uses its own native lane, exact target and actual cursor samp
   assert.match((await f.preview.read(a, { live: true })).liveProblem, /Stop/);
   assert.equal(f.calls.length, count);
 });
+
+test('live capture scale changes advance the picture coordinate revision without changing the target epoch', async t => {
+  let windowWidth = 80;
+  const f = fixture({ tools: { async call() {
+    const result = shot(); result.structuredContent.window_bounds.width = windowWidth;
+    return result;
+  } } });
+  t.after(() => f.preview.dispose());
+  f.preview.begin(caller(a), 'get_window_state', {})(shot()); f.observe(); await tick();
+  const before = structuredClone(await f.preview.read(a)), context = frame => ({ viewer: 'scale-viewer', frame });
+  const point = action => ({ kind: 'pointer', action, button: 'left', x: .25, y: .5 });
+  const driver = f.sources[0].driver;
+  assert.equal((await driver.input(point('down'), context(before.frames.at(-1)))).status, 'applied');
+  windowWidth = 160;
+  const resized = await f.preview.read(a, { live: true });
+  assert.equal(resized.targetRevision, before.targetRevision);
+  assert.equal(resized.frames.at(-1).width, before.frames.at(-1).width, 'equal PNG dimensions do not imply equal native scale');
+  assert.notEqual(resized.frames.at(-1).coordinateRevision, before.frames.at(-1).coordinateRevision);
+  assert.equal((await driver.input(point('move'), context(resized.frames.at(-1)))).status, 'rejected');
+  assert.equal((await driver.input(point('up'), context(resized.frames.at(-1)))).status, 'rejected');
+  windowWidth = 80; f.time(2000);
+  const restored = await f.preview.read(a, { live: true });
+  assert.notEqual(restored.frames.at(-1).coordinateRevision, before.frames.at(-1).coordinateRevision,
+    'returning to an old size creates a new coordinate revision');
+});
 test('a target change discards late capture and decorations from the old window', async t => {
   const pending = deferred();
   const f = fixture({ tools: { call: () => pending.promise } }); t.after(() => f.preview.dispose());

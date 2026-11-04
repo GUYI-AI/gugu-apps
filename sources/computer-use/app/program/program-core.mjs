@@ -19164,6 +19164,13 @@ var keyNames = {
 };
 var modifierKeys = /* @__PURE__ */ new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "CapsLock", "NumLock"]);
 var preflightFailures = /* @__PURE__ */ new Set(["not_found", "not_granted", "unsupported", "invalid_args", "needs_confirmation", "os_permission"]);
+var frameSpace = (frame) => frame && JSON.stringify([frame.coordinateRevision ?? null, frame.width, frame.height]);
+var pictureCoordinateKey = (width, height, bounds) => JSON.stringify([
+  width,
+  height,
+  Number.isFinite(bounds?.width) && bounds.width > 0 ? bounds.width : null,
+  Number.isFinite(bounds?.height) && bounds.height > 0 ? bounds.height : null
+]);
 function createPreviewInput({ state: readState, valid, tools, control, refresh, now = Date.now }) {
   const gestures = /* @__PURE__ */ new Map(), operations = /* @__PURE__ */ new Map();
   let closed = false;
@@ -19173,7 +19180,9 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
     operations.delete(viewer);
   }
   function invalidate() {
-    for (const viewer of /* @__PURE__ */ new Set([...gestures.keys(), ...operations.keys()])) disconnect(viewer);
+    for (const gesture of gestures.values()) gesture.invalidated = true;
+    for (const pending of operations.values()) for (const controller of pending) controller.abort(new Error("View changed"));
+    operations.clear();
   }
   return {
     disconnect,
@@ -19181,6 +19190,7 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
     close() {
       closed = true;
       invalidate();
+      gestures.clear();
     },
     async input(input, context) {
       const state = readState(), viewer = context?.viewer;
@@ -19190,7 +19200,10 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
       if (typeof viewer !== "string" || !viewer || viewer.length > 256) return rejected("The input viewer is unavailable.");
       const frame = state.frames.findLast((frame2) => frame2.sequence === context.frame?.sequence);
       const age = frame ? now() - Date.parse(frame.at) : NaN;
-      if (!frame || !frame.inputReady || frame.epoch !== state.epoch || targetKey(frame.target) !== targetKey(state.target) || frame.width !== context.frame.width || frame.height !== context.frame.height || !Number.isFinite(age) || age < 0 || age > 15e3) {
+      const space = frameSpace(frame);
+      const currentSpace = () => space === frameSpace(state.frames.at(-1)) && (state.coordinateRevision === void 0 || frame?.coordinateRevision === state.coordinateRevision);
+      if (!frame || !frame.inputReady || frame.epoch !== state.epoch || targetKey(frame.target) !== targetKey(state.target) || frame.width !== context.frame.width || frame.height !== context.frame.height || !currentSpace() || !Number.isFinite(age) || age < 0 || age > 15e3) {
+        if (input?.kind === "pointer" && down) down.invalidated = true;
         return rejected("The window picture is stale or its coordinates are unavailable. Refresh the view before sending input.");
       }
       const stopped = control?.stoppedFor(frame.target.pid);
@@ -19206,8 +19219,18 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
         if (!point(input.x) || !point(input.y) || !["left", "middle", "right"].includes(input.button)) return rejected("Invalid pointer coordinates.");
         if (input.action === "down") {
           if (gestures.size >= 32 && !gestures.has(viewer)) return rejected("Too many pending gestures.");
-          gestures.set(viewer, { ...at(), button: input.button, epoch: state.epoch, target: targetKey(frame.target) });
+          gestures.set(viewer, {
+            ...at(),
+            button: input.button,
+            epoch: state.epoch,
+            target: targetKey(frame.target),
+            space,
+            frameSequence: frame.sequence
+          });
           return applied();
+        }
+        if (down && (down.invalidated || down.space !== space || down.epoch !== state.epoch || down.target !== targetKey(frame.target) || frame.sequence < down.frameSequence)) {
+          return rejected("The gesture picture coordinates changed. Start a new gesture on the refreshed view.");
         }
         if (input.action === "move") return applied();
         if (input.action !== "up" || !down || down.button !== input.button || down.epoch !== state.epoch || down.target !== targetKey(frame.target)) {
@@ -19253,7 +19276,7 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
       const signal = AbortSignal.any([state.abort.signal, controller.signal, ...context.signal ? [context.signal] : []]);
       const who = { ...state.caller, preview: true, humanViewer: viewer, signal };
       try {
-        if (signal.aborted || !valid(state)) return rejected("Input was cancelled before dispatch.");
+        if (signal.aborted || !valid(state) || !currentSpace()) return rejected("Input was cancelled or its picture coordinates changed before dispatch.");
         if (input.kind === "pointer" || input.kind === "wheel") {
           const fresh = await tools.call("get_window_state", {
             target,
@@ -19263,14 +19286,14 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
             max_dimension: 1280
           }, who);
           const raw = fresh?.structuredContent, actual = raw?.target ?? raw;
-          if (fresh?.isError || actual?.pid !== target.pid || actual?.window_id !== target.window_id || raw?.screenshot_width !== frame.width || raw?.screenshot_height !== frame.height) {
+          if (fresh?.isError || actual?.pid !== target.pid || actual?.window_id !== target.window_id || raw?.screenshot_width !== frame.width || raw?.screenshot_height !== frame.height || frame.coordinateKey !== void 0 && frame.coordinateKey !== pictureCoordinateKey(raw?.screenshot_width, raw?.screenshot_height, raw?.window_bounds)) {
             return rejected("The window or its picture size changed. Refresh the view before sending input.");
           }
-          if (signal.aborted || !valid(state) || state.epoch !== epoch || control?.stoppedFor(target.pid)) return rejected("Input was cancelled before dispatch.");
+          if (signal.aborted || !valid(state) || state.epoch !== epoch || !currentSpace() || control?.stoppedFor(target.pid)) return rejected("Input was cancelled or its picture coordinates changed before dispatch.");
           if (name === "click" && typeof raw.capture_id === "string") args.capture_id = raw.capture_id;
         }
         const result = await tools.call(name, args, who);
-        if (signal.aborted || !valid(state) || state.epoch !== epoch) return uncertain("The view changed while input was in flight.");
+        if (signal.aborted || !valid(state) || state.epoch !== epoch || !currentSpace()) return uncertain("The view changed while input was in flight.");
         if (result?.isError) {
           const reason = String(result.content?.find((block) => block.type === "text")?.text ?? "The native operation was not confirmed.").slice(0, 1e3);
           return preflightFailures.has(result.structuredContent?.code) ? rejected(reason) : uncertain(reason);
@@ -19365,6 +19388,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       frames: [],
       target: null,
       epoch: 0,
+      coordinateRevision: 0,
+      coordinateKey: null,
       lastAt: -Infinity,
       took: 0,
       capture: null,
@@ -19434,15 +19459,23 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       const frame = projectionPng(image.data);
       if (result.structuredContent?.screenshot_width !== frame.width || result.structuredContent?.screenshot_height !== frame.height) cursor = null;
       const target = state.target && { ...state.target };
+      const raw = result.structuredContent, bounds = raw?.window_bounds;
+      const coordinateKey = pictureCoordinateKey(frame.width, frame.height, bounds);
+      if (state.coordinateKey !== coordinateKey) {
+        state.coordinateKey = coordinateKey;
+        state.coordinateRevision++;
+      }
+      const coordinateRevision = state.coordinateRevision;
       const sequence = await state.source.publish(frame);
       if (!valid(state) || state.epoch !== epoch) return;
-      const raw = result.structuredContent;
       state.frames.push({
         sequence,
         width: frame.width,
         height: frame.height,
         cursor,
         epoch,
+        coordinateRevision,
+        coordinateKey,
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
         at,
         target

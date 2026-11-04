@@ -1,7 +1,8 @@
 // Regression suite migrated from gugu@5ecc5f06; execution belongs to the Computer Use App.
-// #7199 电脑控制的「正在操作 · 停止」小条与人接管 —— 按 App 算(owner 10-15:「不接管电脑,只接管这个 App」):
-// begin 只登记 act;没指定 App 的动作附着前台窗口,停止覆盖整个电脑控制。只读调用不进入控制器。
-// 「停止」只停小条上那个 App:它在途的一下被撤、之后再动它一律拒,直到「让它继续」;别的 App 照常。
+// #7199 Human takeover is per application (owner decision, October 15).
+// begin registers input only. Untargeted input uses the foreground indicator,
+// but Stop covers all computer control. Inspections do not enter the controller.
+// Stop cancels the displayed application's work until Continue; other apps remain usable.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { COMPUTER_STOPPED, appStopped, createComputerControl } from '../../runtime/control'
 
@@ -35,7 +36,7 @@ function begun(handle: ReturnType<ReturnType<typeof createComputerControl>['begi
   return handle
 }
 
-describe('小条', () => {
+describe('control indicator', () => {
   it('does not infer the window of a later app-only call from the previously shown target', () => {
     const show = vi.fn()
     const control = createComputerControl({ view: { show, hide: vi.fn() } })
@@ -88,15 +89,15 @@ describe('小条', () => {
     expect(views.at(-1)).toBe('hide')
   })
 
-  it('认不出名字的 App 也照样单独算(小条上写「某个 App」由窗口那层决定)', () => {
+  it('tracks an unnamed application separately; the surface supplies its display label', () => {
     const { control, views } = setup()
     begun(control.begin({ pid: 99 })).end()
     expect(views.at(-1)).toBe('driving::?')
   })
 })
 
-describe('停止只停这个 App', () => {
-  it('在途的那一下被撤(reason 是给 agent 的话);之后再动它一律拒;别的 App 照常;「让它继续」后恢复', () => {
+describe('Stop affects only its application', () => {
+  it('cancels in-flight input with an agent-facing reason, refuses later input and resumes after Continue without affecting other apps', () => {
     const { control, views } = setup()
     const inCalc = begun(control.begin(calc))
     control.stop()
@@ -106,9 +107,9 @@ describe('停止只停这个 App', () => {
     inCalc.end()
 
     expect(control.begin(calc)).toEqual({ refused: appStopped('计算器') })
-    // 只看计算器也不行:人把它接过去了。
+    // This explicit controller entry also refuses a subject the person took over.
     expect(control.begin({ pid: 77 })).toEqual({ refused: appStopped('计算器') })
-    // 别的 App、未解析出 App 的 act:照常。
+    // Other applications and untargeted input remain usable.
     const inNotes = begun(control.begin(notes))
     expect(inNotes.signal.aborted).toBe(false)
     expect(views.at(-1)).toBe('driving:云端助理:备忘录')
@@ -116,7 +117,7 @@ describe('停止只停这个 App', () => {
     begun(control.begin(untargetedAct)).end()
     expect(views.at(-1)).toBe('driving:云端助理:-')
 
-    // agent 又去动计算器:暂停的小条重新亮出来,人点「让它继续」。
+    // A refused retry re-shows the paused indicator so the person can Continue.
     expect('refused' in control.begin(calc)).toBe(true)
     expect(views.at(-1)).toBe('paused:云端助理:计算器')
     control.resume()
@@ -166,7 +167,7 @@ describe('停止只停这个 App', () => {
     control.dispose()
   })
 
-  it('停计算器不撤备忘录上在途的动作', () => {
+  it('stopping Calculator does not cancel in-flight Notes work', () => {
     const { control } = setup()
     const inNotes = begun(control.begin(notes))
     const inCalc = begun(control.begin(calc))
@@ -189,7 +190,7 @@ describe('停止只停这个 App', () => {
     begun(control.begin(calc)).end()
   })
 
-  it('暂停的小条两分钟后收起;agent 再来动那个 App 时重新亮出来', () => {
+  it('hides a paused indicator after two minutes and re-shows it on a refused retry', () => {
     const { control, views } = setup()
     begun(control.begin(calc))
     control.stop()
@@ -199,7 +200,7 @@ describe('停止只停这个 App', () => {
     expect(views.at(-1)).toBe('paused:云端助理:计算器')
   })
 
-  it('人照常用电脑不打断它:没有人按停止,多个 App 来回操作都放行', () => {
+  it('allows ordinary human activity and switching applications until Stop is explicitly pressed', () => {
     const { control } = setup()
     for (let i = 0; i < 20; i++) {
       const h = begun(control.begin(i % 2 ? calc : notes))

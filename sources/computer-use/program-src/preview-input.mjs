@@ -8,6 +8,12 @@ const keyNames = { Enter: 'return', Escape: 'escape', ArrowLeft: 'left', ArrowRi
   Backspace: 'backspace', Delete: 'delete', Tab: 'tab', Home: 'home', End: 'end', PageUp: 'pageup', PageDown: 'pagedown' };
 const modifierKeys = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock', 'NumLock']);
 const preflightFailures = new Set(['not_found', 'not_granted', 'unsupported', 'invalid_args', 'needs_confirmation', 'os_permission']);
+// The target epoch alone is insufficient: a live capture can change its coordinate
+// space without retargeting. The revision also prevents resize-away-and-back reuse.
+const frameSpace = frame => frame && JSON.stringify([frame.coordinateRevision ?? null, frame.width, frame.height]);
+export const pictureCoordinateKey = (width, height, bounds) => JSON.stringify([width, height,
+  Number.isFinite(bounds?.width) && bounds.width > 0 ? bounds.width : null,
+  Number.isFinite(bounds?.height) && bounds.height > 0 ? bounds.height : null]);
 
 /** Human input uses the same App policy, real native permission check and Stop as tools.
  * Gestures become atomic click/drag/key operations: no native key/button stays held across packets.
@@ -22,11 +28,15 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
     operations.delete(viewer);
   }
   function invalidate() {
-    for (const viewer of new Set([...gestures.keys(), ...operations.keys()])) disconnect(viewer);
+    // Retain a bounded rejected intent until release/new down. Clearing it here
+    // would make subsequent drag moves look like harmless hover events.
+    for (const gesture of gestures.values()) gesture.invalidated = true;
+    for (const pending of operations.values()) for (const controller of pending) controller.abort(new Error('View changed'));
+    operations.clear();
   }
   return {
     disconnect, invalidate,
-    close() { closed = true; invalidate(); },
+    close() { closed = true; invalidate(); gestures.clear(); },
     async input(input, context) {
       const state = readState(), viewer = context?.viewer;
       const down = gestures.get(viewer);
@@ -35,8 +45,13 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
       if (typeof viewer !== 'string' || !viewer || viewer.length > 256) return rejected('The input viewer is unavailable.');
       const frame = state.frames.findLast(frame => frame.sequence === context.frame?.sequence);
       const age = frame ? now() - Date.parse(frame.at) : NaN;
+      const space = frameSpace(frame);
+      const currentSpace = () => space === frameSpace(state.frames.at(-1))
+        && (state.coordinateRevision === undefined || frame?.coordinateRevision === state.coordinateRevision);
       if (!frame || !frame.inputReady || frame.epoch !== state.epoch || targetKey(frame.target) !== targetKey(state.target)
-        || frame.width !== context.frame.width || frame.height !== context.frame.height || !Number.isFinite(age) || age < 0 || age > 15_000) {
+        || frame.width !== context.frame.width || frame.height !== context.frame.height || !currentSpace()
+        || !Number.isFinite(age) || age < 0 || age > 15_000) {
+        if (input?.kind === 'pointer' && down) down.invalidated = true;
         return rejected('The window picture is stale or its coordinates are unavailable. Refresh the view before sending input.');
       }
       const stopped = control?.stoppedFor(frame.target.pid);
@@ -51,8 +66,13 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
         if (!point(input.x) || !point(input.y) || !['left', 'middle', 'right'].includes(input.button)) return rejected('Invalid pointer coordinates.');
         if (input.action === 'down') {
           if (gestures.size >= 32 && !gestures.has(viewer)) return rejected('Too many pending gestures.');
-          gestures.set(viewer, { ...at(), button: input.button, epoch: state.epoch, target: targetKey(frame.target) });
+          gestures.set(viewer, { ...at(), button: input.button, epoch: state.epoch, target: targetKey(frame.target),
+            space, frameSequence: frame.sequence });
           return applied();
+        }
+        if (down && (down.invalidated || down.space !== space || down.epoch !== state.epoch
+          || down.target !== targetKey(frame.target) || frame.sequence < down.frameSequence)) {
+          return rejected('The gesture picture coordinates changed. Start a new gesture on the refreshed view.');
         }
         if (input.action === 'move') return applied();
         if (input.action !== 'up' || !down || down.button !== input.button || down.epoch !== state.epoch || down.target !== targetKey(frame.target)) {
@@ -89,7 +109,7 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
       const signal = AbortSignal.any([state.abort.signal, controller.signal, ...(context.signal ? [context.signal] : [])]);
       const who = { ...state.caller, preview: true, humanViewer: viewer, signal };
       try {
-        if (signal.aborted || !valid(state)) return rejected('Input was cancelled before dispatch.');
+        if (signal.aborted || !valid(state) || !currentSpace()) return rejected('Input was cancelled or its picture coordinates changed before dispatch.');
         if (input.kind === 'pointer' || input.kind === 'wheel') {
           // The displayed picture may have come from another native lane. Calibrate this
           // viewer lane and obtain its own capture token; never borrow another session's token.
@@ -97,14 +117,15 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
             display_only: true, max_dimension: 1280 }, who);
           const raw = fresh?.structuredContent, actual = raw?.target ?? raw;
           if (fresh?.isError || actual?.pid !== target.pid || actual?.window_id !== target.window_id
-            || raw?.screenshot_width !== frame.width || raw?.screenshot_height !== frame.height) {
+            || raw?.screenshot_width !== frame.width || raw?.screenshot_height !== frame.height
+            || (frame.coordinateKey !== undefined && frame.coordinateKey !== pictureCoordinateKey(raw?.screenshot_width, raw?.screenshot_height, raw?.window_bounds))) {
             return rejected('The window or its picture size changed. Refresh the view before sending input.');
           }
-          if (signal.aborted || !valid(state) || state.epoch !== epoch || control?.stoppedFor(target.pid)) return rejected('Input was cancelled before dispatch.');
+          if (signal.aborted || !valid(state) || state.epoch !== epoch || !currentSpace() || control?.stoppedFor(target.pid)) return rejected('Input was cancelled or its picture coordinates changed before dispatch.');
           if (name === 'click' && typeof raw.capture_id === 'string') args.capture_id = raw.capture_id;
         }
         const result = await tools.call(name, args, who);
-        if (signal.aborted || !valid(state) || state.epoch !== epoch) return uncertain('The view changed while input was in flight.');
+        if (signal.aborted || !valid(state) || state.epoch !== epoch || !currentSpace()) return uncertain('The view changed while input was in flight.');
         if (result?.isError) {
           const reason = String(result.content?.find(block => block.type === 'text')?.text ?? 'The native operation was not confirmed.').slice(0, 1000);
           return preflightFailures.has(result.structuredContent?.code) ? rejected(reason) : uncertain(reason);

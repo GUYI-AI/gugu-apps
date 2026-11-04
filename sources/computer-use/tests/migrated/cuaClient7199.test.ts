@@ -1,7 +1,8 @@
 // Regression suite migrated from gugu@5ecc5f06; the deadline comes from the App caller instead of device-action transport.
-// #7199 cua-driver 的嵌入:咕咕直接起 `serve --embedded`(守护进程,授权记在咕咕名下、画 agent 鼠标)和 `mcp --embedded`(代理);
-// 环境只给白名单(❌ 把咕咕的 key 交出去、上报使用数据、查更新、写 ~/.cua-driver);超时 / 取消只撤这一个调用;
-// 急停把两个进程一起关、在途的调用随之失败,下一次再重起。
+// #7199 Embedded driver: serve --embedded owns the daemon and agent cursor;
+// mcp --embedded is its proxy. Actual permission attribution is a native acceptance gate.
+// The environment is allowlisted: no Gugu credentials, telemetry, updates or default driver home.
+// Timeout/cancellation affects one call; emergency stop closes both processes and permits a later restart.
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -37,7 +38,7 @@ afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
-/** 假的 cua-driver:serve 建好 socket 文件;mcp 照 JSON-RPC 回话,tools/call 交给 answer(回 undefined = 一直不回)。 */
+/** Driver fixture: serve creates its socket; mcp serves JSON-RPC via answer (undefined leaves a call unanswered). */
 function fakeDriver(answer: (name: string, args: Record<string, unknown>) => unknown) {
   const spawned: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv; proc: FakeProc }> = []
   const received: Array<Record<string, unknown>> = []
@@ -75,12 +76,12 @@ const binary = () => {
   return file
 }
 
-describe('环境', () => {
+describe('environment', () => {
   it('only forwards an explicitly configured official CUA_LOG filter', () => {
     expect(cuaEnvironment({ home: '/gugu', source: {} })).not.toHaveProperty('CUA_LOG')
     expect(cuaEnvironment({ home: '/gugu', source: { CUA_LOG: 'cua_driver_core::tool=info' } }).CUA_LOG).toBe('cua_driver_core::tool=info')
   })
-  it('只给系统要的几样 + cua 自己的开关:嵌入、standard、不上报、不查更新、数据目录挪进咕咕', () => {
+  it('supplies only system variables and embedded/standard driver settings, disables telemetry/updates and isolates its data directory', () => {
     const env = cuaEnvironment({ home: '/gugu/cua-driver', hostBundleId: 'com.gugu.app', source: { PATH: '/bin', HOME: '/Users/a', OPENAI_API_KEY: 'sk-secret', GUGU_SUPABASE_ANON_KEY: 'x', CUA_DRIVER_PERCEPTION_CATALOG: '/agpl' } })
     expect(env).toEqual({
       PATH: '/bin',
@@ -94,14 +95,14 @@ describe('环境', () => {
     })
   })
 
-  it('私有通道:Unix 是临时目录里的 socket(macOS 路径上限 104 字节),Windows 是命名管道', () => {
+  it('uses a private temporary Unix socket within the 104-byte macOS limit, or a Windows named pipe', () => {
     expect(cuaSocketPath('win32', 123)).toBe('\\\\.\\pipe\\gugu-cua-123')
     expect(cuaSocketPath('darwin', 123)).toBe(path.join(os.tmpdir(), 'gugu-cua-123.sock'))
     expect(Buffer.byteLength(cuaSocketPath('darwin', 99999))).toBeLessThan(104)
   })
 })
 
-describe('起、调、停', () => {
+describe('start, call and stop', () => {
   it('returns executed steps before the host deadline when the closing capture crosses the remaining budget', async () => {
     const close = vi.fn()
     const calls: string[] = []
@@ -255,7 +256,7 @@ describe('起、调、停', () => {
       expect(log.info).toHaveBeenLastCalledWith(expect.objectContaining({ stderrTail: expect.stringContaining('dt_ms=NaN') }), 'cua-driver serve exited')
     } finally { cua.dispose() }
   })
-  it('先起 serve --embedded,socket 好了再起 mcp --embedded 连同一个 socket;initialize 之后才调工具', async () => {
+  it('starts serve --embedded first, connects mcp --embedded after the socket is ready and calls tools only after initialize', async () => {
     const driver = fakeDriver(() => ({ content: [{ type: 'text', text: 'ok' }], structuredContent: { apps: [] } }))
     const socket = path.join(dir, 's.sock')
     const client = createCuaClient({ binary: binary(), missingMessage: 'missing', clientVersion: '1.0', home: path.join(dir, 'home'), platform: 'linux', socketPath: socket, spawn: driver.spawn })
@@ -266,16 +267,16 @@ describe('起、调、停', () => {
     ])
     expect(driver.received.map((m) => m.method)).toEqual(['initialize', 'notifications/initialized', 'tools/call'])
     expect(driver.spawned[0]!.env.CUA_DRIVER_EMBEDDED).toBe('1')
-    // #7317: the daemon treats its stdin as 咕咕 being alive and quits when it closes; the proxy's stdin is its JSON-RPC.
+    // #7317: the daemon treats stdin as Gugu's lifetime and exits on EOF; the proxy's stdin carries JSON-RPC.
     expect(driver.spawned[0]!.env.CUA_DRIVER_PARENT_LIVENESS_STDIN).toBe('1')
     expect(driver.spawned[1]!.env.CUA_DRIVER_PARENT_LIVENESS_STDIN).toBeUndefined()
-    // 第二次调用复用同一代。
+    // The next call reuses this generation.
     await client.callTool('list_apps', {})
     expect(driver.spawned).toHaveLength(2)
     client.dispose()
   })
 
-  it('超时只撤这一个调用(notifications/cancelled),守护进程留着给别人用', async () => {
+  it('a timeout cancels only its call through notifications/cancelled and leaves the daemon available to other callers', async () => {
     const driver = fakeDriver((name) => (name === 'slow' ? undefined : { content: [] }))
     const client = createCuaClient({ binary: binary(), missingMessage: 'missing', clientVersion: '1.0', home: path.join(dir, 'home'), platform: 'linux', socketPath: path.join(dir, 's.sock'), spawn: driver.spawn })
     // Exercise cancellation after dispatch, independently of cold lane startup.
@@ -289,7 +290,7 @@ describe('起、调、停', () => {
     client.dispose()
   })
 
-  it('急停:两个进程一起关,在途的调用以原因失败;下一次调用重起一代', async () => {
+  it('emergency stop closes both processes and rejects pending calls with its reason; a later call starts a new generation', async () => {
     const driver = fakeDriver((name) => (name === 'slow' ? undefined : { content: [] }))
     const client = createCuaClient({ binary: binary(), missingMessage: 'missing', clientVersion: '1.0', home: path.join(dir, 'home'), platform: 'linux', socketPath: path.join(dir, 's.sock'), spawn: driver.spawn })
     await client.callTool('fast', {})
@@ -303,13 +304,13 @@ describe('起、调、停', () => {
     client.dispose()
   })
 
-  it('没带 cua-driver(开发环境没编)→ unsupported,说清怎么补', async () => {
+  it('a missing driver reports unsupported with the configured next step', async () => {
     const client = createCuaClient({ binary: path.join(dir, 'nope'), missingMessage: '还没编原生组件', clientVersion: '1.0', home: dir, platform: 'darwin' })
     expect(client.available()).toMatchObject({ ok: false, message: expect.stringContaining('还没编原生组件') })
     await expect(client.callTool('list_apps', {})).rejects.toMatchObject({ code: 'unsupported' })
   })
 
-  it('守护进程起来就退出:报出来,❌ 一直等', async () => {
+  it('reports a daemon that exits during startup instead of waiting indefinitely', async () => {
     const spawn = (_c: string, args: readonly string[]) => {
       const proc = new FakeProc()
       if (args[0] === 'serve') setTimeout(() => { proc.exitCode = 1; proc.emit('exit', 1, null) }, 10)

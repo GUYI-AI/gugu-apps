@@ -8,10 +8,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCuaClient } from '../../runtime/native/cua-client'
 
 /**
- * #7317 真机:两个任务 + 「电脑」页签同时用电脑时,每一步 18–30 秒、一次读窗口 30 秒超时。cua-driver-rs v0.35.4 的 `mcp` 代理
- * 一次只办一个请求(读一行 → 等守护进程答完 → 写回 → 再读,proxy.rs),守护进程却每条连接各开一个任务(serve.rs),而咕咕
- * 整台机器只起了一个代理 ⇒ 所有 agent 和预览排成一队。这里的假代理照它那样一次办一个,测「一个会话一条道」。
- * 另:cua 的有名会话会被它自己结束(闲置清扫等),普通调用从此被拒,只有 start_session 能把同名的开回来(它的工具说明原话)。
+ * #7317 Device evidence: two tasks and the Computer page sharing one MCP proxy
+ * caused 18–30 second operations and 30 second window-read timeouts. The 0.35.4
+ * proxy handles one request at a time, while the daemon serves connections
+ * concurrently. This serial fixture verifies separate native lanes per session.
+ * A named driver session retired by idle cleanup must be reopened with start_session.
  */
 
 class FakeProc extends EventEmitter {
@@ -39,7 +40,7 @@ afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
-/** 假的 cua-driver:每个 mcp 代理一次只办一个请求,办完才读下一行;answer 可以是异步的。 */
+/** Serial driver fixture: each MCP proxy reads its next request only after the current async answer. */
 function serialDriver(answer: (call: Call) => unknown | Promise<unknown>, options: { socketAfterMs?: number; answersInitialize?: boolean } = {}) {
   const proxies: FakeProc[] = []
   const calls: Call[] = []
@@ -287,7 +288,7 @@ describe('#7317 one lane per cua session', () => {
     cua.dispose()
   })
 
-  it('once 咕咕 quits, a late call does not start cua-driver again', async () => {
+  it('once Gugu quits, a late call does not start cua-driver again', async () => {
     const driver = serialDriver(() => text('ok'))
     const cua = client(driver.spawn)
     await cua.callTool('list_apps', {})
