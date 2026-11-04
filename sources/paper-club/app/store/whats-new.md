@@ -1,1 +1,1 @@
-The market cover and reader screenshots now show highlights and discussion captured in the desktop client. App behaviour is unchanged.
+商店封面和阅读截图换成了桌面客户端里的真实划线与讨论，App 功能没有变化。
