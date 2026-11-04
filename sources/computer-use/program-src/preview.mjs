@@ -111,7 +111,7 @@ export function createComputerPreview({ projection, native, tools, control, show
       const raw = result.structuredContent;
       state.frames.push({ sequence, width: frame.width, height: frame.height, cursor, epoch,
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
-        ...(typeof raw?.capture_id === 'string' ? { captureId: raw.capture_id } : {}), at, target });
+        at, target });
       state.frames = state.frames.slice(-32);
       state.problem = null; changed();
     })).catch(error => { if (valid(state) && state.epoch === epoch) { state.problem = line(error); changed(); } });

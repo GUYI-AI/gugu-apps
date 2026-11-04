@@ -19444,7 +19444,6 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         cursor,
         epoch,
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
-        ...typeof raw?.capture_id === "string" ? { captureId: raw.capture_id } : {},
         at,
         target
       });
