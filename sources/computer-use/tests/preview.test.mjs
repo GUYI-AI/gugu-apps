@@ -99,6 +99,33 @@ test('live capture scale changes advance the picture coordinate revision without
   assert.notEqual(restored.frames.at(-1).coordinateRevision, before.frames.at(-1).coordinateRevision,
     'returning to an old size creates a new coordinate revision');
 });
+
+test('publishing a new coordinate space revokes pending input but permits fresh input on the same viewer', async t => {
+  let windowWidth = 80, heldSignal;
+  const pending = deferred();
+  const f = fixture({ tools: { async call(name, args, who) {
+    if (name === 'type_text') {
+      if (args.text === 'old') { heldSignal = who.signal; return pending.promise; }
+      assert.equal(who.signal.aborted, false, 'new work must not inherit the old revision cancellation');
+      return { content: [] };
+    }
+    const result = shot(); result.structuredContent.window_bounds.width = windowWidth;
+    return result;
+  } } });
+  t.after(() => f.preview.dispose());
+  f.preview.begin(caller(a), 'get_window_state', {})(shot()); f.observe(); await tick();
+  const before = structuredClone(await f.preview.read(a)), driver = f.sources[0].driver;
+  const context = frame => ({ viewer: 'same-viewer', frame });
+  const old = driver.input({ kind: 'text', text: 'old' }, context(before.frames.at(-1)));
+  await tick();
+  assert.equal(heldSignal.aborted, false);
+  windowWidth = 160;
+  const current = structuredClone(await f.preview.read(a, { live: true }));
+  assert.equal(heldSignal.aborted, true, 'coordinate revision publication cancels already admitted old work');
+  assert.equal((await driver.input({ kind: 'text', text: 'new' }, context(current.frames.at(-1)))).status, 'applied');
+  pending.resolve({ content: [] });
+  assert.equal((await old).status, 'unknown', 'an already dispatched boundary remains explicitly uncertain');
+});
 test('a target change discards late capture and decorations from the old window', async t => {
   const pending = deferred();
   const f = fixture({ tools: { call: () => pending.promise } }); t.after(() => f.preview.dispose());

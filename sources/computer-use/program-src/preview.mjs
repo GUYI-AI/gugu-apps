@@ -114,6 +114,9 @@ export function createComputerPreview({ projection, native, tools, control, show
       if (state.coordinateKey !== coordinateKey) {
         state.coordinateKey = coordinateKey;
         state.coordinateRevision++;
+        // Revoke admission synchronously, including operations already awaiting
+        // native permission checks. A later unknown result cannot undo input.
+        state.input.invalidate();
       }
       const coordinateRevision = state.coordinateRevision;
       const sequence = await state.source.publish(frame);

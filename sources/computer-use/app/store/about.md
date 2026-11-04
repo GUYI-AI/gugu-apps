@@ -1,6 +1,6 @@
 Lets agents operate desktop apps on the computer running their task, and shows you what they do.
 
-**The Computer tab**: one per task. On the first successful use, the tab appears beside the task’s conversation without taking you away from the tab you are reading. It shows the real window, the agent’s actually sampled cursor and its recent steps. Each task sees only its own preview. The preview is read-only.
+**The Computer tab**: one per task. On the first successful use, the tab appears beside the task’s conversation without taking you away from the tab you are reading. It shows the real window, the agent’s actually sampled cursor and its recent steps. Each task sees only its own picture. You can click the picture, enter or paste text, and pause or continue the target app.
 
 This App owns its computer tools and native driver. Switch the App off or uninstall it to withdraw those tools and stop its running program. Human blockers return immediately for the agent to discuss in the existing conversation. A person can stop the target app from the compact control bar; display problems do not authorize or block an operation.
 

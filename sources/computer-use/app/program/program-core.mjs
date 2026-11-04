@@ -19464,6 +19464,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       if (state.coordinateKey !== coordinateKey) {
         state.coordinateKey = coordinateKey;
         state.coordinateRevision++;
+        state.input.invalidate();
       }
       const coordinateRevision = state.coordinateRevision;
       const sequence = await state.source.publish(frame);
