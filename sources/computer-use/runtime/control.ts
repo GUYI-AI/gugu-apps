@@ -41,6 +41,8 @@ export interface ComputerControl {
    * 给的是被停的原因(和 begin 拒绝时同一句),没停就是 null。
    */
   stoppedFor(pid: number | undefined): string | null
+  /** A person on a task page targets its observed App, never whichever bar was shown last. */
+  setTargetPaused(call: ComputerCall & { pid: number }, pause: boolean): string | null
   /** 小条上的「停止」。 */
   stop(): void
   /** 小条上的「让它继续」。 */
@@ -152,6 +154,26 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       if (disposed) return 'Computer Use App 已停止'
       if (paused.has('computer')) return COMPUTER_STOPPED
       return pid !== undefined && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null
+    },
+    setTargetPaused(call, pause) {
+      if (disposed) return 'Computer Use App 已停止'
+      if (!Number.isSafeInteger(call.pid) || call.pid <= 0) throw new Error('A known application is required')
+      if (paused.has('computer')) return COMPUTER_STOPPED
+      if (!pause) {
+        // A task-specific Continue cannot undo a whole-computer Stop.
+        paused.delete(call.pid)
+        if (shown?.subject === call.pid && shown.state === 'paused') {
+          shown = null; clearHide(); hide()
+        }
+        return null
+      }
+      paused.set(call.pid, { appName: call.appName, windowId: call.windowId })
+      const reason = appStopped(call.appName)
+      for (const controller of inFlight.get(call.pid) ?? []) controller.abort(reason)
+      show({ subject: call.pid, sessionId: call.sessionId, callerName: call.callerName, taskTitle: call.taskTitle,
+        appName: call.appName, windowId: call.windowId, state: 'paused' })
+      hideAfter(PAUSED_BAR_MS)
+      return reason
     },
     stop() {
       if (disposed) return

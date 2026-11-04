@@ -931,6 +931,34 @@ function createComputerControl(input) {
       if (paused.has("computer")) return COMPUTER_STOPPED;
       return pid !== void 0 && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null;
     },
+    setTargetPaused(call, pause) {
+      if (disposed) return "Computer Use App \u5DF2\u505C\u6B62";
+      if (!Number.isSafeInteger(call.pid) || call.pid <= 0) throw new Error("A known application is required");
+      if (paused.has("computer")) return COMPUTER_STOPPED;
+      if (!pause) {
+        paused.delete(call.pid);
+        if (shown?.subject === call.pid && shown.state === "paused") {
+          shown = null;
+          clearHide();
+          hide();
+        }
+        return null;
+      }
+      paused.set(call.pid, { appName: call.appName, windowId: call.windowId });
+      const reason = appStopped(call.appName);
+      for (const controller of inFlight.get(call.pid) ?? []) controller.abort(reason);
+      show({
+        subject: call.pid,
+        sessionId: call.sessionId,
+        callerName: call.callerName,
+        taskTitle: call.taskTitle,
+        appName: call.appName,
+        windowId: call.windowId,
+        state: "paused"
+      });
+      hideAfter(PAUSED_BAR_MS);
+      return reason;
+    },
     stop() {
       if (disposed) return;
       if (!shown || shown.state !== "driving") return;

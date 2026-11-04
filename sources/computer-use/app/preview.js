@@ -5,10 +5,11 @@ import { startPageContext } from './page-context.js';
 const gugu = window.gugu;
 const $ = id => document.getElementById(id);
 const ui = { stage: $('stage'), frame: $('frame'), canvas: $('cursor'), what: $('what'), when: $('when'),
-  empty: $('empty'), emptyTitle: $('empty-title'), alert: $('alert') };
+  empty: $('empty'), emptyTitle: $('empty-title'), alert: $('alert'), place: $('place'), target: $('target'), pause: $('pause') };
 const TEXT = {
   'zh-CN': {
     outside: '在任务里打开，才能看到 agent 的操作',
+    local: '本机', remote: '远端', pause: '暂停操作', resume: '继续操作', noTarget: '尚未观察到窗口',
     idle: 'agent 操作电脑时，画面会显示在这里',
     loading: '正在获取画面…',
     unseen: '暂时看不到画面',
@@ -23,6 +24,7 @@ const TEXT = {
   },
   'en-US': {
     outside: 'Open it in a task to see what the agent does',
+    local: 'Local', remote: 'Remote', pause: 'Pause operation', resume: 'Continue operation', noTarget: 'No observed window',
     idle: 'When the agent uses the computer, it shows here',
     loading: 'Getting the picture…',
     unseen: 'Cannot see the screen right now',
@@ -39,6 +41,7 @@ const TEXT = {
 
 let context = null, text = TEXT['zh-CN'], player = null, pending = null, timer = null;
 let generation = 0, resource = null, view = null, live = false;
+let controlTask = null, controlRevision = null, paused = false, controlling = false;
 const sessionId = () => context?.workspace?.sessionId ?? null;
 const visible = () => context?.layout?.visible !== false;
 const cursor = createPaintedCursor({
@@ -65,6 +68,7 @@ function describe(action) {
 }
 function reset() {
   generation++; resource = null; live = false; clearTimeout(timer); timer = null;
+  controlTask = null; controlRevision = null; ui.pause.disabled = true;
   if (view) void view.close().catch(() => {});
   view = null; ui.frame.replaceChildren(); cursor.reset();
   player?.destroy(); player = null;
@@ -95,6 +99,13 @@ async function apply(state) {
   const said = [state.target?.app, latest && describe(latest), state.liveProblem && `${text.stale}${state.liveProblem}`].filter(Boolean).join(' · ');
   ui.what.textContent = said;
   await mount(state.projection);
+  controlTask = state.target?.pid && state.projection ? sessionId() : null;
+  controlRevision = state.targetRevision;
+  paused = state.paused === true;
+  ui.place.textContent = `Computer Use · ${context?.workspace?.deviceId ? text.remote : text.local}`;
+  ui.target.textContent = state.target?.app ?? (state.target?.pid ? `PID ${state.target.pid}` : text.noTarget);
+  ui.pause.textContent = paused ? text.resume : text.pause;
+  ui.pause.disabled = !controlTask || controlling;
   cursor.frames(state.frames);
   const last = state.frames.at(-1);
   if (last) ui.when.setAttribute('datetime', last.at);
@@ -121,6 +132,19 @@ async function refresh(options = {}) {
   }
 }
 async function start() {
+  ui.pause.addEventListener('click', async () => {
+    if (controlling || !controlTask || controlTask !== sessionId()) return;
+    const task = controlTask, epoch = generation;
+    controlling = true; ui.pause.disabled = true;
+    try {
+      const result = await gugu.callProgram('preview_control', { action: paused ? 'resume' : 'pause', projection: resource, targetRevision: controlRevision });
+      if (task !== sessionId() || epoch !== generation) return;
+      if (result.isError) throw new Error(result.content?.find(block => block.type === 'text')?.text ?? 'Control failed');
+      if (paused && result.structuredContent?.paused) error(result.structuredContent.reason ?? 'This computer is still paused.');
+      void refresh({ live: result.structuredContent?.paused !== true });
+    } catch (reason) { if (task === sessionId() && epoch === generation) error(reason); }
+    finally { controlling = false; ui.pause.disabled = !controlTask || controlTask !== sessionId(); }
+  });
   new ResizeObserver(() => cursor.resize()).observe(ui.frame);
   gugu.onProgramNotification(notification => {
     if (context && notification.method === 'notifications/computer-use/changed') void refresh();

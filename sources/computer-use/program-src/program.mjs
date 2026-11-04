@@ -9,6 +9,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const failed = (code, text) => ({ isError: true, content: [{ type: 'text', text }], structuredContent: { code } });
 const pageTools = [
   { name: 'preview_state', description: 'Read only this page’s host-bound task preview metadata. Pictures travel through its authorized projection resource.', inputSchema: { type: 'object', properties: { live: { type: 'boolean' } }, additionalProperties: false }, _meta: { ui: { visibility: ['app'] } } },
+  { name: 'preview_control', description: 'Pause or continue the observed application in this task. Only the person using this task page can call it.', inputSchema: { type: 'object', properties: { action: { type: 'string', enum: ['pause', 'resume'] }, projection: { type: 'string' }, targetRevision: { type: 'integer', minimum: 1 } }, required: ['action', 'projection', 'targetRevision'], additionalProperties: false }, _meta: { ui: { visibility: ['app'] } } },
   { name: 'permissions_state', description: 'Read the running driver’s macOS system permission state without requesting permission.', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, _meta: { ui: { visibility: ['app'] } } },
   { name: 'open_system_settings', description: 'Open the selected fixed macOS permission settings pane. This does not grant permission; refresh permissions_state afterwards.', inputSchema: { type: 'object', properties: { permission: { type: 'string', enum: ['accessibility', 'screen'] } }, required: ['permission'], additionalProperties: false }, _meta: { ui: { visibility: ['app'] } } },
 ];
@@ -48,6 +49,15 @@ export function createComputerProgram({ specs, native, platform = process.platfo
       timer?.unref?.();
       try {
         if (fromPage) {
+          if (params.name === 'preview_control') {
+            if (meta['gugu/agent']) return failed('not_granted', 'Only the person using this task page may pause or continue its application.');
+            if (Object.keys(args).some(key => !['action', 'projection', 'targetRevision'].includes(key)) || !['pause', 'resume'].includes(args.action)
+              || typeof args.projection !== 'string' || !Number.isSafeInteger(args.targetRevision) || args.targetRevision < 1) return failed('invalid_args', 'Choose pause or resume for the current picture revision. The host selects this task and its observed application.');
+            if (typeof session !== 'string' || !uuid.test(session)) return failed('not_granted', 'Open Computer Use in a task first.');
+            const value = preview?.control(session, args.action, args);
+            if (!value) return failed('unavailable', 'This task has no active Computer Use picture.');
+            return { content: [{ type: 'text', text: value.paused ? 'The application is paused.' : 'The application can continue.' }], structuredContent: value };
+          }
           if (params.name === 'preview_state') {
             if (Object.keys(args).some(key => key !== 'live') || (args.live !== undefined && typeof args.live !== 'boolean')) return failed('invalid_args', 'preview_state accepts only live. The host selects the task.');
             const bound = typeof session === 'string' && uuid.test(session) ? session : null;

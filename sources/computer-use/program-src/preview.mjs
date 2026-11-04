@@ -197,7 +197,21 @@ export function createComputerPreview({ projection, native, tools, control, show
       return { session: typeof session === 'string', actions: state?.actions ?? [], target,
         projection: state?.source?.id ?? null, frames: state?.frames ?? [],
         live: !!(state?.source && positive(target?.pid) && positive(target?.window_id)),
+        paused: !!(target && control?.stoppedFor(target.pid)),
+        targetRevision: state?.epoch ?? null,
         liveProblem: state?.problem ?? null };
+    },
+    control(session, action, expected) {
+      const state = tasks.get(session);
+      if (!state || !valid(state) || !positive(state.target?.pid) || !control?.setTargetPaused) throw new Error('No observed application is available in this task.');
+      if (expected?.projection !== state.source?.id || expected?.targetRevision !== state.epoch) throw new Error('The task picture or target changed. Refresh before controlling it.');
+      state.input.invalidate();
+      const { target, caller } = state;
+      const reason = control.setTargetPaused({ pid: target.pid, windowId: target.window_id, appName: target.app,
+        sessionId: session, callerName: caller.name, taskTitle: caller.taskTitle }, action === 'pause');
+      state.problem = reason;
+      changed();
+      return { paused: !!reason, ...(reason ? { reason } : {}) };
     },
     dispose() { if (disposed) return; disposed = true; for (const state of [...tasks.values()]) close(state); background.emitDestroy(); },
   };

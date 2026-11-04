@@ -19576,8 +19576,28 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         projection: state?.source?.id ?? null,
         frames: state?.frames ?? [],
         live: !!(state?.source && positive(target?.pid) && positive(target?.window_id)),
+        paused: !!(target && control?.stoppedFor(target.pid)),
+        targetRevision: state?.epoch ?? null,
         liveProblem: state?.problem ?? null
       };
+    },
+    control(session, action, expected) {
+      const state = tasks.get(session);
+      if (!state || !valid(state) || !positive(state.target?.pid) || !control?.setTargetPaused) throw new Error("No observed application is available in this task.");
+      if (expected?.projection !== state.source?.id || expected?.targetRevision !== state.epoch) throw new Error("The task picture or target changed. Refresh before controlling it.");
+      state.input.invalidate();
+      const { target, caller } = state;
+      const reason = control.setTargetPaused({
+        pid: target.pid,
+        windowId: target.window_id,
+        appName: target.app,
+        sessionId: session,
+        callerName: caller.name,
+        taskTitle: caller.taskTitle
+      }, action === "pause");
+      state.problem = reason;
+      changed();
+      return { paused: !!reason, ...reason ? { reason } : {} };
     },
     dispose() {
       if (disposed) return;
@@ -19594,6 +19614,7 @@ var uuid2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var failed = (code, text) => ({ isError: true, content: [{ type: "text", text }], structuredContent: { code } });
 var pageTools = [
   { name: "preview_state", description: "Read only this page\u2019s host-bound task preview metadata. Pictures travel through its authorized projection resource.", inputSchema: { type: "object", properties: { live: { type: "boolean" } }, additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } },
+  { name: "preview_control", description: "Pause or continue the observed application in this task. Only the person using this task page can call it.", inputSchema: { type: "object", properties: { action: { type: "string", enum: ["pause", "resume"] }, projection: { type: "string" }, targetRevision: { type: "integer", minimum: 1 } }, required: ["action", "projection", "targetRevision"], additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } },
   { name: "permissions_state", description: "Read the running driver\u2019s macOS system permission state without requesting permission.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } },
   { name: "open_system_settings", description: "Open the selected fixed macOS permission settings pane. This does not grant permission; refresh permissions_state afterwards.", inputSchema: { type: "object", properties: { permission: { type: "string", enum: ["accessibility", "screen"] } }, required: ["permission"], additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } }
 ];
@@ -19638,6 +19659,14 @@ function createComputerProgram({ specs, native, platform = process.platform, pro
       timer?.unref?.();
       try {
         if (fromPage) {
+          if (params.name === "preview_control") {
+            if (meta2["gugu/agent"]) return failed("not_granted", "Only the person using this task page may pause or continue its application.");
+            if (Object.keys(args).some((key2) => !["action", "projection", "targetRevision"].includes(key2)) || !["pause", "resume"].includes(args.action) || typeof args.projection !== "string" || !Number.isSafeInteger(args.targetRevision) || args.targetRevision < 1) return failed("invalid_args", "Choose pause or resume for the current picture revision. The host selects this task and its observed application.");
+            if (typeof session !== "string" || !uuid2.test(session)) return failed("not_granted", "Open Computer Use in a task first.");
+            const value2 = preview?.control(session, args.action, args);
+            if (!value2) return failed("unavailable", "This task has no active Computer Use picture.");
+            return { content: [{ type: "text", text: value2.paused ? "The application is paused." : "The application can continue." }], structuredContent: value2 };
+          }
           if (params.name === "preview_state") {
             if (Object.keys(args).some((key2) => key2 !== "live") || args.live !== void 0 && typeof args.live !== "boolean") return failed("invalid_args", "preview_state accepts only live. The host selects the task.");
             const bound = typeof session === "string" && uuid2.test(session) ? session : null;
