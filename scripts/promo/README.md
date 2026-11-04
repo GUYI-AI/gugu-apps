@@ -15,11 +15,16 @@ All product images below already existed in the corresponding App before this ar
 | `context.html` | `store/screenshots/1.jpg` | `59ae3c46fd132ec75b1cfd0973282286cf5286b1e7b902388079d824dd9dc287` |
 | `browser-use.html` | `store/screenshots/1.jpg` | `b20cc7ea678d121fd35558f0874b7675365f3663792425f0f47dd6e2a67b9f90` |
 | `computer-use.html` | `store/screenshots/settings.jpg` | `1c5711fdb83f78a416d689f28cb6a5626150bb74d09968c9646797a72e3a1c2b` |
+| `data-lens.html` | `store/screenshots/1-native.png` | `0591bc4de1572fa28d3249769df7e147de59dd83f51f64f96b1a17fb01bbcba6` |
 | `day-calendar.html` | `store/screenshots/side.png` | `78e9df4611db4ee671d483c98c6d045770afe5af2482ea2e22e304e49b354acd` |
 | `forum.html` | `store/screenshots/3.jpg` | `7662ae08cfe657102729704636ed8aba783024410b911d19aed9eadd0b54c69b` |
-| `kanban.html` | `store/screenshots/1.jpg` | `d6ebdf117d10c533efb984be017840f6aca80c5a95536055326e8140920e582b` |
+| `kanban.html` | `store/screenshots/1.jpg` | `339866f4d5f9a1777da860619fa9bafda967aee8da9fc0528a5d4664fd41a030` |
 | `office.html` | `store/screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
 | `omnisearch.html` | `store/screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |
 | `paper-club.html` | `store/screenshots/1.jpg` | `4bdfec7a8a7d7fd6611d5318083a9f0485d84a34b2e1771e073fd33f235c4fe5` |
 | `radar.html` | `store/screenshots/1.jpg` | `d4f58bc74dabf211407cabdd9436cc35503a36bc06d7de33a1ce22dc5bd69d49` |
 | `turtle-soup.html` | `store/screenshots/1.jpg` | `ac5df95fc41ff375b0516b61e9bc1b34a248e9bd335152f015c1f4cca503f0cc` |
+
+## Teamboard and Data Lens native-image refresh
+
+The Teamboard 1.4.1 and Data Lens 0.1.3 artwork uses actual desktop captures of the preceding App versions, installed through the normal market UI. The final board and chart use native device-scale-2 pixels; the cover canvas stays at scale 1. Electron 44.0.0 / Chromium 152.0.7977.54 on macOS 26.5.1 rendered the covers with PingFang SC, the existing font fallback. See each App's `store/SOURCE.md` for the crop sizes and the retained earlier gallery images. The layouts, icons, colours and wording remain fixed; the new Data Lens template reuses the shared frame and constrains the product image to its native size or smaller.
