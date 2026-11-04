@@ -215,7 +215,7 @@ test('the explore page: tables listed, a query run, a view switched, a card draf
   await tab.close()
 })
 
-test('explore charts stay bounded while the host stack and resize observer lay them out', async () => {
+test('explore charts stay bounded while the host stack and resize observer lay them out', async (t) => {
   const { tab, errors } = await open('explore.html', { file: { chat: 'chat:1', id: 'csv' }, files: { csv: { name: '销售.csv', version: 1, text: true } } }, { width: 1280, height: 900 })
   try {
     // The host supplies .stack (app-runtime/ui/ui.css); the stand-in has no host layout by default.
@@ -235,11 +235,12 @@ test('explore charts stay bounded while the host stack and resize observer lay t
         for (let frame = 0; frame < 12; frame++) {
           await new Promise(requestAnimationFrame)
           const stage = document.querySelector('.explore-stage').getBoundingClientRect()
-          const plot = document.querySelector('.explore-stage svg').getBoundingClientRect()
+          const plot = document.querySelector('.explore-stage [aria-label="bar"]').closest('svg').getBoundingClientRect()
           samples.push({ stage: stage.height, plot: plot.height, viewport: innerHeight })
         }
         return samples
       })
+      t.diagnostic(JSON.stringify({ width, frames }))
       assert.ok(frames.every((sample) => sample.stage <= sample.viewport && sample.plot <= sample.stage + 1), `chart fits its viewport and stage at ${width}px: ${JSON.stringify(frames)}`)
       assert.ok(frames.every((sample) => Math.abs(sample.stage - frames[0].stage) <= 1), `repainting does not grow the stage at ${width}px: ${JSON.stringify(frames)}`)
     }
