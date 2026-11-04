@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.3
+## 0.1.4
 
 - Keep explore charts within their allocated height when the host lays out the page as a vertical stack.
 - Clarify that colored bars are stacked; side-by-side grouped bars are not supported.
