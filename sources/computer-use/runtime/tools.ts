@@ -8,7 +8,7 @@ import { resolveCallTargets } from './targets'
 import { resolveComputerWindow } from './placement'
 
 type NativeSpec = { name: string; description?: string; input_schema?: Args; inputSchema?: Args }
-export type ToolCaller = { agent: string; session: string; name?: string; taskTitle?: string; signal?: AbortSignal; remainingMs?: () => number; preview?: boolean }
+export type ToolCaller = { agent: string; session: string; name?: string; taskTitle?: string; signal?: AbortSignal; remainingMs?: () => number; preview?: boolean; humanViewer?: string }
 const failure = (code: string, message: string): CuaToolResult => ({ isError: true, content: [{ type: 'text', text: message }], structuredContent: { code } })
 const object = (v: unknown): v is Args => !!v && typeof v === 'object' && !Array.isArray(v)
 
@@ -79,7 +79,10 @@ export function createComputerTools(input: {
       }
       if (caller.signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')
       const owner = 'gugu-' + createHash('sha256').update(caller.agent + '\0' + caller.session).digest('hex').slice(0, 20)
-      const lane = caller.preview ? owner + '-preview' : owner
+      // The App's source callback owns this viewer id; it is never accepted from tool arguments.
+      // Disconnecting a person's input cannot retire an agent's or another viewer's native lane.
+      const lane = caller.humanViewer ? owner + '-human-' + createHash('sha256').update(caller.humanViewer).digest('hex').slice(0, 12)
+        : caller.preview ? owner + '-preview' : owner
       const launching = name === 'launch_app'
       const target = await resolveCallTargets({ name, args: forwardArgs, owner, apps, native: input.cua, signal: caller.signal,
         ...(tool.kind === 'act' ? { control: input.control } : {}) })

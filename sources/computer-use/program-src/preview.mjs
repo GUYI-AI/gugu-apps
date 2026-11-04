@@ -1,6 +1,7 @@
 import { AsyncResource } from 'node:async_hooks';
 import { PNG } from 'pngjs';
 import { cursorOnWindow, resolveComputerWindow } from '../app/program/native-runtime.mjs';
+import { createPreviewInput } from './preview-input.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const positive = value => Number.isSafeInteger(value) && value > 0;
@@ -45,6 +46,7 @@ export function createComputerPreview({ projection, native, tools, control, show
   const valid = state => !disposed && !state.abort.signal.aborted && tasks.get(state.session) === state;
   const retire = state => {
     state.abort.abort();
+    state.input?.close();
     state.frames.length = 0;
     if (tasks.get(state.session) === state) tasks.delete(state.session);
   };
@@ -62,6 +64,13 @@ export function createComputerPreview({ projection, native, tools, control, show
     state = { session: caller.session, caller: { ...caller, signal: undefined, remainingMs: undefined },
       abort: new AbortController(), actions: [], frames: [], target: null, epoch: 0,
       lastAt: -Infinity, took: 0, capture: null, publishing: Promise.resolve(), source: null, opening: true, problem: null };
+    state.input = createPreviewInput({ state: () => state, valid, tools, control, now,
+      refresh: () => detached(async () => {
+        await state.capture;
+        if (!valid(state)) return;
+        state.lastAt = -Infinity;
+        await capture(state);
+      }) });
     tasks.set(caller.session, state);
     if (tasks.size > 16) close(tasks.values().next().value);
     acquire(state);
@@ -72,8 +81,8 @@ export function createComputerPreview({ projection, native, tools, control, show
     // Only acquisition uses the actual live call. Later refresh/publish uses this held resource.
     try {
       const opening = projection.create({
-        input: async () => ({ status: 'rejected', reason: 'This task preview is read-only. No input was sent.' }),
-        disconnect: async () => {},
+        input: (input, context) => detached(() => state.input.input(input, context)),
+        disconnect: async viewer => state.input.disconnect(viewer),
         refresh: () => detached(() => capture(state)),
         close: async () => { retire(state); changed(); },
       });
@@ -99,8 +108,10 @@ export function createComputerPreview({ projection, native, tools, control, show
       const target = state.target && { ...state.target };
       const sequence = await state.source.publish(frame);
       if (!valid(state) || state.epoch !== epoch) return;
-      state.frames.push({ sequence, width: frame.width, height: frame.height, cursor,
-        at, target });
+      const raw = result.structuredContent;
+      state.frames.push({ sequence, width: frame.width, height: frame.height, cursor, epoch,
+        inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
+        ...(typeof raw?.capture_id === 'string' ? { captureId: raw.capture_id } : {}), at, target });
       state.frames = state.frames.slice(-32);
       state.problem = null; changed();
     })).catch(error => { if (valid(state) && state.epoch === epoch) { state.problem = line(error); changed(); } });
@@ -151,6 +162,7 @@ export function createComputerPreview({ projection, native, tools, control, show
       // A new actual observation supersedes a live capture started earlier,
       // even when both pictures describe the same window.
       state.epoch++;
+      state.input.invalidate();
       state.caller = { ...caller, signal: undefined, remainingMs: undefined };
       const returned = record(raw.target) ? raw.target : raw;
       const nextPid = positive(returned.pid) ? returned.pid : pid;

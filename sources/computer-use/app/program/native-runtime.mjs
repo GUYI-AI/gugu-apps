@@ -1649,7 +1649,7 @@ function createComputerTools(input) {
       }
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
       const owner = "gugu-" + createHash4("sha256").update(caller.agent + "\0" + caller.session).digest("hex").slice(0, 20);
-      const lane = caller.preview ? owner + "-preview" : owner;
+      const lane = caller.humanViewer ? owner + "-human-" + createHash4("sha256").update(caller.humanViewer).digest("hex").slice(0, 12) : caller.preview ? owner + "-preview" : owner;
       const launching = name === "launch_app";
       const target = await resolveCallTargets({
         name,

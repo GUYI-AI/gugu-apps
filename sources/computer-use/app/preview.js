@@ -75,9 +75,8 @@ async function mount(id) {
   const epoch = generation;
   if (!id) return;
   ui.stage.hidden = false;
-  // The existing Computer tab is a read-only preview. The generic transport's
-  // input machinery remains inactive here; its driver also rejects every input.
-  ui.frame.inert = true;
+  // The shared surface handles pointer, committed IME text and paste in the picture.
+  // The App validates the acknowledged target frame and applies native input.
   const mounted = await gugu.projection.mount(ui.frame, id, {
     painted(frame) {
       if (epoch !== generation) return;

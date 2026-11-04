@@ -113,7 +113,14 @@ test('held preview refresh/publish does not inherit an ended or concurrent task 
   await tick();
   await f.context.run('unrelated-call', () => f.sources[0].driver.refresh());
   assert(f.contexts.length >= 1); assert(f.contexts.every(value => value === undefined));
-  assert.deepEqual(await f.sources[0].driver.input({ kind: 'key' }), { status: 'rejected', reason: 'This task preview is read-only. No input was sent.' });
+  const frame = (await f.preview.read(a)).frames.at(-1);
+  const result = await f.context.run('unrelated-call', () => f.sources[0].driver.input({ kind: 'text', text: '你好', source: 'ime' }, {
+    viewer: 'person-a', frame, signal: new AbortController().signal,
+  }));
+  assert.equal(result.status, 'applied');
+  const typed = f.calls.find(value => value.name === 'type_text');
+  assert.equal(typed.who.session, a); assert.equal(typed.who.humanViewer, 'person-a');
+  assert(f.contexts.every(value => value === undefined));
 });
 test('revocation aborts in-flight preview and retires private resources; LRU bounds task state', async t => {
   let signal; const pending = deferred();

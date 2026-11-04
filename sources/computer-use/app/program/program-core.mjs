@@ -19139,6 +19139,159 @@ import { createComputerTools, NativeCallError } from "./native-runtime.mjs";
 var import_pngjs = __toESM(require_png(), 1);
 import { AsyncResource } from "node:async_hooks";
 import { cursorOnWindow, resolveComputerWindow } from "./native-runtime.mjs";
+
+// program-src/preview-input.mjs
+var targetKey = (target) => target ? `${target.pid}:${target.window_id}` : "";
+var point = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+var rejected = (reason) => ({ status: "rejected", reason });
+var applied = () => ({ status: "applied" });
+var uncertain = (reason) => ({ status: "unknown", reason: `Input may have been applied. Check the target before trying again. ${reason}` });
+var modifiers = (values) => values?.map((value) => ({ meta: "cmd", control: "ctrl", alt: "alt", shift: "shift" })[value]);
+var keyNames = {
+  Enter: "return",
+  Escape: "escape",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
+  Backspace: "backspace",
+  Delete: "delete",
+  Tab: "tab",
+  Home: "home",
+  End: "end",
+  PageUp: "pageup",
+  PageDown: "pagedown"
+};
+var modifierKeys = /* @__PURE__ */ new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "CapsLock", "NumLock"]);
+var preflightFailures = /* @__PURE__ */ new Set(["not_found", "not_granted", "unsupported", "invalid_args", "needs_confirmation", "os_permission"]);
+function createPreviewInput({ state: readState, valid, tools, control, refresh, now = Date.now }) {
+  const gestures = /* @__PURE__ */ new Map(), operations = /* @__PURE__ */ new Map();
+  let closed = false;
+  function disconnect(viewer) {
+    gestures.delete(viewer);
+    for (const controller of operations.get(viewer) ?? []) controller.abort(new Error("Viewer disconnected"));
+    operations.delete(viewer);
+  }
+  function invalidate() {
+    for (const viewer of /* @__PURE__ */ new Set([...gestures.keys(), ...operations.keys()])) disconnect(viewer);
+  }
+  return {
+    disconnect,
+    invalidate,
+    close() {
+      closed = true;
+      invalidate();
+    },
+    async input(input, context) {
+      const state = readState(), viewer = context?.viewer;
+      const down = gestures.get(viewer);
+      if (input?.kind === "pointer" && input.action === "up") gestures.delete(viewer);
+      if (closed || !valid(state) || state.abort.signal.aborted || context?.signal?.aborted) return rejected("This view is no longer active. Refresh it before sending input.");
+      if (typeof viewer !== "string" || !viewer || viewer.length > 256) return rejected("The input viewer is unavailable.");
+      const frame = state.frames.findLast((frame2) => frame2.sequence === context.frame?.sequence);
+      const age = frame ? now() - Date.parse(frame.at) : NaN;
+      if (!frame || !frame.inputReady || frame.epoch !== state.epoch || targetKey(frame.target) !== targetKey(state.target) || frame.width !== context.frame.width || frame.height !== context.frame.height || !Number.isFinite(age) || age < 0 || age > 15e3) {
+        return rejected("The window picture is stale or its coordinates are unavailable. Refresh the view before sending input.");
+      }
+      const stopped = control?.stoppedFor(frame.target.pid);
+      if (stopped) return rejected(stopped);
+      if (input?.modifiers !== void 0 && (!Array.isArray(input.modifiers) || input.modifiers.length > 4 || input.modifiers.some((value) => !["alt", "control", "meta", "shift"].includes(value)))) return rejected("Invalid modifiers.");
+      const target = { kind: "window", pid: frame.target.pid, window_id: frame.target.window_id };
+      const at = () => ({
+        x: Math.min(frame.width - 1, Math.round(input.x * frame.width)),
+        y: Math.min(frame.height - 1, Math.round(input.y * frame.height))
+      });
+      let name, args = { target, delivery_mode: "background" };
+      if (input?.kind === "pointer") {
+        if (!point(input.x) || !point(input.y) || !["left", "middle", "right"].includes(input.button)) return rejected("Invalid pointer coordinates.");
+        if (input.action === "down") {
+          if (gestures.size >= 32 && !gestures.has(viewer)) return rejected("Too many pending gestures.");
+          gestures.set(viewer, { ...at(), button: input.button, epoch: state.epoch, target: targetKey(frame.target) });
+          return applied();
+        }
+        if (input.action === "move") return applied();
+        if (input.action !== "up" || !down || down.button !== input.button || down.epoch !== state.epoch || down.target !== targetKey(frame.target)) {
+          return rejected("The gesture ended or its window changed. No click was sent.");
+        }
+        const to = at(), moved = Math.hypot(to.x - down.x, to.y - down.y) > 2;
+        name = moved ? "drag" : "click";
+        args = {
+          ...args,
+          button: input.button,
+          ...moved ? { from_x: down.x, from_y: down.y, to_x: to.x, to_y: to.y } : to,
+          ...input.modifiers?.length ? { modifier: modifiers(input.modifiers) } : {}
+        };
+      } else if (input?.kind === "text") {
+        if (typeof input.text !== "string" || input.text.length > 64 * 1024) return rejected("Invalid committed text.");
+        if (!input.text) return applied();
+        name = "type_text";
+        args.text = input.text;
+      } else if (input?.kind === "key") {
+        if (!["down", "up"].includes(input.action) || typeof input.key !== "string") return rejected("Invalid key input.");
+        if (input.action === "up" || modifierKeys.has(input.key)) return applied();
+        const key2 = keyNames[input.key] ?? (/^F(?:[1-9]|1\d|2[0-4])$/.test(input.key) ? input.key.toLowerCase() : input.key.length === 1 && input.modifiers?.some((value) => ["meta", "control", "alt"].includes(value)) ? input.key : null);
+        if (!key2) return rejected("This key is not supported; committed text must use the text channel.");
+        name = "press_key";
+        args = { ...args, key: key2, ...input.modifiers?.length ? { modifiers: modifiers(input.modifiers) } : {} };
+      } else if (input?.kind === "wheel") {
+        if (!point(input.x) || !point(input.y) || !Number.isFinite(input.deltaX) || !Number.isFinite(input.deltaY) || Math.abs(input.deltaX) > 1e4 || Math.abs(input.deltaY) > 1e4) return rejected("Invalid wheel input.");
+        if (input.modifiers?.length) return rejected("Modified wheel input is not supported. No scroll was sent.");
+        const horizontal = Math.abs(input.deltaX) > Math.abs(input.deltaY), delta = horizontal ? input.deltaX : input.deltaY;
+        if (!delta) return applied();
+        name = "scroll";
+        args = {
+          ...args,
+          ...at(),
+          direction: horizontal ? delta > 0 ? "right" : "left" : delta > 0 ? "down" : "up",
+          amount: Math.min(50, Math.max(1, Math.ceil(Math.abs(delta) / 100)))
+        };
+      } else return rejected("Unsupported picture input.");
+      const controller = new AbortController(), epoch = state.epoch;
+      const pending = operations.get(viewer) ?? /* @__PURE__ */ new Set();
+      pending.add(controller);
+      operations.set(viewer, pending);
+      const signal = AbortSignal.any([state.abort.signal, controller.signal, ...context.signal ? [context.signal] : []]);
+      const who = { ...state.caller, preview: true, humanViewer: viewer, signal };
+      try {
+        if (signal.aborted || !valid(state)) return rejected("Input was cancelled before dispatch.");
+        if (input.kind === "pointer" || input.kind === "wheel") {
+          const fresh = await tools.call("get_window_state", {
+            target,
+            include_screenshot: true,
+            include_accessibility_tree: false,
+            display_only: true,
+            max_dimension: 1280
+          }, who);
+          const raw = fresh?.structuredContent, actual = raw?.target ?? raw;
+          if (fresh?.isError || actual?.pid !== target.pid || actual?.window_id !== target.window_id || raw?.screenshot_width !== frame.width || raw?.screenshot_height !== frame.height) {
+            return rejected("The window or its picture size changed. Refresh the view before sending input.");
+          }
+          if (signal.aborted || !valid(state) || state.epoch !== epoch || control?.stoppedFor(target.pid)) return rejected("Input was cancelled before dispatch.");
+          if (name === "click" && typeof raw.capture_id === "string") args.capture_id = raw.capture_id;
+        }
+        const result = await tools.call(name, args, who);
+        if (signal.aborted || !valid(state) || state.epoch !== epoch) return uncertain("The view changed while input was in flight.");
+        if (result?.isError) {
+          const reason = String(result.content?.find((block) => block.type === "text")?.text ?? "The native operation was not confirmed.").slice(0, 1e3);
+          return preflightFailures.has(result.structuredContent?.code) ? rejected(reason) : uncertain(reason);
+        }
+        try {
+          void Promise.resolve(refresh()).catch(() => {
+          });
+        } catch {
+        }
+        return applied();
+      } catch (error2) {
+        return uncertain(String(error2).slice(0, 1e3));
+      } finally {
+        pending.delete(controller);
+        if (!pending.size && operations.get(viewer) === pending) operations.delete(viewer);
+      }
+    }
+  };
+}
+
+// program-src/preview.mjs
 var record2 = (value) => value && typeof value === "object" && !Array.isArray(value);
 var positive = (value) => Number.isSafeInteger(value) && value > 0;
 var key = (target) => target ? `${target.pid}:${target.window_id}` : "";
@@ -19188,6 +19341,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
   const valid = (state) => !disposed && !state.abort.signal.aborted && tasks.get(state.session) === state;
   const retire = (state) => {
     state.abort.abort();
+    state.input?.close();
     state.frames.length = 0;
     if (tasks.get(state.session) === state) tasks.delete(state.session);
   };
@@ -19219,6 +19373,19 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       opening: true,
       problem: null
     };
+    state.input = createPreviewInput({
+      state: () => state,
+      valid,
+      tools,
+      control,
+      now,
+      refresh: () => detached(async () => {
+        await state.capture;
+        if (!valid(state)) return;
+        state.lastAt = -Infinity;
+        await capture(state);
+      })
+    });
     tasks.set(caller.session, state);
     if (tasks.size > 16) close(tasks.values().next().value);
     acquire(state);
@@ -19229,9 +19396,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
     state.acquireAt = now();
     try {
       const opening = projection.create({
-        input: async () => ({ status: "rejected", reason: "This task preview is read-only. No input was sent." }),
-        disconnect: async () => {
-        },
+        input: (input, context) => detached(() => state.input.input(input, context)),
+        disconnect: async (viewer) => state.input.disconnect(viewer),
         refresh: () => detached(() => capture(state)),
         close: async () => {
           retire(state);
@@ -19270,11 +19436,15 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       const target = state.target && { ...state.target };
       const sequence = await state.source.publish(frame);
       if (!valid(state) || state.epoch !== epoch) return;
+      const raw = result.structuredContent;
       state.frames.push({
         sequence,
         width: frame.width,
         height: frame.height,
         cursor,
+        epoch,
+        inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
+        ...typeof raw?.capture_id === "string" ? { captureId: raw.capture_id } : {},
         at,
         target
       });
@@ -19357,6 +19527,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       if (!state || result.isError || !valid(state)) return;
       const raw = record2(result.structuredContent) ? result.structuredContent : {};
       state.epoch++;
+      state.input.invalidate();
       state.caller = { ...caller, signal: void 0, remainingMs: void 0 };
       const returned = record2(raw.target) ? raw.target : raw;
       const nextPid = positive(returned.pid) ? returned.pid : pid;
