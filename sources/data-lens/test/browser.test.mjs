@@ -223,8 +223,8 @@ test('explore charts stay bounded while the host stack and resize observer lay t
     await tab.waitForSelector('table tbody tr')
     await tab.locator('textarea').fill('SELECT 区域 AS category, 季度 AS series, 金额 AS total FROM t WHERE 金额 IS NOT NULL')
     await tab.getByRole('button', { name: /Run|运行/ }).click()
-    await tab.getByLabel('y', { exact: true }).selectOption('total')
-    await tab.getByLabel('color', { exact: true }).selectOption('series')
+    await tab.getByRole('combobox', { name: /^y/ }).selectOption('total')
+    await tab.getByRole('combobox', { name: /^color/ }).selectOption('series')
     await tab.getByLabel('Kind').selectOption('bar')
     await tab.waitForSelector('.stage svg g[aria-label="bar"] rect')
     for (const width of [1280, 480]) {
