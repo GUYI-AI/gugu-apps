@@ -78,7 +78,11 @@ export function createComputerTools(input: {
       const owner = 'gugu-' + createHash('sha256').update(caller.agent + '\0' + caller.session).digest('hex').slice(0, 20)
       const pid = apps.pidOf(owner, forwardArgs)
       if (pid !== undefined && self.pids.has(pid)) return failure('invalid_args', 'The target belongs to the protected host.')
-      const handle = input.control?.begin({ ...(pid === undefined ? {} : { pid }), ...(caller.name ? { callerName: caller.name } : {}), windowId: apps.windowOf(owner, forwardArgs) })
+      const handle = tool.kind === 'act' ? input.control?.begin({
+        ...(pid === undefined ? {} : { pid, appName: apps.nameOf(pid) }),
+        ...(caller.name ? { callerName: caller.name } : {}),
+        windowId: apps.windowOf(owner, forwardArgs),
+      }) : undefined
       if (handle && 'refused' in handle) return failure('revoked', handle.refused)
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal
       try {
@@ -95,8 +99,12 @@ export function createComputerTools(input: {
         if (signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')
         const forward = object(definition.schema.properties) && 'session' in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs
         const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...(caller.remainingMs ? { remainingMs: caller.remainingMs } : {}), timeoutMs: tool.timeoutMs?.(args) ?? 60_000 })
+        if (handle?.signal.aborted) return failure('revoked', String(handle.signal.reason))
         if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs)
         return result
+      } catch (error) {
+        if (handle?.signal.aborted) return failure('revoked', String(handle.signal.reason))
+        throw error
       } finally { handle?.end() }
     },
   }

@@ -1,10 +1,12 @@
 // Migrated from OpenDCAI/gugu@1f8cd5f3a81df091d25a81f6838f186c33504a95: apps/desktop/electron/device-actions/computer-control.ts
+import { programLogger } from './log'
+
 /**
  * #7199 电脑控制的「正在操作 · 停止」小条与人接管 —— 按 App 算,不按整台电脑算(owner 10-15:「不接管电脑,只接管这个 App」):
  *
- * - agent 动某个 App(看也算:人该知道有人在看它),在实际目标窗口内浮一枚小条「<谁> 正在操作「<App>」 · 停止」;
- *   没指定 App 的动作(列 App、读屏幕大小、整屏截图、挪 agent 自己的鼠标)是「<谁> 正在查看这台电脑」,
- *   它不盖掉已经亮着的条(正在操作的 App、或人刚停下的 App)。最后一个动作做完半分钟没有下一个,小条收起。
+ * - 只有操作才登记控制；查看窗口不亮条、不刷新条。提示由宿主的通用不抢焦点浮层尽量显示，
+ *   浮层失败不影响动作许可。未指定 App 的操作也更新当前对象，让停止作用于当前动作。
+ *   最后一个动作做完半分钟没有下一个,小条收起。
  * - 人照常用电脑 —— 包括点进、挪动 agent 正在操作的那个 App —— 都不打断它:cua-driver 在后台做事,不碰人的真鼠标和前台。
  * - 「停止」只停小条上的那个 App:它在途的动作中断,之后 agent 再动这个 App 一律拒,直到人点「让它继续」;别的 App 照常。
  *   小条上是「正在查看这台电脑」时按停止 = 整个电脑控制停下。
@@ -12,8 +14,8 @@
 
 /** 小条本身(main 用一个不抢焦点、不进截图的置顶小窗实现;测试换成记录器)。没有 app = 没指定 App(查看这台电脑);app 没 name = 认不出名字的 App。 */
 export interface ComputerControlView {
-  show(view: { state: 'driving' | 'paused'; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): void
-  hide(): void
+  show(view: { state: 'driving' | 'paused'; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): unknown
+  hide(): unknown
 }
 
 /** 一个动作:针对哪个 App(pid;不指定 App 的动作没有)。 */
@@ -51,11 +53,12 @@ export const COMPUTER_STOPPED = 'The person pressed Stop on the bar at the botto
 
 const LINGER_MS = 30_000
 const PAUSED_BAR_MS = 2 * 60_000
+const log = programLogger('control-display')
 
 /** 停的对象:一个 App(pid),或整个电脑控制。 */
 type Subject = number | 'computer'
 
-export function createComputerControl(input: { view: ComputerControlView; lingerMs?: number }): ComputerControl {
+export function createComputerControl(input: { view: ComputerControlView; lingerMs?: number; onViewError?(error: unknown): void }): ComputerControl {
   let disposed = false
   const lingerMs = input.lingerMs ?? LINGER_MS
   /** 被人停了的:pid(或 'computer')→ 当时的 App 名(拒绝时说给 agent 听)。 */
@@ -63,6 +66,20 @@ export function createComputerControl(input: { view: ComputerControlView; linger
   const inFlight = new Map<Subject, Set<AbortController>>()
   let shown: { subject: Subject; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
   let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Display delivery is advisory. Neither an exception, a rejection nor a
+  // never-settling surface update can become an action permission decision.
+  const reportViewError = (error: unknown) => {
+    try {
+      if (input.onViewError) input.onViewError(error)
+      else log.warn({ error: String(error) }, 'Computer Use display failed')
+    } catch { /* A display error reporter cannot prevent input or cancellation. */ }
+  }
+  const display = (work: () => unknown) => {
+    try { void Promise.resolve(work()).catch(reportViewError) }
+    catch (error) { reportViewError(error) }
+  }
+  const hide = () => display(() => input.view.hide())
 
   const clearHide = () => {
     if (hideTimer) clearTimeout(hideTimer)
@@ -72,19 +89,19 @@ export function createComputerControl(input: { view: ComputerControlView; linger
     clearHide()
     hideTimer = setTimeout(() => {
       shown = null
-      input.view.hide()
+      hide()
     }, ms)
     ;(hideTimer as { unref?: () => void }).unref?.()
   }
   const show = (next: NonNullable<typeof shown>) => {
     shown = next
     clearHide()
-    input.view.show({
+    display(() => input.view.show({
       state: next.state,
       ...(next.callerName ? { callerName: next.callerName } : {}),
       ...(next.taskTitle ? { taskTitle: next.taskTitle } : {}),
       ...(next.subject === 'computer' ? {} : { app: { pid: next.subject, ...(next.appName ? { name: next.appName } : {}), ...(next.windowId !== undefined ? { windowId: next.windowId } : {}) } }),
-    })
+    }))
   }
   const busy = () => [...inFlight.values()].some((set) => set.size > 0)
 
@@ -106,12 +123,8 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       const set = inFlight.get(subject) ?? new Set<AbortController>()
       set.add(controller)
       inFlight.set(subject, set)
-      // 没指定 App 的动作不盖掉已经亮着的条:正在操作的 App 留着让人认得出、能停;暂停的留着让人点得到「让它继续」。
-      if (call.pid !== undefined || !shown) {
-        const windowId = call.windowId
-        show({ subject, ...identity, ...(call.appName ? { appName: call.appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'driving' })
-      }
-      else if (shown.state === 'driving') clearHide()
+      const windowId = call.windowId
+      show({ subject, ...identity, ...(call.appName ? { appName: call.appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'driving' })
       let ended = false
       return {
         signal: controller.signal,
@@ -119,6 +132,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
           if (ended) return
           ended = true
           set.delete(controller)
+          if (set.size === 0) inFlight.delete(subject)
           if (!busy() && shown?.state === 'driving') hideAfter(lingerMs)
         },
       }
@@ -148,7 +162,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       paused.delete(shown.subject)
       shown = null
       clearHide()
-      input.view.hide()
+      hide()
     },
     dispose() {
       disposed = true
@@ -157,7 +171,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       paused.clear()
       shown = null
       clearHide()
-      input.view.hide()
+      hide()
     },
   }
 }

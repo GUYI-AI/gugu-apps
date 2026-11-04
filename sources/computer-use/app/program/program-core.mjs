@@ -19141,11 +19141,11 @@ var pageTools = [
   { name: "permissions_state", description: "Read the running driver\u2019s macOS system permission state without requesting permission.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } },
   { name: "open_system_settings", description: "Open the selected fixed macOS permission settings pane. This does not grant permission; refresh permissions_state afterwards.", inputSchema: { type: "object", properties: { permission: { type: "string", enum: ["accessibility", "screen"] } }, required: ["permission"], additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } }
 ];
-function createComputerProgram({ specs, native, platform = process.platform, protectedHost, settings, log = console, notify = async () => {
+function createComputerProgram({ specs, native, platform = process.platform, protectedHost, settings, control, log = console, notify = async () => {
 } }) {
   let disposed = false;
   const lifetime = new AbortController();
-  const tools = createComputerTools({ cua: native, specs, platform, protectedHost });
+  const tools = createComputerTools({ cua: native, specs, platform, protectedHost, control });
   const definitions = tools.list().map((tool) => ({ ...tool, _meta: { ui: { visibility: ["model"] } } }));
   return {
     list: () => [...definitions, ...pageTools],
@@ -19198,6 +19198,7 @@ function createComputerProgram({ specs, native, platform = process.platform, pro
       if (disposed) return;
       disposed = true;
       lifetime.abort();
+      control?.dispose();
       native.dispose();
     }
   };

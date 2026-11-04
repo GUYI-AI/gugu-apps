@@ -12,10 +12,10 @@ const pageTools = [
 ];
 
 /** Caller metadata is accepted only on the private host-owned MCP transport, never in arguments. */
-export function createComputerProgram({ specs, native, platform = process.platform, protectedHost, settings, log = console, notify = async () => {} }) {
+export function createComputerProgram({ specs, native, platform = process.platform, protectedHost, settings, control, log = console, notify = async () => {} }) {
   let disposed = false;
   const lifetime = new AbortController();
-  const tools = createComputerTools({ cua: native, specs, platform, protectedHost });
+  const tools = createComputerTools({ cua: native, specs, platform, protectedHost, control });
   const definitions = tools.list().map(tool => ({ ...tool, _meta: { ui: { visibility: ['model'] } } }));
   return {
     list: () => [...definitions, ...pageTools],
@@ -68,6 +68,7 @@ export function createComputerProgram({ specs, native, platform = process.platfo
       if (disposed) return;
       disposed = true;
       lifetime.abort();
+      control?.dispose();
       native.dispose();
     },
   };

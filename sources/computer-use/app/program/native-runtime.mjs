@@ -842,6 +842,7 @@ function appStopped(appName) {
 var COMPUTER_STOPPED = 'The person pressed Stop on the bar at the bottom of their screen. Do not use computer.* until they press "\u7EE7\u7EED / Continue" on that bar. Tell them what you have done and what is left.';
 var LINGER_MS = 3e4;
 var PAUSED_BAR_MS = 2 * 6e4;
+var log2 = programLogger("control-display");
 function createComputerControl(input) {
   let disposed = false;
   const lingerMs = input.lingerMs ?? LINGER_MS;
@@ -849,6 +850,21 @@ function createComputerControl(input) {
   const inFlight = /* @__PURE__ */ new Map();
   let shown = null;
   let hideTimer = null;
+  const reportViewError = (error) => {
+    try {
+      if (input.onViewError) input.onViewError(error);
+      else log2.warn({ error: String(error) }, "Computer Use display failed");
+    } catch {
+    }
+  };
+  const display = (work) => {
+    try {
+      void Promise.resolve(work()).catch(reportViewError);
+    } catch (error) {
+      reportViewError(error);
+    }
+  };
+  const hide = () => display(() => input.view.hide());
   const clearHide = () => {
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = null;
@@ -857,19 +873,19 @@ function createComputerControl(input) {
     clearHide();
     hideTimer = setTimeout(() => {
       shown = null;
-      input.view.hide();
+      hide();
     }, ms);
     hideTimer.unref?.();
   };
   const show = (next) => {
     shown = next;
     clearHide();
-    input.view.show({
+    display(() => input.view.show({
       state: next.state,
       ...next.callerName ? { callerName: next.callerName } : {},
       ...next.taskTitle ? { taskTitle: next.taskTitle } : {},
       ...next.subject === "computer" ? {} : { app: { pid: next.subject, ...next.appName ? { name: next.appName } : {}, ...next.windowId !== void 0 ? { windowId: next.windowId } : {} } }
-    });
+    }));
   };
   const busy = () => [...inFlight.values()].some((set) => set.size > 0);
   return {
@@ -880,8 +896,8 @@ function createComputerControl(input) {
       const blockedBy = paused.has("computer") ? "computer" : paused.has(subject) ? subject : null;
       if (blockedBy !== null) {
         const appName = blockedBy === "computer" ? void 0 : paused.get(blockedBy)?.appName ?? call.appName;
-        const windowId = blockedBy === "computer" ? void 0 : call.windowId ?? paused.get(blockedBy)?.windowId;
-        show({ subject: blockedBy, ...identity, ...appName ? { appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "paused" });
+        const windowId2 = blockedBy === "computer" ? void 0 : call.windowId ?? paused.get(blockedBy)?.windowId;
+        show({ subject: blockedBy, ...identity, ...appName ? { appName } : {}, ...windowId2 !== void 0 ? { windowId: windowId2 } : {}, state: "paused" });
         hideAfter(PAUSED_BAR_MS);
         return { refused: blockedBy === "computer" ? COMPUTER_STOPPED : appStopped(appName) };
       }
@@ -889,10 +905,8 @@ function createComputerControl(input) {
       const set = inFlight.get(subject) ?? /* @__PURE__ */ new Set();
       set.add(controller);
       inFlight.set(subject, set);
-      if (call.pid !== void 0 || !shown) {
-        const windowId = call.windowId;
-        show({ subject, ...identity, ...call.appName ? { appName: call.appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "driving" });
-      } else if (shown.state === "driving") clearHide();
+      const windowId = call.windowId;
+      show({ subject, ...identity, ...call.appName ? { appName: call.appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "driving" });
       let ended = false;
       return {
         signal: controller.signal,
@@ -900,6 +914,7 @@ function createComputerControl(input) {
           if (ended) return;
           ended = true;
           set.delete(controller);
+          if (set.size === 0) inFlight.delete(subject);
           if (!busy() && shown?.state === "driving") hideAfter(lingerMs);
         }
       };
@@ -929,7 +944,7 @@ function createComputerControl(input) {
       paused.delete(shown.subject);
       shown = null;
       clearHide();
-      input.view.hide();
+      hide();
     },
     dispose() {
       disposed = true;
@@ -938,7 +953,7 @@ function createComputerControl(input) {
       paused.clear();
       shown = null;
       clearHide();
-      input.view.hide();
+      hide();
     }
   };
 }
@@ -1528,7 +1543,11 @@ function createComputerTools(input) {
       const owner = "gugu-" + createHash4("sha256").update(caller.agent + "\0" + caller.session).digest("hex").slice(0, 20);
       const pid = apps.pidOf(owner, forwardArgs);
       if (pid !== void 0 && self.pids.has(pid)) return failure("invalid_args", "The target belongs to the protected host.");
-      const handle = input.control?.begin({ ...pid === void 0 ? {} : { pid }, ...caller.name ? { callerName: caller.name } : {}, windowId: apps.windowOf(owner, forwardArgs) });
+      const handle = tool.kind === "act" ? input.control?.begin({
+        ...pid === void 0 ? {} : { pid, appName: apps.nameOf(pid) },
+        ...caller.name ? { callerName: caller.name } : {},
+        windowId: apps.windowOf(owner, forwardArgs)
+      }) : void 0;
       if (handle && "refused" in handle) return failure("revoked", handle.refused);
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal;
       try {
@@ -1543,8 +1562,12 @@ function createComputerTools(input) {
         if (signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
         const forward = object2(definition.schema.properties) && "session" in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs;
         const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}, timeoutMs: tool.timeoutMs?.(args) ?? 6e4 });
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
         if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs);
         return result;
+      } catch (error) {
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
+        throw error;
       } finally {
         handle?.end();
       }
