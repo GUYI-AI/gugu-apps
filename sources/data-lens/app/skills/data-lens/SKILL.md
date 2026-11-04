@@ -1,6 +1,6 @@
 ---
 name: data-lens
-description: Chart or tabulate a chat's data file (.csv, .tsv, .xlsx, .xls, .ods, .sqlite, .db) as an interactive card in the chat. Use when someone asks to analyse, summarise, chart, pivot or compare data in a file in the chat.
+description: Analyse, chart or tabulate a chat's data file (.csv, .tsv, .xlsx, .xls, .ods, .sqlite, .db) as an interactive card. Use for summaries, pivots, exploratory analysis, group comparisons or statistical questions about a chat file; host-side Python can produce derived CSV results for the same card workflow.
 ---
 
 # Data Lens cards
@@ -19,6 +19,32 @@ goes into the message. Never paste the data itself into a message or the card.
    `data` (file pinned to its current version, at most 4096 bytes).
 4. `widget_send { chat_id, app: "data-lens", view: "card", text, data }` with that `data` as it is. `text` (1–200
    characters) says in words what the card shows and its key finding — it is what notifications and older clients show.
+
+## Analysis beyond SQL
+
+Use the steps above for questions SQLite can answer. For data quality, distributions or relationships, read
+[exploratory analysis](references/exploratory-analysis.md). For inference, tests or effect estimates, read
+[statistical analysis](references/statistical-analysis.md). Both are adapted from K-Dense's MIT skills;
+[sources, attribution and licence](references/K-Dense-NOTICE.md) are bundled here.
+
+Python runs on **your agent's host machine**, not inside Data Lens. The App remains read-only:
+
+1. Obtain a local copy of the chosen chat file and version through your host's available file-read/download tool.
+   A `gugu-file://` reference is not a local path. Schema samples and `data_query` output can be truncated; do not
+   treat them as the full input for statistical inference. Record the source version, analysed scope and missing-data policy.
+2. Run the analysis with your host's Python tools in a task directory, preserving the input. Use available packages
+   appropriate to the method; record their versions and any random seed. Data Lens does not supply Python or install packages.
+3. Write a **new UTF-8 CSV** containing the computed result, headers and units. Keep numbers numeric and unavailable
+   estimates blank rather than zero. For tests, include sample sizes, effect estimates, interval bounds and p-values
+   where applicable. Keep the runnable analysis alongside it; do not overwrite the source or embed raw data in a card.
+4. Send that local CSV to the **same chat** with your host's existing file-send tool (for example
+   `message_send_file { chat_id, file_path }`). Use the file reference returned by that successful send; do not invent
+   an id, substitute a local path or ask the App to write/upload it. Report a missing host capability or failed run/send
+   instead of claiming a result exists.
+5. Run `data_schema`, `data_query`, `data_card` on the **returned CSV reference**, then send its exact `data` with
+   `widget_send` as above. A `table` suits statistical results with intervals; existing charts do not render error bars.
+   State the method, source version and material limitations in the accompanying explanation. An exploratory pattern
+   is not a confirmed effect, and a card is a view of the computed file rather than proof that the method is valid.
 
 ## Views
 
