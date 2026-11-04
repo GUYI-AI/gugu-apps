@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "apiVersion": 25,
   "platforms": [
     "desktop",
