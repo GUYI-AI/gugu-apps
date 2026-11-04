@@ -1,6 +1,10 @@
 import { assignmentStatus, bountyLabel, bountyTone, forumError, latestRequest, settlementWindow, timeLeft, validateAwards } from './core.mjs'
 
+import { createForumApi } from './forum-api.mjs'
+
 const g = window.gugu
+const context = await g.getContext()
+const forum = createForumApi(g, context.locale)
 const $ = (id) => document.getElementById(id)
 const PAGE = 30
 const state = {
@@ -142,7 +146,7 @@ async function loadFeed() {
     let done = false
     let me
     for (let offset = 0; offset < wanted; offset += PAGE) {
-      const result = await g.forum.list({ ...query, limit: PAGE, offset })
+      const result = await forum.list({ ...query, limit: PAGE, offset })
       if (!feedRequest.current(ticket) || disposed) return
       posts.push(...result.posts)
       me = result.me
@@ -166,7 +170,7 @@ function reactions(kind, id) {
   const existing = state.detail.reactions.filter((r) => r.targetKind === kind && r.targetId === id && r.count > 0)
   const postId = state.postId
   const toggle = (emoji, reaction) => writeButton(`${emoji} ${reaction?.count ?? ''}`.trim(), () => {
-    void runWrite(() => g.forum.react({ kind, id, emoji, on: !reaction?.mine }), () => loadPost(postId))
+    void runWrite(() => forum.react({ kind, id, emoji, on: !reaction?.mine }), () => loadPost(postId))
   }, false, { 'aria-pressed': String(!!reaction?.mine), 'aria-label': `${reaction?.mine ? '取消' : '添加'}表情 ${emoji}，${reaction?.count ?? 0} 人` })
   const row = h('div', { class: 'reactions', 'aria-label': '表情' }, ...existing.map((r) => toggle(r.emoji, r)))
   const unused = ['👍', '❤️', '🎉', '🤔'].filter((emoji) => !existing.some((r) => r.emoji === emoji))
@@ -186,9 +190,9 @@ function menu(person, remove) {
   if (person?.id && person.id !== state.detail.me.id) {
     items.push(
       writeButton('拉黑此人', () => ask('拉黑此人', `拉黑「${person.name || '此用户'}」后，对方及其 agent 无法回复你的帖子。私聊不受影响。`, () =>
-        g.forum.block(person.id, true).then(() => say('已拉黑。')))),
+        forum.block(person.id, true).then(() => say('已拉黑。')))),
       writeButton('取消拉黑', () => {
-        void runWrite(() => g.forum.block(person.id, false), () => say('已取消拉黑。'))
+        void runWrite(() => forum.block(person.id, false), () => say('已取消拉黑。'))
       }),
     )
   }
@@ -214,11 +218,10 @@ function renderAwardControls() {
       const current = [...state.selected].map(([reply, amount]) => ({ reply, amount }))
       const invalid = validateAwards(state.detail.bounty, state.detail.replies, current, state.detail.me.id)
       if (invalid) { error({ message: invalid }, invalid); return }
-      void runWrite(() => g.forum.award(postId, current), (result) => {
-        if (result?.confirming) say('已打开采纳确认框，结算完成后会自动更新。')
-        else void loadPost(postId)
+      void runWrite(() => forum.award(postId, current), (result) => {
+        if (result?.status) void loadPost(postId)
       })
-    }, !!problem, { class: 'primary', title: problem || '由咕咕确认积分分配后结算' }),
+    }, !!problem, { class: 'primary', title: problem || '确认积分分配后结算' }),
   )
   for (const li of $('replies').children) li.classList.toggle('picked', state.selected.has(li.dataset.reply))
 }
@@ -257,9 +260,8 @@ function renderBounty() {
     h('span', { class: 'coin' }, icon(tone === 'awarded' ? 'check' : 'coins')),
     h('span', { class: 'amount', text: `${bounty.amount} 积分悬赏` }),
     own && bounty.status === 'open' ? h('span', { class: 'acts' }, writeButton('结束悬赏', () => {
-      void runWrite(() => g.forum.award(postId, []), (result) => {
-        if (result?.confirming) say('已打开结束悬赏确认框，结算完成后会自动更新。')
-        else void loadPost(postId)
+      void runWrite(() => forum.award(postId, []), (result) => {
+        if (result?.status) void loadPost(postId)
       })
     }, !window.canClose)) : h('span', { class: 'acts' }),
     h('span', { class: 'sub' }, ...sub),
@@ -308,7 +310,7 @@ function renderReply(reply, index) {
   }
   const remove = reply.owner?.id === me.id || post.author?.id === me.id
     ? writeButton('删除回复', () => ask('删除回复', '删除后此回复不再显示；已产生的悬赏回答记录不会因此撤销。', () =>
-      g.forum.remove({ reply: reply.id }).then(() => loadPost(postId))), false, { class: 'danger' }) : null
+      forum.remove({ reply: reply.id }).then(() => loadPost(postId))), false, { class: 'danger' }) : null
   const parent = replies.find((r) => r.id === reply.replyTo)
   return h('li', { class: `reply${accepted ? ' accepted' : ''}${state.selected.has(reply.id) ? ' picked' : ''}`, id: `reply-${reply.id}`, 'data-reply': reply.id },
     avatar(reply.author, 'md'),
@@ -344,7 +346,7 @@ function renderAssignments() {
     section.append(h('span', { class: 'agent', title: '已投递表示任务已受理，不表示已完成回复。' },
       h('span', { class: `dot ${assignment.deliveryState}` }), h('strong', { text: assignment.agentName || 'agent' }),
       h('span', { class: 'muted', text: status.label }), h('span', { class: 'muted' }, time(assignment.updatedAt)),
-      status.canReassign ? writeButton('重新指派', () => assignAgent(postId, assignment.agentId), closed) : null))
+      status.canReassign ? writeButton('重新指派', () => assignAgent(postId), closed) : null))
   }
   section.append(writeButton('指派 agent', () => assignAgent(postId), closed))
   for (const assignment of assignments) {
@@ -352,9 +354,9 @@ function renderAssignments() {
     if (note) section.append(h('p', { class: 'note', text: note }))
   }
 }
-function assignAgent(postId, agentId) {
+function assignAgent(postId) {
   void runWrite(
-    () => agentId ? g.forum.assign(postId, agentId) : g.forum.assign(postId),
+    () => forum.assign(postId, state.detail.post.title),
     (result) => {
       if (result?.assigned) say('已指派 agent。')
     },
@@ -365,7 +367,7 @@ function renderPost() {
   const postId = state.postId
   const own = post.author?.id === me.id
   const remove = own ? writeButton('删除帖子', () => ask('删除帖子', '删除后帖子及其回复将不再显示。', () =>
-    g.forum.remove({ post: postId }).then(() => { if (state.postId === postId) go('') })), bounty?.status === 'open', { class: 'danger', title: bounty?.status === 'open' ? '请先结束悬赏' : null }) : null
+    forum.remove({ post: postId }).then(() => { if (state.postId === postId) go('') })), bounty?.status === 'open', { class: 'danger', title: bounty?.status === 'open' ? '请先结束悬赏' : null }) : null
   $('post-content').replaceChildren(
     h('h2', { text: post.title }),
     h('div', { class: 'byline' }, avatar(post.author, 'md'),
@@ -394,7 +396,7 @@ async function loadPost(id = state.postId) {
   const ticket = postRequest.start()
   $('post-loading').hidden = false
   try {
-    const detail = await g.forum.read(id)
+    const detail = await forum.read(id)
     if (!postRequest.current(ticket) || state.postId !== id || disposed) return
     state.detail = detail
     state.me = { ...state.me, ...detail.me }
@@ -441,7 +443,7 @@ function route() {
     $('assignments').replaceChildren()
     $('reply-form').hidden = true
     $('reply-body').value = currentDraft().text
-    stopPost = g.forum.onChanged(postId, (change) => {
+    stopPost = forum.onChanged(postId, (change) => {
       if (change.kind === 'settled' || change.kind === 'assigned') say('')
       void loadPost(postId)
     })
@@ -489,10 +491,8 @@ $('draft').addEventListener('submit', (event) => {
       return
     }
   }
-  void runWrite(() => g.forum.post(draft), (result) => {
-    if (result?.confirming) {
-      say('已打开悬赏确认框，确认后列表会自动更新；草稿已保留。')
-    } else if (result?.post) {
+  void runWrite(() => forum.post(draft), (result) => {
+    if (result?.post) {
       if ($('draft-title').value.trim() === draft.title && $('draft-body').value.trim() === draft.body) {
         $('draft').reset()
         $('bounty-fields').hidden = true
@@ -511,7 +511,7 @@ $('reply-form').addEventListener('submit', (event) => {
   const text = $('reply-body').value.trim()
   const replyTo = currentDraft().replyTo
   if (!text || text.length > 20000) { error({ message: 'forum_body_invalid' }); return }
-  void runWrite(() => g.forum.reply(postId, text, replyTo ? { replyTo } : {}), async () => {
+  void runWrite(() => forum.reply(postId, text, replyTo ? { replyTo } : {}), async () => {
     const saved = state.drafts.get(postId)
     const unchanged = saved?.text.trim() === text && saved?.replyTo === replyTo
     if (unchanged) state.drafts.delete(postId)
@@ -534,10 +534,10 @@ function dispose() {
 }
 window.addEventListener('pagehide', dispose)
 try {
-  if (!g?.forum?.list || !g?.forum?.onChanged) {
+  if (!g?.backend?.rpc || !g?.backend?.subscribe || !g?.pickAgent) {
     throw new Error('forum_api_unavailable')
   }
-  stopFeed = g.forum.onChanged('feed', () => void loadFeed())
+  stopFeed = forum.onChanged('feed', () => void loadFeed())
   route()
 } catch (reason) {
   if (reason?.message === 'forum_api_unavailable') {

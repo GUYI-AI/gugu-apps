@@ -62,7 +62,7 @@ const bounty = { amount: 10, status: 'open', posterId: 'me', visibility: 'poster
 const reply = (id, extra = {}) => ({ id, body: 'Answer ' + id, createdAt: iso(now), author, owner: author, ...extra })
 const detail = (extra = {}) => ({ me, post: { id: 'p', title: 'Question', body: '<b>plain text</b>', author: { ...author, id: 'me' }, createdAt: iso(now) }, bounty, replies: [reply('a'), reply('b')], reactions: [], assignments: [], ...extra })
 
-function page(overrides = {}, hash = '') {
+async function page(overrides = {}, hash = '') {
   const document = new Element('document')
   const stack = [document]
   for (const token of html.match(/<[^>]+>|[^<]+/g)) {
@@ -84,8 +84,8 @@ function page(overrides = {}, hash = '') {
   window.location = { get hash() { return currentHash }, set hash(value) { currentHash = value ? '#' + value.replace(/^#/, '') : ''; queueMicrotask(() => window.emit('hashchange')) } }
   const forum = {
     list: () => Promise.resolve({ me, posts: [] }), read: () => Promise.resolve(detail()),
-    post: () => Promise.resolve({ confirming: true }), reply: () => Promise.resolve({ reply: 'new' }),
-    react: () => Promise.resolve({}), award: () => Promise.resolve({ confirming: true }),
+    post: () => Promise.resolve({ cancelled: true }), reply: () => Promise.resolve({ reply: 'new' }),
+    react: () => Promise.resolve({}), award: () => Promise.resolve({ cancelled: true }),
     assign: () => Promise.resolve({ cancelled: true }), block: () => Promise.resolve({}), remove: () => Promise.resolve({}), ...overrides,
     onChanged(id, fn) { const entry = { id, fn, stopped: false }; subscriptions.push(entry); return () => { entry.stopped = true } },
   }
@@ -93,8 +93,8 @@ function page(overrides = {}, hash = '') {
     const fn = forum[key]
     forum[key] = (...args) => { calls.push({ method: key, args: plain(args), gesture }); return fn(...args) }
   }
-  window.gugu = { forum }
-  runInNewContext(source.replace(/^import .*\n/, ''), { ...core, window, document, console,
+  window.gugu = { backend: { rpc() {}, subscribe() {} }, pickAgent() {}, getContext: async () => ({ locale: 'zh-CN' }) }
+  await runInNewContext(`(async () => { ${source.replace(/^import .*\n/gm, '')} })()`, { ...core, createForumApi: () => forum, window, document, console,
     setTimeout(fn, ms) { const id = ++timer; timers.set(id, { fn, ms }); return id }, clearTimeout(id) { timers.delete(id) },
   }, { filename: 'forum.js' })
   const fire = (node, event = 'click') => { assert.ok(node, 'control exists'); gesture = true; try { node.emit(event) } finally { gesture = false } }
@@ -105,7 +105,7 @@ function page(overrides = {}, hash = '') {
 }
 
 test('feed tabs, compact metadata and empty states retain the list query contract', async () => {
-  const p = page({ list: () => Promise.resolve({ me, posts: [{ id: 'p', title: 'Topic', excerpt: 'Summary', author, createdAt: iso(now), replyCount: 0, bounty }] }) })
+  const p = await page({ list: () => Promise.resolve({ me, posts: [{ id: 'p', title: 'Topic', excerpt: 'Summary', author, createdAt: iso(now), replyCount: 0, bounty }] }) })
   await flush()
   assert.equal(p.$('balance').textContent, '40 积分')
   const row = p.$('posts').firstElementChild.firstElementChild
@@ -123,7 +123,7 @@ test('feed tabs, compact metadata and empty states retain the list query contrac
   p.$('query').value = ' needle '
   p.fire(p.$('query'), 'input')
   assert.equal([...p.timers.values()][0].ms, 250)
-  const empty = page()
+  const empty = await page()
   await flush()
   assert.equal(empty.$('empty').querySelector('strong').textContent, '还没有帖子')
   empty.fire(empty.$('filter').children[2])
@@ -133,7 +133,7 @@ test('feed tabs, compact metadata and empty states retain the list query contrac
 })
 
 test('post confirmation preserves the draft and invokes the same write during the gesture', async () => {
-  const p = page({}, '#new')
+  const p = await page({}, '#new')
   p.$('draft-title').value = ' Title '
   p.$('draft-body').value = ' Body '
   p.$('with-bounty').checked = true
@@ -144,13 +144,13 @@ test('post confirmation preserves the draft and invokes the same write during th
   assert.equal(write.gesture, true)
   await flush()
   assert.equal(p.$('draft-body').value, ' Body ')
-  assert.match(p.$('notice').textContent, /草稿已保留/)
+  assert.equal(p.$('notice').textContent, '')
   assert.equal(p.$('compose').hidden, true)
 })
 
 test('award toggles stay inline, retain confirmation selection and clear after settlement', async () => {
   let model = detail()
-  const p = page({ read: () => Promise.resolve(model) }, '#post/p')
+  const p = await page({ read: () => Promise.resolve(model) }, '#post/p')
   await flush()
   const first = p.$('replies').children[0]
   p.fire(first.querySelector('.pick'))
@@ -176,7 +176,7 @@ test('award toggles stay inline, retain confirmation selection and clear after s
 })
 
 test('reaction pills hide unused counts and retain the react arguments', async () => {
-  const p = page({ read: () => Promise.resolve(detail({ reactions: [{ targetKind: 'post', targetId: 'p', emoji: '👍', count: 7, mine: true }] })) }, '#post/p')
+  const p = await page({ read: () => Promise.resolve(detail({ reactions: [{ targetKind: 'post', targetId: 'p', emoji: '👍', count: 7, mine: true }] })) }, '#post/p')
   await flush()
   const row = p.$('post-content').querySelector('.reactions')
   assert.equal(row.children.filter((node) => node.tagName === 'button').length, 2)
@@ -188,11 +188,11 @@ test('reaction pills hide unused counts and retain the react arguments', async (
 })
 
 test('reply, assignment and destructive menus keep host arguments and cancellation handling', async () => {
-  const p = page({ read: () => Promise.resolve(detail({ assignments: ['pending', 'delivered', 'undelivered', 'turn_failed'].map((deliveryState) => ({ deliveryState, agentId: deliveryState, agentName: deliveryState, updatedAt: iso(now) })) })) }, '#post/p')
+  const p = await page({ read: () => Promise.resolve(detail({ assignments: ['pending', 'delivered', 'undelivered', 'turn_failed'].map((deliveryState) => ({ deliveryState, agentId: deliveryState, agentName: deliveryState, updatedAt: iso(now) })) })) }, '#post/p')
   await flush()
   assert.equal(p.$('assignments').querySelectorAll('button').filter((node) => node.textContent === '重新指派').length, 1)
   p.fire(p.button(p.$('assignments'), '重新指派'))
-  assert.deepEqual(p.calls.find((call) => call.method === 'assign').args, ['p', 'turn_failed'])
+  assert.deepEqual(p.calls.find((call) => call.method === 'assign').args, ['p', 'Question'])
   await flush()
   assert.equal(p.$('notice').textContent, '')
   const first = p.$('replies').firstElementChild
@@ -217,7 +217,7 @@ test('reply, assignment and destructive menus keep host arguments and cancellati
 test('late list responses, post switches and disposal cannot replace a newer page', async () => {
   const old = deferred(), fresh = deferred()
   let reads = 0
-  const p = page({ list: () => (++reads === 1 ? old : fresh).promise })
+  const p = await page({ list: () => (++reads === 1 ? old : fresh).promise })
   p.fire(p.$('filter').children[1])
   fresh.resolve({ me, posts: [] })
   await flush()
@@ -225,7 +225,7 @@ test('late list responses, post switches and disposal cannot replace a newer pag
   await flush()
   assert.equal(p.$('balance').textContent, '40 积分')
   const first = deferred(), second = deferred()
-  const q = page({ read: (id) => (id === 'first' ? first : second).promise }, '#post/first')
+  const q = await page({ read: (id) => (id === 'first' ? first : second).promise }, '#post/first')
   q.window.location.hash = 'post/second'
   await flush()
   assert.equal(q.subscriptions.find((entry) => entry.id === 'first').stopped, true)
@@ -243,14 +243,14 @@ test('late list responses, post switches and disposal cannot replace a newer pag
 })
 
 test('ending a bounty and deleting content still use explicit host actions', async () => {
-  const p = page({}, '#post/p')
+  const p = await page({}, '#post/p')
   await flush()
   p.fire(p.button(p.$('bounty-card'), '结束悬赏'))
   assert.deepEqual(p.calls.find((call) => call.method === 'award').args, ['p', []])
   assert.equal(p.calls.find((call) => call.method === 'award').gesture, true)
   await flush()
-  assert.match(p.$('notice').textContent, /确认框/)
-  const q = page({ read: () => Promise.resolve(detail({ bounty: null })) }, '#post/p')
+  assert.equal(p.$('notice').textContent, '')
+  const q = await page({ read: () => Promise.resolve(detail({ bounty: null })) }, '#post/p')
   await flush()
   assert.equal(q.$('bounty-card').hidden, true)
   assert.equal(q.$('award-bar').hidden, true)
@@ -267,15 +267,15 @@ test('ending a bounty and deleting content still use explicit host actions', asy
 })
 
 test('assignment success is reported only for an assigned result and disposal suppresses late notices', async () => {
-  const p = page({ assign: () => Promise.resolve({ assigned: { agent: 'chosen' } }) }, '#post/p')
+  const p = await page({ assign: () => Promise.resolve({ assigned: { agent: 'chosen' } }) }, '#post/p')
   await flush()
   p.fire(p.button(p.$('assignments'), '指派 agent'))
-  assert.deepEqual(p.calls.find((call) => call.method === 'assign').args, ['p'])
+  assert.deepEqual(p.calls.find((call) => call.method === 'assign').args, ['p', 'Question'])
   assert.equal(p.calls.find((call) => call.method === 'assign').gesture, true)
   await flush()
   assert.equal(p.$('notice').textContent, '已指派 agent。')
   const result = deferred()
-  const q = page({ assign: () => result.promise }, '#post/p')
+  const q = await page({ assign: () => result.promise }, '#post/p')
   await flush()
   q.fire(q.button(q.$('assignments'), '指派 agent'))
   q.fire(q.window, 'pagehide')
@@ -286,7 +286,7 @@ test('assignment success is reported only for an assigned result and disposal su
 
 test('a deleted post hides the sticky award bar and plain bodies never become markup', async () => {
   let missing = false
-  const p = page({ read: () => missing ? Promise.reject(new Error('forum_post_not_found')) : Promise.resolve(detail()) }, '#post/p')
+  const p = await page({ read: () => missing ? Promise.reject(new Error('forum_post_not_found')) : Promise.resolve(detail()) }, '#post/p')
   await flush()
   assert.equal(p.$('post-content').querySelector('.body').textContent, '<b>plain text</b>')
   assert.equal(p.$('post-content').querySelector('b'), null)

@@ -178,3 +178,8 @@ button, summary { touch-action: manipulation; }
   #award-bar button { flex: 1; }
 }
 @media (min-width: 601px) { .reply .head gugu-avatar.inline { display: none; } }
+
+.consent-page main { padding: 20px; }
+.consent-page h1 { font-size: var(--font-title); }
+.consent-page ul { list-style: none; padding: 0; }
+.consent-page footer { display: flex; justify-content: flex-end; gap: 8px; }
