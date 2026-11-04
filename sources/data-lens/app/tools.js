@@ -80,7 +80,7 @@ export const data_query = {
 }
 
 export const data_card = {
-  description: 'Check a Data Lens card before sending it: runs the query, checks the view against its columns, pins the file version, and returns the exact `data` for widget_send { chat_id, app: "data-lens", view: "card", text, data }. view.kind: table | bar | line | scatter (x, y, optional color) | heatmap (x, y, value) | kpi (first row); optional view.title.',
+  description: 'Check a Data Lens card before sending it: runs the query, checks the view against its columns, pins the file version, and returns the exact `data` for widget_send { chat_id, app: "data-lens", view: "card", text, data }. view.kind: table | bar | line | scatter (x, y, optional color) | heatmap (x, y, value) | kpi (first row); optional view.title. For bar, color stacks series within each category; side-by-side grouped bars are not supported. Describe the actual stacked chart.',
   inputSchema: { type: 'object', required: ['file', 'sql'], properties: {
     file: fileParam, sql: { type: 'string' }, sheet: sheetParam, version: versionParam,
     view: { type: 'object', description: '{ kind, x?, y?, color?, value?, title? } — x/y/color/value are column names of the query result' },

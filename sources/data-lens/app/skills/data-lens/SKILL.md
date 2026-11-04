@@ -24,7 +24,7 @@ goes into the message. Never paste the data itself into a message or the card.
 
 | kind | needs | good for |
 |---|---|---|
-| `bar` | `x` (category), `y` (number), optional `color` | comparing groups; many or long categories turn horizontal |
+| `bar` | `x` (category), `y` (number), optional `color` | comparing categories; `color` stacks series within each category, not side by side; many or long categories turn horizontal |
 | `line` | `x` (date `YYYY-MM-DD` or number), `y`, optional `color` (one line per value) | change over time |
 | `scatter` | `x`, `y`, optional `color` | relation between two numbers |
 | `heatmap` | `x`, `y`, `value` | a pivot: two categories against one number |
@@ -32,6 +32,8 @@ goes into the message. Never paste the data itself into a message or the card.
 | `kpi` | — | the first row's columns as big figures (`SELECT sum(a) AS "Revenue", count(*) AS "Orders" …`) |
 
 `title` (optional, ≤ 80 characters) heads the card; otherwise the file's name.
+
+Side-by-side grouped bars are not supported. Describe a colored bar chart as stacked; do not promise side-by-side bars.
 
 ## Writing the query for a 420 px card
 

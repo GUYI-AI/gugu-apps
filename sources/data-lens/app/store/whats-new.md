@@ -1,1 +1,1 @@
-Dates from workbooks and CSV files now come out in local time, as the sheet shows them, instead of UTC. Large files are read in pieces and handed to the data engine instead of copied, so a big workbook takes less memory. Since 0.1.1: sheets with hundreds of thousands of rows load instead of failing with "Maximum call stack size exceeded".
+Explore charts keep their allocated height instead of growing as the page redraws. The agent instructions now explain that colored bars are stacked; side-by-side grouped bars are not supported.

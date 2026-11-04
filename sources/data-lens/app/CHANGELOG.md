@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Keep explore charts within their allocated height when the host lays out the page as a vertical stack.
+- Clarify that colored bars are stacked; side-by-side grouped bars are not supported.
+
 ## 0.1.2
 
 - Dates in CSV output and query results are written in local time, as the workbook shows them; a date with no time of
