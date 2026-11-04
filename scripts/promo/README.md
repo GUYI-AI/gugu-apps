@@ -2,7 +2,7 @@
 
 Each HTML file is a reusable 1600 × 900 (16:9) canvas: App icon and name, one concise benefit, and an existing real screenshot. The dark brand canvas stays fixed in both client themes. Text uses Noto Sans CJK SC with PingFang SC as the macOS fallback.
 
-Open a template in a headless Chromium browser with a 1600 × 900 viewport. Wait for `document.fonts.ready`, decode every image, and wait two animation frames; capture only `.promo` at device scale 1. Save to the App's `store/screenshots/0-promo.png` (file-name order puts it first: the market's featured artwork); verify 1600 × 900 and at most 1 MiB. Keep the same browser and fonts for a batch. The current exports use Chromium 155.
+Open a template in a headless Chromium browser with a 1600 × 900 viewport. Wait for `document.fonts.ready`, decode every image, and wait two animation frames; capture only `.promo` at device scale 1. Save to the App's `store/screenshots/0-promo.png` (file-name order puts it first: the market's featured artwork); verify 1600 × 900 and at most 1 MiB. Keep the same browser and fonts for a batch. The initial exports used Chromium 155. The Paper Club native-image refresh uses Electron 44.0.0 / Chromium 152.0.7977.54 on macOS 26.5.1, with the existing PingFang SC font fallback. Other exports retain their recorded renderer.
 
 To add an App, copy a template and replace the icon, name, benefit, screenshot path and brand color variables. Keep the product screenshot real. Do not redraw controls, invent features or stretch the screenshot. Keep every original screenshot beside it in `store/screenshots/`. A new package version and normal index PR are required.
 
@@ -20,6 +20,6 @@ All product images below already existed in the corresponding App before this ar
 | `kanban.html` | `store/screenshots/1.jpg` | `d6ebdf117d10c533efb984be017840f6aca80c5a95536055326e8140920e582b` |
 | `office.html` | `store/screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
 | `omnisearch.html` | `store/screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |
-| `paper-club.html` | `store/screenshots/1.jpg` | `4bdfec7a8a7d7fd6611d5318083a9f0485d84a34b2e1771e073fd33f235c4fe5` |
+| `paper-club.html` | `store/screenshots/1.jpg` | `e26afb7562ff42903bce04b1bd37cb5d45b525b0301cdd6c5693c6698f300f2c` |
 | `radar.html` | `store/screenshots/1.jpg` | `d4f58bc74dabf211407cabdd9436cc35503a36bc06d7de33a1ce22dc5bd69d49` |
 | `turtle-soup.html` | `store/screenshots/1.jpg` | `ac5df95fc41ff375b0516b61e9bc1b34a248e9bd335152f015c1f4cca503f0cc` |

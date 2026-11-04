@@ -1,1 +1,1 @@
-任务页的书架按文件夹逐层浏览工作区里的 PDF；项目里的论文从顶层和「论文」文件夹读取。需要支持 App 接口 25 的咕咕。
+The market cover and reader screenshots now show highlights and discussion captured in the desktop client. App behaviour is unchanged.
