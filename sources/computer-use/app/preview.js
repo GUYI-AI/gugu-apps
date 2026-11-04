@@ -1,20 +1,11 @@
-// 预览:这条会话的 agent 用 Computer Use 时,它正在操作的那个窗口和它的每一步。
-// 画面只来自程序交回来的真截图(preview_state);没有就是空的,❌ 画一张假的。
-// 会话由咕咕盖章:callProgram 带的是这张页此刻所在的会话,页面拿不到别的会话的东西。
+// Pictures use the task-authorized shared viewer; only task metadata is read over MCP.
 import { MotionPlayer } from './cursor.js';
-import { FramePlayback } from './frame-playback.js';
+import { createPaintedCursor } from './painted-cursor.js';
 import { startPageContext } from './page-context.js';
-
 const gugu = window.gugu;
-const $ = (id) => document.getElementById(id);
-const ui = {
-  stage: $('stage'), shot: $('shot'), frame: $('frame'), canvas: $('cursor'), what: $('what'), when: $('when'),
-  empty: $('empty'), emptyTitle: $('empty-title'), alert: $('alert'),
-};
-const LIVE_EVERY_MS = 700;
-const CHANGED = 'notifications/computer-use/changed';
-
-// 人话:这一页只在 agent 操作电脑时才有意义,所以不解释 Computer Use、不指路去别处看原因,每种状态一句话。
+const $ = id => document.getElementById(id);
+const ui = { stage: $('stage'), frame: $('frame'), canvas: $('cursor'), what: $('what'), when: $('when'),
+  empty: $('empty'), emptyTitle: $('empty-title'), alert: $('alert') };
 const TEXT = {
   'zh-CN': {
     outside: '在任务里打开，才能看到 agent 的操作',
@@ -46,209 +37,102 @@ const TEXT = {
   },
 };
 
-let context = null;
-const textFor = (locale) => TEXT[locale] ?? (String(locale).startsWith('zh') ? TEXT['zh-CN'] : TEXT['en-US']);
-let text = TEXT['zh-CN'];
-let shown = 0;
-let animated = '';
-let live = false;
-let liveTimer = null;
-let player = null;
-let pending = null;
-/** The action the cursor points at now: its point stays on the same window pixel when the frame changes size. */
-let pointed = null;
-let nativeMode = false;
-const nativePlayback = new FramePlayback({
-  async decode(src) { const image = new Image(); image.src = src; await image.decode(); },
-  async commit(src) {
-    ui.stage.hidden = false;
-    ui.empty.hidden = true;
-    ui.frame.src = src;
-    await ui.frame.decode();
-  },
-  async move(cursor, frame) {
-    const at = onCanvas(cursor, frame);
-    if (at && player) await player.moveTo(at, { reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches });
-  },
-  place(cursor, frame) {
-    const at = onCanvas(cursor, frame);
-    if (!at) return;
-    player ??= new MotionPlayer(ui.canvas);
-    player.place(at);
-    ui.canvas.style.visibility = 'visible';
-  },
-  click() { player?.click(); },
-  hide() { ui.canvas.style.visibility = 'hidden'; },
-});
-
-const visible = () => context?.layout?.visible !== false;
+let context = null, text = TEXT['zh-CN'], player = null, pending = null, timer = null;
+let generation = 0, resource = null, view = null, live = false;
 const sessionId = () => context?.workspace?.sessionId ?? null;
-
+const visible = () => context?.layout?.visible !== false;
+const cursor = createPaintedCursor({
+  hide() { ui.canvas.style.visibility = 'hidden'; },
+  show(point, frame, click) {
+    const box = ui.frame.getBoundingClientRect();
+    const scale = Math.min(box.width / frame.width, box.height / frame.height);
+    if (!(scale > 0)) { ui.canvas.style.visibility = 'hidden'; return; }
+    player ??= new MotionPlayer(ui.canvas);
+    player.place({ x: (box.width - frame.width * scale) / 2 + point.x * scale,
+      y: (box.height - frame.height * scale) / 2 + point.y * scale });
+    ui.canvas.style.visibility = 'visible';
+    if (click) player.click();
+  },
+});
+function empty(title) { ui.stage.hidden = resource === null; ui.empty.hidden = false; ui.emptyTitle.textContent = title; }
+function error(reason) { ui.alert.hidden = false; ui.alert.textContent = reason instanceof Error ? reason.message : String(reason); }
 function describe(action) {
   const verb = text.verbs[action.tool] ?? text.other;
   const detail = action.args.text ?? action.args.key ?? (Array.isArray(action.args.keys) ? action.args.keys.join('+') : null)
-    ?? action.args.value ?? action.args.direction ?? (action.tool === 'launch_app' ? action.args.app ?? action.args.bundle_id : null);
+    ?? action.args.value ?? action.args.direction ?? (action.tool === 'launch_app' ? action.args.app ?? action.args.name ?? action.args.bundle_id : null);
   const said = detail === null || detail === undefined ? verb : `${verb}「${detail}」`;
-  // 失败的原话在对话里那一步的工具结果和 App 页(owner 10-16:统一页不再播报失败),这里只说没做成。
   return action.status === 'failed' ? `${text.failed}${said}` : said;
 }
-
-function showEmpty(title) {
-  ui.stage.hidden = true;
-  ui.empty.hidden = false;
-  ui.emptyTitle.textContent = title;
+function reset() {
+  generation++; resource = null; live = false; clearTimeout(timer); timer = null;
+  if (view) void view.close().catch(() => {});
+  view = null; ui.frame.replaceChildren(); cursor.reset();
+  player?.destroy(); player = null;
 }
-
-function showError(error) {
-  ui.alert.hidden = false;
-  ui.alert.textContent = error instanceof Error ? error.message : String(error);
-}
-
-/**
- * Where a point is on the cursor canvas, or null when the frame is not drawn yet. A point is in the pixels of the
- * screenshot the agent acted on (`space`); the frame on screen may be a smaller live picture of the same window.
- * No space, no cursor: drawn on another picture it would point somewhere else.
- */
-function onCanvas(point, space) {
-  const { frame, canvas } = ui;
-  if (!space || !frame.naturalWidth || !frame.clientWidth) return null;
-  const { width, height } = space;
-  const box = frame.getBoundingClientRect();
-  const origin = canvas.getBoundingClientRect();
-  return { x: box.left - origin.left + (point.x * box.width) / width, y: box.top - origin.top + (point.y * box.height) / height };
-}
-
-/** The agent's cursor goes where the latest action pointed, on the frame the agent was looking at: flies there as the
- *  action starts while someone watches (as cua's own cursor on the screen does), simply sits there when the page opens
- *  on it. No point, no cursor. */
-async function animate(action) {
-  const key = `${action.at}|${action.tool}`;
-  if (key === animated || !action.point) return;
-  await ui.frame.decode().catch(() => {});
-  if (!onCanvas(action.point, action.space) || key === animated) return;
-  animated = key;
-  pointed = action;
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!player) {
-    player = new MotionPlayer(ui.canvas);
-    player.place(onCanvas(action.point, action.space));
-    return;
-  }
-  // Each place in turn: a batch of steps (`path`, a click shown where it clicked), else a drag from where it grabbed to
-  // where it let go, else the one point. Projected again before each leg: the pane may be resized meanwhile, and a
-  // newer step takes over.
-  const legs = action.path ?? [...(action.from ? [action.from] : []), { ...action.point, click: /click/.test(action.tool) }];
-  for (const leg of legs) {
-    const at = pointed === action && onCanvas(leg, action.space);
-    if (!at) return;
-    await player.moveTo(at, { reducedMotion: reduced });
-    if (pointed === action && leg.click) player?.click();
-  }
-}
-
-/** The frame changed size (pane resized, a picture of another size): the cursor stays on the same window pixel, ❌ on the
- *  same canvas pixel. A move under way ends where it was going. */
-function reproject() {
-  if (nativeMode) { nativePlayback.resize(); return; }
-  const at = player && pointed && onCanvas(pointed.point, pointed.space);
-  if (at) player.place(at);
-}
-
-async function apply(state) {
-  if (!state.session) { showEmpty(text.outside); return; }
-  nativeMode = state.nativeCursor === true;
-  live = state.live && state.target?.pid !== undefined && state.target?.window_id !== undefined;
-  const latest = state.actions.at(-1);
-  const app = typeof state.target?.app === 'string' ? state.target.app : null;
-  // The last picture stays up when a fresh one cannot be taken, but it says so: ❌ an old picture passing for a live one.
-  const stale = live && typeof state.liveProblem === 'string' ? `${text.stale}${state.liveProblem}` : null;
-  const cursorProblem = typeof state.cursorProblem === 'string' ? `${text.cursorStale}${state.cursorProblem}` : null;
-  const said = [app, latest && describe(latest), stale, cursorProblem].filter(Boolean).join(' · ');
-  if (state.frame) {
-    if (nativeMode) await nativePlayback.show(state.frame);
-    else ui.frame.src = `data:${state.frame.mimeType};base64,${state.frame.data}`;
-    shown = state.frame.seq;
-    ui.when.setAttribute('datetime', state.frame.at);
-  }
-  if (shown === 0) {
-    showEmpty(!latest ? text.idle : latest.status === 'running' ? text.loading : text.unseen);
-    return;
-  }
-  ui.empty.hidden = true;
+async function mount(id) {
+  if (resource === id) return;
+  reset(); resource = id;
+  const epoch = generation;
+  if (!id) return;
   ui.stage.hidden = false;
-  ui.what.textContent = said;
-  if (nativeMode) return;
-  ui.canvas.style.visibility = 'visible';
-  const latestPointed = state.actions.findLast((action) => action.point);
-  if (latestPointed) void animate(latestPointed);
+  // The existing Computer tab is a read-only preview. The generic transport's
+  // input machinery remains inactive here; its driver also rejects every input.
+  ui.frame.inert = true;
+  const mounted = await gugu.projection.mount(ui.frame, id, {
+    painted(frame) {
+      if (epoch !== generation) return;
+      cursor.painted(frame);
+      if (frame) { ui.stage.hidden = false; ui.empty.hidden = true; }
+    },
+    state(state, reason) { if (epoch === generation && state === 'closed') { cursor.painted(null); if (reason) error(reason); } },
+    error(reason) { if (epoch === generation) error(reason); },
+  });
+  if (epoch !== generation) { void mounted.close().catch(() => {}); return; }
+  view = mounted;
 }
-
-/** One read at a time; a change that arrives during a read asks for one more afterwards. */
+async function apply(state) {
+  if (!state.session) { reset(); empty(text.outside); return; }
+  const latest = state.actions.at(-1);
+  const said = [state.target?.app, latest && describe(latest), state.liveProblem && `${text.stale}${state.liveProblem}`].filter(Boolean).join(' · ');
+  ui.what.textContent = said;
+  await mount(state.projection);
+  cursor.frames(state.frames);
+  const last = state.frames.at(-1);
+  if (last) ui.when.setAttribute('datetime', last.at);
+  if (!last) empty(!latest ? text.idle : latest.status === 'running' ? text.loading : text.unseen);
+  live = state.live;
+}
 async function refresh(options = {}) {
   if (pending) { pending.again = true; return; }
-  pending = { again: false };
+  const request = { again: false }; pending = request;
+  const requested = sessionId(), epoch = generation;
   try {
-    if (!sessionId()) { showEmpty(text.outside); return; }
-    const requestedSession = sessionId();
-    const result = await gugu.callProgram('preview_state', { since: shown, live: Boolean(options.live) });
-    if (requestedSession !== sessionId()) return;
-    if (result.isError) throw new Error(result.content?.find((block) => block.type === 'text')?.text ?? 'preview_state failed');
+    if (!requested) { empty(text.outside); return; }
+    const result = await gugu.callProgram('preview_state', { live: options.live === true });
+    if (requested !== sessionId() || epoch !== generation) return;
+    if (result.isError) throw new Error(result.content?.find(block => block.type === 'text')?.text ?? 'preview_state failed');
     ui.alert.hidden = true;
     await apply(result.structuredContent);
-  } catch (error) {
-    // 空态和「桥断了」长得一样 —— 让第二种看得见。
-    showError(error);
-  } finally {
-    const again = pending.again;
+  } catch (reason) { if (requested === sessionId()) error(reason); }
+  finally {
     pending = null;
-    if (again) void refresh();
-    schedule();
+    if (request.again) void refresh();
+    clearTimeout(timer); timer = null;
+    if (live && visible()) timer = setTimeout(() => void refresh({ live: true }), 700);
   }
 }
-
-/**
- * Fresh frames only while this page is on screen, and only when the program can take them. This page is its task's own
- * (one per task): two tasks side by side are two pages, each on screen, each kept fresh — ❌ only the focused one.
- */
-function schedule() {
-  clearTimeout(liveTimer);
-  liveTimer = null;
-  if (!live || !visible()) return;
-  liveTimer = setTimeout(() => void refresh({ live: true }), LIVE_EVERY_MS);
-}
-
-function reset() {
-  nativePlayback.reset();
-  shown = 0;
-  animated = '';
-  pointed = null;
-  ui.frame.removeAttribute('src');
-  // Resolve an in-flight presentation move before destroying its RAF.
-  player?.place({ x: 0, y: 0 });
-  player?.destroy();
-  player = null;
-}
-
 async function start() {
-  const resized = new ResizeObserver(reproject);
-  resized.observe(ui.frame);
-  resized.observe(ui.canvas);
-  // Each change brings the whole context: moved to another task, or to a place with none, it is that place's now.
-  gugu.onProgramNotification((notification) => {
-    if (context && notification.method === CHANGED) void refresh();
+  new ResizeObserver(() => cursor.resize()).observe(ui.frame);
+  gugu.onProgramNotification(notification => {
+    if (context && notification.method === 'notifications/computer-use/changed') void refresh();
   });
-  await startPageContext({
-    read: () => gugu.getContext(),
-    subscribe: (receive) => gugu.onContextChanged(receive),
+  await startPageContext({ read: () => gugu.getContext(), subscribe: receive => gugu.onContextChanged(receive),
     accept(next) {
       const moved = (next.workspace?.sessionId ?? null) !== sessionId();
       context = next;
-      text = textFor(context.locale);
+      text = String(next.locale).startsWith('zh') ? TEXT['zh-CN'] : TEXT['en-US'];
       if (moved) reset();
       void refresh();
-    },
-    reject: showError,
-  });
+    }, reject: error });
 }
-
 void start();

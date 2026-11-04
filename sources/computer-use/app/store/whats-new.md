@@ -1,1 +1,1 @@
-Follows the task it sits beside by the task's working copy (App interface 25). Needs a gugu with App interface 25.
+Computer tools, target-specific Stop, native driver and task preview now run in the App. The read-only preview uses the shared authorized picture transport and matches the real agent cursor to the frame actually shown. Settings checks the running driver’s permissions. Requires Gugu App interface 30.

@@ -20,9 +20,9 @@ var __export = (target, all) => {
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    for (let key2 of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key2) && key2 !== except)
+        __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
   }
   return to;
 };
@@ -171,15 +171,15 @@ var require_code = __commonJS({
       return JSON.stringify(x).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
     }
     exports.safeStringify = safeStringify;
-    function getProperty(key) {
-      return typeof key == "string" && exports.IDENTIFIER.test(key) ? new _Code(`.${key}`) : _`[${key}]`;
+    function getProperty(key2) {
+      return typeof key2 == "string" && exports.IDENTIFIER.test(key2) ? new _Code(`.${key2}`) : _`[${key2}]`;
     }
     exports.getProperty = getProperty;
-    function getEsmExportName(key) {
-      if (typeof key == "string" && exports.IDENTIFIER.test(key)) {
-        return new _Code(`${key}`);
+    function getEsmExportName(key2) {
+      if (typeof key2 == "string" && exports.IDENTIFIER.test(key2)) {
+        return new _Code(`${key2}`);
       }
-      throw new Error(`CodeGen: invalid export name: ${key}, use explicit $id name mapping`);
+      throw new Error(`CodeGen: invalid export name: ${key2}, use explicit $id name mapping`);
     }
     exports.getEsmExportName = getEsmExportName;
     function regexpCode(rx) {
@@ -248,13 +248,13 @@ var require_scope = __commonJS({
       }
     };
     exports.ValueScopeName = ValueScopeName;
-    var line = (0, code_1._)`\n`;
+    var line2 = (0, code_1._)`\n`;
     var ValueScope = class extends Scope {
       constructor(opts) {
         super(opts);
         this._values = {};
         this._scope = opts.scope;
-        this.opts = { ...opts, _n: opts.lines ? line : code_1.nil };
+        this.opts = { ...opts, _n: opts.lines ? line2 : code_1.nil };
       }
       get() {
         return this._scope;
@@ -806,11 +806,11 @@ var require_codegen = __commonJS({
       // returns code for object literal for the passed argument list of key-value pairs
       object(...keyValues) {
         const code = ["{"];
-        for (const [key, value] of keyValues) {
+        for (const [key2, value] of keyValues) {
           if (code.length > 1)
             code.push(",");
-          code.push(key);
-          if (key !== value || this.opts.es5) {
+          code.push(key2);
+          if (key2 !== value || this.opts.es5) {
             code.push(":");
             (0, code_1.addCodeArg)(code, value);
           }
@@ -1085,17 +1085,17 @@ var require_util = __commonJS({
       if (typeof schema === "boolean")
         return;
       const rules = self.RULES.keywords;
-      for (const key in schema) {
-        if (!rules[key])
-          checkStrictMode(it, `unknown keyword: "${key}"`);
+      for (const key2 in schema) {
+        if (!rules[key2])
+          checkStrictMode(it, `unknown keyword: "${key2}"`);
       }
     }
     exports.checkUnknownRules = checkUnknownRules;
     function schemaHasRules(schema, rules) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key in schema)
-        if (rules[key])
+      for (const key2 in schema)
+        if (rules[key2])
           return true;
       return false;
     }
@@ -1103,8 +1103,8 @@ var require_util = __commonJS({
     function schemaHasRulesButRef(schema, RULES) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key in schema)
-        if (key !== "$ref" && RULES.all[key])
+      for (const key2 in schema)
+        if (key2 !== "$ref" && RULES.all[key2])
           return true;
       return false;
     }
@@ -1682,8 +1682,8 @@ var require_defaults = __commonJS({
     function assignDefaults(it, ty) {
       const { properties, items } = it.schema;
       if (ty === "object" && properties) {
-        for (const key in properties) {
-          assignDefault(it, key, properties[key].default);
+        for (const key2 in properties) {
+          assignDefault(it, key2, properties[key2].default);
         }
       } else if (ty === "array" && Array.isArray(items)) {
         items.forEach((sch, i) => assignDefault(it, i, sch.default));
@@ -2067,8 +2067,8 @@ var require_fast_deep_equal = __commonJS({
         for (i = length; i-- !== 0; )
           if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
         for (i = length; i-- !== 0; ) {
-          var key = keys[i];
-          if (!equal(a[key], b[key])) return false;
+          var key2 = keys[i];
+          if (!equal(a[key2], b[key2])) return false;
         }
         return true;
       }
@@ -2140,20 +2140,20 @@ var require_json_schema_traverse = __commonJS({
     function _traverse(opts, pre, post, schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex) {
       if (schema && typeof schema == "object" && !Array.isArray(schema)) {
         pre(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
-        for (var key in schema) {
-          var sch = schema[key];
+        for (var key2 in schema) {
+          var sch = schema[key2];
           if (Array.isArray(sch)) {
-            if (key in traverse.arrayKeywords) {
+            if (key2 in traverse.arrayKeywords) {
               for (var i = 0; i < sch.length; i++)
-                _traverse(opts, pre, post, sch[i], jsonPtr + "/" + key + "/" + i, rootSchema, jsonPtr, key, schema, i);
+                _traverse(opts, pre, post, sch[i], jsonPtr + "/" + key2 + "/" + i, rootSchema, jsonPtr, key2, schema, i);
             }
-          } else if (key in traverse.propsKeywords) {
+          } else if (key2 in traverse.propsKeywords) {
             if (sch && typeof sch == "object") {
               for (var prop in sch)
-                _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key, schema, prop);
+                _traverse(opts, pre, post, sch[prop], jsonPtr + "/" + key2 + "/" + escapeJsonPtr(prop), rootSchema, jsonPtr, key2, schema, prop);
             }
-          } else if (key in traverse.keywords || opts.allKeys && !(key in traverse.skipKeywords)) {
-            _traverse(opts, pre, post, sch, jsonPtr + "/" + key, rootSchema, jsonPtr, key, schema);
+          } else if (key2 in traverse.keywords || opts.allKeys && !(key2 in traverse.skipKeywords)) {
+            _traverse(opts, pre, post, sch, jsonPtr + "/" + key2, rootSchema, jsonPtr, key2, schema);
           }
         }
         post(schema, jsonPtr, rootSchema, parentJsonPtr, parentKeyword, parentSchema, keyIndex);
@@ -2210,10 +2210,10 @@ var require_resolve = __commonJS({
       "$dynamicAnchor"
     ]);
     function hasRef(schema) {
-      for (const key in schema) {
-        if (REF_KEYWORDS.has(key))
+      for (const key2 in schema) {
+        if (REF_KEYWORDS.has(key2))
           return true;
-        const sch = schema[key];
+        const sch = schema[key2];
         if (Array.isArray(sch) && sch.some(hasRef))
           return true;
         if (typeof sch == "object" && hasRef(sch))
@@ -2223,14 +2223,14 @@ var require_resolve = __commonJS({
     }
     function countKeys(schema) {
       let count = 0;
-      for (const key in schema) {
-        if (key === "$ref")
+      for (const key2 in schema) {
+        if (key2 === "$ref")
           return Infinity;
         count++;
-        if (SIMPLE_INLINED.has(key))
+        if (SIMPLE_INLINED.has(key2))
           continue;
-        if (typeof schema[key] == "object") {
-          (0, util_1.eachItem)(schema[key], (sch) => count += countKeys(sch));
+        if (typeof schema[key2] == "object") {
+          (0, util_1.eachItem)(schema[key2], (sch) => count += countKeys(sch));
         }
         if (count === Infinity)
           return Infinity;
@@ -2419,8 +2419,8 @@ var require_validate = __commonJS({
     function schemaCxtHasRules({ schema, self }) {
       if (typeof schema == "boolean")
         return !schema;
-      for (const key in schema)
-        if (self.RULES.all[key])
+      for (const key2 in schema)
+        if (self.RULES.all[key2])
           return true;
       return false;
     }
@@ -4515,7 +4515,7 @@ var require_core = __commonJS({
         }
       }
       // Adds schema to the instance
-      addSchema(schema, key, _meta, _validateSchema = this.opts.validateSchema) {
+      addSchema(schema, key2, _meta, _validateSchema = this.opts.validateSchema) {
         if (Array.isArray(schema)) {
           for (const sch of schema)
             this.addSchema(sch, void 0, _meta, _validateSchema);
@@ -4529,15 +4529,15 @@ var require_core = __commonJS({
             throw new Error(`schema ${schemaId} must be string`);
           }
         }
-        key = (0, resolve_1.normalizeId)(key || id);
-        this._checkUnique(key);
-        this.schemas[key] = this._addSchema(schema, _meta, key, _validateSchema, true);
+        key2 = (0, resolve_1.normalizeId)(key2 || id);
+        this._checkUnique(key2);
+        this.schemas[key2] = this._addSchema(schema, _meta, key2, _validateSchema, true);
         return this;
       }
       // Add schema that will be used to validate other schemas
       // options in META_IGNORE_OPTIONS are alway set to false
-      addMetaSchema(schema, key, _validateSchema = this.opts.validateSchema) {
-        this.addSchema(schema, key, true, _validateSchema);
+      addMetaSchema(schema, key2, _validateSchema = this.opts.validateSchema) {
+        this.addSchema(schema, key2, true, _validateSchema);
         return this;
       }
       //  Validate schema against its meta-schema
@@ -4693,14 +4693,14 @@ var require_core = __commonJS({
           let keywords = metaSchema;
           for (const seg of segments)
             keywords = keywords[seg];
-          for (const key in rules) {
-            const rule = rules[key];
+          for (const key2 in rules) {
+            const rule = rules[key2];
             if (typeof rule != "object")
               continue;
             const { $data } = rule.definition;
-            const schema = keywords[key];
+            const schema = keywords[key2];
             if ($data && schema)
-              keywords[key] = schemaOrData(schema);
+              keywords[key2] = schemaOrData(schema);
           }
         }
         return metaSchema;
@@ -4773,10 +4773,10 @@ var require_core = __commonJS({
     Ajv2.MissingRefError = ref_error_1.default;
     exports.default = Ajv2;
     function checkOptions(checkOpts, options, msg, log = "error") {
-      for (const key in checkOpts) {
-        const opt = key;
+      for (const key2 in checkOpts) {
+        const opt = key2;
         if (opt in options)
-          this.logger[log](`${msg}: option ${key}. ${checkOpts[opt]}`);
+          this.logger[log](`${msg}: option ${key2}. ${checkOpts[opt]}`);
       }
     }
     function getSchEnv(keyRef) {
@@ -4790,8 +4790,8 @@ var require_core = __commonJS({
       if (Array.isArray(optsSchemas))
         this.addSchema(optsSchemas);
       else
-        for (const key in optsSchemas)
-          this.addSchema(optsSchemas[key], key);
+        for (const key2 in optsSchemas)
+          this.addSchema(optsSchemas[key2], key2);
     }
     function addInitialFormats() {
       for (const name in this.opts.formats) {
@@ -5839,11 +5839,11 @@ var require_dependencies = __commonJS({
     function splitDependencies({ schema }) {
       const propertyDeps = {};
       const schemaDeps = {};
-      for (const key in schema) {
-        if (key === "__proto__")
+      for (const key2 in schema) {
+        if (key2 === "__proto__")
           continue;
-        const deps = Array.isArray(schema[key]) ? propertyDeps : schemaDeps;
-        deps[key] = schema[key];
+        const deps = Array.isArray(schema[key2]) ? propertyDeps : schemaDeps;
+        deps[key2] = schema[key2];
       }
       return [propertyDeps, schemaDeps];
     }
@@ -5920,13 +5920,13 @@ var require_propertyNames = __commonJS({
         if ((0, util_1.alwaysValidSchema)(it, schema))
           return;
         const valid = gen.name("valid");
-        gen.forIn("key", data, (key) => {
-          cxt.setParams({ propertyName: key });
+        gen.forIn("key", data, (key2) => {
+          cxt.setParams({ propertyName: key2 });
           cxt.subschema({
             keyword: "propertyNames",
-            data: key,
+            data: key2,
             dataTypes: ["string"],
-            propertyName: key,
+            propertyName: key2,
             compositeRule: true
           }, valid);
           gen.if((0, codegen_1.not)(valid), () => {
@@ -5975,38 +5975,38 @@ var require_additionalProperties = __commonJS({
         checkAdditionalProperties();
         cxt.ok((0, codegen_1._)`${errsCount} === ${names_1.default.errors}`);
         function checkAdditionalProperties() {
-          gen.forIn("key", data, (key) => {
+          gen.forIn("key", data, (key2) => {
             if (!props.length && !patProps.length)
-              additionalPropertyCode(key);
+              additionalPropertyCode(key2);
             else
-              gen.if(isAdditional(key), () => additionalPropertyCode(key));
+              gen.if(isAdditional(key2), () => additionalPropertyCode(key2));
           });
         }
-        function isAdditional(key) {
+        function isAdditional(key2) {
           let definedProp;
           if (props.length > 8) {
             const propsSchema = (0, util_1.schemaRefOrVal)(it, parentSchema.properties, "properties");
-            definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key);
+            definedProp = (0, code_1.isOwnProperty)(gen, propsSchema, key2);
           } else if (props.length) {
-            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key} === ${p}`));
+            definedProp = (0, codegen_1.or)(...props.map((p) => (0, codegen_1._)`${key2} === ${p}`));
           } else {
             definedProp = codegen_1.nil;
           }
           if (patProps.length) {
-            definedProp = (0, codegen_1.or)(definedProp, ...patProps.map((p) => (0, codegen_1._)`${(0, code_1.usePattern)(cxt, p)}.test(${key})`));
+            definedProp = (0, codegen_1.or)(definedProp, ...patProps.map((p) => (0, codegen_1._)`${(0, code_1.usePattern)(cxt, p)}.test(${key2})`));
           }
           return (0, codegen_1.not)(definedProp);
         }
-        function deleteAdditional(key) {
-          gen.code((0, codegen_1._)`delete ${data}[${key}]`);
+        function deleteAdditional(key2) {
+          gen.code((0, codegen_1._)`delete ${data}[${key2}]`);
         }
-        function additionalPropertyCode(key) {
+        function additionalPropertyCode(key2) {
           if (opts.removeAdditional === "all" || opts.removeAdditional && schema === false) {
-            deleteAdditional(key);
+            deleteAdditional(key2);
             return;
           }
           if (schema === false) {
-            cxt.setParams({ additionalProperty: key });
+            cxt.setParams({ additionalProperty: key2 });
             cxt.error();
             if (!allErrors)
               gen.break();
@@ -6015,22 +6015,22 @@ var require_additionalProperties = __commonJS({
           if (typeof schema == "object" && !(0, util_1.alwaysValidSchema)(it, schema)) {
             const valid = gen.name("valid");
             if (opts.removeAdditional === "failing") {
-              applyAdditionalSchema(key, valid, false);
+              applyAdditionalSchema(key2, valid, false);
               gen.if((0, codegen_1.not)(valid), () => {
                 cxt.reset();
-                deleteAdditional(key);
+                deleteAdditional(key2);
               });
             } else {
-              applyAdditionalSchema(key, valid);
+              applyAdditionalSchema(key2, valid);
               if (!allErrors)
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
             }
           }
         }
-        function applyAdditionalSchema(key, valid, errors) {
+        function applyAdditionalSchema(key2, valid, errors) {
           const subschema = {
             keyword: "additionalProperties",
-            dataProp: key,
+            dataProp: key2,
             dataPropType: util_1.Type.Str
           };
           if (errors === false) {
@@ -6155,19 +6155,19 @@ var require_patternProperties = __commonJS({
           }
         }
         function validateProperties(pat) {
-          gen.forIn("key", data, (key) => {
-            gen.if((0, codegen_1._)`${(0, code_1.usePattern)(cxt, pat)}.test(${key})`, () => {
+          gen.forIn("key", data, (key2) => {
+            gen.if((0, codegen_1._)`${(0, code_1.usePattern)(cxt, pat)}.test(${key2})`, () => {
               const alwaysValid = alwaysValidPatterns.includes(pat);
               if (!alwaysValid) {
                 cxt.subschema({
                   keyword: "patternProperties",
                   schemaProp: pat,
-                  dataProp: key,
+                  dataProp: key2,
                   dataPropType: util_2.Type.Str
                 }, valid);
               }
               if (it.opts.unevaluated && props !== true) {
-                gen.assign((0, codegen_1._)`${props}[${key}]`, true);
+                gen.assign((0, codegen_1._)`${props}[${key2}]`, true);
               } else if (!alwaysValid && !it.allErrors) {
                 gen.if((0, codegen_1.not)(valid), () => gen.break());
               }
@@ -9217,7 +9217,7 @@ var require_png = __commonJS({
     var Parser = require_parser_async();
     var Packer = require_packer_async();
     var PNGSync = require_png_sync();
-    var PNG2 = exports.PNG = function(options) {
+    var PNG3 = exports.PNG = function(options) {
       Stream.call(this);
       options = options || {};
       this.width = options.width | 0;
@@ -9246,9 +9246,9 @@ var require_png = __commonJS({
       this._parser.on("close", this._handleClose.bind(this));
       this._packer.on("error", this.emit.bind(this, "error"));
     };
-    util.inherits(PNG2, Stream);
-    PNG2.sync = PNGSync;
-    PNG2.prototype.pack = function() {
+    util.inherits(PNG3, Stream);
+    PNG3.sync = PNGSync;
+    PNG3.prototype.pack = function() {
       if (!this.data || !this.data.length) {
         this.emit("error", "No data provided");
         return this;
@@ -9260,7 +9260,7 @@ var require_png = __commonJS({
       );
       return this;
     };
-    PNG2.prototype.parse = function(data, callback) {
+    PNG3.prototype.parse = function(data, callback) {
       if (callback) {
         let onParsed, onError;
         onParsed = function(parsedData) {
@@ -9278,27 +9278,27 @@ var require_png = __commonJS({
       this.end(data);
       return this;
     };
-    PNG2.prototype.write = function(data) {
+    PNG3.prototype.write = function(data) {
       this._parser.write(data);
       return true;
     };
-    PNG2.prototype.end = function(data) {
+    PNG3.prototype.end = function(data) {
       this._parser.end(data);
     };
-    PNG2.prototype._metadata = function(metadata) {
+    PNG3.prototype._metadata = function(metadata) {
       this.width = metadata.width;
       this.height = metadata.height;
       this.emit("metadata", metadata);
     };
-    PNG2.prototype._gamma = function(gamma) {
+    PNG3.prototype._gamma = function(gamma) {
       this.gamma = gamma;
     };
-    PNG2.prototype._handleClose = function() {
+    PNG3.prototype._handleClose = function() {
       if (!this._parser.writable && !this._packer.readable) {
         this.emit("close");
       }
     };
-    PNG2.bitblt = function(src, dst, srcX, srcY, width, height, deltaX, deltaY) {
+    PNG3.bitblt = function(src, dst, srcX, srcY, width, height, deltaX, deltaY) {
       srcX |= 0;
       srcY |= 0;
       width |= 0;
@@ -9320,11 +9320,11 @@ var require_png = __commonJS({
         );
       }
     };
-    PNG2.prototype.bitblt = function(dst, srcX, srcY, width, height, deltaX, deltaY) {
-      PNG2.bitblt(this, dst, srcX, srcY, width, height, deltaX, deltaY);
+    PNG3.prototype.bitblt = function(dst, srcX, srcY, width, height, deltaX, deltaY) {
+      PNG3.bitblt(this, dst, srcX, srcY, width, height, deltaX, deltaY);
       return this;
     };
-    PNG2.adjustGamma = function(src) {
+    PNG3.adjustGamma = function(src) {
       if (src.gamma) {
         for (let y = 0; y < src.height; y++) {
           for (let x = 0; x < src.width; x++) {
@@ -9339,8 +9339,8 @@ var require_png = __commonJS({
         src.gamma = 0;
       }
     };
-    PNG2.prototype.adjustGamma = function() {
-      PNG2.adjustGamma(this);
+    PNG3.prototype.adjustGamma = function() {
+      PNG3.adjustGamma(this);
     };
   }
 });
@@ -9488,9 +9488,9 @@ function floatSafeRemainder(val, step) {
   return ratio - roundedRatio;
 }
 var EVALUATING = /* @__PURE__ */ Symbol("evaluating");
-function defineLazy(object3, key, getter) {
+function defineLazy(object3, key2, getter) {
   let value = void 0;
-  Object.defineProperty(object3, key, {
+  Object.defineProperty(object3, key2, {
     get() {
       if (value === EVALUATING) {
         return void 0;
@@ -9502,7 +9502,7 @@ function defineLazy(object3, key, getter) {
       return value;
     },
     set(v) {
-      Object.defineProperty(object3, key, {
+      Object.defineProperty(object3, key2, {
         value: v
         // configurable: true,
       });
@@ -9528,47 +9528,47 @@ function rawShape(def) {
 function sourceShape(schema) {
   return rawShape(schema._zod.def) ?? schema._zod.def.shape;
 }
-function deferProp(target, key, getter) {
-  Object.defineProperty(target, key, {
+function deferProp(target, key2, getter) {
+  Object.defineProperty(target, key2, {
     get() {
       const value = getter();
-      assignProp(this, key, value);
+      assignProp(this, key2, value);
       return value;
     },
     enumerable: true,
     configurable: true
   });
 }
-function putProp(target, key, value) {
-  if (key in target)
-    assignProp(target, key, value);
+function putProp(target, key2, value) {
+  if (key2 in target)
+    assignProp(target, key2, value);
   else
-    target[key] = value;
+    target[key2] = value;
 }
 function mirrorShape(target, source, keys, wrap) {
   const raw = sourceShape(source);
-  for (const key of keys) {
-    const desc = Object.getOwnPropertyDescriptor(raw, key);
+  for (const key2 of keys) {
+    const desc = Object.getOwnPropertyDescriptor(raw, key2);
     if (!desc.enumerable)
       continue;
     if (desc.get) {
-      deferProp(target, key, () => {
-        const value = source._zod.def.shape[key];
-        return wrap ? wrap(value, key) : value;
+      deferProp(target, key2, () => {
+        const value = source._zod.def.shape[key2];
+        return wrap ? wrap(value, key2) : value;
       });
     } else
-      putProp(target, key, wrap ? wrap(desc.value, key) : desc.value);
+      putProp(target, key2, wrap ? wrap(desc.value, key2) : desc.value);
   }
 }
 function mirrorProps(target, source) {
-  for (const key of Reflect.ownKeys(source)) {
-    const desc = Object.getOwnPropertyDescriptor(source, key);
+  for (const key2 of Reflect.ownKeys(source)) {
+    const desc = Object.getOwnPropertyDescriptor(source, key2);
     if (!desc.enumerable)
       continue;
     if (desc.get)
-      deferProp(target, key, () => source[key]);
+      deferProp(target, key2, () => source[key2]);
     else
-      putProp(target, key, desc.value);
+      putProp(target, key2, desc.value);
   }
 }
 function mergeDefs(...defs) {
@@ -9585,11 +9585,11 @@ function cloneDef(schema) {
 function getElementAtPath(obj, path2) {
   if (!path2)
     return obj;
-  return path2.reduce((acc, key) => acc?.[key], obj);
+  return path2.reduce((acc, key2) => acc?.[key2], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
-  const promises = keys.map((key) => promisesObj[key]);
+  const promises = keys.map((key2) => promisesObj[key2]);
   return Promise.all(promises).then((results) => {
     const resolvedObj = {};
     for (let i = 0; i < keys.length; i++) {
@@ -9661,8 +9661,8 @@ function shallowClone(o) {
 }
 function numKeys(data) {
   let keyCount = 0;
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
+  for (const key2 in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key2)) {
       keyCount++;
     }
   }
@@ -9816,12 +9816,12 @@ function pick(schema, mask) {
 function maskedKeys(schema, mask) {
   const raw = sourceShape(schema);
   const keys = [];
-  for (const key of Reflect.ownKeys(mask)) {
-    if (!Object.getOwnPropertyDescriptor(raw, key)?.enumerable) {
-      throw new Error(`Unrecognized key: "${String(key)}"`);
+  for (const key2 of Reflect.ownKeys(mask)) {
+    if (!Object.getOwnPropertyDescriptor(raw, key2)?.enumerable) {
+      throw new Error(`Unrecognized key: "${String(key2)}"`);
     }
-    if (mask[key])
-      keys.push(key);
+    if (mask[key2])
+      keys.push(key2);
   }
   return keys;
 }
@@ -9834,7 +9834,7 @@ function omit(schema, mask) {
   }
   const omitted = new Set(maskedKeys(schema, mask));
   const newShape = {};
-  mirrorShape(newShape, schema, Reflect.ownKeys(sourceShape(schema)).filter((key) => !omitted.has(key)));
+  mirrorShape(newShape, schema, Reflect.ownKeys(sourceShape(schema)).filter((key2) => !omitted.has(key2)));
   return clone(schema, mergeDefs(currDef, { shape: newShape, checks: [] }));
 }
 function extend(schema, shape) {
@@ -9845,8 +9845,8 @@ function extend(schema, shape) {
   const hasChecks = checks && checks.length > 0;
   if (hasChecks) {
     const existingShape = sourceShape(schema);
-    for (const key of Reflect.ownKeys(shape)) {
-      if (Object.getOwnPropertyDescriptor(existingShape, key) !== void 0) {
+    for (const key2 of Reflect.ownKeys(shape)) {
+      if (Object.getOwnPropertyDescriptor(existingShape, key2) !== void 0) {
         throw new Error("Cannot overwrite keys on object schemas containing refinements. Use `.safeExtend()` instead.");
       }
     }
@@ -9893,15 +9893,15 @@ function partial(Class2, schema, mask, name = "partial") {
   }
   const selected = mask ? new Set(maskedKeys(schema, mask)) : void 0;
   const newShape = {};
-  mirrorShape(newShape, schema, Reflect.ownKeys(sourceShape(schema)), Class2 && ((value, key) => selected && !selected.has(key) ? value : new Class2({ type: "optional", innerType: value })));
+  mirrorShape(newShape, schema, Reflect.ownKeys(sourceShape(schema)), Class2 && ((value, key2) => selected && !selected.has(key2) ? value : new Class2({ type: "optional", innerType: value })));
   return clone(schema, mergeDefs(schema._zod.def, { shape: newShape, checks: [] }));
 }
 function required(Class2, schema, mask) {
   const selected = mask ? new Set(maskedKeys(schema, mask)) : void 0;
   const newShape = {};
-  mirrorShape(newShape, schema, Reflect.ownKeys(sourceShape(schema)), (value, key) => (
+  mirrorShape(newShape, schema, Reflect.ownKeys(sourceShape(schema)), (value, key2) => (
     // overwrite with non-optional
-    selected && !selected.has(key) ? value : new Class2({ type: "nonoptional", innerType: value })
+    selected && !selected.has(key2) ? value : new Class2({ type: "nonoptional", innerType: value })
   ));
   return clone(schema, mergeDefs(schema._zod.def, { shape: newShape }));
 }
@@ -10088,46 +10088,46 @@ var Class = class {
   }
 };
 function members(proto, table) {
-  for (const key in table) {
-    const desc = Object.getOwnPropertyDescriptor(table, key);
+  for (const key2 in table) {
+    const desc = Object.getOwnPropertyDescriptor(table, key2);
     if (desc.get)
-      Object.defineProperty(proto, key, { ...desc, enumerable: false });
+      Object.defineProperty(proto, key2, { ...desc, enumerable: false });
     else
-      defineBound(proto, key, desc.value);
+      defineBound(proto, key2, desc.value);
   }
 }
-function own(inst, key, value, enumerable = true) {
-  Object.defineProperty(inst, key, { configurable: true, writable: true, enumerable, value });
+function own(inst, key2, value, enumerable = true) {
+  Object.defineProperty(inst, key2, { configurable: true, writable: true, enumerable, value });
   return value;
 }
-function hide(inst, key, value) {
-  return own(inst, key, value, false);
+function hide(inst, key2, value) {
+  return own(inst, key2, value, false);
 }
 // @__NO_SIDE_EFFECTS__
 function derived(computes, table) {
-  for (const key in computes) {
-    const compute = computes[key];
-    Object.defineProperty(table, key, {
+  for (const key2 in computes) {
+    const compute = computes[key2];
+    Object.defineProperty(table, key2, {
       configurable: true,
       enumerable: true,
       get() {
-        return own(this, key, compute(this));
+        return own(this, key2, compute(this));
       },
       set(value) {
-        own(this, key, value);
+        own(this, key2, value);
       }
     });
   }
   return table;
 }
-function defineBound(proto, key, fn) {
-  Object.defineProperty(proto, key, {
+function defineBound(proto, key2, fn) {
+  Object.defineProperty(proto, key2, {
     configurable: true,
     get() {
-      return this == null ? fn : own(this, key, fn.bind(this));
+      return this == null ? fn : own(this, key2, fn.bind(this));
     },
     set(value) {
-      own(this, key, value);
+      own(this, key2, value);
     }
   });
 }
@@ -10144,53 +10144,53 @@ var breaker = {
     return void 0;
   }
 };
-function defineLazyInternal(inst, key, compute) {
+function defineLazyInternal(inst, key2, compute) {
   const proto = Object.getPrototypeOf(inst._zod);
-  if (key in proto && installing !== inst._zod) {
+  if (key2 in proto && installing !== inst._zod) {
     installing = void 0;
     return;
   }
   installing = inst._zod;
-  Object.defineProperty(proto, key, {
+  Object.defineProperty(proto, key2, {
     configurable: true,
     get() {
-      Object.defineProperty(this, key, breaker);
+      Object.defineProperty(this, key2, breaker);
       const outer = broke;
       broke = false;
       try {
         const value = compute(this);
         if (broke)
-          delete this[key];
+          delete this[key2];
         else
-          Object.defineProperty(this, key, { configurable: true, writable: true, value });
+          Object.defineProperty(this, key2, { configurable: true, writable: true, value });
         broke = broke || outer;
         return value;
       } catch (err) {
-        delete this[key];
+        delete this[key2];
         broke = broke || outer;
         throw err;
       }
     },
     set(value) {
-      Object.defineProperty(this, key, { configurable: true, writable: true, value });
+      Object.defineProperty(this, key2, { configurable: true, writable: true, value });
     }
   });
 }
-function installLazyProp(inst, key, make, enumerable) {
-  const proto = claim(inst, key);
+function installLazyProp(inst, key2, make, enumerable) {
+  const proto = claim(inst, key2);
   if (!proto)
     return;
-  Object.defineProperty(proto, key, {
+  Object.defineProperty(proto, key2, {
     configurable: true,
     get() {
       const desc = { configurable: true, writable: true, enumerable, value: void 0 };
-      Object.defineProperty(this, key, desc);
+      Object.defineProperty(this, key2, desc);
       desc.value = make(this);
-      Object.defineProperty(this, key, desc);
+      Object.defineProperty(this, key2, desc);
       return desc.value;
     },
     set(value) {
-      Object.defineProperty(this, key, { configurable: true, writable: true, enumerable, value });
+      Object.defineProperty(this, key2, { configurable: true, writable: true, enumerable, value });
     }
   });
 }
@@ -10363,15 +10363,15 @@ var $ZodError = $constructor("$ZodError", initializer);
 var $ZodRealError = $constructor("$ZodError", initializer, void 0, {
   Parent: Error
 });
-function node(obj, key, make) {
-  if (!Object.prototype.hasOwnProperty.call(obj, key)) {
-    if (key === "__proto__") {
-      Object.defineProperty(obj, key, { value: make(), writable: true, enumerable: true, configurable: true });
+function node(obj, key2, make) {
+  if (!Object.prototype.hasOwnProperty.call(obj, key2)) {
+    if (key2 === "__proto__") {
+      Object.defineProperty(obj, key2, { value: make(), writable: true, enumerable: true, configurable: true });
     } else {
-      obj[key] = make();
+      obj[key2] = make();
     }
   }
-  return obj[key];
+  return obj[key2];
 }
 function flattenError(error2, mapper = (issue2) => issue2.message) {
   const fieldErrors = {};
@@ -10989,8 +10989,8 @@ var Doc = class {
     const lines = content.split("\n").filter((x) => x);
     const minIndent = Math.min(...lines.map((x) => x.length - x.trimStart().length));
     const dedented = lines.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
-    for (const line of dedented) {
-      this.content.push(line);
+    for (const line2 of dedented) {
+      this.content.push(line2);
     }
   }
   compile() {
@@ -11649,8 +11649,8 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
   };
   capSize(inst, arraySize);
 });
-function handlePropertyResult(result, final, key, input, optin, optout) {
-  const isPresent = key in input;
+function handlePropertyResult(result, final, key2, input, optin, optout) {
+  const isPresent = key2 in input;
   const isOptionalOut = optout === "optional";
   if (!isPresent && isOptionalOut && optin === "optional") {
     return;
@@ -11659,7 +11659,7 @@ function handlePropertyResult(result, final, key, input, optin, optout) {
     if (optin !== void 0 && isOptionalOut && !isPresent) {
       return;
     }
-    final.issues.push(...prefixIssues(key, result.issues));
+    final.issues.push(...prefixIssues(key2, result.issues));
   }
   if (!isPresent && optin === void 0) {
     if (!result.issues.length) {
@@ -11667,17 +11667,17 @@ function handlePropertyResult(result, final, key, input, optin, optout) {
         code: "invalid_type",
         expected: "nonoptional",
         input: void 0,
-        path: [key]
+        path: [key2]
       });
     }
     return;
   }
   if (result.value === void 0) {
     if (isPresent || optin === "defaulted" && !isOptionalOut) {
-      final.value[key] = void 0;
+      final.value[key2] = void 0;
     }
   } else {
-    final.value[key] = result.value;
+    final.value[key2] = result.value;
   }
 }
 var NO_SYMBOL_KEYS = [];
@@ -11710,28 +11710,28 @@ function handleCatchall(proms, input, payload, ctx, def, inst, abortEarly) {
   const optin = _catchall.optin;
   const optout = _catchall.optout;
   let seen = 0;
-  for (const key in input) {
+  for (const key2 in input) {
     if (abortEarly && payload.issues.length !== seen) {
       if (aborted(payload, seen))
         break;
       seen = payload.issues.length;
     }
-    if (keySet.has(key))
+    if (keySet.has(key2))
       continue;
-    if (key === "__proto__") {
+    if (key2 === "__proto__") {
       if (t === "never")
-        unrecognized.push(key);
+        unrecognized.push(key2);
       continue;
     }
     if (t === "never") {
-      unrecognized.push(key);
+      unrecognized.push(key2);
       continue;
     }
-    const r = _catchall.run({ value: input[key], issues: [] }, ctx);
+    const r = _catchall.run({ value: input[key2], issues: [] }, ctx);
     if (r instanceof Promise) {
-      proms.push(r.then((r2) => handlePropertyResult(r2, payload, key, input, optin, optout)));
+      proms.push(r.then((r2) => handlePropertyResult(r2, payload, key2, input, optin, optout)));
     } else {
-      handlePropertyResult(r, payload, key, input, optin, optout);
+      handlePropertyResult(r, payload, key2, input, optin, optout);
     }
   }
   if (unrecognized.length) {
@@ -11768,16 +11768,16 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
   defineLazyInternal(inst, "propValues", (zod) => {
     const shape = zod.def.shape;
     const propValues = {};
-    for (const key in shape) {
-      const field = shape[key]._zod;
+    for (const key2 in shape) {
+      const field = shape[key2]._zod;
       if (field.values) {
-        if (!Object.prototype.hasOwnProperty.call(propValues, key)) {
-          assignProp(propValues, key, /* @__PURE__ */ new Set());
+        if (!Object.prototype.hasOwnProperty.call(propValues, key2)) {
+          assignProp(propValues, key2, /* @__PURE__ */ new Set());
         }
         for (const v of field.values)
-          propValues[key].add(v);
+          propValues[key2].add(v);
         if (field.optin !== void 0)
-          propValues[key].add(void 0);
+          propValues[key2].add(void 0);
       }
     }
     return propValues;
@@ -11804,22 +11804,22 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     const shape = value.shape;
     const abortEarly = ctx?.abortEarly;
     let seen = payload.issues.length;
-    for (const key of value.allKeys) {
+    for (const key2 of value.allKeys) {
       if (abortEarly && payload.issues.length !== seen) {
         if (aborted(payload, seen))
           break;
         seen = payload.issues.length;
       }
-      if (key === "__proto__")
+      if (key2 === "__proto__")
         continue;
-      const el = shape[key];
+      const el = shape[key2];
       const optin = el._zod.optin;
       const optout = el._zod.optout;
-      const r = el._zod.run({ value: input[key], issues: [] }, ctx);
+      const r = el._zod.run({ value: input[key2], issues: [] }, ctx);
       if (r instanceof Promise) {
-        proms.push(r.then((r2) => handlePropertyResult(r2, payload, key, input, optin, optout)));
+        proms.push(r.then((r2) => handlePropertyResult(r2, payload, key2, input, optin, optout)));
       } else {
-        handlePropertyResult(r, payload, key, input, optin, optout);
+        handlePropertyResult(r, payload, key2, input, optin, optout);
       }
     }
     if (!catchall) {
@@ -11853,17 +11853,17 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
     doc.write(`const input = payload.value;`);
     const ids = /* @__PURE__ */ Object.create(null);
     let counter = 0;
-    for (const key of normalized.allKeys) {
-      ids[key] = `key_${counter++}`;
+    for (const key2 of normalized.allKeys) {
+      ids[key2] = `key_${counter++}`;
     }
     doc.write(memo2 ? `const newResult = memo.alloc(inst, payload, {}, ctx);` : `const newResult = {};`);
-    for (const key of normalized.allKeys) {
-      if (key === "__proto__")
+    for (const key2 of normalized.allKeys) {
+      if (key2 === "__proto__")
         continue;
-      const id = ids[key];
-      const k = typeof key === "symbol" ? `syms[${syms.indexOf(key)}]` : esc(key);
+      const id = ids[key2];
+      const k = typeof key2 === "symbol" ? `syms[${syms.indexOf(key2)}]` : esc(key2);
       const isPresent = `${k} in input`;
-      const schema = shape[key];
+      const schema = shape[key2];
       const optin = schema?._zod?.optin;
       const isOptionalIn = optin !== void 0;
       const isOptionalOut = schema?._zod?.optout === "optional";
@@ -12127,21 +12127,21 @@ function mergeValues(a, b) {
   }
   if (isPlainObject(a) && isPlainObject(b)) {
     const bKeys = Object.keys(b);
-    const sharedKeys = Object.keys(a).filter((key) => bKeys.indexOf(key) !== -1);
+    const sharedKeys = Object.keys(a).filter((key2) => bKeys.indexOf(key2) !== -1);
     const newObj = { ...a, ...b };
     if (Object.prototype.hasOwnProperty.call(newObj, "__proto__"))
       delete newObj.__proto__;
-    for (const key of sharedKeys) {
-      if (key === "__proto__")
+    for (const key2 of sharedKeys) {
+      if (key2 === "__proto__")
         continue;
-      const sharedValue = mergeValues(a[key], b[key]);
+      const sharedValue = mergeValues(a[key2], b[key2]);
       if (!sharedValue.valid) {
         return {
           valid: false,
-          mergeErrorPath: [key, ...sharedValue.mergeErrorPath]
+          mergeErrorPath: [key2, ...sharedValue.mergeErrorPath]
         };
       }
-      newObj[key] = sharedValue.data;
+      newObj[key2] = sharedValue.data;
     }
     return { valid: true, data: newObj };
   }
@@ -12237,12 +12237,12 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
     if (values && !def.partial) {
       payload.value = memo2 ? memo2.alloc(inst, payload, {}, ctx) : {};
       const recordKeys = /* @__PURE__ */ new Set();
-      for (const key of values) {
-        if (typeof key === "string" || typeof key === "number" || typeof key === "symbol") {
-          recordKeys.add(typeof key === "number" ? key.toString() : key);
-          if (key === "__proto__")
+      for (const key2 of values) {
+        if (typeof key2 === "string" || typeof key2 === "number" || typeof key2 === "symbol") {
+          recordKeys.add(typeof key2 === "number" ? key2.toString() : key2);
+          if (key2 === "__proto__")
             continue;
-          const keyResult = def.keyType._zod.run({ value: key, issues: [] }, ctx);
+          const keyResult = def.keyType._zod.run({ value: key2, issues: [] }, ctx);
           if (keyResult instanceof Promise) {
             throw new Error("Async schemas not supported in object keys currently");
           }
@@ -12251,8 +12251,8 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
               code: "invalid_key",
               origin: "record",
               issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
-              input: key,
-              path: [key],
+              input: key2,
+              path: [key2],
               inst
             });
             continue;
@@ -12260,32 +12260,32 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
           const outKey = keyResult.value;
           if (outKey === "__proto__")
             continue;
-          const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+          const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
           if (result instanceof Promise) {
             proms.push(result.then((result2) => {
               if (result2.issues.length) {
-                payload.issues.push(...prefixIssues(key, result2.issues));
+                payload.issues.push(...prefixIssues(key2, result2.issues));
               }
               payload.value[outKey] = result2.value;
             }));
           } else {
             if (result.issues.length) {
-              payload.issues.push(...prefixIssues(key, result.issues));
+              payload.issues.push(...prefixIssues(key2, result.issues));
             }
             payload.value[outKey] = result.value;
           }
         }
       }
       let unrecognized;
-      for (const key in input) {
-        if (!recordKeys.has(key)) {
+      for (const key2 in input) {
+        if (!recordKeys.has(key2)) {
           if (def.mode === "loose") {
-            if (key === "__proto__")
+            if (key2 === "__proto__")
               continue;
-            payload.value[key] = input[key];
+            payload.value[key2] = input[key2];
           } else {
             unrecognized = unrecognized ?? [];
-            unrecognized.push(key);
+            unrecognized.push(key2);
           }
         }
       }
@@ -12301,18 +12301,18 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
     } else {
       payload.value = memo2 ? memo2.alloc(inst, payload, {}, ctx) : {};
       let unrecognized;
-      for (const key of Reflect.ownKeys(input)) {
-        if (key === "__proto__")
+      for (const key2 of Reflect.ownKeys(input)) {
+        if (key2 === "__proto__")
           continue;
-        if (!Object.prototype.propertyIsEnumerable.call(input, key))
+        if (!Object.prototype.propertyIsEnumerable.call(input, key2))
           continue;
-        let keyResult = def.keyType._zod.run({ value: key, issues: [] }, ctx);
+        let keyResult = def.keyType._zod.run({ value: key2, issues: [] }, ctx);
         if (keyResult instanceof Promise) {
           throw new Error("Async schemas not supported in object keys currently");
         }
-        const checkNumericKey = typeof key === "string" && number.test(key) && keyResult.issues.length;
+        const checkNumericKey = typeof key2 === "string" && number.test(key2) && keyResult.issues.length;
         if (checkNumericKey) {
-          const retryResult = def.keyType._zod.run({ value: Number(key), issues: [] }, ctx);
+          const retryResult = def.keyType._zod.run({ value: Number(key2), issues: [] }, ctx);
           if (retryResult instanceof Promise) {
             throw new Error("Async schemas not supported in object keys currently");
           }
@@ -12322,17 +12322,17 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
         }
         if (keyResult.issues.length) {
           if (def.mode === "loose") {
-            payload.value[key] = input[key];
+            payload.value[key2] = input[key2];
           } else if (values) {
             unrecognized = unrecognized ?? [];
-            unrecognized.push(key);
+            unrecognized.push(key2);
           } else {
             payload.issues.push({
               code: "invalid_key",
               origin: "record",
               issues: keyResult.issues.map((iss) => finalizeIssue(iss, ctx, config())),
-              input: key,
-              path: [key],
+              input: key2,
+              path: [key2],
               inst
             });
           }
@@ -12341,17 +12341,17 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
         const outKey = keyResult.value;
         if (outKey === "__proto__")
           continue;
-        const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+        const result = def.valueType._zod.run({ value: input[key2], issues: [] }, ctx);
         if (result instanceof Promise) {
           proms.push(result.then((result2) => {
             if (result2.issues.length) {
-              payload.issues.push(...prefixIssues(key, result2.issues));
+              payload.issues.push(...prefixIssues(key2, result2.issues));
             }
             payload.value[outKey] = result2.value;
           }));
         } else {
           if (result.issues.length) {
-            payload.issues.push(...prefixIssues(key, result.issues));
+            payload.issues.push(...prefixIssues(key2, result.issues));
           }
           payload.value[outKey] = result.value;
         }
@@ -12713,8 +12713,8 @@ function isRecursive(inst, stack, resolve) {
   };
   const shape = (sh, spread) => {
     let answer = NONE;
-    for (const key of Reflect.ownKeys(sh)) {
-      const desc = Object.getOwnPropertyDescriptor(sh, key);
+    for (const key2 of Reflect.ownKeys(sh)) {
+      const desc = Object.getOwnPropertyDescriptor(sh, key2);
       if (spread && !desc.enumerable)
         continue;
       const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve) : NONE;
@@ -12810,8 +12810,8 @@ function isRecursive(inst, stack, resolve) {
       break;
     default: {
       kind;
-      for (const key in def) {
-        const desc = Object.getOwnPropertyDescriptor(def, key);
+      for (const key2 in def) {
+        const desc = Object.getOwnPropertyDescriptor(def, key2);
         if (!desc || desc.get)
           continue;
         const value = desc.value;
@@ -13654,9 +13654,9 @@ function _check(fn, params) {
 // node_modules/zod/v4/core/to-json-schema.js
 function assignProps(target, ...sources) {
   for (const source of sources) {
-    for (const key of Reflect.ownKeys(source)) {
-      if (Object.prototype.propertyIsEnumerable.call(source, key)) {
-        assignProp(target, key, source[key]);
+    for (const key2 of Reflect.ownKeys(source)) {
+      if (Object.prototype.propertyIsEnumerable.call(source, key2)) {
+        assignProp(target, key2, source[key2]);
       }
     }
   }
@@ -13802,8 +13802,8 @@ function extractDefs(ctx, schema) {
     if (defId)
       seen.defId = defId;
     const schema2 = seen.schema;
-    for (const key in schema2) {
-      delete schema2[key];
+    for (const key2 in schema2) {
+      delete schema2[key2];
     }
     schema2.$ref = ref;
   };
@@ -13884,8 +13884,8 @@ function foldObjects(members2) {
   for (const member of members2) {
     if (typeof member !== "object" || member.type !== "object")
       return null;
-    for (const key in member) {
-      if (!FOLDABLE_KEYS.has(key))
+    for (const key2 in member) {
+      if (!FOLDABLE_KEYS.has(key2))
         return null;
     }
     objects.push(member);
@@ -13893,22 +13893,22 @@ function foldObjects(members2) {
   const properties = {};
   const required2 = /* @__PURE__ */ new Set();
   for (const object3 of objects) {
-    for (const key in object3.properties) {
-      if (Object.prototype.hasOwnProperty.call(properties, key))
+    for (const key2 in object3.properties) {
+      if (Object.prototype.hasOwnProperty.call(properties, key2))
         continue;
       const parts = [];
       for (const other of objects) {
-        const part = other.properties?.[key] ?? undeclaredConstraint(other);
+        const part = other.properties?.[key2] ?? undeclaredConstraint(other);
         if (part === null || part === void 0)
           continue;
         if (!parts.some((seen) => JSON.stringify(seen) === JSON.stringify(part)))
           parts.push(part);
       }
       const merged = parts.length === 1 ? parts[0] : foldObjects(parts) ?? { allOf: parts };
-      assignProp(properties, key, merged);
+      assignProp(properties, key2, merged);
     }
-    for (const key of object3.required ?? [])
-      required2.add(key);
+    for (const key2 of object3.required ?? [])
+      required2.add(key2);
   }
   const folded = { type: "object", properties };
   if (required2.size)
@@ -13933,8 +13933,8 @@ function foldIntersection(json) {
   const allOf = json.allOf;
   if (!Array.isArray(allOf) || allOf.length < 2)
     return;
-  for (const key of FOLDABLE_KEYS)
-    if (key in json)
+  for (const key2 of FOLDABLE_KEYS)
+    if (key2 in json)
       return;
   const unions = allOf.filter((m) => UNION_KEYS.some((k) => Array.isArray(m[k])));
   let folded = null;
@@ -13981,20 +13981,20 @@ function finalize(ctx, schema) {
       assignProps(schema2, _cached);
       const isParentRef = zodSchema._zod.parent === ref;
       if (isParentRef) {
-        for (const key in schema2) {
-          if (key === "$ref" || key === "allOf")
+        for (const key2 in schema2) {
+          if (key2 === "$ref" || key2 === "allOf")
             continue;
-          if (!(key in _cached)) {
-            delete schema2[key];
+          if (!(key2 in _cached)) {
+            delete schema2[key2];
           }
         }
       }
       if (refSchema.$ref && refSeen.def) {
-        for (const key in schema2) {
-          if (key === "$ref" || key === "allOf")
+        for (const key2 in schema2) {
+          if (key2 === "$ref" || key2 === "allOf")
             continue;
-          if (key in refSeen.def && JSON.stringify(schema2[key]) === JSON.stringify(refSeen.def[key])) {
-            delete schema2[key];
+          if (key2 in refSeen.def && JSON.stringify(schema2[key2]) === JSON.stringify(refSeen.def[key2])) {
+            delete schema2[key2];
           }
         }
       }
@@ -14006,11 +14006,11 @@ function finalize(ctx, schema) {
       if (parentSeen?.schema.$ref) {
         schema2.$ref = parentSeen.schema.$ref;
         if (parentSeen.def) {
-          for (const key in schema2) {
-            if (key === "$ref" || key === "allOf")
+          for (const key2 in schema2) {
+            if (key2 === "$ref" || key2 === "allOf")
               continue;
-            if (key in parentSeen.def && JSON.stringify(schema2[key]) === JSON.stringify(parentSeen.def[key])) {
-              delete schema2[key];
+            if (key2 in parentSeen.def && JSON.stringify(schema2[key2]) === JSON.stringify(parentSeen.def[key2])) {
+              delete schema2[key2];
             }
           }
         }
@@ -14143,8 +14143,8 @@ function isTransforming(_schema, _ctx) {
     return isTransforming(def.in, ctx) || isTransforming(def.out, ctx);
   }
   if (def.type === "object") {
-    for (const key in def.shape) {
-      if (isTransforming(def.shape[key], ctx))
+    for (const key2 in def.shape) {
+      if (isTransforming(def.shape[key2], ctx))
         return true;
     }
     return false;
@@ -14182,13 +14182,13 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
 };
 
 // node_modules/zod/v4/core/json-schema-processors.js
-var narrowMin = (agg, key, value) => {
-  if (agg[key] === void 0 || value > agg[key])
-    agg[key] = value;
+var narrowMin = (agg, key2, value) => {
+  if (agg[key2] === void 0 || value > agg[key2])
+    agg[key2] = value;
 };
-var narrowMax = (agg, key, value) => {
-  if (agg[key] === void 0 || value < agg[key])
-    agg[key] = value;
+var narrowMax = (agg, key2, value) => {
+  if (agg[key2] === void 0 || value < agg[key2])
+    agg[key2] = value;
 };
 var narrowBoth = (agg, value) => {
   narrowMin(agg, "minimum", value);
@@ -14467,17 +14467,17 @@ var objectProcessor = (schema, ctx, _json, params) => {
   }
   json.type = "object";
   json.properties = {};
-  for (const key in shape) {
-    assignProp(json.properties, key, processSchema(shape[key], ctx, {
+  for (const key2 in shape) {
+    assignProp(json.properties, key2, processSchema(shape[key2], ctx, {
       ...params,
-      path: [...params.path, "properties", key]
+      path: [...params.path, "properties", key2]
     }));
   }
   const requiredKeys = [];
-  for (const key of Object.keys(shape)) {
-    const field = def.shape[key];
+  for (const key2 of Object.keys(shape)) {
+    const field = def.shape[key2];
     if (ctx.io === "input" ? inputOptin(field) === void 0 : field._zod.optout === void 0) {
-      requiredKeys.push(key);
+      requiredKeys.push(key2);
     }
   }
   if (requiredKeys.length > 0) {
@@ -14570,8 +14570,8 @@ function rewriteKeyNames(ctx) {
       bySchema.set(entry.schema, entry);
   }
   const rewrites = /* @__PURE__ */ new Map();
-  for (const record3 of pendingRecords.get(ctx) ?? []) {
-    const seen = ctx.seen.get(record3);
+  for (const record5 of pendingRecords.get(ctx) ?? []) {
+    const seen = ctx.seen.get(record5);
     const names = (seen?.def ?? seen?.schema)?.propertyNames;
     if (!names || names === true || rewrites.has(names))
       continue;
@@ -14784,17 +14784,17 @@ function getLiteralValue(schema) {
 
 // node_modules/zod/v4/classic/errors.js
 var _installedErrorProtos = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]);
-function _lazyMethod(proto, key, make) {
-  Object.defineProperty(proto, key, {
+function _lazyMethod(proto, key2, make) {
+  Object.defineProperty(proto, key2, {
     configurable: true,
     enumerable: false,
     get() {
       const value = make(this);
-      Object.defineProperty(this, key, { value, configurable: true, writable: true });
+      Object.defineProperty(this, key2, { value, configurable: true, writable: true });
       return value;
     },
     set(value) {
-      Object.defineProperty(this, key, { value, configurable: true, writable: true });
+      Object.defineProperty(this, key2, { value, configurable: true, writable: true });
     }
   });
 }
@@ -18323,8 +18323,8 @@ function isPlainObject2(value) {
 }
 function mergeCapabilities(base, additional) {
   const result = { ...base };
-  for (const key in additional) {
-    const k = key;
+  for (const key2 in additional) {
+    const k = key2;
     const addValue = additional[k];
     if (addValue === void 0)
       continue;
@@ -19050,16 +19050,16 @@ var ReadBuffer = class {
     if (index === -1) {
       return null;
     }
-    const line = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
+    const line2 = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
     this._buffer = this._buffer.subarray(index + 1);
-    return deserializeMessage(line);
+    return deserializeMessage(line2);
   }
   clear() {
     this._buffer = void 0;
   }
 };
-function deserializeMessage(line) {
-  return JSONRPCMessageSchema.parse(JSON.parse(line));
+function deserializeMessage(line2) {
+  return JSONRPCMessageSchema.parse(JSON.parse(line2));
 }
 function serializeMessage(message) {
   return JSON.stringify(message) + "\n";
@@ -19134,26 +19134,321 @@ var StdioServerTransport = class {
 
 // program-src/program.mjs
 import { createComputerTools, NativeCallError } from "./native-runtime.mjs";
+
+// program-src/preview.mjs
+var import_pngjs = __toESM(require_png(), 1);
+import { AsyncResource } from "node:async_hooks";
+import { cursorOnWindow, resolveComputerWindow } from "./native-runtime.mjs";
 var record2 = (value) => value && typeof value === "object" && !Array.isArray(value);
+var positive = (value) => Number.isSafeInteger(value) && value > 0;
+var key = (target) => target ? `${target.pid}:${target.window_id}` : "";
+var line = (value) => String(value).split("\n")[0].slice(0, 200);
+var imageOf = (result) => result?.content?.findLast((block) => block.type === "image" && block.mimeType === "image/png");
+var argsForDisplay = (args) => Object.fromEntries(Object.entries(args).filter(([key2]) => ["app", "name", "bundle_id", "text", "key", "keys", "value", "direction"].includes(key2)).map(([key2, value]) => [key2, typeof value === "string" ? value.slice(0, 160) : Array.isArray(value) ? value.slice(0, 8).map((v) => String(v).slice(0, 32)) : value]));
+function projectionPng(base642) {
+  const bytes = Buffer.from(base642, "base64");
+  if (bytes.length < 24 || bytes.readUInt32BE(0) !== 2303741511) throw new Error("The window capture is not a PNG.");
+  const width = bytes.readUInt32BE(16), height = bytes.readUInt32BE(20);
+  if (!positive(width) || !positive(height) || width > 8192 || height > 8192 || width * height > 16777216) throw new Error("The window capture dimensions are unsupported.");
+  const original = import_pngjs.PNG.sync.read(bytes, { checkCRC: true });
+  if (bytes.length <= 512 * 1024) return { width, height, mime: "image/png", data: bytes.toString("base64") };
+  for (let scale = Math.min(0.75, 1280 / Math.max(width, height)); scale >= 1 / Math.max(width, height); scale *= 0.7) {
+    const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
+    const image = new import_pngjs.PNG({ width: w, height: h });
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const at = (Math.min(height - 1, Math.floor(y * height / h)) * width + Math.min(width - 1, Math.floor(x * width / w))) * 4;
+      image.data.set(original.data.subarray(at, at + 4), (y * w + x) * 4);
+    }
+    const encoded = import_pngjs.PNG.sync.write(image);
+    if (encoded.length <= 512 * 1024) return { width, height, mime: "image/png", data: encoded.toString("base64") };
+  }
+  throw new Error("The window capture could not fit the preview transport.");
+}
+function createComputerPreview({ projection, native, tools, control, showTaskPages, notify = async () => {
+}, log = console, now = Date.now }) {
+  const tasks = /* @__PURE__ */ new Map();
+  const shown = /* @__PURE__ */ new Set(), showing = /* @__PURE__ */ new Set(), failedAt = /* @__PURE__ */ new Map();
+  const background = new AsyncResource("ComputerUsePreview");
+  const detached = (work) => background.runInAsyncScope(work);
+  let disposed = false;
+  const report = (error2) => {
+    try {
+      log.warn({ error: String(error2) }, "Computer Use preview failed");
+    } catch {
+    }
+  };
+  const attempt = (work) => {
+    try {
+      void Promise.resolve(work()).catch(report);
+    } catch (error2) {
+      report(error2);
+    }
+  };
+  const changed = () => attempt(() => notify({ method: "notifications/computer-use/changed" }));
+  const valid = (state) => !disposed && !state.abort.signal.aborted && tasks.get(state.session) === state;
+  const retire = (state) => {
+    state.abort.abort();
+    state.frames.length = 0;
+    if (tasks.get(state.session) === state) tasks.delete(state.session);
+  };
+  const close = (state) => {
+    retire(state);
+    if (state.source) detached(() => attempt(() => state.source.close()));
+  };
+  function open2(caller) {
+    let state = tasks.get(caller.session);
+    if (state) {
+      tasks.delete(caller.session);
+      tasks.set(caller.session, state);
+      if (!state.source && !state.opening && now() - state.acquireAt >= 6e4) acquire(state);
+      return state;
+    }
+    state = {
+      session: caller.session,
+      caller: { ...caller, signal: void 0, remainingMs: void 0 },
+      abort: new AbortController(),
+      actions: [],
+      frames: [],
+      target: null,
+      epoch: 0,
+      lastAt: -Infinity,
+      took: 0,
+      capture: null,
+      publishing: Promise.resolve(),
+      source: null,
+      opening: true,
+      problem: null
+    };
+    tasks.set(caller.session, state);
+    if (tasks.size > 16) close(tasks.values().next().value);
+    acquire(state);
+    return state;
+  }
+  function acquire(state) {
+    state.opening = true;
+    state.acquireAt = now();
+    try {
+      const opening = projection.create({
+        input: async () => ({ status: "rejected", reason: "This task preview is read-only. No input was sent." }),
+        disconnect: async () => {
+        },
+        refresh: () => detached(() => capture(state)),
+        close: async () => {
+          retire(state);
+          changed();
+        }
+      });
+      state.sourceReady = Promise.resolve(opening).then((source) => detached(() => {
+        state.opening = false;
+        if (!valid(state)) {
+          attempt(() => source.close());
+          return;
+        }
+        state.source = source;
+        changed();
+      })).catch((error2) => detached(() => {
+        if (valid(state)) {
+          state.opening = false;
+          state.problem = line(error2);
+          changed();
+        }
+      }));
+    } catch (error2) {
+      state.opening = false;
+      state.problem = line(error2);
+    }
+  }
+  function publish(state, result, cursor, epoch) {
+    const image = imageOf(result);
+    if (!image) return;
+    const at = new Date(now()).toISOString();
+    state.publishing = state.publishing.catch(report).then(() => detached(async () => {
+      await state.sourceReady;
+      if (!valid(state) || state.epoch !== epoch || !state.source) return;
+      const frame = projectionPng(image.data);
+      if (result.structuredContent?.screenshot_width !== frame.width || result.structuredContent?.screenshot_height !== frame.height) cursor = null;
+      const target = state.target && { ...state.target };
+      const sequence = await state.source.publish(frame);
+      if (!valid(state) || state.epoch !== epoch) return;
+      state.frames.push({
+        sequence,
+        width: frame.width,
+        height: frame.height,
+        cursor,
+        at,
+        target
+      });
+      state.frames = state.frames.slice(-32);
+      state.problem = null;
+      changed();
+    })).catch((error2) => {
+      if (valid(state) && state.epoch === epoch) {
+        state.problem = line(error2);
+        changed();
+      }
+    });
+  }
+  async function capture(state) {
+    if (!valid(state) || !state.source || !state.target) return;
+    if (state.capture) return state.capture;
+    if (now() - state.lastAt < Math.max(500, state.took)) return;
+    const target = { ...state.target }, epoch = state.epoch, caller = state.caller, owner = state.owner;
+    const stopped = control?.stoppedFor(target.pid);
+    if (stopped) {
+      state.problem = line(stopped);
+      return;
+    }
+    const started = now();
+    state.capture = (async () => {
+      const signal = state.abort.signal;
+      const before = await native.cursorState?.(owner, signal).catch(() => null) ?? null;
+      const result = await tools.call(
+        "get_window_state",
+        {
+          pid: target.pid,
+          window_id: target.window_id,
+          include_screenshot: true,
+          include_accessibility_tree: false,
+          display_only: true,
+          max_dimension: 1280
+        },
+        { ...caller, signal, preview: true }
+      );
+      const after = await native.cursorState?.(owner, signal).catch(() => null) ?? null;
+      if (!valid(state) || state.epoch !== epoch || key(state.target) !== key(target)) return;
+      const stopped2 = control?.stoppedFor(target.pid);
+      if (stopped2) {
+        state.problem = line(stopped2);
+        return;
+      }
+      if (result.isError || !imageOf(result)) throw new Error(result.content?.find((b) => b.type === "text")?.text ?? "The window returned no picture.");
+      const cursor = cursorOnWindow(before, after, result);
+      publish(state, result, cursor, epoch);
+      await state.publishing;
+    })().catch((error2) => {
+      if (valid(state) && state.epoch === epoch) {
+        state.problem = line(error2);
+        changed();
+      }
+    }).finally(() => {
+      state.lastAt = now();
+      state.took = now() - started;
+      state.capture = null;
+    });
+    return state.capture;
+  }
+  return {
+    begin(caller, name, args) {
+      if (disposed) return () => {
+      };
+      const state = open2(caller);
+      const action = { tool: name, args: argsForDisplay(args), at: new Date(now()).toISOString(), status: "running" };
+      state.actions.push(action);
+      state.actions = state.actions.slice(-30);
+      return (result) => {
+        if (!valid(state)) return;
+        if (result?.structuredContent?.code === "needs_confirmation") state.actions = state.actions.filter((a) => a !== action);
+        else action.status = result?.isError === true ? "failed" : "done";
+        changed();
+      };
+    },
+    observed({ caller, owner, name, args, pid, windowId, result }) {
+      const state = tasks.get(caller.session);
+      if (!state || result.isError || !valid(state)) return;
+      const raw = record2(result.structuredContent) ? result.structuredContent : {};
+      state.epoch++;
+      state.caller = { ...caller, signal: void 0, remainingMs: void 0 };
+      const returned = record2(raw.target) ? raw.target : raw;
+      const nextPid = positive(returned.pid) ? returned.pid : pid;
+      const window = positive(nextPid) ? resolveComputerWindow(raw, { pid: nextPid, windowId }) : null;
+      const nextWindow = positive(returned.window_id) ? returned.window_id : window?.windowId ?? windowId;
+      const samePid = nextPid === state.target?.pid;
+      const target = positive(nextPid) ? {
+        pid: nextPid,
+        ...positive(nextWindow) ? { window_id: nextWindow } : samePid && state.target.window_id ? { window_id: state.target.window_id } : {},
+        ...typeof raw.app_name === "string" || typeof args.app === "string" ? { app: raw.app_name ?? args.app } : samePid && state.target.app ? { app: state.target.app } : {}
+      } : null;
+      if (target) {
+        if (key(target) !== key(state.target)) state.problem = "Waiting for a fresh picture of this window.";
+        state.target = target;
+      }
+      state.owner = owner;
+      if (showTaskPages && !shown.has(caller.session) && !showing.has(caller.session) && now() - (failedAt.get(caller.session) ?? -Infinity) >= 6e4) {
+        showing.add(caller.session);
+        try {
+          void Promise.resolve(showTaskPages()).then(
+            () => {
+              shown.add(caller.session);
+              failedAt.delete(caller.session);
+            },
+            (error2) => {
+              failedAt.set(caller.session, now());
+              report(error2);
+            }
+          ).finally(() => showing.delete(caller.session));
+        } catch (error2) {
+          showing.delete(caller.session);
+          failedAt.set(caller.session, now());
+          report(error2);
+        }
+      }
+      if (name === "get_window_state" && state.target?.window_id && imageOf(result)) publish(state, result, null, state.epoch);
+    },
+    async read(session, { live = false } = {}) {
+      let state = typeof session === "string" ? tasks.get(session) : null;
+      if (state && live) await detached(() => capture(state));
+      if (state && !valid(state)) state = null;
+      const target = state?.target ?? null;
+      return {
+        session: typeof session === "string",
+        actions: state?.actions ?? [],
+        target,
+        projection: state?.source?.id ?? null,
+        frames: state?.frames ?? [],
+        live: !!(state?.source && positive(target?.pid) && positive(target?.window_id)),
+        liveProblem: state?.problem ?? null
+      };
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      for (const state of [...tasks.values()]) close(state);
+      background.emitDestroy();
+    }
+  };
+}
+
+// program-src/program.mjs
+var record3 = (value) => value && typeof value === "object" && !Array.isArray(value);
 var uuid2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var failed = (code, text) => ({ isError: true, content: [{ type: "text", text }], structuredContent: { code } });
 var pageTools = [
+  { name: "preview_state", description: "Read only this page\u2019s host-bound task preview metadata. Pictures travel through its authorized projection resource.", inputSchema: { type: "object", properties: { live: { type: "boolean" } }, additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } },
   { name: "permissions_state", description: "Read the running driver\u2019s macOS system permission state without requesting permission.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } },
   { name: "open_system_settings", description: "Open the selected fixed macOS permission settings pane. This does not grant permission; refresh permissions_state afterwards.", inputSchema: { type: "object", properties: { permission: { type: "string", enum: ["accessibility", "screen"] } }, required: ["permission"], additionalProperties: false }, _meta: { ui: { visibility: ["app"] } } }
 ];
-function createComputerProgram({ specs, native, platform = process.platform, protectedHost, settings, control, log = console, notify = async () => {
+function createComputerProgram({ specs, native, platform = process.platform, protectedHost, settings, control, projection, showTaskPages, log = console, notify = async () => {
 } }) {
   let disposed = false;
   const lifetime = new AbortController();
-  const tools = createComputerTools({ cua: native, specs, platform, protectedHost, control });
+  let preview;
+  const tools = createComputerTools({
+    cua: native,
+    specs,
+    platform,
+    protectedHost,
+    control,
+    observed: (value) => preview?.observed(value)
+  });
+  if (projection) preview = createComputerPreview({ projection, native, tools, control, showTaskPages, notify, log });
   const definitions = tools.list().map((tool) => ({ ...tool, _meta: { ui: { visibility: ["model"] } } }));
   return {
     list: () => [...definitions, ...pageTools],
     async call(params, extra = {}) {
       if (disposed) return failed("revoked", "Computer Use has stopped and cannot accept another operation.");
-      const meta2 = record2(params._meta) ? params._meta : {};
+      const meta2 = record3(params._meta) ? params._meta : {};
       const args = params.arguments ?? {};
-      if (!record2(args)) return failed("invalid_args", "Tool arguments must be an object.");
+      if (!record3(args)) return failed("invalid_args", "Tool arguments must be an object.");
       const fromPage = meta2["gugu/caller"] === "app";
       const pageTool = pageTools.some((tool) => tool.name === params.name);
       if (pageTool !== fromPage) return failed("not_granted", "This tool is not available to this caller.");
@@ -19165,6 +19460,7 @@ function createComputerProgram({ specs, native, platform = process.platform, pro
       const signal = extra.signal ? AbortSignal.any([lifetime.signal, extra.signal]) : lifetime.signal;
       if (signal.aborted) return failed("cancelled", "This operation was cancelled before it was sent.");
       const token = meta2.progressToken;
+      let finishPreview, outcome;
       let progress = 0;
       const timer = token !== void 0 && extra.sendNotification ? setInterval(() => {
         void extra.sendNotification({ method: "notifications/progress", params: { progressToken: token, progress: ++progress, message: "Computer Use is preparing or running this operation." } }).catch((error2) => log.warn({ error: String(error2) }, "Could not report Computer Use progress"));
@@ -19172,32 +19468,57 @@ function createComputerProgram({ specs, native, platform = process.platform, pro
       timer?.unref?.();
       try {
         if (fromPage) {
+          if (params.name === "preview_state") {
+            if (Object.keys(args).some((key2) => key2 !== "live") || args.live !== void 0 && typeof args.live !== "boolean") return failed("invalid_args", "preview_state accepts only live. The host selects the task.");
+            const bound = typeof session === "string" && uuid2.test(session) ? session : null;
+            const state = await preview?.read(bound, args) ?? { session: bound !== null, actions: [], target: null, projection: null, frames: [], live: false };
+            return { content: [{ type: "text", text: `${state.actions.length} actions` }], structuredContent: state };
+          }
           if (params.name === "permissions_state") {
             if (Object.keys(args).length) return failed("invalid_args", "permissions_state takes no arguments.");
             if (platform !== "darwin") return failed("unsupported", "macOS permission status is not available on this platform.");
             return await native.callTool("check_permissions", { prompt: false }, { signal, lane: "page-permissions", timeoutMs: 15e3 });
           }
           if (meta2["gugu/agent"]) return failed("not_granted", "Only the person using the App page can open system settings. Tell them what permission is missing through the existing conversation.");
-          if (Object.keys(args).some((key) => key !== "permission") || !["accessibility", "screen"].includes(args.permission)) return failed("invalid_args", "Choose Accessibility or Screen Recording.");
+          if (Object.keys(args).some((key2) => key2 !== "permission") || !["accessibility", "screen"].includes(args.permission)) return failed("invalid_args", "Choose Accessibility or Screen Recording.");
           if (platform !== "darwin") return failed("unsupported", "macOS system settings are not available on this platform.");
           const value = await settings.openSettings(args.permission, signal);
           return { content: [{ type: "text", text: "System Settings was opened. This call did not grant permission; read permissions_state again after the person finishes." }], structuredContent: value };
         }
-        return await tools.call(params.name, args, { agent, session, signal });
+        const caller = {
+          agent,
+          session,
+          signal,
+          ...typeof meta2["gugu/agentName"] === "string" ? { name: meta2["gugu/agentName"] } : {},
+          ...typeof meta2["gugu/taskTitle"] === "string" ? { taskTitle: meta2["gugu/taskTitle"] } : {}
+        };
+        try {
+          finishPreview = preview?.begin(caller, params.name, args);
+        } catch (error2) {
+          log.warn({ error: String(error2) }, "Computer Use preview could not start");
+        }
+        outcome = await tools.call(params.name, args, caller);
+        return outcome;
       } catch (error2) {
         if (signal.aborted) return failed("cancelled", "The operation was cancelled. It may have partially executed; inspect the target before trying another action.");
         if (error2 instanceof NativeCallError) return failed(error2.code, error2.message);
         log.warn({ error: String(error2) }, "Computer Use program call failed");
         return failed("unavailable", "Computer Use could not complete this operation. Reopen the App and retry; reinstall it if preparation keeps failing.");
       } finally {
+        try {
+          finishPreview?.(outcome ?? { isError: true });
+        } catch (error2) {
+          log.warn({ error: String(error2) }, "Computer Use preview could not finish");
+        }
         if (timer) clearInterval(timer);
-        if (!disposed) await notify({ method: "tools/called", params: { tool: params.name } }).catch((error2) => log.warn({ error: String(error2) }, "Could not notify the Computer Use page"));
+        if (!disposed && !fromPage) void Promise.resolve().then(() => notify({ method: "notifications/tools/called", params: { tool: params.name } })).catch((error2) => log.warn({ error: String(error2) }, "Could not notify the Computer Use page"));
       }
     },
     dispose() {
       if (disposed) return;
       disposed = true;
       lifetime.abort();
+      preview?.dispose();
       control?.dispose();
       native.dispose();
     }
@@ -19207,7 +19528,8 @@ function createComputerMcpServer(options) {
   const server = new Server({ name: "computer-use", version: options.version }, { capabilities: { tools: {} }, instructions: "Operate this computer\u2019s apps through the Computer Use tools. Human blockers return immediately; use your existing conversation or AskUserQuestion before retrying an action that needs explicit approval." });
   const program = createComputerProgram({ ...options, notify: (notification) => server.notification(notification) });
   server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: program.list() }));
-  server.setRequestHandler(CallToolRequestSchema, (request, extra) => program.call(request.params, extra));
+  const withCall = options.withCall ?? ((_meta, work) => work());
+  server.setRequestHandler(CallToolRequestSchema, (request, extra) => withCall(request.params._meta, () => program.call(request.params, extra)));
   server.onclose = () => program.dispose();
   return { server, program };
 }
@@ -19249,8 +19571,8 @@ function createProtectedHost({ platform = process.platform, pid = process.pid, p
       processes = new Map((Array.isArray(rows) ? rows : [rows]).map((row) => [row.ProcessId, { parent: row.ParentProcessId, executable: row.ExecutablePath ?? "" }]));
     } else {
       const { stdout } = await run("/bin/ps", ["-ww", "-axo", "pid=,ppid=,comm="], { timeout: 5e3, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, LC_ALL: "en_US.UTF-8" } });
-      processes = new Map(stdout.split("\n").flatMap((line) => {
-        const match = /^\s*(\d+)\s+(\d+)\s+(.+)$/.exec(line);
+      processes = new Map(stdout.split("\n").flatMap((line2) => {
+        const match = /^\s*(\d+)\s+(\d+)\s+(.+)$/.exec(line2);
         return match ? [[Number(match[1]), { parent: Number(match[2]), executable: match[3] }]] : [];
       }));
     }
@@ -19280,14 +19602,14 @@ function createProtectedHost({ platform = process.platform, pid = process.pid, p
 }
 
 // program-src/native.mjs
-var import_pngjs = __toESM(require_png(), 1);
+var import_pngjs2 = __toESM(require_png(), 1);
 import { prepareDriver, createCuaClient, createPermissionClient } from "./native-runtime.mjs";
 function sampleNativePng(base642) {
   const bytes = Buffer.from(base642, "base64");
   if (bytes.length < 24 || bytes.readUInt32BE(0) !== 2303741511) throw new Error("The native capture is not a PNG.");
   const width = bytes.readUInt32BE(16), height = bytes.readUInt32BE(20);
   if (!width || !height || width * height > 64 * 1024 * 1024) throw new Error("The native capture is too large.");
-  const image = import_pngjs.PNG.sync.read(bytes, { checkCRC: true });
+  const image = import_pngjs2.PNG.sync.read(bytes, { checkCRC: true });
   const scale = Math.min(1, 128 / Math.max(width, height));
   const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
   const sample = new Uint8Array(w * h * 4);
@@ -19330,6 +19652,10 @@ function createProgramNative({
   return {
     settings: settings({ bundleDir, dataDir, platform, arch }),
     native: {
+      // Query only an already-running agent lane; viewing must not create an agent session.
+      async cursorState(owner, signal) {
+        return native?.cursorState?.(owner, signal) ?? null;
+      },
       async callTool(name, args, options = {}) {
         const driver = await acquire(options.signal);
         return driver.callTool(name, args, options);
@@ -19343,11 +19669,166 @@ function createProgramNative({
     }
   };
 }
+
+// program-src/control-view.mjs
+import { computerBarBounds, resolveComputerWindow as resolveComputerWindow2 } from "./native-runtime.mjs";
+import { AsyncResource as AsyncResource2 } from "node:async_hooks";
+var record4 = (value) => value && typeof value === "object" && !Array.isArray(value);
+function createComputerSurfaceView({
+  surfaces,
+  native,
+  platform = process.platform,
+  onStop,
+  onResume,
+  log = console,
+  later = setTimeout,
+  clear = clearTimeout
+}) {
+  let current, disposed = false, generation = 0;
+  const background = new AsyncResource2("ComputerUsePresentation");
+  const present = (work) => background.runInAsyncScope(work);
+  const report = (error2) => {
+    try {
+      log.warn({ error: String(error2) }, "Computer Use indicator could not be displayed");
+    } catch {
+    }
+  };
+  const attempt = (work) => {
+    try {
+      void Promise.resolve(work()).catch(report);
+    } catch (error2) {
+      report(error2);
+    }
+  };
+  const data = (intent) => ({ generation: intent.generation, ...intent.view });
+  const live = (intent) => !disposed && current === intent && !intent.abort.signal.aborted;
+  const cancel = (intent) => {
+    if (!intent) return;
+    intent.abort.abort();
+    intent.refresh?.abort();
+    if (intent.timer) clear(intent.timer);
+    intent.off?.();
+    if (intent.handle) present(() => attempt(() => intent.handle.close()));
+    if (current === intent) current = void 0;
+  };
+  async function target(view, signal) {
+    const options = { signal, timeoutMs: 2e3, lane: "computer-use-indicator-" + view.sessionId };
+    if (view.app) {
+      const result = await native.callTool("list_windows", { pid: view.app.pid, on_screen_only: true }, options);
+      return result.isError ? null : resolveComputerWindow2(result.structuredContent, { pid: view.app.pid, windowId: view.app.windowId });
+    }
+    const apps = await native.callTool("list_apps", {}, options);
+    const active = !apps.isError && Array.isArray(apps.structuredContent?.apps) ? apps.structuredContent.apps.find((app) => record4(app) && app.active === true) : null;
+    if (!record4(active) || !Number.isSafeInteger(active.pid) || active.pid <= 0) return null;
+    const windows = await native.callTool("list_windows", { pid: active.pid, on_screen_only: true }, options);
+    const front = !windows.isError && Array.isArray(windows.structuredContent?.windows) ? windows.structuredContent.windows.find((win) => record4(win) && win.pid === active.pid && win.is_on_screen === true && win.on_current_space !== false && (win.layer ?? 0) === 0) : null;
+    return front ? resolveComputerWindow2(windows.structuredContent, { pid: active.pid, windowId: front.window_id }) : null;
+  }
+  async function refresh(intent) {
+    if (!live(intent) || !intent.handle) return;
+    if (intent.timer) clear(intent.timer);
+    intent.timer = void 0;
+    intent.refresh?.abort();
+    const refresh2 = new AbortController();
+    intent.refresh = refresh2;
+    const signal = AbortSignal.any([intent.abort.signal, refresh2.signal]);
+    try {
+      const matched = await target(intent.view, signal);
+      if (!live(intent) || signal.aborted) return;
+      if (!matched) {
+        await intent.handle.update({ visible: false });
+        return;
+      }
+      const display = await surfaces.screen({ bounds: matched.bounds, space: platform === "win32" ? "windows-screen-pixels" : "screen-dip" });
+      if (!live(intent) || signal.aborted) return;
+      const bounds = computerBarBounds(display.bounds, display.workArea);
+      await intent.handle.update(bounds ? {
+        bounds,
+        visible: true,
+        relativeTo: { windowId: String(matched.windowId) },
+        data: { ...data(intent), attachment: bounds.y < display.bounds.y ? "above" : "inside" }
+      } : { visible: false });
+    } catch (error2) {
+      if (live(intent) && !signal.aborted) {
+        report(error2);
+        attempt(() => intent.handle.update({ visible: false }));
+      }
+    } finally {
+      if (live(intent) && !signal.aborted) {
+        intent.timer = later(() => {
+          intent.timer = void 0;
+          void refreshView(intent);
+        }, 250);
+        intent.timer?.unref?.();
+      }
+    }
+  }
+  const refreshView = (intent) => refresh(intent).catch(report);
+  return {
+    show(view) {
+      if (disposed) return;
+      const key2 = JSON.stringify([view.sessionId, view.app?.pid ?? null]);
+      if (current?.key === key2 && !current.abort.signal.aborted) {
+        current.view = view;
+        if (current.handle) {
+          present(() => {
+            attempt(() => current.handle.update({ data: data(current) }));
+            void refreshView(current);
+          });
+        }
+        return;
+      }
+      cancel(current);
+      const intent = { key: key2, view, generation: ++generation, abort: new AbortController() };
+      current = intent;
+      try {
+        const opening = surfaces.open({ entry: "control.html", bounds: { x: 0, y: 0, width: 236, height: 44 }, visible: false, data: data(intent) });
+        void Promise.resolve(opening).then((handle) => present(() => {
+          if (!live(intent)) {
+            attempt(() => handle.close());
+            return;
+          }
+          intent.handle = handle;
+          intent.off = handle.onEvent((event) => present(() => {
+            if (!live(intent)) return;
+            if (event.type === "closed") {
+              cancel(intent);
+              return;
+            }
+            if (event.type === "display" && event.reason) report(event.reason);
+            if (event.type !== "message" || !record4(event.message) || event.message.generation !== intent.generation) return;
+            if (event.message.action === "stop" && intent.view.state === "driving") onStop();
+            if (event.message.action === "resume" && intent.view.state === "paused") onResume();
+          }));
+          return refreshView(intent);
+        })).catch((error2) => {
+          if (live(intent)) {
+            report(error2);
+            cancel(intent);
+          }
+        });
+      } catch (error2) {
+        report(error2);
+        cancel(intent);
+      }
+    },
+    hide() {
+      cancel(current);
+    },
+    dispose() {
+      disposed = true;
+      cancel(current);
+    }
+  };
+}
 export {
   createComputerMcpServer,
+  createComputerPreview,
   createComputerProgram,
+  createComputerSurfaceView,
   createProgramNative,
   createProtectedHost,
+  projectionPng,
   sampleNativePng,
   startComputerStdio
 };

@@ -14,15 +14,19 @@ import { programLogger } from './log'
 
 /** 小条本身(main 用一个不抢焦点、不进截图的置顶小窗实现;测试换成记录器)。没有 app = 没指定 App(查看这台电脑);app 没 name = 认不出名字的 App。 */
 export interface ComputerControlView {
-  show(view: { state: 'driving' | 'paused'; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): unknown
+  show(view: { state: 'driving' | 'paused'; sessionId?: string; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): unknown
   hide(): unknown
 }
 
 /** 一个动作:针对哪个 App(pid;不指定 App 的动作没有)。 */
 export interface ComputerCall {
+  /** Presentation is deferred for a cold launch; cancellation admission is not. */
+  deferAttachment?: boolean
+  sessionId?: string
   callerName?: string
   taskTitle?: string
   pid?: number
+  targetPids?: readonly number[]
   windowId?: number
   appName?: string
 }
@@ -64,7 +68,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
   /** 被人停了的:pid(或 'computer')→ 当时的 App 名(拒绝时说给 agent 听)。 */
   const paused = new Map<Subject, { appName?: string; windowId?: number }>()
   const inFlight = new Map<Subject, Set<AbortController>>()
-  let shown: { subject: Subject; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
+  let shown: { subject: Subject; sessionId?: string; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
   let hideTimer: ReturnType<typeof setTimeout> | null = null
 
   // Display delivery is advisory. Neither an exception, a rejection nor a
@@ -98,6 +102,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
     clearHide()
     display(() => input.view.show({
       state: next.state,
+      ...(next.sessionId ? { sessionId: next.sessionId } : {}),
       ...(next.callerName ? { callerName: next.callerName } : {}),
       ...(next.taskTitle ? { taskTitle: next.taskTitle } : {}),
       ...(next.subject === 'computer' ? {} : { app: { pid: next.subject, ...(next.appName ? { name: next.appName } : {}), ...(next.windowId !== undefined ? { windowId: next.windowId } : {}) } }),
@@ -108,31 +113,37 @@ export function createComputerControl(input: { view: ComputerControlView; linger
   return {
     begin(call) {
       if (disposed) return { refused: 'Computer Use App 已停止，不能接受新的操作。' }
-      const identity = { ...(call.callerName ? { callerName: call.callerName } : {}), ...(call.taskTitle ? { taskTitle: call.taskTitle } : {}) }
+      const identity = { ...(call.sessionId ? { sessionId: call.sessionId } : {}), ...(call.callerName ? { callerName: call.callerName } : {}), ...(call.taskTitle ? { taskTitle: call.taskTitle } : {}) }
       const subject: Subject = call.pid ?? 'computer'
-      const blockedBy = paused.has('computer') ? 'computer' : paused.has(subject) ? subject : null
+      const subjects = new Set<Subject>([subject, ...(call.targetPids ?? [])])
+      const blockedBy = paused.has('computer') ? 'computer' : [...subjects].find(target => paused.has(target)) ?? null
       if (blockedBy !== null) {
         // agent 又来动停了的东西:把暂停的小条重新亮出来,让人看得到、点得到「让它继续」。
-        const appName = blockedBy === 'computer' ? undefined : (paused.get(blockedBy)?.appName ?? call.appName)
-        const windowId = blockedBy === 'computer' ? undefined : (call.windowId ?? paused.get(blockedBy)?.windowId)
+        const appName = blockedBy === 'computer' ? undefined : (paused.get(blockedBy)?.appName ?? (call.pid === blockedBy ? call.appName : undefined))
+        const windowId = blockedBy === 'computer' ? undefined : ((call.pid === blockedBy ? call.windowId : undefined) ?? paused.get(blockedBy)?.windowId)
         show({ subject: blockedBy, ...identity, ...(appName ? { appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'paused' })
         hideAfter(PAUSED_BAR_MS)
         return { refused: blockedBy === 'computer' ? COMPUTER_STOPPED : appStopped(appName) }
       }
       const controller = new AbortController()
-      const set = inFlight.get(subject) ?? new Set<AbortController>()
-      set.add(controller)
-      inFlight.set(subject, set)
+      const sets = [...subjects].map(target => {
+        const set = inFlight.get(target) ?? new Set<AbortController>()
+        set.add(controller)
+        inFlight.set(target, set)
+        return { target, set }
+      })
       const windowId = call.windowId
-      show({ subject, ...identity, ...(call.appName ? { appName: call.appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'driving' })
+      if (!call.deferAttachment) show({ subject, ...identity, ...(call.appName ? { appName: call.appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'driving' })
       let ended = false
       return {
         signal: controller.signal,
         end() {
           if (ended) return
           ended = true
-          set.delete(controller)
-          if (set.size === 0) inFlight.delete(subject)
+          for (const { target, set } of sets) {
+            set.delete(controller)
+            if (set.size === 0 && inFlight.get(target) === set) inFlight.delete(target)
+          }
           if (!busy() && shown?.state === 'driving') hideAfter(lingerMs)
         },
       }
