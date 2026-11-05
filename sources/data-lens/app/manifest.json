@@ -48,7 +48,7 @@
       }
     ],
     "skills": "skills",
-    "instructions": "Read skill data-lens to chart a chat's .csv/.xlsx/.sqlite file: data_schema, data_query, data_card, then widget_send view card."
+    "instructions": "Read skill data-lens to analyse or chart a chat's .csv/.xlsx/.sqlite file: data_schema, data_profile, data_query, data_card, then widget_send view card."
   },
   "license": "MIT",
   "localized": {

@@ -1,7 +1,7 @@
 # Exploratory analysis for Data Lens
 
-Use this guide to understand a tabular file before choosing a model or a hypothesis test. Follow the host
-Python → new CSV → host file-send → Data Lens card workflow in [SKILL.md](../SKILL.md).
+Use this guide to understand a tabular file before choosing a model or a hypothesis test. Start with `data_profile`
+and SQL as in [SKILL.md](../SKILL.md); when SQL is not enough, compute on your host and card the result CSV.
 Adapted from K-Dense's exploratory-data-analysis skill; see [attribution and MIT licence](K-Dense-NOTICE.md).
 The upstream scientific-format inspectors and scripts are not bundled with Lens.
 

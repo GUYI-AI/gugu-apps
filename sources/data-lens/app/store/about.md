@@ -1,1 +1,1 @@
-Ask a question about a data file in your chat and get a chart or table everyone can read. Open the card in Data Lens to explore the numbers together.
+Ask an agent in the chat about a spreadsheet or CSV, and it replies with a chart card everyone can read. Open the card to see the whole table.

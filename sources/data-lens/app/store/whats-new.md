@@ -1,1 +1,1 @@
-Explore charts keep their allocated height instead of growing as the page redraws. The agent instructions now explain that colored bars are stacked; side-by-side grouped bars are not supported.
+Ask "what stands out in this file?" and the agent finds the gaps, outliers, group differences and numbers that move together, each as a chart card.

@@ -1,6 +1,6 @@
 ---
 name: data-lens
-description: Analyse, chart or tabulate a chat's data file (.csv, .tsv, .xlsx, .xls, .ods, .sqlite, .db) as an interactive card. Use for summaries, pivots, exploratory analysis, group comparisons or statistical questions about a chat file; host-side Python can produce derived CSV results for the same card workflow.
+description: Analyse, chart or tabulate a chat's data file (.csv, .tsv, .xlsx, .xls, .ods, .sqlite, .db) as interactive cards in the chat. Use when someone asks what stands out in a file, or to summarise, chart, pivot, compare groups, follow a trend or test a difference.
 ---
 
 # Data Lens cards
@@ -20,31 +20,28 @@ goes into the message. Never paste the data itself into a message or the card.
 4. `widget_send { chat_id, app: "data-lens", view: "card", text, data }` with that `data` as it is. `text` (1–200
    characters) says in words what the card shows and its key finding — it is what notifications and older clients show.
 
-## Analysis beyond SQL
+## Finding what is worth noticing
 
-Use the steps above for questions SQLite can answer. For data quality, distributions or relationships, read
-[exploratory analysis](references/exploratory-analysis.md). For inference, tests or effect estimates, read
-[statistical analysis](references/statistical-analysis.md). Both are adapted from K-Dense's MIT skills;
-[sources, attribution and licence](references/K-Dense-NOTICE.md) are bundled here.
+For "what stands out in this file?" or any open question, look before you chart:
 
-Python runs on **your agent's host machine**, not inside Data Lens. The App remains read-only:
+1. `data-lens__data_profile { file }` — every column's missing and distinct counts; for numbers min, quartiles, max,
+   mean, sd and outliers (beyond 1.5 × IQR); the commonest values of repeated text; the strongest correlations.
+2. Pick the two or three findings that matter for the people asking — a column with many gaps, a skewed or outlying
+   measure, a dominant category, a strong correlation, a trend — and check each with `data_query`:
+   - distribution: `SELECT CAST(x / 10 AS INT) * 10 AS bucket, count(*) AS n FROM t WHERE x IS NOT NULL GROUP BY 1 ORDER BY 1` → `bar`
+   - group comparison: `SELECT g, count(*) AS n, avg(x) AS mean, min(x), max(x) FROM t GROUP BY g ORDER BY mean DESC` → `bar` or `table`
+   - trend: `SELECT strftime('%Y-%m', day) AS month, sum(x) AS total FROM t GROUP BY 1 ORDER BY 1` → `line`
+   - relationship: the strongest pair from the profile → `scatter` (cap rows with `LIMIT 500`)
+   - outliers: `SELECT * FROM t WHERE x > <q3 + 1.5 IQR> ORDER BY x DESC LIMIT 20` → `table`
+3. Send one card per finding, its `text` saying the finding in one sentence with the number. Say how many rows were
+   missing or excluded. A correlation or a group difference is a pattern, not a cause; say so when it matters.
 
-1. Obtain a local copy of the chosen chat file and version through your host's available file-read/download tool.
-   A `gugu-file://` reference is not a local path. Schema samples and `data_query` output can be truncated; do not
-   treat them as the full input for statistical inference. Record the source version, analysed scope and missing-data policy.
-2. Run the analysis with your host's Python tools in a task directory, preserving the input. Use available packages
-   appropriate to the method; record their versions and any random seed. Data Lens does not supply Python or install packages.
-3. Write a **new UTF-8 CSV** containing the computed result, headers and units. Keep numbers numeric and unavailable
-   estimates blank rather than zero. For tests, include sample sizes, effect estimates, interval bounds and p-values
-   where applicable. Keep the runnable analysis alongside it; do not overwrite the source or embed raw data in a card.
-4. Send that local CSV to the **same chat** with your host's existing file-send tool (for example
-   `message_send_file { chat_id, file_path }`). Use the file reference returned by that successful send; do not invent
-   an id, substitute a local path or ask the App to write/upload it. Report a missing host capability or failed run/send
-   instead of claiming a result exists.
-5. Run `data_schema`, `data_query`, `data_card` on the **returned CSV reference**, then send its exact `data` with
-   `widget_send` as above. A `table` suits statistical results with intervals; existing charts do not render error bars.
-   State the method, source version and material limitations in the accompanying explanation. An exploratory pattern
-   is not a confirmed effect, and a card is a view of the computed file rather than proof that the method is valid.
+For a hypothesis test, a confidence interval or a regression, SQL is not enough: read
+[statistical analysis](references/statistical-analysis.md) (and [exploratory analysis](references/exploratory-analysis.md)
+for data quality). They are adapted from K-Dense's MIT-licensed skills ([attribution](references/K-Dense-NOTICE.md)).
+Data Lens runs no Python; run it on your own host if you have it — download the file, compute, write the result as a
+new CSV, send that CSV to the same chat with your file-send tool, and card it like any other file. Without Python on
+your host, say that the test was not run; never make up a statistic.
 
 ## Views
 

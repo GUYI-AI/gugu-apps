@@ -7,6 +7,7 @@ globalThis.require ??= createRequire(import.meta.url)
 const { load, query, DataError } = await import('./lib/engine.js')
 const { cardOf, checkView, dataBytes, DATA_BYTES, viewOf } = await import('./lib/spec.js')
 const { contentOf } = await import('./lib/bytes.js')
+const { profile } = await import('./lib/profile.js')
 
 /** The last few files opened, by id@version: a schema, then a query, then a card read the file once. */
 const opened = new Map()
@@ -76,6 +77,18 @@ export const data_query = {
   async run({ file, sql, sheet, version, limit = 50 }) {
     const { db } = await open(file, version, sheet)
     return JSON.stringify(fit(query(db, sql), Math.min(200, limit)))
+  },
+}
+
+export const data_profile = {
+  description: 'Overview of one whole table, for a first look or "what stands out": row count; per column missing and distinct counts; numbers get min, quartiles, max, mean, sd and the count of outliers (beyond 1.5 IQR); repeated text gets its 5 commonest values; and the strongest correlations (Pearson r) between numeric columns. Exact, over every row.',
+  inputSchema: { type: 'object', required: ['file'], properties: {
+    file: fileParam, sheet: sheetParam, version: versionParam,
+    table: { type: 'string', description: 'Table name (default t, otherwise the first table)' },
+  } },
+  async run({ file, sheet, version, table }) {
+    const { entry, version: v, db, tables } = await open(file, version, sheet)
+    return JSON.stringify({ file: `gugu-file://${entry.id}?v=${v}`, ...profile(db, tables, table) })
   },
 }
 
