@@ -15,7 +15,7 @@ All product images below already existed in the corresponding App before this ar
 | `context.html` | `store/screenshots/1.jpg` | `59ae3c46fd132ec75b1cfd0973282286cf5286b1e7b902388079d824dd9dc287` |
 | `browser-use.html` | `store/screenshots/1.jpg` | `b20cc7ea678d121fd35558f0874b7675365f3663792425f0f47dd6e2a67b9f90` |
 | `computer-use.html` | `store/screenshots/settings.jpg` | `1c5711fdb83f78a416d689f28cb6a5626150bb74d09968c9646797a72e3a1c2b` |
-| `data-lens.html` | `store/screenshots/1-native.png` | `0591bc4de1572fa28d3249769df7e147de59dd83f51f64f96b1a17fb01bbcba6` |
+| `data-lens.html` | `scripts/promo/data-lens-chat.png` (repo path; not in the package) | `ebdec110d5963791f063cf8cd75c10751db1f174f85af96f0f64017445b8157e` |
 | `day-calendar.html` | `store/screenshots/side.png` | `78e9df4611db4ee671d483c98c6d045770afe5af2482ea2e22e304e49b354acd` |
 | `forum.html` | `store/screenshots/3.jpg` | `7662ae08cfe657102729704636ed8aba783024410b911d19aed9eadd0b54c69b` |
 | `kanban.html` | `store/screenshots/1.jpg` | `339866f4d5f9a1777da860619fa9bafda967aee8da9fc0528a5d4664fd41a030` |
@@ -28,3 +28,11 @@ All product images below already existed in the corresponding App before this ar
 ## Teamboard and Data Lens native-image refresh
 
 The Teamboard 1.4.1 and Data Lens 0.1.3 artwork uses actual desktop captures of the preceding App versions, installed through the normal market UI. The final board and chart use native device-scale-2 pixels; the cover canvas stays at scale 1. Electron 44.0.0 / Chromium 152.0.7977.54 on macOS 26.5.1 rendered the covers with PingFang SC, the existing font fallback. See each App's `store/SOURCE.md` for the crop sizes and the retained earlier gallery images. The layouts, icons, colours and wording remain fixed; the new Data Lens template reuses the shared frame and constrains the product image to its native size or smaller.
+
+## Data Lens in a group chat (0.1.4)
+
+The Data Lens cover now shows the App where it is used: a person asks an agent about a CSV in a group, and the agent answers
+with a chart card. `data-lens-chat.png` is an exact crop of a native desktop capture (device scale 2) of that conversation;
+it sits beside the template because it is cover material, not a gallery image. Its aspect ratio is wider than the frame, so
+it is letterboxed on the white screen rather than clipped. The cover was rendered with Chromium 147 on Linux, with Noto Sans
+CJK SC (the template's first font) supplied through a private fontconfig. See `sources/data-lens/app/store/SOURCE.md`.

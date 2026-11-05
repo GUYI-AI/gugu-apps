@@ -1,19 +1,16 @@
 # Screenshot source
 
-Each image is a Data Lens card as an agent posted it in a group chat, captured in the Gugu desktop client (light theme) on November 2, 2026, and cropped to the card (420 × 360). The client was not redrawn.
+Every image is from the Gugu desktop client (light theme, Chinese UI) on November 5, 2026: Data Lens 0.1.4 installed
+from this source, the host built from Gugu `dev` at `73a5d62b`, captured natively at device scale 2 on Linux. Nothing was redrawn.
 
-- `1-bar.png`, `2-heatmap.png`: cards over a sample sales workbook (`.xlsx`).
-- `3-series.png`, `5-table.png`: a three-series line card and a 12-column, 640-row table card over a sample `.sqlite` database.
-- `4-line.png`: a card over a sample store-traffic `.csv`.
+The scene is a real conversation in a two-member group, 「门店经营周会」: a person posts a CSV of weekly figures for five
+stores and asks an agent, "这是上半年各门店的周报，有什么值得注意的？". The agent (Codex, model Gugu GPT-6 Luna) read the
+Data Lens skill, called `data_profile`, `data_query` and `data_card`, and answered with three cards and a summary.
 
-The data files are synthetic, generated for testing; no real customers or sales appear in them.
+- `1-chat.png` — the question and the first card in the group (window crop, scaled to 60 %).
+- `2-open.png` — the card opened with 展开: Data Lens beside the chat, showing the whole 120-row file (scaled to 50 %).
+- `3-findings.png` — the outlier card and the agent's findings (scaled to 75 %).
+- `0-promo.png` — the market cover, `scripts/promo/data-lens.html` around an exact crop of the same conversation.
 
-## Native cover refresh, November 4, 2026
-
-`0-promo.png` and `1-native.png` show a new single-series card, “每周阅读页数合计”, posted by an agent through the product. It uses an example reading-group CSV with five rows, one for each week. The grey bars are the App's normal single-series colour; the chart and its accompanying description agree. No real customer data is shown.
-
-Data Lens 0.1.2 was installed through the normal market UI from `GUYI-AI/gugu-apps@6d3b8e472826742bd6496146e19b7ac96581d81b`. The Gugu desktop host was built from `GUYI-AI/gugu@9b07c9a232f78d963193dd2cfe1ce4d3326b734a`, on macOS 26.5.1. It captured a real device-scale-2 rendering: a 1600 × 1000 logical window produced a 3200 × 2000 native PNG. The host and the App webview both reported device pixel ratio 2.
-
-`1-native.png` is the exact native crop of `dl-card-2x.png` at (618, 736, 1152, 720), in device pixels. It retains the title, five bars and the Open / Ask an agent buttons, while omitting surrounding chat text and the capture label. It was not upscaled, redrawn or populated by editing a screenshot. The original five gallery images described above are retained.
-
-The cover uses the existing shared promotional layout at 1600 × 900 and device scale 1, with `scripts/promo/data-lens.html`. The native product crop is downsampled into the frame; the icon, brand colours and wording follow the approved template. Electron 44.0.0 / Chromium 152.0.7977.54 rendered it with the existing PingFang SC font fallback. The native screenshot, crop and promotional composition are recorded separately. This artwork-only release changes no charting or data-loading code.
+The CSV is synthetic, generated for this capture; no real stores, customers or sales appear in it. The person's name in
+the chat is a test account's display name.
