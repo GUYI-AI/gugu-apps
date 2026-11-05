@@ -10,7 +10,8 @@ Data Lens skill, called `data_profile`, `data_query` and `data_card`, and answer
 - `1-chat.png` — the question and the first card in the group (window crop, scaled to 60 %).
 - `2-open.png` — the card opened with 展开: Data Lens beside the chat, showing the whole 120-row file (scaled to 50 %).
 - `3-findings.png` — the outlier card and the agent's findings (scaled to 75 %).
-- `0-promo.png` — the market cover, `scripts/promo/data-lens.html` around an exact crop of the same conversation.
+- `0-promo.png` — the market cover, `scripts/promo/data-lens.html` around an exact crop of the question and the agent's
+  first card. That crop comes from a second run of the same scene in a narrow (800 px) window, so the two sit close together.
 
 The CSV is synthetic, generated for this capture; no real stores, customers or sales appear in it. The person's name in
 the chat is a test account's display name.
