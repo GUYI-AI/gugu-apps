@@ -289,9 +289,15 @@ test('charts draw in gugu\'s inks, read from its tokens: muted bars, border grid
     const { tab } = await open('card.html', { widget: { messageId: 'm9', data: { file: 'shop', sql, view }, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
     await tab.addStyleTag({ content: `:root { ${tokens} }` })
     await tab.waitForSelector('.stage svg g[aria-label="cell"] rect, .stage svg g[aria-label="bar"] rect')
-    // Drawn before the tokens arrived on this stand-in page: the next paint reads them, as a theme change would.
+    // Drawn before the tokens arrived on this stand-in page: the paint a resize causes reads them, as a theme change would.
+    // Wait for that paint itself: the chart drawn for the stage's new width. An earlier paint (the card repaints once on
+    // its own, from ResizeObserver's first callback) can already lack currentColor and would race the resize's repaint.
     await tab.setViewportSize({ width: 421, height: 360 })
-    await tab.waitForFunction(() => !document.querySelector('.stage svg [fill="currentColor"]'))
+    await tab.waitForFunction(() => {
+      const stage = document.querySelector('.stage')
+      return [...stage.querySelectorAll('svg')].some((svg) => svg.getAttribute('width') === String(stage.clientWidth))
+        && !stage.querySelector('svg [fill="currentColor"]')
+    })
     await check(tab)
     await tab.close()
   }
