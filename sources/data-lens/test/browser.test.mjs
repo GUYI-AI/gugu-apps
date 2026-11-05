@@ -215,6 +215,41 @@ test('the explore page: tables listed, a query run, a view switched, a card draf
   await tab.close()
 })
 
+test('explore charts stay bounded while the host stack and resize observer lay them out', async (t) => {
+  const { tab, errors } = await open('explore.html', { file: { chat: 'chat:1', id: 'csv' }, files: { csv: { name: '销售.csv', version: 1, text: true } } }, { width: 1280, height: 900 })
+  try {
+    // The host supplies .stack (app-runtime/ui/ui.css); the stand-in has no host layout by default.
+    await tab.addStyleTag({ content: ':where(.stack) { display: flex; flex-direction: column; }' })
+    await tab.waitForSelector('table tbody tr')
+    await tab.locator('textarea').fill('SELECT 区域 AS category, 季度 AS series, 金额 AS total FROM t WHERE 金额 IS NOT NULL')
+    await tab.getByRole('button', { name: /Run|运行/ }).click()
+    await tab.getByRole('combobox', { name: /^y/ }).selectOption('total')
+    await tab.getByRole('combobox', { name: /^color/ }).selectOption('series')
+    await tab.getByLabel('Kind').selectOption('bar')
+    await tab.waitForSelector('.stage svg g[aria-label="bar"] rect')
+    for (const width of [1280, 480]) {
+      await tab.setViewportSize({ width, height: 900 })
+      await tab.evaluate(() => document.fonts.ready)
+      const frames = await tab.evaluate(async () => {
+        const samples = []
+        for (let frame = 0; frame < 12; frame++) {
+          await new Promise(requestAnimationFrame)
+          const stage = document.querySelector('.explore-stage').getBoundingClientRect()
+          const plot = document.querySelector('.explore-stage [aria-label="bar"]').closest('svg').getBoundingClientRect()
+          samples.push({ stage: stage.height, plot: plot.height, viewport: innerHeight })
+        }
+        return samples
+      })
+      t.diagnostic(JSON.stringify({ width, frames }))
+      assert.ok(frames.every((sample) => sample.stage <= sample.viewport && sample.plot <= sample.stage + 1), `chart fits its viewport and stage at ${width}px: ${JSON.stringify(frames)}`)
+      assert.ok(frames.every((sample) => Math.abs(sample.stage - frames[0].stage) <= 1), `repainting does not grow the stage at ${width}px: ${JSON.stringify(frames)}`)
+    }
+    assert.deepEqual(errors, [])
+  } finally {
+    await tab.close()
+  }
+})
+
 test('charts draw in gugu\'s inks, read from its tokens: muted bars, border grid, a heatmap ramp from background-3 to foreground', async () => {
   const tokens = '--em-foreground: rgb(10, 10, 10); --em-foreground-muted: rgb(100, 100, 100); --em-foreground-passive: rgb(160, 160, 160); --em-border: rgb(220, 220, 220); --em-background: rgb(255, 255, 255); --em-background-3: rgb(240, 240, 240)'
   for (const [view, check] of [
@@ -254,9 +289,15 @@ test('charts draw in gugu\'s inks, read from its tokens: muted bars, border grid
     const { tab } = await open('card.html', { widget: { messageId: 'm9', data: { file: 'shop', sql, view }, sender: 'user:a' }, files: { shop: { name: 'shop.sqlite', version: 1 } } })
     await tab.addStyleTag({ content: `:root { ${tokens} }` })
     await tab.waitForSelector('.stage svg g[aria-label="cell"] rect, .stage svg g[aria-label="bar"] rect')
-    // Drawn before the tokens arrived on this stand-in page: the next paint reads them, as a theme change would.
+    // Drawn before the tokens arrived on this stand-in page: the paint a resize causes reads them, as a theme change would.
+    // Wait for that paint itself: the chart drawn for the stage's new width. An earlier paint (the card repaints once on
+    // its own, from ResizeObserver's first callback) can already lack currentColor and would race the resize's repaint.
     await tab.setViewportSize({ width: 421, height: 360 })
-    await tab.waitForFunction(() => !document.querySelector('.stage svg [fill="currentColor"]'))
+    await tab.waitForFunction(() => {
+      const stage = document.querySelector('.stage')
+      return [...stage.querySelectorAll('svg')].some((svg) => svg.getAttribute('width') === String(stage.clientWidth))
+        && !stage.querySelector('svg [fill="currentColor"]')
+    })
     await check(tab)
     await tab.close()
   }

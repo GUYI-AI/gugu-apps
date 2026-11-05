@@ -8,7 +8,7 @@ query and the view. Everyone who opens the card reads the file and runs the quer
 
 - `card.html` — the card (a widget view, API 26), and as a tab, a list of the chat's data files.
 - `explore.html` — a data file opened with Data Lens: tables, a query box, the same views.
-- `tools.js` — `data_schema`, `data_query`, `data_card` for agents; `skills/data-lens/SKILL.md` tells them how.
+- `tools.js` — `data_schema`, `data_profile`, `data_query`, `data_card` for agents; `skills/data-lens/SKILL.md` tells them how.
 - `lib/engine.js` — the engine, shared by the pages (in `lib/worker.js`) and the tools: SQLite (sql.js, its asm.js
   build: App pages may not run WebAssembly), workbooks and CSV through SheetJS.
 - `vendor/` — built by `../vendor/build.mjs` from pinned packages; licences in `vendor/LICENSES.txt`.

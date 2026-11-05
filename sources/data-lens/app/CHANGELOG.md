@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Agent tool `data_profile`: a whole-table overview (missing and distinct counts, quartiles, sd, outliers, commonest
+  values, strongest correlations), and skill guidance for turning it into a few checked findings. Guides for
+  statistical tests run on the agent's own host are adapted from K-Dense Scientific Agent Skills (MIT).
+- Keep explore charts within their allocated height when the host lays out the page as a vertical stack.
+- Clarify that colored bars are stacked; side-by-side grouped bars are not supported.
+
 ## 0.1.2
 
 - Dates in CSV output and query results are written in local time, as the workbook shows them; a date with no time of
