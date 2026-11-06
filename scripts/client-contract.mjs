@@ -10,7 +10,7 @@ export const CLIENT_CONTRACT_COMMIT = pin.commit;
 const DIR = 'apps/desktop/src/session/shared/extensions';
 /** Each module, by the function publication runs from it. */
 const MODULES = { 'app-platforms.ts': 'appPlatformProblems', 'app-listing.ts': 'appListingProblems' };
-export const clientContractUrl = (file) => `https://raw.githubusercontent.com/OpenDCAI/gugu/${CLIENT_CONTRACT_COMMIT}/${DIR}/${file}`;
+export const clientContractUrl = (file) => `https://raw.githubusercontent.com/GUYI-AI/gugu/${CLIENT_CONTRACT_COMMIT}/${DIR}/${file}`;
 
 /** Node 24 strips these standalone modules' types. They have no runtime imports and no dependency on the renderer. */
 export async function loadClientContract(request = fetch) {
