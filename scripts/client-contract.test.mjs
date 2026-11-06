@@ -12,7 +12,7 @@ test('publication loads the exact client commit and executes its rules, without 
       : 'export function appListingProblems(input: { about: Record<string, string> }): string[] { return input.about.en ? [] : ["listing control refusal"]; }');
   });
   assert.deepEqual(requests, ['app-platforms.ts', 'app-listing.ts'].map(clientContractUrl));
-  assert.equal(requests[0], `https://raw.githubusercontent.com/OpenDCAI/gugu/${CLIENT_CONTRACT_COMMIT}/apps/desktop/src/session/shared/extensions/app-platforms.ts`);
+  assert.equal(requests[0], `https://raw.githubusercontent.com/GUYI-AI/gugu/${CLIENT_CONTRACT_COMMIT}/apps/desktop/src/session/shared/extensions/app-platforms.ts`);
   assert.deepEqual(contract.appPlatformProblems({ rejected: true }), ['platform control refusal']);
   assert.deepEqual(contract.appListingProblems({ about: {} }), ['listing control refusal']);
 });
