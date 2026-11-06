@@ -1,6 +1,9 @@
 import { assignmentStatus, bountyLabel, bountyTone, forumError, latestRequest, settlementWindow, timeLeft, validateAwards } from './core.mjs'
+import { cloudForum } from './cloud-api.mjs'
 
 const g = window.gugu
+// A gugu with `gugu.cloud` reaches the forum through it; an older one has `gugu.forum`, which draws the points sheet itself.
+const forum = g?.cloud && g.pickAgent ? cloudForum(g) : g?.forum
 const $ = (id) => document.getElementById(id)
 const PAGE = 30
 const state = {
@@ -74,13 +77,83 @@ function currentDraft() {
 function isClosed() { return !!state.detail?.bounty && state.detail.bounty.status !== 'open' }
 function go(hash = '') { window.location.hash = hash }
 function ask(title, description, action) {
-  $('confirm-title').textContent = title
-  $('confirm-description').textContent = description
+  showConfirm(title, [], description, '确定', true)
   $('confirm-action').onclick = () => {
     $('confirm-dialog').close()
     void runWrite(action)
   }
   $('confirm-dialog').showModal()
+}
+function showConfirm(title, lines, description, confirmLabel, danger) {
+  $('confirm-title').textContent = title
+  $('confirm-lines').replaceChildren(...lines.map((line) => h('li', { text: line })))
+  $('confirm-lines').hidden = !lines.length
+  $('confirm-description').textContent = description
+  $('confirm-error').hidden = true
+  $('confirm-action').textContent = confirmLabel
+  $('confirm-action').className = danger ? 'danger' : 'primary'
+}
+/** The confirmation open now: settled when it is done or dismissed. */
+let confirming = null
+/**
+ * Moving points takes the person's press here. `act` runs in that press; one that fails stays open saying why, ❌ closed as if
+ * it had worked. Answers what `act` did, or `{ cancelled: true }`.
+ */
+function confirmThen(sheet, act) {
+  showConfirm(sheet.title, sheet.lines, sheet.body, sheet.confirm, sheet.danger)
+  // This press is the write in progress (`runWrite`), so it stays pressable while the rest of the page waits.
+  $('confirm-action').disabled = false
+  return new Promise((resolve) => {
+    confirming = { resolve, working: false }
+    $('confirm-action').onclick = async () => {
+      const current = confirming
+      if (!current || current.working) return
+      current.working = true
+      $('confirm-error').hidden = true
+      $('confirm-action').disabled = true
+      $('confirm-cancel').disabled = true
+      try {
+        const done = await act()
+        confirming = null
+        $('confirm-dialog').close()
+        resolve(done ?? {})
+      } catch (reason) {
+        current.working = false
+        $('confirm-error').textContent = forumError(reason)
+        $('confirm-error').hidden = false
+      } finally {
+        $('confirm-action').disabled = false
+        $('confirm-cancel').disabled = false
+      }
+    }
+    $('confirm-dialog').showModal()
+  })
+}
+const DAYS_VISIBILITY = { public: '回答公开', poster_only: '回答仅楼主可见，结束后公开' }
+function postBounty(draft) {
+  if (!forum.confirmsInPage || !draft.bounty) return forum.post(draft)
+  const { amount, days, visibility } = draft.bounty
+  return confirmThen({
+    title: '发布悬赏',
+    lines: [draft.title, `赏金 ${amount} 积分`, `${days} 天后截止`, DAYS_VISIBILITY[visibility]],
+    body: `发布后从你的社区积分中扣除 ${amount} 积分。采纳后发给被采纳的回答者；截止时从未有人回答，全额退还；有过回答但未采纳，积分作废。`,
+    confirm: '发布',
+  }, () => forum.post(draft))
+}
+function settle(postId, awards) {
+  if (!forum.confirmsInPage) return forum.award(postId, awards)
+  const { post, replies } = state.detail
+  const ending = awards.length === 0
+  return confirmThen({
+    title: ending ? '结束悬赏' : '采纳回答',
+    lines: [post.title, ...awards.map(({ reply, amount }) => {
+      const found = replies.find((candidate) => candidate.id === reply)
+      return `${found?.owner?.name || found?.author?.name || '用户'} · ${amount} 积分`
+    })],
+    body: ending ? '不采纳任何回答，直接结束悬赏。从未有人回答时，赏金全额退还；有过回答时，赏金作废。' : '采纳后积分发给回答者，悬赏随即结束，仅楼主可见的回答会公开。采纳后不可撤销。',
+    confirm: ending ? '结束悬赏' : '采纳',
+    danger: ending,
+  }, () => forum.award(postId, awards))
 }
 /** invoke is called before the first await, while the user's gesture is active. */
 async function runWrite(invoke, after = () => {}) {
@@ -142,7 +215,7 @@ async function loadFeed() {
     let done = false
     let me
     for (let offset = 0; offset < wanted; offset += PAGE) {
-      const result = await g.forum.list({ ...query, limit: PAGE, offset })
+      const result = await forum.list({ ...query, limit: PAGE, offset })
       if (!feedRequest.current(ticket) || disposed) return
       posts.push(...result.posts)
       me = result.me
@@ -166,7 +239,7 @@ function reactions(kind, id) {
   const existing = state.detail.reactions.filter((r) => r.targetKind === kind && r.targetId === id && r.count > 0)
   const postId = state.postId
   const toggle = (emoji, reaction) => writeButton(`${emoji} ${reaction?.count ?? ''}`.trim(), () => {
-    void runWrite(() => g.forum.react({ kind, id, emoji, on: !reaction?.mine }), () => loadPost(postId))
+    void runWrite(() => forum.react({ kind, id, emoji, on: !reaction?.mine }), () => loadPost(postId))
   }, false, { 'aria-pressed': String(!!reaction?.mine), 'aria-label': `${reaction?.mine ? '取消' : '添加'}表情 ${emoji}，${reaction?.count ?? 0} 人` })
   const row = h('div', { class: 'reactions', 'aria-label': '表情' }, ...existing.map((r) => toggle(r.emoji, r)))
   const unused = ['👍', '❤️', '🎉', '🤔'].filter((emoji) => !existing.some((r) => r.emoji === emoji))
@@ -186,9 +259,9 @@ function menu(person, remove) {
   if (person?.id && person.id !== state.detail.me.id) {
     items.push(
       writeButton('拉黑此人', () => ask('拉黑此人', `拉黑「${person.name || '此用户'}」后，对方及其 agent 无法回复你的帖子。私聊不受影响。`, () =>
-        g.forum.block(person.id, true).then(() => say('已拉黑。')))),
+        forum.block(person.id, true).then(() => say('已拉黑。')))),
       writeButton('取消拉黑', () => {
-        void runWrite(() => g.forum.block(person.id, false), () => say('已取消拉黑。'))
+        void runWrite(() => forum.block(person.id, false), () => say('已取消拉黑。'))
       }),
     )
   }
@@ -214,11 +287,11 @@ function renderAwardControls() {
       const current = [...state.selected].map(([reply, amount]) => ({ reply, amount }))
       const invalid = validateAwards(state.detail.bounty, state.detail.replies, current, state.detail.me.id)
       if (invalid) { error({ message: invalid }, invalid); return }
-      void runWrite(() => g.forum.award(postId, current), (result) => {
+      void runWrite(() => settle(postId, current), (result) => {
         if (result?.confirming) say('已打开采纳确认框，结算完成后会自动更新。')
         else void loadPost(postId)
       })
-    }, !!problem, { class: 'primary', title: problem || '由咕咕确认积分分配后结算' }),
+    }, !!problem, { class: 'primary', title: problem || '确认积分分配后结算' }),
   )
   for (const li of $('replies').children) li.classList.toggle('picked', state.selected.has(li.dataset.reply))
 }
@@ -257,7 +330,7 @@ function renderBounty() {
     h('span', { class: 'coin' }, icon(tone === 'awarded' ? 'check' : 'coins')),
     h('span', { class: 'amount', text: `${bounty.amount} 积分悬赏` }),
     own && bounty.status === 'open' ? h('span', { class: 'acts' }, writeButton('结束悬赏', () => {
-      void runWrite(() => g.forum.award(postId, []), (result) => {
+      void runWrite(() => settle(postId, []), (result) => {
         if (result?.confirming) say('已打开结束悬赏确认框，结算完成后会自动更新。')
         else void loadPost(postId)
       })
@@ -308,7 +381,7 @@ function renderReply(reply, index) {
   }
   const remove = reply.owner?.id === me.id || post.author?.id === me.id
     ? writeButton('删除回复', () => ask('删除回复', '删除后此回复不再显示；已产生的悬赏回答记录不会因此撤销。', () =>
-      g.forum.remove({ reply: reply.id }).then(() => loadPost(postId))), false, { class: 'danger' }) : null
+      forum.remove({ reply: reply.id }).then(() => loadPost(postId))), false, { class: 'danger' }) : null
   const parent = replies.find((r) => r.id === reply.replyTo)
   return h('li', { class: `reply${accepted ? ' accepted' : ''}${state.selected.has(reply.id) ? ' picked' : ''}`, id: `reply-${reply.id}`, 'data-reply': reply.id },
     avatar(reply.author, 'md'),
@@ -354,7 +427,7 @@ function renderAssignments() {
 }
 function assignAgent(postId, agentId) {
   void runWrite(
-    () => agentId ? g.forum.assign(postId, agentId) : g.forum.assign(postId),
+    () => forum.confirmsInPage ? forum.assign(postId, agentId, state.detail?.post?.title || '这个帖子') : agentId ? forum.assign(postId, agentId) : forum.assign(postId),
     (result) => {
       if (result?.assigned) say('已指派 agent。')
     },
@@ -365,7 +438,7 @@ function renderPost() {
   const postId = state.postId
   const own = post.author?.id === me.id
   const remove = own ? writeButton('删除帖子', () => ask('删除帖子', '删除后帖子及其回复将不再显示。', () =>
-    g.forum.remove({ post: postId }).then(() => { if (state.postId === postId) go('') })), bounty?.status === 'open', { class: 'danger', title: bounty?.status === 'open' ? '请先结束悬赏' : null }) : null
+    forum.remove({ post: postId }).then(() => { if (state.postId === postId) go('') })), bounty?.status === 'open', { class: 'danger', title: bounty?.status === 'open' ? '请先结束悬赏' : null }) : null
   $('post-content').replaceChildren(
     h('h2', { text: post.title }),
     h('div', { class: 'byline' }, avatar(post.author, 'md'),
@@ -394,7 +467,7 @@ async function loadPost(id = state.postId) {
   const ticket = postRequest.start()
   $('post-loading').hidden = false
   try {
-    const detail = await g.forum.read(id)
+    const detail = await forum.read(id)
     if (!postRequest.current(ticket) || state.postId !== id || disposed) return
     state.detail = detail
     state.me = { ...state.me, ...detail.me }
@@ -441,7 +514,7 @@ function route() {
     $('assignments').replaceChildren()
     $('reply-form').hidden = true
     $('reply-body').value = currentDraft().text
-    stopPost = g.forum.onChanged(postId, (change) => {
+    stopPost = forum.onChanged(postId, (change) => {
       if (change.kind === 'settled' || change.kind === 'assigned') say('')
       void loadPost(postId)
     })
@@ -489,7 +562,7 @@ $('draft').addEventListener('submit', (event) => {
       return
     }
   }
-  void runWrite(() => g.forum.post(draft), (result) => {
+  void runWrite(() => postBounty(draft), (result) => {
     if (result?.confirming) {
       say('已打开悬赏确认框，确认后列表会自动更新；草稿已保留。')
     } else if (result?.post) {
@@ -511,7 +584,7 @@ $('reply-form').addEventListener('submit', (event) => {
   const text = $('reply-body').value.trim()
   const replyTo = currentDraft().replyTo
   if (!text || text.length > 20000) { error({ message: 'forum_body_invalid' }); return }
-  void runWrite(() => g.forum.reply(postId, text, replyTo ? { replyTo } : {}), async () => {
+  void runWrite(() => forum.reply(postId, text, replyTo ? { replyTo } : {}), async () => {
     const saved = state.drafts.get(postId)
     const unchanged = saved?.text.trim() === text && saved?.replyTo === replyTo
     if (unchanged) state.drafts.delete(postId)
@@ -522,6 +595,12 @@ $('reply-form').addEventListener('submit', (event) => {
   })
 })
 $('confirm-cancel').addEventListener('click', () => $('confirm-dialog').close())
+$('confirm-dialog').addEventListener('cancel', (event) => { if (confirming?.working) event.preventDefault() })
+$('confirm-dialog').addEventListener('close', () => {
+  const dismissed = confirming
+  confirming = null
+  dismissed?.resolve({ cancelled: true })
+})
 window.addEventListener('hashchange', route)
 function dispose() {
   if (disposed) return
@@ -534,10 +613,10 @@ function dispose() {
 }
 window.addEventListener('pagehide', dispose)
 try {
-  if (!g?.forum?.list || !g?.forum?.onChanged) {
+  if (!forum?.list || !forum?.onChanged) {
     throw new Error('forum_api_unavailable')
   }
-  stopFeed = g.forum.onChanged('feed', () => void loadFeed())
+  stopFeed = forum.onChanged('feed', () => void loadFeed())
   route()
 } catch (reason) {
   if (reason?.message === 'forum_api_unavailable') {
