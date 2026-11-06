@@ -22,11 +22,13 @@ async function fixture() {
   const root = join(work, `fixture-${n++}`), repo = join(root, 'GUYI-AI/gugu-apps');
   const path = `releases/${id}/${version}`, dir = join(repo, path);
   mkdirSync(join(dir, 'app/store'), { recursive: true });
+  mkdirSync(join(dir, 'artifacts'));
   const items = {
     'app/manifest.json': Buffer.from(JSON.stringify({ id, version, apiVersion: 12, engines: { gugu: '>=0.2.40' }, entry: 'index.html' })),
     'app/index.html': Buffer.from('<!doctype html><p>Compiled release fixture</p>'),
     'app/LICENSE': Buffer.from('Fixture only.'), 'app/THIRD_PARTY_NOTICES.md': Buffer.from('Fixture only.'),
     'app/store/about.md': Buffer.from('Fixture listing.'), 'app/store/whats-new.md': Buffer.from('Fixture release.'),
+    'artifacts/server-rules.json': Buffer.from('{"fixture":true}'),
   };
   for (const [name, content] of Object.entries(items)) writeFileSync(join(dir, name), content);
   items['app.zip'] = await packDir(join(dir, 'app')); writeFileSync(join(dir, 'app.zip'), items['app.zip']);
@@ -35,7 +37,8 @@ async function fixture() {
     build: { repo: 'GUYI-AI/gugu-assistant', commit, workflow: '.github/workflows/release-candidate.yml', runId: '1', lockSha256: 'b'.repeat(64), node: 'v24.14.0' },
     review: { url: 'https://github.com/GUYI-AI/gugu-assistant/pull/1#pullrequestreview-1', author: 'author', reviewer: 'reviewer', commit },
     compatibility: { desktop: { min: '0.2.40', maxExclusive: '0.3.0' }, server: { min: '0.2.40', maxExclusive: '0.3.0' }, api: { min: 12, max: 30 }, data: { read: { min: 1, max: 1 }, write: { min: 1, max: 1 } } },
-    rulesVersion: '1.0.0', artifacts: [{ role: 'app', ...files.find((file) => file.path === 'app.zip') }], files };
+    rulesVersion: '1.0.0', artifacts: [{ role: 'app', ...files.find((file) => file.path === 'app.zip') },
+      { role: 'server-rules', ...files.find((file) => file.path === 'artifacts/server-rules.json') }], files };
   const raw = Buffer.from(JSON.stringify(release)), signature = sign(null, raw, privateKey);
   writeFileSync(join(dir, 'release.json'), raw); writeFileSync(join(dir, 'release.sig'), signature);
   git(repo, 'init', '-q'); git(repo, 'add', '.'); git(repo, '-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Compiled fixture');
@@ -65,6 +68,9 @@ test('mirror publishes exact package and proof before metadata; repeat changes o
   assert.deepEqual(objects.get(`market/${entry.bundle}`), f.bytes);
   assert.deepEqual(objects.get(`market/${entry.release.manifest}`), f.raw);
   assert.deepEqual(objects.get(`market/${entry.release.signature}`), f.signature);
+  const proofPrefix = `market/${entry.release.manifest}`.replace(/release\.json$/, '');
+  assert.deepEqual(objects.get(`${proofPrefix}app.zip`), f.bytes);
+  assert.deepEqual(objects.get(`${proofPrefix}artifacts/server-rules.json`), readFileSync(join(f.dir, 'artifacts/server-rules.json')));
   assert.ok(writes.indexOf(`market/${entry.release.signature}`) < writes.indexOf(`market/meta/${id}/${version}.json`));
   assert.equal(writes.at(-1), INDEX_KEY);
   writes.length = 0; await sync(options); assert.deepEqual(writes, [INDEX_KEY]);
