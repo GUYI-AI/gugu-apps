@@ -497,6 +497,26 @@ function start() {
   $('pick-send').onclick = () => sendPicks()
   $('pick-dispatch').onclick = () => sendPicks(false)
   $('pick-clear').onclick = () => state.current?.view?.clear()
+  // A right click (a mouse's; a finger's long press stays the view's own) is the host's one menu, holding what the pick
+  // bar does: what is under the pointer is picked first, unless it is picked already (as a spreadsheet does).
+  $('preview').addEventListener('contextmenu', async (e) => {
+    const view = state.current?.view
+    if (!view || e.pointerType === 'touch') return
+    e.preventDefault()
+    view.pickAt(e.clientX, e.clientY)
+    const some = view.picks().length > 0
+    const t = state.t
+    const action = await gugu.showContextMenu({ x: e.clientX, y: e.clientY, items: [
+      { id: 'send', label: t.picksSend, enabled: some },
+      { id: 'dispatch', label: t.picksDispatch, enabled: some },
+      { type: 'separator' },
+      { id: 'clear', label: t.picksClear, enabled: some },
+    ] })
+    if (state.current?.view !== view) return
+    if (action === 'send') sendPicks()
+    else if (action === 'dispatch') sendPicks(false)
+    else if (action === 'clear') view.clear()
+  })
   // The keys are the page's, for every kind of file: Enter puts what is picked in the composer, Esc (a desktop's) lets
   // it go. Not while typing somewhere, and nothing else is taken (a view keeps its own arrows and Shift).
   document.addEventListener('keydown', (e) => {

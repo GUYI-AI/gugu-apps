@@ -189,6 +189,12 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
     }
     pick(pickOf(shape), add)
   }
+  const pickAt = (clientX, clientY) => {
+    const target = document.elementFromPoint(clientX, clientY)?.closest('.pptx-hit')
+    const shape = target && shapeOf.get(target)
+    if (!shape || picks.some((p) => p.shape === shape || p.shapes?.includes(shape))) return
+    pickShape(Number(target.closest('figure').dataset.n), shape, false)
+  }
   const clear = () => {
     if (!picks.length) return
     picks = []
@@ -411,6 +417,8 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
   return {
     slides: numbers.length,
     picks: () => picks.slice(),
+    /** A right click: what is under the pointer picked, unless a pick already covers it. */
+    pickAt,
     clear,
     /** The last waiting pick's mark (a picked shape's box, a box's frame): what the page floats its bar by. */
     anchor: () => lastMark,
