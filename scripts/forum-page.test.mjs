@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import * as core from '../sources/forum/core.mjs'
+import { cloudForum } from '../sources/forum/cloud-api.mjs'
 
 // An in-memory DOM/host boundary for the actual page script, not a browser or a layout test.
 class Element {
@@ -62,7 +63,7 @@ const bounty = { amount: 10, status: 'open', posterId: 'me', visibility: 'poster
 const reply = (id, extra = {}) => ({ id, body: 'Answer ' + id, createdAt: iso(now), author, owner: author, ...extra })
 const detail = (extra = {}) => ({ me, post: { id: 'p', title: 'Question', body: '<b>plain text</b>', author: { ...author, id: 'me' }, createdAt: iso(now) }, bounty, replies: [reply('a'), reply('b')], reactions: [], assignments: [], ...extra })
 
-function page(overrides = {}, hash = '') {
+function page(overrides = {}, hash = '', host = null) {
   const document = new Element('document')
   const stack = [document]
   for (const token of html.match(/<[^>]+>|[^<]+/g)) {
@@ -93,8 +94,8 @@ function page(overrides = {}, hash = '') {
     const fn = forum[key]
     forum[key] = (...args) => { calls.push({ method: key, args: plain(args), gesture }); return fn(...args) }
   }
-  window.gugu = { forum }
-  runInNewContext(source.replace(/^import .*\n/, ''), { ...core, window, document, console,
+  window.gugu = host ? host(() => gesture, calls) : { forum }
+  runInNewContext(source.replace(/^import .*\n/gm, ''), { ...core, cloudForum, window, document, console,
     setTimeout(fn, ms) { const id = ++timer; timers.set(id, { fn, ms }); return id }, clearTimeout(id) { timers.delete(id) },
   }, { filename: 'forum.js' })
   const fire = (node, event = 'click') => { assert.ok(node, 'control exists'); gesture = true; try { node.emit(event) } finally { gesture = false } }
@@ -298,4 +299,81 @@ test('a deleted post hides the sticky award bar and plain bodies never become ma
   assert.equal(p.$('award-bar').hidden, true)
   assert.equal(p.$('error').hidden, false)
   assert.equal(p.$('post-view').textContent.includes('null'), false)
+})
+
+// The coming gugu: no `gugu.forum`; the same page through `gugu.cloud`, with the points confirmation its own.
+const row = { user_id: 'me', community_points: 40 }
+function cloudHost(answers = {}) {
+  return (gesture, calls) => ({
+    cloud: {
+      read: async (name) => (name === 'forum_me' ? [row] : answers[name] ?? []),
+      write: async (name, args) => {
+        calls.push({ write: name, args: plain(args), gesture: gesture() })
+        if (answers.fail) throw new Error(answers.fail)
+        return answers[name] ?? 'post-1'
+      },
+      on: (topic, event, fn) => { calls.push({ on: topic, event }); fn({ subscribed: true }); return () => {} },
+    },
+    pickAgent: async (ask) => { calls.push({ pick: plain(ask), gesture: gesture() }); return answers.picked ?? { cancelled: true } },
+  })
+}
+function fillBounty(p) {
+  p.$('draft-title').value = 'Title'
+  p.$('draft-body').value = 'Body'
+  p.$('with-bounty').checked = true
+  p.$('draft-amount').value = '10'
+}
+
+test('through gugu.cloud a bounty waits for the page confirmation, and the press does the write', async () => {
+  const p = page({}, '#new', cloudHost())
+  await flush()
+  assert.ok(p.calls.some((call) => call.on === 'gugu:forum:feed' && call.event === 'forum_feed_changed'))
+  fillBounty(p)
+  p.fire(p.$('draft'), 'submit')
+  await flush()
+  assert.ok(!p.calls.some((call) => call.write), 'nothing moved before the press')
+  assert.equal(p.$('confirm-title').textContent, '发布悬赏')
+  assert.ok(p.$('confirm-lines').textContent.includes('赏金 10 积分'))
+  p.fire(p.$('confirm-action'))
+  await flush()
+  const [write] = p.calls.filter((call) => call.write)
+  assert.equal(write.write, 'forum_create_post')
+  assert.equal(write.gesture, true)
+  assert.equal(write.args.p_amount, 10)
+})
+
+test('through gugu.cloud a dismissed confirmation writes nothing; a refused one stays open saying why', async () => {
+  const dismissed = page({}, '#new', cloudHost())
+  await flush()
+  fillBounty(dismissed)
+  dismissed.fire(dismissed.$('draft'), 'submit')
+  await flush()
+  dismissed.fire(dismissed.$('confirm-cancel'))
+  await flush()
+  assert.ok(!dismissed.calls.some((call) => call.write))
+
+  const refused = page({}, '#new', cloudHost({ fail: 'bounty_insufficient_points' }))
+  await flush()
+  fillBounty(refused)
+  refused.fire(refused.$('draft'), 'submit')
+  await flush()
+  refused.fire(refused.$('confirm-action'))
+  await flush()
+  assert.equal(refused.$('confirm-error').hidden, false)
+  assert.equal(refused.$('confirm-error').textContent, core.FORUM_ERRORS.bounty_insufficient_points)
+})
+
+test('through gugu.cloud assigning hands the write to the press in gugu sheet', async () => {
+  const read = {
+    seq: 1, post: { id: 'p', title: 'Question', body: 'b', created_at: iso(now), author_user_id: 'other', author_name: 'Author' },
+    bounty: null, replies: [], reactions: [], assignments: [],
+  }
+  const p = page({}, '#post/p', cloudHost({ forum_read_post: read, picked: { agent: 'user:a1', written: null } }))
+  await flush()
+  p.fire(p.button(p.$('assignments'), '指派 agent'))
+  await flush()
+  const { pick } = p.calls.find((call) => call.pick)
+  assert.equal(pick.subject, 'Question')
+  assert.deepEqual(pick.write, { name: 'forum_assign', args: { p_post_id: 'p' }, agent: 'p_agent' })
+  assert.equal(p.$('notice').textContent, '已指派 agent。')
 })

@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "提问、回答与积分悬赏",
   "author": "咕咕",
-  "version": "0.4.0",
-  "apiVersion": 25,
+  "version": "0.5.0",
+  "apiVersion": 30,
   "platforms": [
     "desktop",
     "phone"

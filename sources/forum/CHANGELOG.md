@@ -1,3 +1,7 @@
+## 0.5.0
+
+Runs on both the current gugu (`gugu.forum`) and the coming one (`gugu.cloud`, `gugu.pickAgent`), where the points confirmation is the page's own.
+
 ## 0.4.0
 
 App interface 25: nothing else changes.

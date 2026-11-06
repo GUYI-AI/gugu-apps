@@ -156,6 +156,8 @@ fieldset { min-width: 0; }
 
 #error, #notice { margin: 0 0 var(--em-spacing-md); }
 dialog { max-width: min(440px, calc(100% - 32px)); }
+#confirm-lines { margin: 0 0 8px; padding: 0; list-style: none; }
+#confirm-error { color: var(--em-foreground-destructive); }
 button, summary { touch-action: manipulation; }
 
 @media (max-width: 600px) {
