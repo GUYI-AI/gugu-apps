@@ -83,6 +83,15 @@
       "sha256": "c39a54ff1455f9a2b2e315f87dbed5bd595cf2b2eeab6e06d966ecefb02d8cb4",
       "bytes": 34715,
       "yanked": null
+    },
+    {
+      "version": "0.5.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/forum",
+      "commit": "aef919ff4308453ea15a9e48b1f424446e2eb419",
+      "sha256": "05b26328fd07b082002368e6975cb01396d705a1a658ee210c24380f7c11b4be",
+      "bytes": 38364,
+      "yanked": null
     }
   ]
 }
