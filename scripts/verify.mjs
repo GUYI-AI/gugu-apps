@@ -28,7 +28,8 @@ const problems = [];
 let contract;
 for (const app of apps) {
   // 首启默认组咕咕不问人就装:只能是 gugu 自己的 App —— 每一版的代码都在本仓里。客户端自己也照这个判,这里先拦住。
-  const elsewhere = app.firstRun ? app.versions.filter((version) => version.repo !== INDEX_REPO) : [];
+  const elsewhere = app.firstRun ? app.versions.filter((version) => version.repo !== INDEX_REPO
+    && !(version.release && version.repo === 'GUYI-AI/gugu-apps')) : [];
   if (elsewhere.length) {
     problems.push(`${app.id}: firstRun 只能标在代码就在本仓(${INDEX_REPO})里的 App 上;${elsewhere.map((version) => `${version.version} 在 ${version.repo}`).join('、')}`);
   }
