@@ -66,7 +66,7 @@ export function validateApp(app, fileName) {
     exactKeys(versionFields, ['version', 'repo', 'path', 'commit', 'sha256', 'bytes', 'yanked'], at);
     if (release !== undefined) {
       exactKeys(release, ['keyId'], `${at} release`);
-      if (!APP_ID.test(release.keyId) || version.repo !== 'GUYI-AI/gugu-apps'
+      if (typeof release.keyId !== 'string' || !APP_ID.test(release.keyId) || version.repo !== 'GUYI-AI/gugu-apps'
         || version.path !== `releases/${app.id}/${version.version}`) fail(`${at}: invalid compiled release source`);
     }
     if (!SEMVER.test(version.version)) fail(`${at}: version 要是 x.y.z`);
@@ -246,6 +246,11 @@ export async function rebuildVersion(app, version, contract = null, { releaseKey
   const source = fetchSource(version);
   try {
     if (version.release) {
+      let ancestor = source.root;
+      for (const part of relative(source.root, source.dir).split(sep)) {
+        ancestor = join(ancestor, part);
+        if (lstatSync(ancestor).isSymbolicLink()) fail('Compiled release path cannot traverse a symbolic link');
+      }
       const trust = JSON.parse(readFileSync(new URL('../.github/release-keys.json', import.meta.url), 'utf8'));
       if (trust.schemaVersion !== 1 || !Array.isArray(trust.keys)) fail('Invalid release trust configuration');
       return await inspectReleaseDirectory(source.dir, app, version, releaseKeys ?? trust.keys, packDir, inspectAppDir, contract);

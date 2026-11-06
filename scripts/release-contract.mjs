@@ -16,7 +16,7 @@ export function exact(object, keys, label) {
 export function releasePath(path) {
   if (typeof path !== 'string' || !path || path.includes('\\') || path.includes('\0')
     || path.split('/').some((part) => !part || part === '.' || part === '..' || part.startsWith('.'))
-    || /[:\x00-\x1f]/.test(path)) error('unsafe relative path');
+    || /[:%?#\x00-\x1f]/.test(path)) error('unsafe relative path');
   return path;
 }
 export function compiledFile(path, bytes) {
@@ -57,8 +57,8 @@ export function validateRelease(release, { reviewed = true } = {}) {
   if (reviewed || release.review !== null) {
     exact(release.review, ['url', 'author', 'reviewer', 'commit'], 'review');
     const reviewUrl = new RegExp(`^https://github\\.com/${release.source.repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/pull/[1-9][0-9]*#pullrequestreview-[1-9][0-9]*$`);
-    if (!reviewUrl.test(release.review.url) || !/^[\w-]+$/.test(release.review.author)
-      || !/^[\w-]+$/.test(release.review.reviewer) || release.review.author === release.review.reviewer
+    if (!matches(reviewUrl, release.review.url) || !matches(/^[\w-]+$/, release.review.author)
+      || !matches(/^[\w-]+$/, release.review.reviewer) || release.review.author === release.review.reviewer
       || release.review.commit !== release.source.commit) error('missing non-author review for the source commit');
   }
   const c = release.compatibility;
@@ -67,11 +67,14 @@ export function validateRelease(release, { reviewed = true } = {}) {
   exact(c.data, ['read', 'write'], 'data'); integerRange(c.data.read, 'data.read'); integerRange(c.data.write, 'data.write');
   if (!Array.isArray(release.files) || release.files.length < 1 || release.files.length > 2000) error('invalid file inventory');
   const files = new Map();
+  const portablePaths = new Set();
   let total = 0;
   for (const file of release.files) {
     exact(file, ['path', 'sha256', 'bytes'], 'file'); releasePath(file.path);
+    const portable = file.path.normalize('NFC').toLowerCase();
     if (['release.json', 'release.sig'].includes(file.path) || files.has(file.path)
-      || !SHA.test(file.sha256) || !Number.isSafeInteger(file.bytes) || file.bytes < 0) error('invalid or duplicate file');
+      || portablePaths.has(portable) || !matches(SHA, file.sha256) || !Number.isSafeInteger(file.bytes) || file.bytes < 0) error('invalid or duplicate file');
+    portablePaths.add(portable);
     total += file.bytes; files.set(file.path, file);
   }
   if (total > RELEASE_LIMIT) error('release exceeds 50 MiB');
