@@ -31,7 +31,7 @@ test('both first-party tool App sources are inspectable; only Computer Use has a
   const tabs = {
     'browser-use': undefined,
     'computer-use': [
-      { name: 'settings', title: 'Settings', hostPage: 'settings' },
+      { name: 'settings', title: 'Settings', entry: 'settings.html' },
       { name: 'preview', title: '电脑', entry: 'preview.html', icon: 'icon.png', perSession: true },
     ],
   };
@@ -41,7 +41,9 @@ test('both first-party tool App sources are inspectable; only Computer Use has a
     const read = inspectAppDir(dir, id, version, passing);
     assert.equal(read.manifest.entry, undefined);
     assert.deepEqual(read.manifest.contributes.tabs, expected);
-    assert.deepEqual(read.manifest.contributes.mcpServers, [{ name: id, host: id }]);
+    assert.deepEqual(read.manifest.contributes.mcpServers, id === 'computer-use'
+      ? [{ name: id, command: 'node', args: ['program/server.mjs'] }]
+      : [{ name: id, host: id }]);
     assert.deepEqual(read.manifest.permissions.capabilities, ['agents:tools']);
     assert.ok((await packDir(dir)).length > 0);
   }

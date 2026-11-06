@@ -2,6 +2,7 @@
 import { str, type Args } from './types'
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+const lower = (v: unknown) => typeof v === 'string' ? v.trim().toLowerCase() : ''
 const targetPid = (args: Args): number | undefined => isRecord(args.target) && isNum(args.target.pid) ? args.target.pid : isNum(args.pid) ? args.pid : undefined
 export function createAppDirectory() {
   const described = new Map<number, string>()
@@ -10,6 +11,7 @@ export function createAppDirectory() {
   const fileNames = new Map<number, string>()
   const listed = new Map<number, string>()
   const snapshots = new Map<string, { pid: number; windowId?: number }>()
+  const appPids = new Map<string, number>()
   const askedWindows = new Set<number>()
   const askedDescription = new Set<number>()
   const isFileName = (name: string) => /\.exe$/i.test(name)
@@ -30,7 +32,7 @@ export function createAppDirectory() {
       if (pid !== undefined) return pid
       const token = typeof args.element_token === 'string' ? args.element_token : ''
       const snapshot = token.includes(':') ? token.slice(0, token.lastIndexOf(':')) : ''
-      return snapshot ? snapshots.get(`${session}|${snapshot}`)?.pid : undefined
+      return snapshot ? snapshots.get(`${session}|${snapshot}`)?.pid : appPids.get(`${session}|${lower(args.app)}`)
     },
     windowOf(session: string, args: Args): number | undefined {
       const target = isRecord(args.target) ? args.target : args
@@ -54,11 +56,19 @@ export function createAppDirectory() {
       const target = isRecord(args.target) ? args.target : args
       const windowId = isNum(data.window_id) ? data.window_id : isNum(target.window_id) ? target.window_id : undefined
       if (pid !== undefined && typeof data.snapshot_id === 'string') snapshots.set(`${session}|${data.snapshot_id}`, { pid, ...(windowId !== undefined ? { windowId } : {}) })
+      const remember = (entry: unknown, aliases: unknown[] = []) => {
+        if (!isRecord(entry) || !isNum(entry.pid) || entry.pid <= 0) return
+        for (const name of [entry.app_name, entry.name, entry.bundle_id, ...aliases]) {
+          if (lower(name)) appPids.set(`${session}|${lower(name)}`, entry.pid)
+        }
+      }
+      remember(data, [args.app])
+      for (const list of [data.windows, data.apps]) if (Array.isArray(list)) list.forEach(entry => remember(entry))
       learnOne(data)
       for (const list of [data.windows, data.apps]) if (Array.isArray(list)) list.forEach(learnOne)
     },
   }
 }
-type AppDirectory = ReturnType<typeof createAppDirectory>
+export type AppDirectory = ReturnType<typeof createAppDirectory>
 
 /** Windows:这个进程 exe 版本信息里的 FileDescription(系统语言的 App 名,资源管理器里看到的就是它)。读不到回空串。 */

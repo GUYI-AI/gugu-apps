@@ -842,6 +842,7 @@ function appStopped(appName) {
 var COMPUTER_STOPPED = 'The person pressed Stop on the bar at the bottom of their screen. Do not use computer.* until they press "\u7EE7\u7EED / Continue" on that bar. Tell them what you have done and what is left.';
 var LINGER_MS = 3e4;
 var PAUSED_BAR_MS = 2 * 6e4;
+var log2 = programLogger("control-display");
 function createComputerControl(input) {
   let disposed = false;
   const lingerMs = input.lingerMs ?? LINGER_MS;
@@ -849,6 +850,21 @@ function createComputerControl(input) {
   const inFlight = /* @__PURE__ */ new Map();
   let shown = null;
   let hideTimer = null;
+  const reportViewError = (error) => {
+    try {
+      if (input.onViewError) input.onViewError(error);
+      else log2.warn({ error: String(error) }, "Computer Use display failed");
+    } catch {
+    }
+  };
+  const display = (work) => {
+    try {
+      void Promise.resolve(work()).catch(reportViewError);
+    } catch (error) {
+      reportViewError(error);
+    }
+  };
+  const hide = () => display(() => input.view.hide());
   const clearHide = () => {
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = null;
@@ -857,49 +873,55 @@ function createComputerControl(input) {
     clearHide();
     hideTimer = setTimeout(() => {
       shown = null;
-      input.view.hide();
+      hide();
     }, ms);
     hideTimer.unref?.();
   };
   const show = (next) => {
     shown = next;
     clearHide();
-    input.view.show({
+    display(() => input.view.show({
       state: next.state,
+      ...next.sessionId ? { sessionId: next.sessionId } : {},
       ...next.callerName ? { callerName: next.callerName } : {},
       ...next.taskTitle ? { taskTitle: next.taskTitle } : {},
       ...next.subject === "computer" ? {} : { app: { pid: next.subject, ...next.appName ? { name: next.appName } : {}, ...next.windowId !== void 0 ? { windowId: next.windowId } : {} } }
-    });
+    }));
   };
   const busy = () => [...inFlight.values()].some((set) => set.size > 0);
   return {
     begin(call) {
       if (disposed) return { refused: "Computer Use App \u5DF2\u505C\u6B62\uFF0C\u4E0D\u80FD\u63A5\u53D7\u65B0\u7684\u64CD\u4F5C\u3002" };
-      const identity = { ...call.callerName ? { callerName: call.callerName } : {}, ...call.taskTitle ? { taskTitle: call.taskTitle } : {} };
+      const identity = { ...call.sessionId ? { sessionId: call.sessionId } : {}, ...call.callerName ? { callerName: call.callerName } : {}, ...call.taskTitle ? { taskTitle: call.taskTitle } : {} };
       const subject = call.pid ?? "computer";
-      const blockedBy = paused.has("computer") ? "computer" : paused.has(subject) ? subject : null;
+      const subjects = /* @__PURE__ */ new Set([subject, ...call.targetPids ?? []]);
+      const blockedBy = paused.has("computer") ? "computer" : [...subjects].find((target) => paused.has(target)) ?? null;
       if (blockedBy !== null) {
-        const appName = blockedBy === "computer" ? void 0 : paused.get(blockedBy)?.appName ?? call.appName;
-        const windowId = blockedBy === "computer" ? void 0 : call.windowId ?? paused.get(blockedBy)?.windowId;
-        show({ subject: blockedBy, ...identity, ...appName ? { appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "paused" });
+        const appName = blockedBy === "computer" ? void 0 : paused.get(blockedBy)?.appName ?? (call.pid === blockedBy ? call.appName : void 0);
+        const windowId2 = blockedBy === "computer" ? void 0 : (call.pid === blockedBy ? call.windowId : void 0) ?? paused.get(blockedBy)?.windowId;
+        show({ subject: blockedBy, ...identity, ...appName ? { appName } : {}, ...windowId2 !== void 0 ? { windowId: windowId2 } : {}, state: "paused" });
         hideAfter(PAUSED_BAR_MS);
         return { refused: blockedBy === "computer" ? COMPUTER_STOPPED : appStopped(appName) };
       }
       const controller = new AbortController();
-      const set = inFlight.get(subject) ?? /* @__PURE__ */ new Set();
-      set.add(controller);
-      inFlight.set(subject, set);
-      if (call.pid !== void 0 || !shown) {
-        const windowId = call.windowId;
-        show({ subject, ...identity, ...call.appName ? { appName: call.appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "driving" });
-      } else if (shown.state === "driving") clearHide();
+      const sets = [...subjects].map((target) => {
+        const set = inFlight.get(target) ?? /* @__PURE__ */ new Set();
+        set.add(controller);
+        inFlight.set(target, set);
+        return { target, set };
+      });
+      const windowId = call.windowId;
+      if (!call.deferAttachment) show({ subject, ...identity, ...call.appName ? { appName: call.appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "driving" });
       let ended = false;
       return {
         signal: controller.signal,
         end() {
           if (ended) return;
           ended = true;
-          set.delete(controller);
+          for (const { target, set } of sets) {
+            set.delete(controller);
+            if (set.size === 0 && inFlight.get(target) === set) inFlight.delete(target);
+          }
           if (!busy() && shown?.state === "driving") hideAfter(lingerMs);
         }
       };
@@ -908,6 +930,34 @@ function createComputerControl(input) {
       if (disposed) return "Computer Use App \u5DF2\u505C\u6B62";
       if (paused.has("computer")) return COMPUTER_STOPPED;
       return pid !== void 0 && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null;
+    },
+    setTargetPaused(call, pause) {
+      if (disposed) return "Computer Use App \u5DF2\u505C\u6B62";
+      if (!Number.isSafeInteger(call.pid) || call.pid <= 0) throw new Error("A known application is required");
+      if (paused.has("computer")) return COMPUTER_STOPPED;
+      if (!pause) {
+        paused.delete(call.pid);
+        if (shown?.subject === call.pid && shown.state === "paused") {
+          shown = null;
+          clearHide();
+          hide();
+        }
+        return null;
+      }
+      paused.set(call.pid, { appName: call.appName, windowId: call.windowId });
+      const reason = appStopped(call.appName);
+      for (const controller of inFlight.get(call.pid) ?? []) controller.abort(reason);
+      show({
+        subject: call.pid,
+        sessionId: call.sessionId,
+        callerName: call.callerName,
+        taskTitle: call.taskTitle,
+        appName: call.appName,
+        windowId: call.windowId,
+        state: "paused"
+      });
+      hideAfter(PAUSED_BAR_MS);
+      return reason;
     },
     stop() {
       if (disposed) return;
@@ -929,7 +979,7 @@ function createComputerControl(input) {
       paused.delete(shown.subject);
       shown = null;
       clearHide();
-      input.view.hide();
+      hide();
     },
     dispose() {
       disposed = true;
@@ -938,7 +988,7 @@ function createComputerControl(input) {
       paused.clear();
       shown = null;
       clearHide();
-      input.view.hide();
+      hide();
     }
   };
 }
@@ -1411,6 +1461,7 @@ import { createHash as createHash4 } from "node:crypto";
 // runtime/app-directory.ts
 var isRecord2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 var isNum2 = (v) => typeof v === "number" && Number.isFinite(v);
+var lower2 = (v) => typeof v === "string" ? v.trim().toLowerCase() : "";
 var targetPid2 = (args) => isRecord2(args.target) && isNum2(args.target.pid) ? args.target.pid : isNum2(args.pid) ? args.pid : void 0;
 function createAppDirectory() {
   const described = /* @__PURE__ */ new Map();
@@ -1419,6 +1470,7 @@ function createAppDirectory() {
   const fileNames = /* @__PURE__ */ new Map();
   const listed = /* @__PURE__ */ new Map();
   const snapshots = /* @__PURE__ */ new Map();
+  const appPids = /* @__PURE__ */ new Map();
   const askedWindows = /* @__PURE__ */ new Set();
   const askedDescription = /* @__PURE__ */ new Set();
   const isFileName = (name) => /\.exe$/i.test(name);
@@ -1439,7 +1491,7 @@ function createAppDirectory() {
       if (pid !== void 0) return pid;
       const token = typeof args.element_token === "string" ? args.element_token : "";
       const snapshot = token.includes(":") ? token.slice(0, token.lastIndexOf(":")) : "";
-      return snapshot ? snapshots.get(`${session}|${snapshot}`)?.pid : void 0;
+      return snapshot ? snapshots.get(`${session}|${snapshot}`)?.pid : appPids.get(`${session}|${lower2(args.app)}`);
     },
     windowOf(session, args) {
       const target = isRecord2(args.target) ? args.target : args;
@@ -1463,9 +1515,108 @@ function createAppDirectory() {
       const target = isRecord2(args.target) ? args.target : args;
       const windowId = isNum2(data.window_id) ? data.window_id : isNum2(target.window_id) ? target.window_id : void 0;
       if (pid !== void 0 && typeof data.snapshot_id === "string") snapshots.set(`${session}|${data.snapshot_id}`, { pid, ...windowId !== void 0 ? { windowId } : {} });
+      const remember = (entry, aliases = []) => {
+        if (!isRecord2(entry) || !isNum2(entry.pid) || entry.pid <= 0) return;
+        for (const name of [entry.app_name, entry.name, entry.bundle_id, ...aliases]) {
+          if (lower2(name)) appPids.set(`${session}|${lower2(name)}`, entry.pid);
+        }
+      };
+      remember(data, [args.app]);
+      for (const list of [data.windows, data.apps]) if (Array.isArray(list)) list.forEach((entry) => remember(entry));
       learnOne(data);
       for (const list of [data.windows, data.apps]) if (Array.isArray(list)) list.forEach(learnOne);
     }
+  };
+}
+
+// runtime/placement.ts
+var COMPUTER_HEAD_WIDTH = 236;
+var COMPUTER_HEAD_HEIGHT = 44;
+var record2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+var finite = (v) => typeof v === "number" && Number.isFinite(v);
+function resolveComputerWindow(data, target) {
+  if (!record2(data) || !Array.isArray(data.windows)) return null;
+  const windows = data.windows.filter((w) => record2(w) && w.pid === target.pid && w.is_on_screen === true && w.on_current_space !== false && (target.windowId !== void 0 ? w.window_id === target.windowId : (w.layer ?? 0) === 0));
+  if (windows.length !== 1) return null;
+  const windowId = windows[0]?.window_id, bounds = windows[0]?.bounds;
+  if (!finite(windowId) || !Number.isSafeInteger(windowId) || windowId <= 0) return null;
+  if (!record2(bounds) || !finite(bounds.x) || !finite(bounds.y) || !finite(bounds.width) || !finite(bounds.height) || bounds.width <= 0 || bounds.height <= 0) return null;
+  return { windowId, bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } };
+}
+function computerBarBounds(target, area) {
+  const left = Math.max(target.x, area.x), top = Math.max(target.y, area.y);
+  const right = Math.min(target.x + target.width, area.x + area.width);
+  const bottom = Math.min(target.y + target.height, area.y + area.height);
+  const width = Math.min(COMPUTER_HEAD_WIDTH, Math.floor(right - left - 16)), height = COMPUTER_HEAD_HEIGHT;
+  if (width < 120 || bottom - top < height) return null;
+  const y = target.y - height + 1 >= area.y ? Math.round(target.y - height + 1) : Math.ceil(top);
+  return { x: Math.round(Math.max(left + 8, Math.min(right - width - 8, left + (right - left) * 0.44 - width / 2))), y, width, height };
+}
+
+// runtime/targets.ts
+var record3 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+var number3 = (v) => typeof v === "number" && Number.isFinite(v);
+var lower3 = (v) => typeof v === "string" ? v.trim().toLowerCase() : "";
+async function resolveCallTargets(input) {
+  const launching = input.name === "launch_app";
+  const named = /* @__PURE__ */ new Map();
+  const targetOf = async (args) => {
+    const explicit = record3(args.target) && number3(args.target.pid) ? args.target.pid : number3(args.pid) ? args.pid : void 0;
+    if (!launching && input.control && lower3(args.app) && explicit === void 0 && typeof args.element_token !== "string") {
+      const key = JSON.stringify([args.app, args.window]);
+      let pending = named.get(key);
+      if (!pending) {
+        pending = (async () => {
+          const options = { signal: input.signal, timeoutMs: 5e3, lane: input.owner };
+          try {
+            const listed = await input.native.callTool("list_windows", { app: args.app, on_screen_only: true }, options);
+            const raw = listed.structuredContent;
+            if (!listed.isError && record3(raw) && Array.isArray(raw.windows)) {
+              const data = { ...raw, windows: raw.windows.filter((w) => !lower3(args.window) || record3(w) && lower3(w.title).includes(lower3(args.window))) };
+              const pids = new Set(data.windows.flatMap((w) => record3(w) && number3(w.pid) && w.pid > 0 ? [w.pid] : []));
+              if (pids.size === 1) {
+                const pid = [...pids][0];
+                input.apps.learn(input.owner, data, args);
+                const window = resolveComputerWindow(data, { pid, ...number3(args.window_id) ? { windowId: args.window_id } : {} });
+                return { pid, ...window ? { windowId: window.windowId } : {} };
+              }
+            }
+          } catch {
+          }
+          try {
+            const listed = await input.native.callTool("list_apps", {}, options);
+            const raw = listed.structuredContent;
+            if (!listed.isError && record3(raw) && Array.isArray(raw.apps)) {
+              const matched = raw.apps.filter((app2) => record3(app2) && [app2.name, app2.app_name, app2.bundle_id].some((name) => lower3(name) === lower3(args.app)));
+              const pids = new Set(matched.flatMap((app2) => record3(app2) && number3(app2.pid) && app2.pid > 0 ? [app2.pid] : []));
+              if (pids.size === 1) {
+                const pid = [...pids][0];
+                input.apps.learn(input.owner, { ...raw, pid, apps: matched }, args);
+                return { pid };
+              }
+            }
+          } catch {
+          }
+          const known = input.apps.pidOf(input.owner, args);
+          const stopped = known !== void 0 ? input.control?.stoppedFor(known) : null;
+          return stopped ? { stopped } : {};
+        })();
+        named.set(key, pending);
+      }
+      return pending;
+    }
+    return { pid: input.apps.pidOf(input.owner, args), windowId: input.apps.windowOf(input.owner, args) };
+  };
+  const targets = input.name === "run_steps" ? await Promise.all(stepsOf(input.args).map((step) => targetOf(
+    ["target", "pid", "app", "element_token"].some((key) => step.args[key] !== void 0) ? step.args : { ...input.args, ...step.args }
+  ))) : [await targetOf(input.args)];
+  const first = targets[0];
+  const app = first && targets.every((other) => other.pid === first.pid) ? first : void 0;
+  return {
+    pid: app?.pid ?? (launching ? input.apps.pidOf(input.owner, { app: input.args.name ?? input.args.bundle_id }) : void 0),
+    windowId: app && targets.every((other) => other.windowId === app.windowId) ? app.windowId : void 0,
+    targetPids: [...new Set(targets.flatMap((target) => target.pid !== void 0 ? [target.pid] : []))],
+    stopped: targets.find((target) => target.stopped)?.stopped
   };
 }
 
@@ -1526,25 +1677,67 @@ function createComputerTools(input) {
       }
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
       const owner = "gugu-" + createHash4("sha256").update(caller.agent + "\0" + caller.session).digest("hex").slice(0, 20);
-      const pid = apps.pidOf(owner, forwardArgs);
-      if (pid !== void 0 && self.pids.has(pid)) return failure("invalid_args", "The target belongs to the protected host.");
-      const handle = input.control?.begin({ ...pid === void 0 ? {} : { pid }, ...caller.name ? { callerName: caller.name } : {}, windowId: apps.windowOf(owner, forwardArgs) });
+      const lane = caller.humanViewer ? owner + "-human-" + createHash4("sha256").update(caller.humanViewer).digest("hex").slice(0, 12) : caller.preview ? owner + "-preview" : owner;
+      const launching = name === "launch_app";
+      const target = await resolveCallTargets({
+        name,
+        args: forwardArgs,
+        owner,
+        apps,
+        native: input.cua,
+        signal: caller.signal,
+        ...tool.kind === "act" ? { control: input.control } : {}
+      });
+      if (target.stopped) return failure("revoked", target.stopped);
+      const { pid, windowId, targetPids } = target;
+      if ([pid, ...targetPids].some((pid2) => pid2 !== void 0 && self.pids.has(pid2))) return failure("invalid_args", "The target belongs to the protected host.");
+      const identity = { sessionId: caller.session, ...caller.name ? { callerName: caller.name } : {}, ...caller.taskTitle ? { taskTitle: caller.taskTitle } : {} };
+      let handle = tool.kind === "act" ? input.control?.begin({
+        ...identity,
+        ...launching ? { deferAttachment: true } : {},
+        ...pid === void 0 ? {} : { pid, appName: apps.nameOf(pid) },
+        ...targetPids.some((target2) => target2 !== pid) ? { targetPids } : {},
+        windowId
+      }) : void 0;
       if (handle && "refused" in handle) return failure("revoked", handle.refused);
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal;
       try {
         if (input.platform === "darwin") {
-          const state = permissionState(await input.cua.callTool("check_permissions", { prompt: false }, { signal, lane: owner, timeoutMs: 15e3, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {} }));
+          const state = permissionState(await input.cua.callTool("check_permissions", { prompt: false }, { signal, lane, timeoutMs: 15e3, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {} }));
           if (!state || typeof state.accessibility !== "boolean" || typeof state.screen_recording !== "boolean") return failure("unavailable", "The native driver could not check its system permissions. No input was sent.");
           const missing = [...!state.accessibility ? ["Accessibility"] : [], ...!state.screen_recording ? ["Screen Recording"] : []];
           if (!state.accessibility || !state.screen_recording && needsScreen(name, forwardArgs)) {
             return failure("os_permission", `${missing.join(" and ")} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`);
           }
         }
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
         if (signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
-        const forward = object2(definition.schema.properties) && "session" in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs;
-        const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}, timeoutMs: tool.timeoutMs?.(args) ?? 6e4 });
-        if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs);
+        const forward = object2(definition.schema.properties) && "session" in definition.schema.properties ? { ...forwardArgs, session: lane } : forwardArgs;
+        const result = await input.cua.callTool(name, forward, { signal, lane, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}, timeoutMs: caller.preview ? 1e4 : tool.timeoutMs?.(args) ?? 6e4 });
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
+        if (result.isError !== true) {
+          apps.learn(owner, result.structuredContent, launching ? { ...forwardArgs, app: forwardArgs.name ?? forwardArgs.bundle_id ?? forwardArgs.app } : forwardArgs);
+          if (launching && input.control && object2(result.structuredContent)) {
+            const launchedPid = apps.pidOf(owner, result.structuredContent);
+            if (launchedPid !== void 0) {
+              const window = resolveComputerWindow(result.structuredContent, { pid: launchedPid });
+              handle?.end();
+              const attached = input.control.begin({ ...identity, pid: launchedPid, appName: apps.nameOf(launchedPid), ...window ? { windowId: window.windowId } : {} });
+              if ("refused" in attached) return failure("revoked", attached.refused);
+              handle = attached;
+            }
+          }
+        }
+        if (!caller.preview) {
+          try {
+            input.observed?.({ caller, owner, name, args: forwardArgs, pid, windowId, result });
+          } catch {
+          }
+        }
         return result;
+      } catch (error) {
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
+        throw error;
       } finally {
         handle?.end();
       }
@@ -1558,6 +1751,7 @@ export {
   TOOLS,
   assertNativeArchitecture,
   checkCall,
+  computerBarBounds,
   createComputerControl,
   createComputerTools,
   createCuaClient,
@@ -1570,6 +1764,7 @@ export {
   displayOnlyObservation,
   openCuaDaemonLease,
   prepareDriver,
+  resolveComputerWindow,
   sameCuaImageSample,
   sampleCuaImage,
   settleCuaWindow,

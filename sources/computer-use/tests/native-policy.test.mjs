@@ -114,10 +114,10 @@ test('revocation reaches the native call signal and terminates in-flight dispatc
       if (nativeSignal.aborted) abort(); else nativeSignal.addEventListener('abort', abort, { once: true });
     });
   } } });
-  const rejected = assert.rejects(tools.call('click', { pid: 44 }, caller), /native call cancelled/);
+  const pending = tools.call('click', { pid: 44 }, caller);
   await ready;
   control.dispose();
-  await rejected;
+  assert.equal((await pending).structuredContent.code, 'revoked');
   assert.equal(nativeSignal.aborted, true);
 });
 

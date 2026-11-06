@@ -1,0 +1,10 @@
+main { max-width: 560px; margin: 0 auto; padding: var(--em-spacing-lg); }
+h1 { font-size: 20px; margin-top: 0; }
+#intro, #notice, .permission p { color: var(--em-foreground-muted); }
+#permissions { margin: var(--em-spacing-lg) 0; border: 1px solid var(--em-border); border-radius: var(--em-radius-md); }
+.permission { display: flex; align-items: center; justify-content: space-between; gap: var(--em-spacing-md); padding: var(--em-spacing-md); }
+.permission + .permission { border-top: 1px solid var(--em-border); }
+.permission p { margin: var(--em-spacing-xs) 0 0; }
+.permission button { flex: none; }
+#refresh { display: inline-flex; gap: var(--em-spacing-sm); align-items: center; }
+[hidden] { display: none !important; }
