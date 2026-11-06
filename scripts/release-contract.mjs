@@ -97,8 +97,9 @@ export function validateRelease(release, { reviewed = true } = {}) {
 export function verifyReleaseSignature(raw, signature, keyId, trustedKeys, expected) {
   if (raw.length > 512 * 1024 || signature.length !== 64) error('invalid signature envelope');
   const release = validateRelease(JSON.parse(raw.toString('utf8')));
-  const key = trustedKeys.find((entry) => entry.id === keyId && entry.appId === expected.appId
-    && entry.sourceRepo === release.source.repo && entry.revoked !== true);
+  const key = trustedKeys.find((entry) => entry && typeof entry === 'object' && !Array.isArray(entry)
+    && entry.id === keyId && entry.appId === expected.appId && entry.sourceRepo === release.source.repo
+    && (!Object.hasOwn(entry, 'revoked') || entry.revoked === false));
   if (!key || release.keyId !== keyId || release.appId !== expected.appId || release.version !== expected.version) error('untrusted release identity or signing key');
   const publicKey = createPublicKey(key.publicKey);
   if (publicKey.asymmetricKeyType !== 'ed25519' || !verify(null, raw, publicKey, signature)) error('invalid Ed25519 signature');

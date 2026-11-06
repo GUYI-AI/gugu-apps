@@ -85,3 +85,11 @@ test('changed signature/compatibility, unsigned file and changed app bytes rejec
   rmSync(join(f.dir, 'extra.txt')); writeFileSync(join(f.dir, 'app/index.html'), 'tampered');
   await assert.rejects(inspectReleaseDirectory(f.dir, { id }, f.record, trust, packDir, null, null), /hash mismatch/);
 });
+test('only an omitted or boolean-false revoked flag authorizes a trusted key', async () => {
+  const f = await fixture(), expected = { appId: id, version };
+  for (const revoked of [true, 'true', 'false', 1, 0, null, {}, [], undefined]) {
+    assert.throws(() => verifyReleaseSignature(f.raw, f.signature, 'fixture', [{ ...trust[0], revoked }], expected), /untrusted/);
+  }
+  assert.doesNotThrow(() => verifyReleaseSignature(f.raw, f.signature, 'fixture', [{ ...trust[0], revoked: false }], expected));
+  assert.doesNotThrow(() => verifyReleaseSignature(f.raw, f.signature, 'fixture', trust, expected));
+});

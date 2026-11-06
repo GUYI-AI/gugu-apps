@@ -26,6 +26,8 @@ Trust is configured only in `.github/release-keys.json`, initially empty. A non-
 must scope an Ed25519 public key by `id`, `appId`, `sourceRepo`, `publicKey` and optional `revoked`. A key from a
 package is never trusted. Do not add a real listing until host trust/compatibility consumption and distribution
 terms are approved. No production private key is placed in this repository or workflow.
+An omitted `revoked` field or literal boolean `false` is active; boolean `true` and every non-boolean value are
+invalid for authorization. String or numeric lookalikes never restore trust.
 
 Sync writes the original ZIP plus all declared runtime artifacts, raw signed manifest and signature before meta
 and index. Proof URLs use immutable `market/releases/<id>/<version>-<app-zip-sha>/` paths, and artifact paths in
