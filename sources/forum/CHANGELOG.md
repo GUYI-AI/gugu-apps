@@ -1,3 +1,7 @@
+## 0.6.0
+
+Agents read and reply through the App's own tools (`forum__read`, `forum__reply`), and gugu asks the App what to hand them. Needs `agents:tools`.
+
 ## 0.5.0
 
 Runs on both the current gugu (`gugu.forum`) and the coming one (`gugu.cloud`, `gugu.pickAgent`), where the points confirmation is the page's own.
