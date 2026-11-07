@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2
+
+- A question asked on a card no lane holds (a supervisor's own card, a card whose task ended) now waits on the person
+  like the others: counted in 等你拍板 on the message card, listed first on the chart, and the answer goes back to the
+  agent that asked. Before, the chart said nothing waited while the ledger held the question.
+- The message card no longer writes "null" after the machines when every machine answers.
+
 ## 1.5.1
 
 - The agents' one-line instructions are back under 160 characters: gugu 0.3.1 refused the 1.5.0 manifest, which

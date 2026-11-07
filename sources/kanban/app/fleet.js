@@ -52,7 +52,8 @@ function draw() {
   const off = fleet.machines.filter((m) => !m.online)
   $('machines').replaceChildren(
     h('span', {}, h('i', { class: `dot ${off.length ? 'off' : 'on'}` }), t.machines(c.online, c.machines)),
-    off.length ? h('span', { class: 'off', text: `${t.offline} ${off.map((m) => m.label ?? '?').join('、')}` }) : null,
+    // replaceChildren, unlike h, writes a null child out as the text "null".
+    ...(off.length ? [h('span', { class: 'off', text: `${t.offline} ${off.map((m) => m.label ?? '?').join('、')}` })] : []),
     h('span', { class: 'go', text: `${t.open} ›` }))
   // The full count for screen readers and the right-click description: the same line the message's text would say.
   $('card').setAttribute('aria-label', `${t.title} · ${c.running} ${t.counts.running} · ${c.owner} ${t.counts.owner} · ${c.external} ${t.counts.external} · ${c.error} ${t.counts.error}`)
