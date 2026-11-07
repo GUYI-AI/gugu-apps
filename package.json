@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "ali-oss": "6.23.0",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "zod": "4.4.3"
   }
 }

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
-import { clientContractUrl, loadClientContract } from './client-contract.mjs';
+import { loadClientContract } from './client-contract.mjs';
 import { inspectAppDir, packDir, sha256 } from './lib.mjs';
 import { INDEX_KEY, putObject, sync } from './sync.mjs';
 
@@ -113,15 +113,16 @@ function publishedOss() {
   return oss;
 }
 before(async () => {
-  // Fetch the pinned client sources once. Every CLI process executes those exact bytes; there is no test copy of a rule.
+  // Fetch the pinned client sources once, recording each one the contract imports. Every CLI process executes those
+  // exact bytes; there is no test copy of a rule.
   const sourcesByUrl = {};
-  for (const file of ['app-platforms.ts', 'app-listing.ts']) {
-    const response = await fetch(clientContractUrl(file));
-    assert.equal(response.ok, true, `pinned client contract ${file}: HTTP ${response.status}`);
-    sourcesByUrl[clientContractUrl(file)] = await response.text();
-  }
-  contract = await loadClientContract(async (url) => new Response(sourcesByUrl[url]));
-  publicationApiVersion = contract.APP_PLATFORMS_API_VERSION;
+  contract = await loadClientContract(async (url) => {
+    const response = await fetch(url);
+    assert.equal(response.ok, true, `pinned client contract ${url}: HTTP ${response.status}`);
+    sourcesByUrl[url] = await response.text();
+    return new Response(sourcesByUrl[url]);
+  });
+  publicationApiVersion = contract.EXTENSION_API_VERSION_MIN_SUPPORTED;
   writeFileSync(contractTransport, `const sources = ${JSON.stringify(sourcesByUrl)};\nglobalThis.fetch = async (url) => { if (!(String(url) in sources)) throw new Error('unexpected contract URL'); return new Response(sources[String(url)]); };\n`);
   mkdirSync(join(sources, 'owner', 'probe'), { recursive: true });
   git(join(sources, 'owner', 'probe'), 'init', '-q');
@@ -184,7 +185,7 @@ test('verify:提交不在源码仓默认分支的历史里(只在 fork / 别的�
   assert.equal(verify(base).ok, true);
 });
 
-test('verify:新登记的一版照钉住的客户端 app-listing.ts 判 store/:缺关于 / 关于里有图 / 没截图 / 缺新功能 / 缺副标题都红,齐了绿', async () => {
+test('verify:新登记的一版照钉住的客户端 app-listing.ts 判 store/、照 manifest.ts 判 manifest:缺关于 / 关于里有图 / 没截图 / 缺新功能 / 缺副标题 / 给 agent 的一行话超长都红,齐了绿', async () => {
   const app = JSON.parse(readFileSync(join(index, 'apps', 'probe.json'), 'utf8'));
   const base = git(index, 'rev-parse', 'HEAD');
   const cases = [
@@ -194,6 +195,8 @@ test('verify:新登记的一版照钉住的客户端 app-listing.ts 判 store/:�
     [{}, { 'whats-new.md': null }, /store\/whats-new\.md: missing/],
     [{ subtitle: undefined }, {}, /subtitle: a listed App needs one/],
     [{ localized: { 'zh-CN': { subtitle: '探针' } } }, {}, /store\/about\.zh-CN\.md: missing/],
+    // 客户端解析不过的 manifest 会让整个 App 从它的市场里消失(kanban 1.5.0)。
+    [{ contributes: { tabs: [{ name: 'main', title: 'Main' }], instructions: 'x'.repeat(161) } }, {}, /manifest\.json contributes\.instructions/],
   ];
   try {
     for (const [i, [extra, store, refusal]] of cases.entries()) {
@@ -240,9 +243,12 @@ test('publication: add-version and verify execute the same pinned platform rule;
     [{ platforms: undefined }, /declare desktop, phone, or both/],
     [{ platforms: ['phone', 'phone'] }, /duplicate platform/],
     [{ platforms: ['tablet'] }, /only desktop and phone are supported/],
-    [{ apiVersion: publicationApiVersion - 1 }, new RegExp(`requires apiVersion ${publicationApiVersion}`)],
+    // Out of the pinned client's range either way: the client refuses it, so publication does too.
+    [{ apiVersion: publicationApiVersion - 1 }, new RegExp(`apiVersion ${publicationApiVersion - 1} is an older App interface.*move the pin`)],
+    [{ apiVersion: contract.EXTENSION_API_VERSION + 1 }, new RegExp(`apiVersion ${contract.EXTENSION_API_VERSION + 1} needs a newer gugu.*move the pin`)],
     [{ platforms: ['phone'], permissions: { capabilities: ['notifications'] } }, /phone does not support notifications/],
-    [{ platforms: ['phone'], permissions: { capabilities: ['agents:tools'] } }, null],
+    // An agent capability does not make a phone page invalid; the client's schema wants what it gives agents named.
+    [{ platforms: ['phone'], permissions: { capabilities: ['agents:tools'] }, contributes: { tabs: [{ name: 'main', title: 'Main' }], skills: 'skills', instructions: 'Read skill probe.' } }, null],
     [{ platforms: ['desktop'], permissions: { capabilities: ['notifications'] } }, null],
   ];
   try {
@@ -265,7 +271,7 @@ test('publication: add-version and verify execute the same pinned platform rule;
   }
 });
 
-test('本仓每个 App 的源码都照钉住的客户端规矩可上架(store/、subtitle、defaultLocale、平台)', () => {
+test('本仓每个 App 的源码都照钉住的客户端规矩可上架(manifest、store/、subtitle、defaultLocale、平台)', () => {
   const root = new URL('../sources/', import.meta.url).pathname;
   for (const id of readdirSync(root)) {
     const dir = existsSync(join(root, id, 'app', 'manifest.json')) ? join(root, id, 'app') : join(root, id);
