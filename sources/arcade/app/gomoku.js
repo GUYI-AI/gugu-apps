@@ -32,7 +32,7 @@ export function mount(stage, { f, nameOf }) {
   const actions = document.createElement('div')
   actions.className = 'row'
   stage.append(line, canvas, actions)
-  const { g, stop } = board(canvas, N * CELL, N * CELL)
+  const { g, stop } = board(canvas, N * CELL, N * CELL, () => draw())
 
   const cellAt = (e) => {
     const r = canvas.getBoundingClientRect(), s = r.width / (N * CELL)

@@ -1,5 +1,7 @@
 # Screenshot source
 
-`1-snake.png`, `2-tanks.png`, `3-bomber.png` and `4-gomoku.png` are 联机小游戏 0.1.1's own page (`main.html` and its modules, unchanged) rendered in headless Chromium at a 360 px wide phone viewport (3× pixels), on November 7, 2026 (UTC). The page sits on gugu's App stylesheet (`ui.css` from a 0.3.2 beta client), in the dark theme for 1–2 and the light theme for 3–4. Nothing was redrawn.
+`1-gomoku.png`, `2-snake.png` and `3-bomber.png` each put two real screens of the same moment side by side: on the left, 联机小游戏 0.1.1 in the gugu desktop client on macOS (the App's own page, captured from its webview over the DevTools protocol); on the right, the whole screen of the gugu Android app on an Android emulator (Pixel profile, Android 14, `adb screencap`). Taken on November 7, 2026 (UTC).
 
-The group file and the other players come from a stand-in for `window.gugu` written for these pictures: example names (小明, 阿花, 大壮, 周周, 老王), boards and positions as a game in progress would hold them. Each picture was taken a moment after the page opened, so the snake has just started and the bombs in 3 have just gone off.
+Three example accounts (阿青, 小林, 老陈) were in one group, two on desktop clients and one on the emulator, all playing at once; a test script pressed the keys and clicked the places a person would. In 1, the faint stone on the phone is where the desktop player is pointing.
+
+The pictures were then laid out at 1600×900 with one caption: the desktop capture inside a plain window frame (a full-window capture would show the test group's name in the sidebar), the phone screen inside a plain phone outline. Nothing in the screens was redrawn.

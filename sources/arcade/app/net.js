@@ -55,8 +55,9 @@ export const near = (a, b, r) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 < r * r
 /** Add one to `table[who]` in the file. */
 export const bump = (table, who) => { table[who] = (table[who] ?? 0) + 1 }
 
-/** A canvas scaled to its box for crisp drawing. */
-export function board(canvas, w, h) {
+/** A canvas scaled to its box for crisp drawing. Resizing clears it: `redraw` paints it again, for a game that
+ *  draws only when something changes. */
+export function board(canvas, w, h, redraw) {
   const fit = () => {
     const scale = Math.min(canvas.parentElement.clientWidth / w, 1.6)
     canvas.style.width = `${w * scale}px`
@@ -65,8 +66,9 @@ export function board(canvas, w, h) {
     canvas.getContext('2d').setTransform(scale * devicePixelRatio, 0, 0, scale * devicePixelRatio, 0, 0)
   }
   fit()
-  addEventListener('resize', fit)
-  return { g: canvas.getContext('2d'), stop: () => removeEventListener('resize', fit) }
+  const resize = () => { fit(); redraw?.() }
+  addEventListener('resize', resize)
+  return { g: canvas.getContext('2d'), stop: () => removeEventListener('resize', resize) }
 }
 
 /** The arcade's colours. A game's screen is night in either theme, like a cabinet's, so the players' colours read the
