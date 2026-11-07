@@ -1,0 +1,26 @@
+{
+  "id": "prompts",
+  "name": "Prompt 管理",
+  "defaultLocale": "zh-CN",
+  "subtitle": "让 agent 帮你整理输入框 / 里的提示词",
+  "author": "咕咕",
+  "license": "MIT",
+  "version": "0.1.0",
+  "apiVersion": 34,
+  "platforms": ["desktop"],
+  "engines": { "gugu": ">=0.3.3" },
+  "categories": ["productivity"],
+  "permissions": { "capabilities": ["prompts", "agents:tools"] },
+  "contributes": {
+    "mcpServers": [{ "tools": "tools.js" }],
+    "instructions": "The person's saved prompts (the composer's / menu): prompts__list, save, delete (the person can undo). App prompts are read-only."
+  },
+  "examples": ["把这段存成提示词", "我的提示词里有哪些重复的？"],
+  "localized": {
+    "en": {
+      "name": "Prompts",
+      "subtitle": "Let agents tidy your prompts",
+      "examples": ["Save this as a prompt", "Which of my prompts overlap?"]
+    }
+  }
+}
