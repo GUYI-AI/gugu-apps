@@ -103,17 +103,23 @@ export function fleetOf({ agents = [], devices = [], unreached = [] } = {}, boar
   }
   const supervisors = new Set([...machines.values()].flatMap((m) => (m.supervisor ? [m.supervisor.agent.agentId] : [])))
 
+  const offline = new Set([...machines.values()].filter((m) => !m.online).map((m) => m.deviceId))
   const laneOf = (a, depth) => {
     const card = cardBySession.get(a.sessionId) ?? null
-    const state = taskState(a)
+    // A machine that does not answer has only its last reading: its tasks' states are unknown, its cards still speak.
+    const seen = offline.has(deviceOf(a)) ? null : a
+    const state = seen ? taskState(a) : { key: 'gone', waiting: false }
     const lane = {
       agent: a, card, state, depth,
       supervisor: supervisors.has(a.agentId),
+      named: Boolean(named[a.sessionId]),
+      // Every session under it, on any machine: what archiving must not orphan.
+      childCount: (children.get(a.agentId) ?? []).length,
       crossMachine: Boolean(a.parentAgentId && byAgent.has(a.parentAgentId) && deviceOf(byAgent.get(a.parentAgentId)) !== deviceOf(a)),
       stale: Boolean(card && (state.key === 'running' || state.key === 'parked' || card.waitKind || card.waitingOn) && now - Date.parse(card.updatedAt) > STALE_MS),
       children: [],
     }
-    lane.wait = waitOf(board, card, a)
+    lane.wait = waitOf(board, card, seen)
     lane.tone = toneOf(lane)
     lane.children = (children.get(a.agentId) ?? []).filter((c) => deviceOf(c) === deviceOf(a) && !supervisors.has(c.agentId)).map((c) => laneOf(c, depth + 1))
     return lane
@@ -127,8 +133,9 @@ export function fleetOf({ agents = [], devices = [], unreached = [] } = {}, boar
       placed.add(sup.agentId)
       // The supervisor opens like a lane (its card, its wait), with the machine's lanes as its children.
       const card = cardBySession.get(sup.sessionId) ?? null
-      const lane = { agent: sup, card, state: taskState(sup), depth: -1, supervisor: true, crossMachine: false, stale: false, children: m.lanes }
-      lane.wait = waitOf(board, card, sup)
+      const seen = m.online ? sup : null
+      const lane = { agent: sup, card, state: seen ? taskState(sup) : { key: 'gone', waiting: false }, depth: -1, supervisor: true, named: m.supervisor.named, childCount: (children.get(sup.agentId) ?? []).length, crossMachine: false, stale: false, children: m.lanes }
+      lane.wait = waitOf(board, card, seen)
       lane.tone = toneOf(lane)
       m.supervisor.lane = lane
     }
@@ -152,12 +159,12 @@ export function fleetOf({ agents = [], devices = [], unreached = [] } = {}, boar
   const all = []
   const flat = (lanes, m) => { for (const l of lanes) { all.push({ lane: l, machine: m }); flat(l.children, m) } }
   for (const m of machines.values()) flat(m.lanes, m)
-  const live = all.filter(({ machine: m }) => m.online)
   const waits = all.filter(({ lane }) => lane.wait).sort((a, b) =>
     WAIT_ORDER.indexOf(a.lane.wait.kind) - WAIT_ORDER.indexOf(b.lane.wait.kind) || String(a.lane.wait.since ?? '9').localeCompare(String(b.lane.wait.since ?? '9')))
   const counts = {
     lanes: all.length,
-    running: live.filter(({ lane }) => lane.tone === 'run').length,
+    // One rule for every count: a lane's tone (an offline machine's tasks read as unknown, never as running).
+    running: all.filter(({ lane }) => lane.tone === 'run').length,
     // A remote agent's live counters are null, but its status (needs_user) is not: a waiting task is counted either way.
     owner: all.filter(({ lane }) => lane.wait?.kind === 'owner').length,
     external: all.filter(({ lane }) => EXTERNAL.has(lane.wait?.kind)).length,
@@ -192,14 +199,24 @@ export function decisionsFor(board, { card = null, machine = null, release = nul
   })
 }
 
-/** Who may archive a lane, and why not: each check with its result. Archived sessions never come back. */
-export function archiveChecks(lane) {
+/**
+ * What the page checks before it asks a supervisor to archive a lane. These are a hint, not the gate: the supervisor
+ * checks again itself (skill kanban) and refuses what does not hold. Archived sessions never come back.
+ * - notSupervisor: not a supervisor, named or guessed, and not a root session (an unnamed root may be a supervisor);
+ * - supervisorNamed: its machine's supervisor is named on the board, so it is known who carries this out;
+ * - handedOver: a handoff accepted on the card, or a pull request the last sync saw (not one closed unmerged) — an
+ *   agent's pr link that no sync has seen does not count;
+ * - noChildren: no session under it, on any machine.
+ */
+export function archiveChecks(lane, machine) {
   const card = lane.card
   const pr = card ? prOf(card) : null
+  const prSeen = Boolean(pr?.syncedAt) && !(pr.closed && !pr.merged)
   return [
-    { key: 'notSupervisor', ok: !lane.supervisor },
-    { key: 'handedOver', ok: Boolean(card?.handoff?.acceptedAt) || Boolean(pr && !pr.closed) || Boolean(pr?.merged), pr: pr ? prNumber(pr.url) : null },
-    { key: 'noChildren', ok: lane.children.length === 0 },
+    { key: 'notSupervisor', ok: !lane.supervisor && !lane.named && Boolean(lane.agent.parentAgentId) },
+    { key: 'supervisorNamed', ok: Boolean(machine?.supervisor?.named) },
+    { key: 'handedOver', ok: Boolean(card?.handoff?.acceptedAt) || prSeen, pr: prSeen ? prNumber(pr.url) : null },
+    { key: 'noChildren', ok: (lane.childCount ?? lane.children.length) === 0 },
   ]
 }
 

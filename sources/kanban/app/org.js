@@ -4,7 +4,7 @@
 // (owner 11-07): first what waits on the person, then who waits on what else, then the chart; a lane opens to its
 // essentials and its actions, the rest one click further.
 import { openChatBoard, applyToFile, filled, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
-import { decisionsInOrder, prNumber } from './lib/core.js'
+import { decisionsInOrder, decisionLabel, prNumber } from './lib/core.js'
 import { fleetOf, archiveChecks, parentChoices, decisionsFor, prOf, WAIT_ORDER } from './lib/fleet.js'
 import { wordsFor, engineOf } from './lib/fleet-text.js'
 
@@ -174,7 +174,8 @@ async function decideAsk(decision, lane, answer) {
     await change({ type: 'decision.decide', decision: decision.id, answer })
   } catch { return }
   const done = board.decisions[decision.id]
-  if (await tell(lane.agent.agentId, t.toDecision(done))) showAlert(t.decidedNote(done.n))
+  const label = decisionLabel(board, done)
+  if (await tell(lane.agent.agentId, t.toDecision(done, label))) showAlert(t.decidedNote(label))
 }
 
 /** Layer 1: everyone else's waits, as counts; a click narrows the chart to that kind. */
@@ -205,7 +206,7 @@ function machineView(m) {
   const rest = lanes.filter(ended)
   const key = m.deviceId ?? 'here'
   const head = h('button', { class: 'sup', onclick: () => sup && openLane(sup.agent.agentId), disabled: !sup },
-    h('span', { class: 'row' }, h('strong', { text: sup ? sup.agent.title ?? t.supervisor : m.online ? t.noSupervisor : machineName(m) }), sup ? engineTag(sup.agent) : null, sup ? h('span', { class: 'lock', title: t.locked }, icon('lock')) : null),
+    h('span', { class: 'row' }, h('strong', { text: sup ? sup.agent.title ?? t.supervisor : m.online ? t.noSupervisor : machineName(m) }), sup ? engineTag(sup.agent) : null, sup ? h('span', { class: 'lock', title: t.locked }, icon('lock')) : null, sup && !sup.named ? h('small', { class: 'muted', text: t.unnamed }) : null),
     h('small', { class: 'mach' }, h('i', { class: `dot ${m.online ? 'on' : 'off'}` }), machineName(m), m.online ? ` · ${t.lanes(m.counts.lanes)}` : ` · ${t.offline} · ${t.offlineSince}`))
   return h('section', { class: `machine${m.online ? '' : ' offline'}`, 'aria-label': machineName(m) },
     head,
@@ -315,7 +316,7 @@ function moreLayer(lane, machine, pr) {
     ...row(t.fields.updated, card?.updatedAt ? time(card.updatedAt) : time(a.updatedAt), card ? 'lane' : 'task'))
   const ds = card ? decisionsFor(board, { card: card.id, machine: machine.label }) : decisionsFor(board, { machine: machine.label })
   const decisions = h('section', { class: 'here-decisions' }, h('h3', { text: t.decisionsHere }),
-    ds.length ? h('ul', {}, ...ds.map((d) => h('li', {}, h('code', { text: `D-${d.n}` }), ` ${d.question}`, d.answer ? h('strong', { text: ` → ${d.answer}` }) : h('em', { class: 'attn', text: ` · ${t.statuses.pending}` })))) : h('p', { class: 'muted', text: t.none }))
+    ds.length ? h('ul', {}, ...ds.map((d) => h('li', {}, h('code', { text: decisionLabel(board, d) }), ` ${d.question}`, d.answer ? h('strong', { text: ` → ${d.answer}` }) : h('em', { class: 'attn', text: ` · ${t.statuses.pending}` })))) : h('p', { class: 'muted', text: t.none }))
 
   const supOf = machine.supervisor?.agent ?? null
   const handoffState = card?.handoff
@@ -327,7 +328,7 @@ function moreLayer(lane, machine, pr) {
     !lane.supervisor ? h('button', { 'aria-expanded': pane === 'handoff' ? 'true' : 'false', onclick: () => { pane = pane === 'handoff' ? null : 'handoff'; render() } }, icon('arrow-right-left'), t.handoff) : null,
     lane.supervisor ? null : h('button', { class: 'danger', 'aria-expanded': pane === 'archive' ? 'true' : 'false', onclick: () => { pane = pane === 'archive' ? null : 'archive'; render() } }, icon('archive'), t.archive),
     supervisorToggle(lane))
-  const form = pane === 'parent' ? parentForm(lane, supOf) : pane === 'handoff' ? handoffForm(lane) : pane === 'archive' ? archiveForm(lane, supOf) : null
+  const form = pane === 'parent' ? parentForm(lane, supOf) : pane === 'handoff' ? handoffForm(lane) : pane === 'archive' ? archiveForm(lane, supOf, machine) : null
   return [h('h3', { text: t.details }), details, decisions, handoffState, buttons, form]
 }
 
@@ -369,8 +370,8 @@ function handoffForm(lane) {
   return h('section', { class: 'pane' }, h('label', { class: 'stack' }, t.handoffTo, select), go)
 }
 
-function archiveForm(lane, supOf) {
-  const checks = archiveChecks(lane)
+function archiveForm(lane, supOf, machine) {
+  const checks = archiveChecks(lane, machine)
   const name = laneName(lane)
   const typed = h('input', { type: 'text', placeholder: name, 'aria-label': t.archiveType })
   const go = h('button', { class: 'danger', text: t.archiveGo, disabled: true })
@@ -388,6 +389,7 @@ function archiveForm(lane, supOf) {
     h('p', { class: 'attn', text: t.archiveWarn }),
     h('ul', { class: 'checks' }, ...checks.map((c) => h('li', { class: c.ok ? 'ok' : 'no' }, icon(c.ok ? 'check' : 'x'), ` ${t.checks[c.key]}${c.pr ? ` (#${c.pr})` : ''}`))),
     supOf ? null : h('p', { class: 'attn', text: t.noSup }),
+    h('p', { class: 'muted', text: t.archiveRecheck }),
     h('label', { class: 'stack' }, t.archiveType, typed), go)
 }
 
@@ -405,7 +407,7 @@ function ledgerView() {
     return `${t.scopes[s.kind]}${ref ? ` · ${ref}` : ''}`
   }
   const row = (d) => h('li', { class: `decision ${d.status}` },
-    h('div', { class: 'top' }, h('code', { text: `D-${d.n}` }), h('span', { class: 'scope', text: scopeLabel(d) }), h('small', { class: `status ${d.status}`, text: t.statuses[d.status] }), time(d.decidedAt ?? d.at)),
+    h('div', { class: 'top' }, h('code', { text: decisionLabel(board, d) }), h('span', { class: 'scope', text: scopeLabel(d) }), h('small', { class: `status ${d.status}`, text: t.statuses[d.status] }), time(d.decidedAt ?? d.at)),
     h('p', {}, h('span', { text: d.question }), d.answer ? h('strong', { text: ` → ${d.answer}` }) : null),
     h('div', { class: 'row' },
       d.message ? h('button', { class: 'plain', onclick: () => g.showMessage(`msg:${d.message}`).catch(said) }, icon('message-square'), t.ledger.source) : null,

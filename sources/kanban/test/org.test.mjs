@@ -21,6 +21,7 @@ function fixture() {
   applyOp(board, { type: 'decision.create', card: kb, question: 'Which layout gives way?', options: ['A', 'B'] }, by)
   // Machine A's supervisor has no lanes yet: only its name on the board makes it one.
   applyOp(board, { type: 'fleet.supervisor', session: 's-chief' }, by)
+  applyOp(board, { type: 'fleet.supervisor', session: 's-desk' }, by)
   const row = (id, device, parent, more = {}) => ({ agentId: `user:${id}`, sessionId: `s-${id}`, deviceId: device, deviceLabel: device ? 'Machine-B' : 'Machine-A', parentAgentId: parent ? `user:${parent}` : null, title: id, providerId: 'codex', status: 'working', detail: 'running', pendingPermissionCount: 0, ...more })
   const report = {
     agents: [row('chief', null, null), row('desk', 'B', null, { providerId: 'claude' }), row('kb', 'B', 'desk'), row('bill', 'B', 'desk', { status: 'idle', detail: 'done' })],
@@ -107,14 +108,16 @@ test('a lane opens to its essentials; archiving waits for every check and the ty
     click(buttonBy(drawer, '归档'))
     const go = buttonBy(drawer, '交给主管执行归档')
     assert.equal(go.disabled, true)
-    assert.deepEqual([...drawer.querySelectorAll('.checks li')].map((li) => li.className), ['ok', 'no', 'ok'])
+    assert.deepEqual([...drawer.querySelectorAll('.checks li')].map((li) => li.className), ['ok', 'ok', 'no', 'ok'])
 
-    // An open PR satisfies the handoff check; still nothing until the name is typed.
-    applyOp(fx.board, { type: 'link.add', card: fx.ci, link: { kind: 'pr', url: 'https://github.com/acme/app/pull/98' } }, { by: 'user:bill', now: '2026-11-07T11:00:00.000Z', id: () => 'pr1' })
+    // A PR the sync has seen satisfies the handoff check; still nothing until the name is typed.
+    const lane2 = { by: 'user:bill', now: '2026-11-07T11:00:00.000Z', id: () => 'pr1' }
+    applyOp(fx.board, { type: 'link.add', card: fx.ci, link: { kind: 'pr', url: 'https://github.com/acme/app/pull/98' } }, lane2)
+    applyOp(fx.board, { type: 'pr.sync', prs: [{ url: 'https://github.com/acme/app/pull/98', ci: 'green' }] }, lane2)
     remote()
     await settled()
     const pane = drawer.querySelector('.pane.archive')
-    assert.deepEqual([...pane.querySelectorAll('.checks li')].map((li) => li.className), ['ok', 'ok', 'ok'])
+    assert.deepEqual([...pane.querySelectorAll('.checks li')].map((li) => li.className), ['ok', 'ok', 'ok', 'ok'])
     const typed = pane.querySelector('input')
     typed.value = 'bil'
     typed.dispatchEvent(new globalThis.window.Event('input'))
@@ -128,6 +131,7 @@ test('a lane opens to its essentials; archiving waits for every check and the ty
     assert.equal(sent.length, 1)
     assert.equal(sent[0][1].to.agent, 'user:desk', 'the machine’s supervisor archives, not the page')
     assert.match(sent[0][0], /session_archive/)
+    assert.match(sent[0][0], /自己逐条核对/, 'the supervisor checks again; the message is not proof')
     assert.match(sent[0][0], /s-bill/)
   } finally {
     delete globalThis.window

@@ -51,7 +51,8 @@ test('decisions: a lane asks, the owner decides; superseded and withdrawn ones l
   assert.equal(ask.n, 1)
   assert.equal(pendingAsk(board, card).id, ask.decision)
   assert.equal(cardFlags(board, board.cards[card], () => null, Date.now()).asks, true)
-  assert.throws(() => applyOp(board, { type: 'decision.decide', decision: 'D-1', answer: '' }, at()), /needs its answer/)
+  assert.throws(() => applyOp(board, { type: 'decision.decide', decision: 'D-1', answer: '' }, { ...at(), by: 'user:owner' }), /needs its answer/)
+  assert.throws(() => applyOp(board, { type: 'decision.decide', decision: 'D-1', answer: 'B' }, at()), /not by whoever asked/)
   applyOp(board, { type: 'decision.decide', decision: 'D-1', answer: 'B' }, { ...at(), by: 'user:owner' })
   assert.equal(pendingAsk(board, card), null)
   assert.deepEqual([board.decisions[ask.decision].status, board.decisions[ask.decision].decidedBy], ['decided', 'user:owner'])
@@ -68,6 +69,10 @@ test('decisions: a lane asks, the owner decides; superseded and withdrawn ones l
   assert.deepEqual(live({ card, machine: 'machine-b' }), [1, 3, 4, 5])
   assert.deepEqual(live({ card: null, machine: 'machine-a' }), [3])
   assert.deepEqual(live({ card, machine: null, all: true }), [1, 2, 3, 4])
+  // A refused decision writes nothing: superseding one already superseded fails before the new one is added.
+  const before = JSON.stringify(board.decisions)
+  assert.throws(() => applyOp(board, { type: 'decision.create', question: 'again', answer: 'x', supersedes: `D-${old.n}` }, at()), /superseded already/)
+  assert.equal(JSON.stringify(board.decisions), before)
   applyOp(board, { type: 'decision.close', decision: now.decision, status: 'withdrawn' }, at())
   assert.deepEqual(live({ card: null }), [])
   assert.throws(() => applyOp(board, { type: 'decision.create', question: 'x', scope: { kind: 'machine' } }, at()), /names its machine/)
@@ -168,16 +173,28 @@ test('a card whose task is not listed shows as loose, not as a lane', () => {
   assert.deepEqual(fleet.loose.map((l) => l.card.title), ['Gone lane'])
 })
 
-test('archive checks: never a supervisor, only after a handoff or an open PR, nothing under it', () => {
+test('archive checks: never a supervisor or a root, a named supervisor to do it, a synced PR or an accepted handoff, nothing under it on any machine', () => {
   const { board, card, report } = fleetFixture()
-  const fleet = fleetOf(report, board)
-  const b = fleet.machines[1]
-  const ok = (lane) => Object.fromEntries(archiveChecks(lane).map((c) => [c.key, c.ok]))
-  assert.deepEqual(ok(b.supervisor.lane), { notSupervisor: false, handedOver: false, noChildren: false })
-  assert.deepEqual(ok(b.lanes[0]), { notSupervisor: true, handedOver: false, noChildren: false })
+  const ok = (lane, m) => Object.fromEntries(archiveChecks(lane, m).map((c) => [c.key, c.ok]))
+  let b = fleetOf(report, board).machines[1]
+  assert.deepEqual(ok(b.supervisor.lane, b), { notSupervisor: false, supervisorNamed: false, handedOver: false, noChildren: false })
+  assert.deepEqual(ok(b.lanes[0], b), { notSupervisor: true, supervisorNamed: false, handedOver: false, noChildren: false })
+  // A pr link no sync has seen is not "a PR is open"; a synced one is.
   applyOp(board, { type: 'link.add', card, link: { kind: 'pr', url: PR } }, at())
-  assert.deepEqual(ok(fleetOf(report, board).machines[1].lanes[0]), { notSupervisor: true, handedOver: true, noChildren: false })
-  assert.equal(archiveChecks(fleetOf(report, board).machines[1].lanes[0])[1].pr, '42')
+  assert.equal(ok(fleetOf(report, board).machines[1].lanes[0], b).handedOver, false)
+  applyOp(board, { type: 'pr.sync', prs: [{ url: PR, ci: 'pending' }] }, at())
+  applyOp(board, { type: 'fleet.supervisor', session: 's-desk' }, at())
+  b = fleetOf(report, board).machines[1]
+  assert.deepEqual(ok(b.lanes[0], b), { notSupervisor: true, supervisorNamed: true, handedOver: true, noChildren: false })
+  assert.equal(archiveChecks(b.lanes[0], b)[2].pr, '42')
+  // A child on another machine still counts.
+  const far = { ...report, agents: [...report.agents.filter((a) => a.title !== 'child'), agent('child', null, 'login')] }
+  const lane = fleetOf(far, board).machines[1].lanes[0]
+  assert.equal(lane.children.length, 0)
+  assert.equal(ok(lane, b).noChildren, false)
+  // A root session with nothing under it is never offered: it may be an unnamed supervisor.
+  const lonely = { agent: report.agents.find((a) => a.title === 'lonely'), card: null, supervisor: false, named: false, childCount: 0, children: [] }
+  assert.equal(ok(lonely, b).notSupervisor, false)
 })
 
 test('a lane moves only under a session on its own machine, never under itself or below it', () => {
@@ -188,4 +205,25 @@ test('a lane moves only under a session on its own machine, never under itself o
   assert.deepEqual(choices.map((c) => [c.agent.title, c.supervisor, c.current]), [['desk', true, true], ['stray', false, false]])
   const child = login.children[0]
   assert.deepEqual(parentChoices(fleet, child).map((c) => [c.agent.title, c.current]), [['desk', false], ['login', true], ['stray', false]])
+})
+
+test('two decisions made at once with the same number are told apart, never renumbered', async () => {
+  const { decisionLabel } = await import('../app/lib/core.js')
+  const board = emptyBoard()
+  const a = applyOp(board, { type: 'decision.create', question: 'one', answer: 'x' }, at())
+  // Another writer's decision, counted on the board as it was before ours: the same n.
+  board.decisions.other = { ...board.decisions[a.decision], id: 'other', question: 'two' }
+  const labels = Object.values(board.decisions).map((d) => decisionLabel(board, d)).sort()
+  assert.deepEqual(labels, [`D-1-${a.decision.slice(0, 4)}`, 'D-1-othe'])
+  assert.throws(() => applyOp(board, { type: 'decision.close', decision: 'D-1', status: 'withdrawn' }, at()), /ambiguous/)
+  applyOp(board, { type: 'decision.close', decision: 'D-1-othe', status: 'withdrawn' }, at())
+  assert.equal(board.decisions.other.status, 'withdrawn')
+})
+
+test('an offline machine: its lanes are unknown, counted by the same rule as every other', () => {
+  const { board, report } = fleetFixture()
+  const off = { ...report, devices: report.devices.map((d) => (d.deviceId === 'B' ? { ...d, online: false } : d)) }
+  const fleet = fleetOf(off, board)
+  assert.ok(fleet.machines.find((m) => m.label === 'Machine-B').lanes.every((l) => l.state.key === 'gone'))
+  assert.equal(fleet.counts.running, 0)
 })

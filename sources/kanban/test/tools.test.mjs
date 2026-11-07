@@ -277,9 +277,14 @@ test("a fleet's lane on a chat's board: wait kind, a question for the owner, the
   assert.match(await tools.ask.run({ chat, card: card.id, question: 'A or B?', options: ['A', 'B'] }, asAgent), /D-1/)
   const got = await tools.get.run({ chat, card: card.id }, asAgent)
   assert.deepEqual(got.asks, { id: 'D-1', question: 'A or B?' })
-  assert.match(await tools.decide.run({ chat, decision: 'D-1', answer: 'B', message: OWNER_MSG }, asAgent), /D-1 decided/)
-  await assert.rejects(tools.decide.run({ chat, question: 'From memory', answer: 'x' }, asAgent), /message/)
-  await tools.decide.run({ chat, question: 'Builds only on the build machines', answer: 'yes', message: OWNER_MSG }, asAgent)
+  assert.equal(tools.decide, undefined, 'no tool decides for the owner')
+  // The owner answers on the chart (the page's change), and records a decision from their own words there.
+  const live = file.data
+  const { applyOp } = await import('../app/lib/core.js')
+  const owner = { by: 'user:owner', now: '2026-11-07T01:00:00.000Z', id: () => 'd2' }
+  assert.throws(() => applyOp(live, { type: 'decision.decide', decision: 'D-1', answer: 'A' }, { ...owner, by: AGENT }), /not by whoever asked/)
+  applyOp(live, { type: 'decision.decide', decision: 'D-1', answer: 'B', message: OWNER_MSG }, owner)
+  applyOp(live, { type: 'decision.create', question: 'Builds only on the build machines', answer: 'yes', message: OWNER_MSG }, owner)
   const ds = await tools.decisions.run({ chat }, asAgent)
   assert.equal(ds.card, card.id, 'the lane’s own card, found by its task')
   assert.equal(ds.machine, 'Machine-A')
@@ -296,6 +301,7 @@ test("a fleet's lane on a chat's board: wait kind, a question for the owner, the
 
   await tools.supervisor.run({ chat }, { agent: 'user:chief', session: 's-chief' })
   assert.ok(file.data.fleet.supervisors['s-chief'])
+  assert.equal(tools.supervisor.inputSchema.properties.off, undefined, 'an agent cannot take a supervisor mark off')
   const fleet = await tools.fleet.run({ chat }, asAgent)
   assert.equal(fleet.machines[0].supervisor.session, 's-chief')
   assert.deepEqual(fleet.waiting.map((w) => [w.session, w.waits]), [['s-agent', 'ci']])

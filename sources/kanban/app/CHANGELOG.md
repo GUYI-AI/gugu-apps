@@ -11,13 +11,18 @@
   and PR one click away, and everything else under More.
 - Lane fields on a card: `waitKind` (with `waitWho`, `waitSince`), `dest`, `head`; a pull request link carries CI,
   review, merged and head from `sync_prs`. Old pages ignore them; the board's version stays 1.
-- A decision ledger in the same board file (`decisions`): `ask` (a lane's question), `decide` (the owner's word, from
-  their message), `decisions` (what is in force for a lane, its machine, the fleet and its release).
-- Handoffs (`handoff.offer` from the chart, `handoff_accept` by the new lane), supervisors (`supervisor`), and archive /
-  move-under actions that the page asks the machine's supervisor to carry out — guarded: never a supervisor, only
-  after an accepted handoff or an open PR, nothing under it, the lane's name typed.
+- A decision ledger in the same board file (`decisions`): `ask` (a lane's question), `decisions` (what is in force for
+  a lane, its machine, the fleet and its release). Only the person decides, on the chart: no tool answers or records
+  a decision, and whoever asked a question cannot answer it.
+- Handoffs (`handoff.offer` from the chart, `handoff_accept` by the new lane), supervisors (`supervisor`: agents only
+  add the mark, the person removes it), and archive / move-under requests that the page sends to the machine's
+  supervisor. The page pre-checks (not a supervisor or a root, the supervisor named, an accepted handoff or a synced
+  PR, nothing under it on any machine, the lane's name typed); the supervisor checks again itself and refuses what
+  does not hold (skill kanban).
 - A message card (`fleet` tab, `widget`): four numbers and the machines, read when shown; a click opens the chart.
-- `agents:control` becomes `agents:control:all-machines`, to tell lanes and supervisors on other computers.
+- `agents:control` becomes `agents:control:all-machines`: `agents:control` tells only agents this App started, and the
+  chart's messages, answers and requests go to lanes and supervisors the person started, on any computer. Every
+  such message is sent from a person's click (`dispatch` with a gesture); the App sends nothing on its own.
 
 
 ## 1.4.0

@@ -318,29 +318,36 @@ export function applyOp(board, op, { by, now, id }) {
       const options = op.options === undefined ? [] : op.options
       if (!Array.isArray(options) || options.length > 6) throw new Error('options are a list of at most 6 short answers')
       const scope = checkScope(op.scope ?? (op.card ? { kind: 'lane', ref: op.card } : { kind: 'fleet' }))
+      // Everything is checked before anything is written: a chat's board is live, a half-made decision would be sent.
+      const replaced = op.supersedes ? openDecision(board, op.supersedes) : null
+      const message = op.message ? messageId(op.message) : null
       const did = id()
       board.decisions ??= {}
       const n = Math.max(0, ...Object.values(board.decisions).map((d) => d.n ?? 0)) + 1
       board.decisions[did] = {
         id: did, n, question, options: options.map((o) => text(o, 'an option', 120).trim()).filter(Boolean), scope,
-        ...(op.card ? { card: op.card } : {}), ...(op.message ? { message: messageId(op.message) } : {}),
+        ...(op.card ? { card: op.card } : {}), ...(message ? { message } : {}),
         status: answer ? 'decided' : 'pending', answer, by, at, ...(answer ? { decidedBy: by, decidedAt: at } : {}),
       }
-      if (op.supersedes) closeDecision(board, op.supersedes, 'superseded', did, by, at)
-      return { decision: did, n }
+      if (replaced) Object.assign(replaced, { status: 'superseded', closedBy: by, closedAt: at, supersededBy: did })
+      return { decision: did, n, label: decisionLabel(board, board.decisions[did]) }
     }
     case 'decision.decide': {
+      // Only the person answers, from the org chart: no agent tool makes this operation. Whoever asked never answers.
       const decision = needDecision(board, op.decision)
-      if (decision.status !== 'pending') throw new Error(`D-${decision.n} is ${decision.status} already`)
+      if (decision.status !== 'pending') throw new Error(`${decisionLabel(board, decision)} is ${decision.status} already`)
+      if (decision.by === by) throw new Error('a question is answered by the owner, not by whoever asked it')
       const answer = text(op.answer, 'an answer', 2000).trim()
       if (!answer) throw new Error('a decision needs its answer')
-      Object.assign(decision, { status: 'decided', answer, decidedBy: by, decidedAt: at, ...(op.message ? { message: messageId(op.message) } : {}) })
-      return { decision: decision.id, n: decision.n, card: decision.card ?? null }
+      const message = op.message ? messageId(op.message) : null
+      Object.assign(decision, { status: 'decided', answer, decidedBy: by, decidedAt: at, ...(message ? { message } : {}) })
+      return { decision: decision.id, n: decision.n, label: decisionLabel(board, decision), card: decision.card ?? null }
     }
     case 'decision.close': {
       if (op.status !== 'withdrawn' && op.status !== 'superseded') throw new Error('a decision is closed as withdrawn or superseded')
-      closeDecision(board, op.decision, op.status, op.supersededBy ?? null, by, at)
-      return { decision: op.decision }
+      const decision = openDecision(board, op.decision)
+      Object.assign(decision, { status: op.status, closedBy: by, closedAt: at, ...(op.supersededBy ? { supersededBy: op.supersededBy } : {}) })
+      return { decision: decision.id }
     }
     case 'handoff.offer': {
       const card = needCard(board, op.card)
@@ -438,16 +445,31 @@ const messageId = (message) => {
   return mid
 }
 
-function needDecision(board, did) {
-  const decision = board.decisions?.[did] ?? Object.values(board.decisions ?? {}).find((d) => `D-${d.n}` === String(did))
-  if (!decision) throw new Error(`there is no decision ${did}`)
-  return decision
+/**
+ * A decision's name: D-<n>. Two made at once on a live board can take the same n (each writer counts what it has);
+ * those two are told apart by their ids, D-<n>-<id>, rather than renumbered under anyone who already quoted them.
+ */
+export function decisionLabel(board, d) {
+  const twins = Object.values(board.decisions ?? {}).filter((x) => x.n === d.n).length
+  return twins > 1 ? `D-${d.n}-${d.id.slice(0, 4)}` : `D-${d.n}`
 }
 
-function closeDecision(board, did, status, replacedBy, by, at) {
+function needDecision(board, did) {
+  const all = Object.values(board.decisions ?? {})
+  if (board.decisions?.[did]) return board.decisions[did]
+  const named = all.filter((d) => decisionLabel(board, d) === String(did))
+  if (named.length === 1) return named[0]
+  const plain = all.filter((d) => `D-${d.n}` === String(did))
+  if (plain.length > 1) throw new Error(`${did} is ambiguous: ${plain.map((d) => decisionLabel(board, d)).join(', ')}`)
+  if (!plain.length) throw new Error(`there is no decision ${did}`)
+  return plain[0]
+}
+
+/** A decision still in force or pending, to close: one closed already stays as it was. */
+function openDecision(board, did) {
   const decision = needDecision(board, did)
-  if (decision.status === 'withdrawn' || decision.status === 'superseded') throw new Error(`D-${decision.n} is ${decision.status} already`)
-  Object.assign(decision, { status, closedBy: by, closedAt: at, ...(replacedBy ? { supersededBy: replacedBy } : {}) })
+  if (decision.status === 'withdrawn' || decision.status === 'superseded') throw new Error(`${decisionLabel(board, decision)} is ${decision.status} already`)
+  return decision
 }
 
 /** The decisions in their order (D-1, D-2 …). */
