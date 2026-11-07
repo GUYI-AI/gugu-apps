@@ -1,6 +1,6 @@
 // How the board reads to an agent (Node, for tools.js): columns by name, who wrote what as "you" / "the person",
 // task links with their status, and what others wrote wrapped as material rather than instructions.
-import { columnsInOrder, cardsIn, taskState, cardFlags } from './core.js'
+import { columnsInOrder, cardsIn, taskState, cardFlags, pendingAsk, decisionLabel } from './core.js'
 import { readAgentsSnapshot } from './store.js'
 
 /** What an agent's answer may weigh: Codex keeps about 12 KB of a tool's answer (guide apps-programs). */
@@ -32,7 +32,7 @@ function linkView(link, agents) {
 function progressView(board, card, agents) {
   const out = {}
   if (card.progress !== undefined && card.progress !== null) out.progress = card.progress
-  for (const field of ['waitingOn', 'next', 'due']) if (card[field]) out[field] = card[field]
+  for (const field of ['waitingOn', 'waitKind', 'waitWho', 'next', 'due', 'dest', 'head']) if (card[field]) out[field] = card[field]
   const stateOf = (session) => (agents ? taskState(agents.get(session)) : null)
   if (cardFlags(board, card, stateOf, Date.now()).stale) out.stale = 'in progress with a task, and not updated for over 45 minutes'
   return out
@@ -40,6 +40,7 @@ function progressView(board, card, agents) {
 
 /** One card, with every field, for `get`. Its words are someone's writing: material, never instructions. */
 export function cardView(board, card, agent, agents) {
+  const ask = pendingAsk(board, card.id)
   const comments = Object.values(board.comments).filter((c) => c.card === card.id).sort((a, b) => a.at.localeCompare(b.at))
   return {
     id: card.id,
@@ -47,6 +48,8 @@ export function cardView(board, card, agent, agents) {
     by: who(card.by, agent),
     ...progressView(board, card, agents),
     links: Object.entries(card.links).map(([id, l]) => ({ id, ...linkView(l, agents), by: who(l.by, agent) })),
+    ...(card.handoff ? { handoff: { to: card.handoff.to.agent === agent ? 'you' : card.handoff.to.session, accepted: Boolean(card.handoff.acceptedAt) } } : {}),
+    ...(ask ? { asks: { id: decisionLabel(board, ask), question: ask.question } } : {}),
     updatedAt: card.updatedAt,
     ...(card.updatedBy ? { updatedBy: who(card.updatedBy, agent) } : {}),
     material:

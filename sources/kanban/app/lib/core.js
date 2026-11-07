@@ -109,15 +109,48 @@ const text = (value, what, max) => {
 }
 
 /** What a card says about its progress, besides its column: any card may carry them, an agent's lane keeps them current. */
-const PROGRESS_FIELDS = { waitingOn: 500, next: 500, due: 100 }
+const PROGRESS_FIELDS = { waitingOn: 500, next: 500, due: 100, dest: 40 }
 
-function setProgress(card, op) {
+/**
+ * What a lane waits on, as a kind the fleet view colours and counts (the words stay in waitingOn): the owner deciding,
+ * a developer's review, CI, someone merging, another lane, an account's quota, or anything else.
+ */
+export const WAIT_KINDS = ['owner', 'review', 'ci', 'merge', 'lane', 'quota', 'other']
+
+/**
+ * Writes the progress fields `op` names into `changes`, reading what the card says now from `card` (the same object
+ * for a new card). Only the fields that change are put in `changes`: a chat's card is live, and an unchanged field
+ * written again is still sent.
+ */
+function setProgress(changes, op, card = changes) {
+  const now = (field) => (field in changes ? changes[field] : card[field])
   if (op.progress !== undefined) {
     const n = op.progress === null || op.progress === '' ? null : Number(op.progress)
     if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 100)) throw new Error('progress is a whole number from 0 to 100, or null')
-    card.progress = n
+    changes.progress = n
   }
-  for (const [field, max] of Object.entries(PROGRESS_FIELDS)) if (op[field] !== undefined) card[field] = text(op[field], field, max).trim()
+  const waitedOn = Boolean(card.waitingOn || card.waitKind)
+  const kindBefore = card.waitKind ?? ''
+  for (const [field, max] of Object.entries(PROGRESS_FIELDS)) if (op[field] !== undefined) changes[field] = text(op[field], field, max).trim()
+  if (op.waitKind !== undefined) {
+    const kind = String(op.waitKind ?? '').trim()
+    if (kind && !WAIT_KINDS.includes(kind)) throw new Error(`waitKind is one of: ${WAIT_KINDS.join(', ')}, or empty`)
+    changes.waitKind = kind
+  } else if (op.waitingOn === '') {
+    // "Nothing any more" in words is nothing in kind too.
+    changes.waitKind = ''
+  }
+  if (op.waitWho !== undefined) changes.waitWho = text(op.waitWho, 'waitWho', 100).trim()
+  if (op.head !== undefined) {
+    const head = String(op.head ?? '').trim().toLowerCase()
+    if (head && !/^[0-9a-f]{7,40}$/.test(head)) throw new Error('head is a commit sha: 7 to 40 hex digits, or empty')
+    changes.head = head
+  }
+  const waits = Boolean(now('waitingOn') || now('waitKind'))
+  if (!waits && waitedOn) {
+    changes.waitWho = ''
+    changes.waitSince = null
+  } else if (waits && (!waitedOn || (now('waitKind') ?? '') !== kindBefore)) changes.waitSince = op.at
 }
 
 /** Every change to a card says when and by whom: the page shows it, and a lane that stops saying anything goes stale. */
@@ -170,7 +203,7 @@ export function applyOp(board, op, { by, now, id }) {
       const title = text(op.title, 'a title', 500).trim()
       if (!title) throw new Error('a card needs a title')
       const card = { id: id(), title, note: text(op.note, 'a note', 100_000), column, order: '', by, links: {}, createdAt: at, updatedAt: at, updatedBy: by }
-      setProgress(card, op)
+      setProgress(card, { ...op, at })
       card.order = placeIn(cardsIn(board, column), {}, card.id)
       for (const link of op.links ?? []) card.links[id()] = { ...checkLink(link), by, at }
       board.cards[card.id] = card
@@ -185,7 +218,7 @@ export function applyOp(board, op, { by, now, id }) {
         if (!changes.title) throw new Error('a card needs a title')
       }
       if (op.note !== undefined) changes.note = text(op.note, 'a note', 100_000)
-      setProgress(changes, op)
+      setProgress(changes, { ...op, at }, card)
       Object.assign(card, changes)
       touch(card, by, at)
       return { card: card.id }
@@ -258,10 +291,192 @@ export function applyOp(board, op, { by, now, id }) {
       delete board.columns[column.id]
       return { column: column.id }
     }
+    case 'pr.sync': {
+      // What a lane's pull requests say now, read in one sweep by whoever has GitHub (the board itself never asks it):
+      // written onto every card's pr link with the same url.
+      if (!Array.isArray(op.prs)) throw new Error('prs is a list of pull requests')
+      let matched = 0
+      for (const pr of op.prs) {
+        const url = prKey(pr?.url)
+        if (!url) throw new Error('each pull request needs its github.com …/pull/<n> url')
+        const facts = checkPr(pr)
+        for (const card of Object.values(board.cards)) {
+          for (const link of Object.values(card.links)) {
+            if (link.kind !== 'pr' || prKey(link.url) !== url) continue
+            Object.assign(link, facts, { syncedAt: at })
+            matched += 1
+          }
+        }
+      }
+      return { matched }
+    }
+    case 'decision.create': {
+      const question = text(op.question, 'a question', 1000).trim()
+      if (!question) throw new Error('a decision needs its question')
+      const answer = text(op.answer, 'an answer', 2000).trim()
+      if (op.card !== undefined && op.card !== null) needCard(board, op.card)
+      const options = op.options === undefined ? [] : op.options
+      if (!Array.isArray(options) || options.length > 6) throw new Error('options are a list of at most 6 short answers')
+      const scope = checkScope(op.scope ?? (op.card ? { kind: 'lane', ref: op.card } : { kind: 'fleet' }))
+      // Everything is checked before anything is written: a chat's board is live, a half-made decision would be sent.
+      const replaced = op.supersedes ? openDecision(board, op.supersedes) : null
+      const message = op.message ? messageId(op.message) : null
+      const did = id()
+      board.decisions ??= {}
+      const n = Math.max(0, ...Object.values(board.decisions).map((d) => d.n ?? 0)) + 1
+      board.decisions[did] = {
+        id: did, n, question, options: options.map((o) => text(o, 'an option', 120).trim()).filter(Boolean), scope,
+        ...(op.card ? { card: op.card } : {}), ...(message ? { message } : {}),
+        status: answer ? 'decided' : 'pending', answer, by, at, ...(answer ? { decidedBy: by, decidedAt: at } : {}),
+      }
+      if (replaced) Object.assign(replaced, { status: 'superseded', closedBy: by, closedAt: at, supersededBy: did })
+      return { decision: did, n, label: decisionLabel(board, board.decisions[did]) }
+    }
+    case 'decision.decide': {
+      // Only the person answers, from the org chart: no agent tool makes this operation. Whoever asked never answers.
+      const decision = needDecision(board, op.decision)
+      if (decision.status !== 'pending') throw new Error(`${decisionLabel(board, decision)} is ${decision.status} already`)
+      if (decision.by === by) throw new Error('a question is answered by the owner, not by whoever asked it')
+      const answer = text(op.answer, 'an answer', 2000).trim()
+      if (!answer) throw new Error('a decision needs its answer')
+      const message = op.message ? messageId(op.message) : null
+      Object.assign(decision, { status: 'decided', answer, decidedBy: by, decidedAt: at, ...(message ? { message } : {}) })
+      return { decision: decision.id, n: decision.n, label: decisionLabel(board, decision), card: decision.card ?? null }
+    }
+    case 'decision.close': {
+      if (op.status !== 'withdrawn' && op.status !== 'superseded') throw new Error('a decision is closed as withdrawn or superseded')
+      const decision = openDecision(board, op.decision)
+      Object.assign(decision, { status: op.status, closedBy: by, closedAt: at, ...(op.supersededBy ? { supersededBy: op.supersededBy } : {}) })
+      return { decision: decision.id }
+    }
+    case 'handoff.offer': {
+      const card = needCard(board, op.card)
+      const to = op.to ?? {}
+      if (typeof to.session !== 'string' || !to.session || typeof to.agent !== 'string' || !to.agent.startsWith('user:')) {
+        throw new Error('a handoff goes to a task: its session and its agent (user:<uuid>)')
+      }
+      if (Object.values(card.links).some((l) => l.kind === 'task' && l.session === to.session)) throw new Error('that task is already on this card')
+      card.handoff = { to: { session: to.session, agent: to.agent, ...(to.title ? { title: text(to.title, 'a title', 200) } : {}) }, by, at, acceptedAt: null }
+      touch(card, by, at)
+      return { card: card.id }
+    }
+    case 'handoff.accept': {
+      const card = needCard(board, op.card)
+      if (!card.handoff) throw new Error(`card ${card.id} is not being handed over`)
+      if (card.handoff.acceptedAt) throw new Error(`card ${card.id} was taken over already`)
+      if (by !== card.handoff.to.agent) throw new Error('only the task it is handed to accepts a handoff')
+      card.handoff.acceptedAt = at
+      const { session, agent, title } = card.handoff.to
+      card.links[id()] = { kind: 'task', session, agent, ...(title ? { title } : {}), by, at }
+      touch(card, by, at)
+      return { card: card.id }
+    }
+    case 'handoff.cancel': {
+      const card = needCard(board, op.card)
+      if (!card.handoff) throw new Error(`card ${card.id} is not being handed over`)
+      if (card.handoff.acceptedAt) throw new Error('an accepted handoff stays: it is what lets the old task be archived')
+      card.handoff = null
+      touch(card, by, at)
+      return { card: card.id }
+    }
+    case 'fleet.supervisor': {
+      // The machines' supervisors, as the fleet names them: they head their machine's column and are never archived.
+      if (typeof op.session !== 'string' || !op.session) throw new Error('a supervisor is named by its session id')
+      board.fleet ??= {}
+      board.fleet.supervisors ??= {}
+      if (op.on === false) delete board.fleet.supervisors[op.session]
+      else board.fleet.supervisors[op.session] = { by, at, ...(op.title ? { title: text(op.title, 'a title', 200) } : {}) }
+      return { session: op.session }
+    }
     default:
       throw new Error(`unknown operation ${JSON.stringify(op?.type)}`)
   }
 }
+
+/** A pull request's address without what varies (a trailing slash, #fragment, /files): how a sync finds its links. */
+export function prKey(url) {
+  const m = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/i.exec(String(url ?? ''))
+  return m ? `${m[1].toLowerCase()}/${m[2].toLowerCase()}#${m[3]}` : null
+}
+
+export const prNumber = (url) => prKey(url)?.split('#')[1] ?? null
+
+const CI = ['pending', 'green', 'red']
+const REVIEW = ['required', 'approved', 'changes']
+
+/** The facts a sync may write on a pr link; everything else it was given is left out. */
+function checkPr(pr) {
+  const out = {}
+  if (pr.ci !== undefined) {
+    if (!CI.includes(pr.ci)) throw new Error(`a pull request's ci is one of: ${CI.join(', ')}`)
+    out.ci = pr.ci
+  }
+  if (pr.review !== undefined) {
+    if (pr.review !== null && !REVIEW.includes(pr.review)) throw new Error(`a pull request's review is one of: ${REVIEW.join(', ')}, or null`)
+    out.review = pr.review
+  }
+  if (pr.merged !== undefined) out.merged = Boolean(pr.merged)
+  if (pr.closed !== undefined) out.closed = Boolean(pr.closed)
+  if (pr.devReview !== undefined) out.devReview = Boolean(pr.devReview)
+  if (pr.head !== undefined) {
+    const head = String(pr.head).toLowerCase()
+    if (!/^[0-9a-f]{7,40}$/.test(head)) throw new Error("a pull request's head is a commit sha")
+    out.head = head
+  }
+  if (pr.mergedBy !== undefined) out.mergedBy = text(pr.mergedBy, 'mergedBy', 100)
+  if (pr.title !== undefined) out.title = text(pr.title, 'a title', 300)
+  return out
+}
+
+const SCOPES = ['fleet', 'machine', 'lane', 'release']
+
+/** Whom a decision binds: the whole fleet, one machine (its label), one lane (its card) or one release ("18:00 Beta"). */
+function checkScope(scope) {
+  if (!SCOPES.includes(scope?.kind)) throw new Error(`a decision's scope is one of: ${SCOPES.join(', ')}`)
+  if (scope.kind === 'fleet') return { kind: 'fleet' }
+  const ref = text(scope.ref, "a scope's ref", 200).trim()
+  if (!ref) throw new Error(`a ${scope.kind} scope names its ${scope.kind === 'lane' ? 'card' : scope.kind}`)
+  return { kind: scope.kind, ref }
+}
+
+const messageId = (message) => {
+  const mid = String(message).replace(/^msg:/, '')
+  if (!/^[0-9a-f-]{36}$/i.test(mid)) throw new Error('message is a chat message id: msg:<uuid> or <uuid>')
+  return mid
+}
+
+/**
+ * A decision's name: D-<n>. Two made at once on a live board can take the same n (each writer counts what it has);
+ * those two are told apart by their ids, D-<n>-<id>, rather than renumbered under anyone who already quoted them.
+ */
+export function decisionLabel(board, d) {
+  const twins = Object.values(board.decisions ?? {}).filter((x) => x.n === d.n).length
+  return twins > 1 ? `D-${d.n}-${d.id.slice(0, 4)}` : `D-${d.n}`
+}
+
+function needDecision(board, did) {
+  const all = Object.values(board.decisions ?? {})
+  if (board.decisions?.[did]) return board.decisions[did]
+  const named = all.filter((d) => decisionLabel(board, d) === String(did))
+  if (named.length === 1) return named[0]
+  const plain = all.filter((d) => `D-${d.n}` === String(did))
+  if (plain.length > 1) throw new Error(`${did} is ambiguous: ${plain.map((d) => decisionLabel(board, d)).join(', ')}`)
+  if (!plain.length) throw new Error(`there is no decision ${did}`)
+  return plain[0]
+}
+
+/** A decision still in force or pending, to close: one closed already stays as it was. */
+function openDecision(board, did) {
+  const decision = needDecision(board, did)
+  if (decision.status === 'withdrawn' || decision.status === 'superseded') throw new Error(`${decisionLabel(board, decision)} is ${decision.status} already`)
+  return decision
+}
+
+/** The decisions in their order (D-1, D-2 …). */
+export const decisionsInOrder = (board) => Object.values(board.decisions ?? {}).sort((a, b) => a.n - b.n || (a.id < b.id ? -1 : 1))
+
+/** The question a card waits on the owner for, if it asks one. */
+export const pendingAsk = (board, cardId) => decisionsInOrder(board).find((d) => d.card === cardId && d.status === 'pending') ?? null
 
 /**
  * How a task's status reads on a card, from listAgents' status / detail (packages/core/src/shared/agentStatus.ts):
@@ -292,8 +507,8 @@ export const STALE_MS = 45 * 60 * 1000
  */
 export function cardFlags(board, card, stateOf, now) {
   const tasks = Object.values(card.links).filter((l) => l.kind === 'task')
-  const waiting = Boolean(card.waitingOn)
-  const asks = tasks.some((l) => stateOf(l.session)?.waiting)
+  const waiting = Boolean(card.waitingOn || card.waitKind)
+  const asks = tasks.some((l) => stateOf(l.session)?.waiting) || pendingAsk(board, card.id) !== null
   const stale = board.columns[card.column]?.role === 'doing' && tasks.length > 0 && now - Date.parse(card.updatedAt) > STALE_MS
   return { waiting, asks, stale, attention: waiting || asks }
 }

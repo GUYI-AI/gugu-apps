@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "1.4.1",
-  "apiVersion": 25,
+  "version": "1.5.0",
+  "apiVersion": 26,
   "platforms": [
     "desktop",
     "phone"
@@ -26,7 +26,7 @@
       "files:read",
       "files:write",
       "agents:read:all-machines",
-      "agents:control",
+      "agents:control:all-machines",
       "agents:tools"
     ]
   },
@@ -40,6 +40,10 @@
           {
             "id": "new",
             "title": "新建卡片"
+          },
+          {
+            "id": "fleet",
+            "title": "舰队组织图"
           }
         ]
       },
@@ -57,8 +61,25 @@
           {
             "id": "new",
             "title": "新建卡片"
+          },
+          {
+            "id": "fleet",
+            "title": "舰队组织图"
           }
         ]
+      },
+      {
+        "name": "org",
+        "title": "舰队",
+        "entry": "org.html"
+      },
+      {
+        "name": "fleet",
+        "title": "舰队",
+        "entry": "fleet.html",
+        "widget": {
+          "height": 120
+        }
       }
     ],
     "mcpServers": [
@@ -67,11 +88,12 @@
       }
     ],
     "skills": "skills",
-    "instructions": "Read skill kanban first. kanban__list, claim, update, move and comment work cards on this computer's board or a chat's .board.json."
+    "instructions": "Read skill kanban first. kanban__list, claim, update, move and comment work cards on this computer's board or a chat's .board.json. A fleet's lanes report on a chat's board (update waitKind, dest, head; ask the owner with ask); kanban__decisions before starting; kanban__fleet {card:true} then widget_send view fleet."
   },
   "examples": [
     "把这件事添加到我的看板",
-    "群看板上有哪些卡片在等人处理？"
+    "群看板上有哪些卡片在等人处理？",
+    "舰队现在有哪些车道在等我拍板？"
   ],
   "license": "MIT",
   "localized": {
@@ -82,14 +104,22 @@
         "board": {
           "title": "Teamboard",
           "toolbar": {
-            "new": "New card"
+            "new": "New card",
+            "fleet": "Fleet org chart"
           }
         },
         "file": {
           "title": "Teamboard",
           "toolbar": {
-            "new": "New card"
+            "new": "New card",
+            "fleet": "Fleet org chart"
           }
+        },
+        "org": {
+          "title": "Fleet"
+        },
+        "fleet": {
+          "title": "Fleet"
         }
       }
     }

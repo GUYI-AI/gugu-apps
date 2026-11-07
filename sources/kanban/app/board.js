@@ -14,12 +14,13 @@ const WORDS = {
     states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务不可用', none: '无状态' },
     all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
     addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
-    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
+    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', dest: '去向', owner: '负责人', props: '属性', unset: '未填写',
     addNote: '添加说明…', editNote: '编辑说明', addLink: '添加', noLinks: '暂无关联', messageLink: '群消息', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
     updated: '更新时间', toggle: '展开或收起',
     renameColumn: '重命名列', deleteColumn: '删除列', deleteColumnHint: '先移走或删除这一列的卡片', noCards: '暂无卡片', dropToDone: '拖到这里标记完成',
     emptyBoard: '这块看板还是空的', emptyBoardHint: '新建一张卡片，或在群里让 agent 用看板工具添加', undo: '撤销', doneNote: (title) => `「${title}」已完成`,
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
+    waitKinds: { owner: 'Owner 拍板', review: '研发审', ci: 'CI', merge: '合并', lane: '别的车道', quota: '额度', other: '其它' },
     noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
     attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
     pickFile: '关联任务文件…', pickChatFile: '关联群文件…', addUrl: '添加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
@@ -39,12 +40,13 @@ const WORDS = {
     states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task unavailable', none: 'No status' },
     all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
     addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
-    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
+    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', dest: 'Going to', owner: 'Assignee', props: 'Properties', unset: 'Not set',
     addNote: 'Add a note…', editNote: 'Edit note', addLink: 'Add', noLinks: 'Nothing linked yet', messageLink: 'Chat message', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
     updated: 'Updated', toggle: 'Expand or collapse',
     renameColumn: 'Rename column', deleteColumn: 'Delete column', deleteColumnHint: 'Move or delete the cards in this column first', noCards: 'No cards', dropToDone: 'Drop here to mark done',
     emptyBoard: 'This board is empty', emptyBoardHint: 'Create a card, or ask an agent in the chat to add one with the board tools', undo: 'Undo', doneNote: (title) => `“${title}” is done`,
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
+    waitKinds: { owner: 'the owner', review: 'review', ci: 'CI', merge: 'merge', lane: 'another lane', quota: 'quota', other: 'something' },
     noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
     attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
     pickFile: 'Link task file…', pickChatFile: 'Link chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
@@ -278,10 +280,11 @@ function cardView(card, flags, column) {
       done ? icon('check-circle-2') : null,
       h('strong', { id: titleId, text: card.title }),
       owners.length ? h('span', { class: 'who' }, owners.map((agent) => h('gugu-avatar', { user: agent, size: 'xs', label: agentById(agent)?.title ?? undefined }))) : null),
-    card.waitingOn ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn) })) : null,
+    card.waitingOn || card.waitKind ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn || t.waitKinds[card.waitKind] || card.waitKind) })) : null,
     h('span', { class: 'meta' },
       tasks.map(([, l]) => stateBadge(l)),
       card.due ? h('span', { class: 'chip', title: t.due }, icon('calendar-clock'), card.due) : null,
+      card.dest ? h('span', { class: 'chip', title: t.dest }, icon('send'), card.dest) : null,
       others ? h('span', { class: 'chip', title: t.links }, icon('paperclip'), String(others)) : null,
       h('span', { class: 'spacer' }),
       typeof card.progress === 'number' && card.progress < 100 ? h('span', { class: 'bar', role: 'img', title: `${t.progress} ${card.progress}%`, 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
@@ -467,7 +470,18 @@ function newCard() {
   // Narrow, the first column that is open; wide, the first.
   openAdd((narrow() && columns.find((c) => !collapsed.get(c.id))?.id) || columns[0].id)
 }
-g.onCommand((id) => { if (id === 'new') newCard() })
+g.onCommand((id) => {
+  if (id === 'new') newCard()
+  if (id === 'fleet') openFleet()
+})
+
+/** The org chart of the same board: the fleet's lanes are its cards, laid out by machine and supervisor. */
+async function openFleet() {
+  try {
+    const chat = home?.kind === 'chat' ? home.f.entry.chat : ctx.chat?.id
+    await g.openLink(await g.linkTo({ kind: 'app', tab: 'org', ...(chat ? { chat } : {}), query: home?.kind === 'chat' ? { board: home.f.entry.id } : {} }))
+  } catch (error) { showAlert(error?.message ?? String(error)) }
+}
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
@@ -526,7 +540,7 @@ function inlineEditor(d, key, start, make, save) {
   if (editor.select && editor.tagName === 'INPUT') editor.select()
 }
 
-const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due']
+const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due', 'dest']
 
 /** A property's value as text, or null when it has none. */
 function propText(card, key) {
@@ -615,7 +629,7 @@ async function updateDrawer(force = false) {
     l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null,
     stateBadge(l),
     h('span', { class: 'muted', text: agentBySession(l.session)?.deviceLabel ?? '' }))) : [h('span', { class: 'muted', text: t.unset })])), false)
-  for (const key of ['progress', 'waitingOn', 'next', 'due']) propRow(key, valueButton(key), true)
+  for (const key of ['progress', 'waitingOn', 'next', 'due', 'dest']) propRow(key, valueButton(key), true)
   if (card.updatedAt) rows.push(h('div', { class: 'prop' }, h('dt', { text: t.updated }), h('dd', { class: 'muted' }, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? h('div', { class: 'stale-note', text: t.stale }) : null)))
   // A property being edited keeps its editor (and its half-typed value): the properties are drawn again after it.
   if (!PROPS.includes(d.editing)) d.props.replaceChildren(...rows)
