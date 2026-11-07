@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- 文字江湖's icon: the errand's gourd of wine, in front of the inn's lantern light. Rendered to app/icon.png. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2a22"/>
+      <stop offset="1" stop-color="#1e1612"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#e8a54b" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#e8a54b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gourd" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d9583a"/>
+      <stop offset=".55" stop-color="#b8361f"/>
+      <stop offset="1" stop-color="#7d2212"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <rect width="256" height="256" rx="56" fill="url(#glow)"/>
+  <!-- stopper -->
+  <rect x="118" y="38" width="20" height="18" rx="4" fill="#c9a26a"/>
+  <!-- gourd: small bulb, waist, big bulb -->
+  <path d="M128 54c-17 0-28 12-28 28 0 12 7 20 13 26-24 8-41 30-41 57 0 34 25 57 56 57s56-23 56-57c0-27-17-49-41-57 6-6 13-14 13-26 0-16-11-28-28-28z" fill="url(#gourd)"/>
+  <!-- cord at the waist -->
+  <path d="M110 108c12 5 24 5 36 0" stroke="#e9cf98" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M142 110c8 10 10 22 6 34" stroke="#e9cf98" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- red paper label -->
+  <rect x="112" y="142" width="32" height="50" rx="3" fill="#f3e3c3" transform="rotate(-4 128 167)"/>
+  <path d="M120 156h16M120 167h16M120 178h12" stroke="#7d2212" stroke-width="4" stroke-linecap="round" transform="rotate(-4 128 167)"/>
+  <!-- highlight -->
+  <path d="M96 150c-4 14-2 28 6 38" stroke="#ffffff" stroke-opacity=".28" stroke-width="7" stroke-linecap="round" fill="none"/>
+</svg>
