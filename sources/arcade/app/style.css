@@ -1,0 +1,6 @@
+/* gugu's look is in the page already (guide apps-ui); only the play area on top of it. */
+body { margin: 0; padding: var(--em-spacing-md); }
+body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
+#stage { gap: var(--em-spacing-md); }
+canvas { display: block; touch-action: none; border-radius: var(--em-radius-control); background: var(--em-background-1); border: 1px solid var(--em-border); }
+.scores li { padding-block: 2px; }
