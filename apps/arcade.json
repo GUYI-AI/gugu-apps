@@ -11,6 +11,15 @@
       "sha256": "bbb4e73974afd238df0b9504279bae948a9729f3fb5b8acecbdcb762ab98d4db",
       "bytes": 14200,
       "yanked": null
+    },
+    {
+      "version": "0.1.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/arcade/app",
+      "commit": "362757664944f897ed281ea40a8cb2ce718c0f8a",
+      "sha256": "d710cb4cacafe97debaf6d9d504d0b4c8eb136c2948d4c087be318cdb94bbe9c",
+      "bytes": 39066,
+      "yanked": null
     }
   ]
 }
