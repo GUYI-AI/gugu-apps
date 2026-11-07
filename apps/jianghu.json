@@ -1,0 +1,16 @@
+{
+  "id": "jianghu",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "3047b29cbd075a85e520e902293754e472b348b9",
+      "sha256": "d96b7dc3e4b32bc8cd59179201566386bf6739a95b13acc9dc5ee1e6a818a4dc",
+      "bytes": 37326,
+      "yanked": null
+    }
+  ]
+}
