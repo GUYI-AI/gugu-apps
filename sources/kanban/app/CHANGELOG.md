@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.5.0
+
+舰队 (Fleet): the fleet's org chart on a chat's board (App interface 26).
+
+- A new tab draws the person, each machine's supervisor and the lanes under it, across every computer the person
+  uses (`listAgents({ report: true })`), joined with the cards the lanes claimed. In layers: first what waits on the
+  person (questions with their answers as buttons), then the others' waits by kind (review, merge, CI, another lane,
+  quota), then the chart; a lane opens to its wait, progress, destination and pull request, with message, transcript
+  and PR one click away, and everything else under More.
+- Lane fields on a card: `waitKind` (with `waitWho`, `waitSince`), `dest`, `head`; a pull request link carries CI,
+  review, merged and head from `sync_prs`. Old pages ignore them; the board's version stays 1.
+- A decision ledger in the same board file (`decisions`): `ask` (a lane's question), `decide` (the owner's word, from
+  their message), `decisions` (what is in force for a lane, its machine, the fleet and its release).
+- Handoffs (`handoff.offer` from the chart, `handoff_accept` by the new lane), supervisors (`supervisor`), and archive /
+  move-under actions that the page asks the machine's supervisor to carry out — guarded: never a supervisor, only
+  after an accepted handoff or an open PR, nothing under it, the lane's name typed.
+- A message card (`fleet` tab, `widget`): four numbers and the machines, read when shown; a click opens the chart.
+- `agents:control` becomes `agents:control:all-machines`, to tell lanes and supervisors on other computers.
+
+
 ## 1.4.0
 
 App interface 25: a task's or project's files are picked a folder at a time (`files.list({ workspace, folder })`); file links open as `{ workspace: 'session:<id>' | 'project:<id>', id }`; a task's tab (which now also has its private chat) keeps this computer's board; `ctx.workspace` replaces `ctx.session`. English tab and toolbar titles (`localized.en.tabs`): Teamboard, New card.

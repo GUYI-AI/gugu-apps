@@ -253,3 +253,54 @@ test('five retained boards are addressed by file id even when their card ids coi
   assert.deepEqual(entries.slice(1).map(e => Object.keys(chatFiles.get(e.id).data.cards)), Array.from({ length: 4 }, () => ['same']))
   assert.equal(openHandles, 0)
 })
+
+test("a fleet's lane on a chat's board: wait kind, a question for the owner, the ledger, a handoff, PR sync, the message card", async () => {
+  const chat = 'chat-fleet'
+  const OWNER_MSG = 'msg:99999999-0000-0000-0000-000000000001'
+  const NEW = 'user:00000000-0000-0000-0000-00000000000b'
+  await writeFile(path.join(dir, 'agents.json'), JSON.stringify({
+    at: '2026-11-07T00:00:00.000Z',
+    devices: [{ deviceId: 'd1', label: 'Machine-A', online: true, thisMachine: true }],
+    agents: [
+      { agentId: 'user:chief', sessionId: 's-chief', deviceId: null, deviceLabel: 'Machine-A', parentAgentId: null, title: 'Chief', status: 'working', detail: 'running' },
+      { ...agentRows[0], deviceLabel: 'Machine-A', parentAgentId: 'user:chief', status: 'working', detail: 'running' },
+    ],
+  }))
+  await tools.create.run({ chat, title: 'Keyboard overlap' }, asAgent)
+  const file = [...chatFiles.values()].find((f) => f.entry.chat === chat)
+  const card = Object.values(file.data.cards)[0]
+  await tools.claim.run({ chat, card: card.id }, asAgent)
+  await tools.update.run({ chat, card: card.id, waitKind: 'ci', waitingOn: 'e2e', dest: '→ 18:00 Beta', head: 'abc1234' }, asAgent)
+  assert.deepEqual([file.data.cards[card.id].waitKind, file.data.cards[card.id].dest], ['ci', '→ 18:00 Beta'])
+  await assert.rejects(tools.update.run({ chat, card: card.id, waitKind: 'nap' }, asAgent), /waitKind/)
+
+  assert.match(await tools.ask.run({ chat, card: card.id, question: 'A or B?', options: ['A', 'B'] }, asAgent), /D-1/)
+  const got = await tools.get.run({ chat, card: card.id }, asAgent)
+  assert.deepEqual(got.asks, { id: 'D-1', question: 'A or B?' })
+  assert.match(await tools.decide.run({ chat, decision: 'D-1', answer: 'B', message: OWNER_MSG }, asAgent), /D-1 decided/)
+  await assert.rejects(tools.decide.run({ chat, question: 'From memory', answer: 'x' }, asAgent), /message/)
+  await tools.decide.run({ chat, question: 'Builds only on the build machines', answer: 'yes', message: OWNER_MSG }, asAgent)
+  const ds = await tools.decisions.run({ chat }, asAgent)
+  assert.equal(ds.card, card.id, 'the lane’s own card, found by its task')
+  assert.equal(ds.machine, 'Machine-A')
+  assert.deepEqual(ds.decisions.map((d) => [d.id, d.answer]), [['D-1', 'B'], ['D-2', 'yes']])
+  assert.equal(ds.decisions[1].message, OWNER_MSG)
+
+  await tools.link.run({ chat, card: card.id, kind: 'pr', url: 'https://github.com/acme/app/pull/9' }, asAgent)
+  assert.match(await tools.sync_prs.run({ chat, prs: [{ url: 'https://github.com/acme/app/pull/9', ci: 'green', review: 'approved', merged: false }] }, asAgent), /^1 /)
+
+  file.data.cards[card.id].handoff = { to: { session: 's-new', agent: NEW }, by: 'person', at: '2026-11-07T00:00:00.000Z', acceptedAt: null }
+  await assert.rejects(tools.handoff_accept.run({ chat, card: card.id }, asAgent), /only the task/)
+  await tools.handoff_accept.run({ chat, card: card.id }, { agent: NEW, session: 's-new' })
+  assert.ok(file.data.cards[card.id].handoff.acceptedAt)
+
+  await tools.supervisor.run({ chat }, { agent: 'user:chief', session: 's-chief' })
+  assert.ok(file.data.fleet.supervisors['s-chief'])
+  const fleet = await tools.fleet.run({ chat }, asAgent)
+  assert.equal(fleet.machines[0].supervisor.session, 's-chief')
+  assert.deepEqual(fleet.waiting.map((w) => [w.session, w.waits]), [['s-agent', 'ci']])
+  const sendable = await tools.fleet.run({ chat, card: true }, asAgent)
+  assert.deepEqual(sendable.data, { board: file.entry.id })
+  assert.match(sendable.text, /^舰队 · /)
+  assert.ok(Buffer.byteLength(JSON.stringify(sendable.data)) < 4096)
+})
