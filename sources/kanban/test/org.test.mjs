@@ -163,9 +163,39 @@ test('the message card counts the fleet when shown and opens the chart of the bo
     // running: kb is waiting on the owner and bill is done, so none runs; one waits on the owner, one on merge.
     assert.deepEqual(nums, ['0', '1', '1', '0'])
     assert.match(document.getElementById('machines').textContent, /2\/2 台机器在线/)
+    assert.doesNotMatch(document.getElementById('machines').textContent, /null/, 'no machine is offline: nothing is written in its place')
     click(document.getElementById('card'))
     await settled()
     assert.deepEqual(links, [{ link: { kind: 'app', tab: 'org', chat: 'chat', query: { board: 'board-1' } } }])
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
+
+test('a question no lane holds still waits on the person: counted on the card, answered on the chart, told to whoever asked', async () => {
+  const fx = fixture()
+  const by = { by: 'user:chief', now: '2026-11-07T10:05:00.000Z', id: () => 'loose1' }
+  // The supervisor's own card: no task has claimed it, so no lane carries its question.
+  const own = applyOp(fx.board, { type: 'card.create', title: 'Release notes', column: 'doing' }, by).card
+  applyOp(fx.board, { type: 'decision.create', card: own, question: 'Ship on Friday?', options: ['Yes', 'No'] }, { ...by, id: () => 'loose2' })
+  const card = await open('fleet', fx, { ctx: { widget: { data: { board: 'board-1' }, messageId: 'msg:1' } } })
+  try {
+    assert.deepEqual([...card.document.querySelectorAll('#nums .num b')].map((b) => b.textContent), ['0', '2', '1', '0'])
+  } finally {
+    delete globalThis.window
+    delete globalThis.document
+  }
+  const { document, sent } = await open('org', fx)
+  try {
+    const asks = document.querySelector('.asks')
+    assert.equal(asks.querySelectorAll('li.ask').length, 2)
+    assert.match(asks.textContent, /Release notes.*Ship on Friday\?/s)
+    click(buttonBy(asks, 'Yes'))
+    await settled()
+    const d = Object.values(fx.board.decisions).find((x) => x.question === 'Ship on Friday?')
+    assert.deepEqual([d.status, d.answer, d.decidedBy], ['decided', 'Yes', 'user:owner'])
+    assert.deepEqual(sent.map(([, opts]) => opts.to.agent), ['user:chief'], 'the answer goes back to whoever asked')
   } finally {
     delete globalThis.window
     delete globalThis.document

@@ -144,9 +144,25 @@ function render() {
 /** Layer 0: what only the person can unblock, each with its answer one click away. */
 function asksView() {
   const asks = fleet.waits.filter(({ lane }) => lane.wait.kind === 'owner')
-  const head = h('h2', { class: 'section' }, t.asksTitle, asks.length ? h('small', { class: 'attn', text: String(asks.length) }) : null)
-  if (!asks.length) return h('section', { class: 'asks empty' }, head, h('p', { class: 'muted', text: t.asksNone }))
-  return h('section', { class: 'asks' }, head, h('ul', {}, ...asks.map(({ lane, machine }) => h('li', { class: 'ask' }, askBody(lane, machine)))))
+  const count = asks.length + fleet.asks.length
+  const head = h('h2', { class: 'section' }, t.asksTitle, count ? h('small', { class: 'attn', text: String(count) }) : null)
+  if (!count) return h('section', { class: 'asks empty' }, head, h('p', { class: 'muted', text: t.asksNone }))
+  return h('section', { class: 'asks' }, head, h('ul', {},
+    ...asks.map(({ lane, machine }) => h('li', { class: 'ask' }, askBody(lane, machine))),
+    ...fleet.asks.map((d) => h('li', { class: 'ask' }, looseAskBody(d)))))
+}
+
+/** A question no lane holds: under its card (or the ledger's label), and the answer goes back to whoever asked. */
+function looseAskBody(decision) {
+  const asker = report?.agents?.find((a) => a.agentId === decision.by)
+  const top = h('div', { class: 'ask-top' },
+    h('strong', { text: board.cards?.[decision.card]?.title ?? decisionLabel(board, decision) }),
+    h('small', { class: 'muted', text: asker?.title ?? '' }), time(decision.at))
+  const free = h('input', { type: 'text', placeholder: t.say, 'aria-label': t.say })
+  const decide = (answer) => decideAsk(decision, null, answer)
+  free.addEventListener('keydown', (e) => { if (e.key === 'Enter' && free.value.trim()) decide(free.value.trim()) })
+  return [top, h('p', { class: 'q', text: decision.question }),
+    h('div', { class: 'opts' }, ...decision.options.map((o) => h('button', { text: o, onclick: () => decide(o) })), free)]
 }
 
 function askBody(lane, machine) {
@@ -175,7 +191,7 @@ async function decideAsk(decision, lane, answer) {
   } catch { return }
   const done = board.decisions[decision.id]
   const label = decisionLabel(board, done)
-  if (await tell(lane.agent.agentId, t.toDecision(done, label))) showAlert(t.decidedNote(label))
+  if (await tell(lane?.agent.agentId ?? done.by, t.toDecision(done, label))) showAlert(t.decidedNote(label))
 }
 
 /** Layer 1: everyone else's waits, as counts; a click narrows the chart to that kind. */

@@ -56,12 +56,13 @@ export function toneOf(lane) {
 
 /**
  * The fleet from what gugu lists (`listAgents({ report: true })`: agents, devices) and a board. Returns
- * `{ machines, loose, counts, waits, unreached }`:
+ * `{ machines, loose, counts, waits, asks, all }`:
  * - machines: one per computer gugu knows, this one first; each with its supervisor (or null), its lanes as a tree,
  *   and whether it answers;
  * - loose: cards on the board whose task gugu does not list (finished elsewhere, or on a computer that did not answer);
  * - waits: every lane that waits, most urgent kind first, longest wait first;
- * - counts: running, owner, external, error, lanes, machines online.
+ * - asks: pending questions no lane holds — they wait on the person all the same;
+ * - counts: running, owner (lanes waiting on the person, plus those asks), external, error, lanes, machines online.
  */
 export function fleetOf({ agents = [], devices = [], unreached = [] } = {}, board = null, now = Date.now()) {
   const cards = Object.values(board?.cards ?? {})
@@ -161,12 +162,15 @@ export function fleetOf({ agents = [], devices = [], unreached = [] } = {}, boar
   for (const m of machines.values()) flat(m.lanes, m)
   const waits = all.filter(({ lane }) => lane.wait).sort((a, b) =>
     WAIT_ORDER.indexOf(a.lane.wait.kind) - WAIT_ORDER.indexOf(b.lane.wait.kind) || String(a.lane.wait.since ?? '9').localeCompare(String(b.lane.wait.since ?? '9')))
+  // A question no lane holds (asked on a card no listed task has claimed, or with no card) still waits on the person.
+  const held = new Set(waits.map(({ lane }) => lane.wait.decision).filter(Boolean))
+  const asks = decisionsInOrder(board ?? {}).filter((d) => d.status === 'pending' && !held.has(d.id))
   const counts = {
     lanes: all.length,
     // One rule for every count: a lane's tone (an offline machine's tasks read as unknown, never as running).
     running: all.filter(({ lane }) => lane.tone === 'run').length,
     // A remote agent's live counters are null, but its status (needs_user) is not: a waiting task is counted either way.
-    owner: all.filter(({ lane }) => lane.wait?.kind === 'owner').length,
+    owner: all.filter(({ lane }) => lane.wait?.kind === 'owner').length + asks.length,
     external: all.filter(({ lane }) => EXTERNAL.has(lane.wait?.kind)).length,
     error: all.filter(({ lane }) => lane.wait?.kind === 'error' || lane.wait?.kind === 'quota').length,
     machines: machines.size,
@@ -178,7 +182,7 @@ export function fleetOf({ agents = [], devices = [], unreached = [] } = {}, boar
     m.counts = { lanes: mine.length, waiting: mine.filter(({ lane }) => lane.wait).length }
   }
   const order = [...machines.values()].sort((a, b) => Number(b.thisMachine) - Number(a.thisMachine) || Number(b.online) - Number(a.online) || String(a.label).localeCompare(String(b.label)))
-  return { machines: order, loose, counts, waits, all }
+  return { machines: order, loose, counts, waits, asks, all }
 }
 
 /**
