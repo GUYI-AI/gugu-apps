@@ -1,6 +1,6 @@
 // 坦克大战: my tank and my shells are in my presence. A shell is its launch point and velocity, so every page flies it
 // on its own clock from when it arrived. A shell that reaches me is judged here: the shooter's kill goes in the file.
-import { ages, board, bump, loop, near, playing, slot, smoother } from './net.js'
+import { PAL, ages, board, brickwork, bump, loop, near, playing, scanlines, slot, smoother, tile } from './net.js'
 
 export const title = '坦克大战'
 const W = 480, H = 320, SPEED = 90, TURN = 3, SHELL = 260, LIFE = 1.4, RELOAD = 0.4, R = 11
@@ -25,7 +25,7 @@ export function mount(stage, { f, nameOf }) {
   const fire = Object.assign(document.createElement('button'), { className: 'primary', textContent: '开火' })
   const line = document.createElement('p')
   stage.append(line, canvas, fire)
-  const { g, ink, stop } = board(canvas, W, H)
+  const { g, stop } = board(canvas, W, H)
   const age = ages(), smooth = smoother(120)
 
   const free = () => { let x, y; do { x = 20 + Math.random() * (W - 40); y = 20 + Math.random() * (H - 40) } while (inWall(x, y, R + 4)); return { x, y } }
@@ -48,8 +48,14 @@ export function mount(stage, { f, nameOf }) {
 
   const drawTank = ({ x, y, a }, color) => {
     g.save(); g.translate(x, y); g.rotate(a)
-    g.fillStyle = color; g.fillRect(-R, -R * 0.8, R * 2, R * 1.6)
-    g.fillRect(0, -2.5, R * 1.5, 5)
+    g.fillStyle = '#2a2d33' // treads, with their links
+    g.fillRect(-R, -R, R * 2, 6); g.fillRect(-R, R - 6, R * 2, 6)
+    g.fillStyle = '#5c616b'
+    for (let k = -R + 1; k < R; k += 4) { g.fillRect(k, -R + 1, 2, 4); g.fillRect(k, R - 5, 2, 4) }
+    tile(g, -R + 2, -R + 5, R * 2 - 4, R * 2 - 10, color)
+    g.fillStyle = color; g.fillRect(0, -2.5, R * 1.5, 5)
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0.5, R * 1.5, 2)
+    g.beginPath(); g.arc(0, 0, R * 0.45, 0, Math.PI * 2); g.fill()
     g.restore()
   }
   const stopLoop = loop(f, 'tanks', 20, (dt) => {
@@ -80,13 +86,16 @@ export function mount(stage, { f, nameOf }) {
     const shown = others.map((p) => ({ p, at: p.state.tank && smooth(p.id, p.state.tank.x, p.state.tank.y, dt) }))
     shells = shells.filter((s) => { const at = flight(s, age(s.id)); return at && !shown.some(({ at: t }) => t && near(at, t, R)) })
 
-    g.clearRect(0, 0, W, H)
-    g.fillStyle = ink('foreground-passive')
-    for (const [x, y, w, h] of WALLS) g.fillRect(x, y, w, h)
-    for (const { p, at } of shown) if (at) drawTank({ ...at, a: p.state.tank.a }, p.color || ink('foreground-muted'))
-    if (!dead) drawTank(tank, f.presence.self.color || ink('accent-9'))
-    g.fillStyle = ink('foreground')
+    g.fillStyle = PAL.screen; g.fillRect(0, 0, W, H)
+    g.fillStyle = PAL.grid
+    for (let x = 0; x < W; x += 32) g.fillRect(x, 0, 1, H)
+    for (let y = 0; y < H; y += 32) g.fillRect(0, y, W, 1)
+    for (const [x, y, w, h] of WALLS) brickwork(g, x, y, w, h)
+    for (const { p, at } of shown) if (at) drawTank({ ...at, a: p.state.tank.a }, p.color || PAL.them)
+    if (!dead) drawTank(tank, f.presence.self.color || PAL.me)
+    g.fillStyle = PAL.shot
     for (const s of [...shells, ...others.flatMap((p) => p.state.shells ?? [])]) { const at = flight(s, age(s.id)); if (at) g.fillRect(at.x - 2, at.y - 2, 4, 4) }
+    scanlines(g, W, H)
     const score = (id) => `${nameOf(id)} ${T().kills[id] ?? 0}/${T().deaths[id] ?? 0}`
     line.textContent = `${dead ? '复活中　' : ''}击毁/被毁　${[me(), ...others.map((p) => p.userId)].map(score).join('　')}`
     return { tank: dead ? null : tank, shells }

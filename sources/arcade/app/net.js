@@ -55,7 +55,7 @@ export const near = (a, b, r) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 < r * r
 /** Add one to `table[who]` in the file. */
 export const bump = (table, who) => { table[who] = (table[who] ?? 0) + 1 }
 
-/** A canvas scaled to its box for crisp drawing, and the theme colours to draw with. */
+/** A canvas scaled to its box for crisp drawing. */
 export function board(canvas, w, h) {
   const fit = () => {
     const scale = Math.min(canvas.parentElement.clientWidth / w, 1.6)
@@ -66,9 +66,47 @@ export function board(canvas, w, h) {
   }
   fit()
   addEventListener('resize', fit)
-  const css = getComputedStyle(document.body)
-  const ink = (name) => css.getPropertyValue(`--em-${name}`).trim()
-  return { g: canvas.getContext('2d'), ink, stop: () => removeEventListener('resize', fit) }
+  return { g: canvas.getContext('2d'), stop: () => removeEventListener('resize', fit) }
+}
+
+/** The arcade's colours. A game's screen is night in either theme, like a cabinet's, so the players' colours read the
+ *  same everywhere; plain hex, as a phone's canvas ignores the theme's color-mix() inks. */
+export const PAL = { screen: '#0d1020', grid: '#1e2547', me: '#f8b800', them: '#7fd6ff', shot: '#fff1a8', fire: '#ff6a00', flame: '#ffe14d',
+  brick: '#b4501e', mortar: '#4a1c06', stone: '#8d939b', grass: '#2f8a3b', grass2: '#2a7d35' }
+
+/** A block shaded the 8-bit way: light along the top and left, dark along the bottom and right. */
+export function tile(g, x, y, w, h, color) {
+  const e = Math.max(1, Math.round(Math.min(w, h) / 8))
+  g.fillStyle = color; g.fillRect(x, y, w, h)
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x, y, w, e); g.fillRect(x, y, e, h)
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, y + h - e, w, e); g.fillRect(x + w - e, y, e, h)
+}
+
+/** A brick wall filling a rectangle, rows of `size`, every other row offset by half a brick. */
+export function brickwork(g, x, y, w, h, size = 8) {
+  g.fillStyle = PAL.brick; g.fillRect(x, y, w, h)
+  g.fillStyle = PAL.mortar
+  for (let r = 0; r * size < h; r++) {
+    const top = y + r * size, rh = Math.min(size, y + h - top)
+    if (rh === size) g.fillRect(x, top + size - 1, w, 1)
+    for (let bx = x + (r % 2 ? size : 0); bx < x + w; bx += size * 2) g.fillRect(bx, top, 1, rh)
+  }
+}
+
+/** Two eyes on the cell centred at cx,cy, looking along dx,dy. */
+export function eyes(g, cx, cy, [dx, dy], size) {
+  const k = size / 16
+  for (const s of [-1, 1]) {
+    const ex = cx + dx * 3 * k - dy * s * 4 * k, ey = cy + dy * 3 * k + dx * s * 4 * k
+    g.fillStyle = '#fff'; g.fillRect(ex - 2 * k, ey - 2 * k, 4 * k, 4 * k)
+    g.fillStyle = '#000'; g.fillRect(ex - k + dx * k, ey - k + dy * k, 2 * k, 2 * k)
+  }
+}
+
+/** Faint CRT scanlines over the whole screen, drawn last. */
+export function scanlines(g, w, h) {
+  g.fillStyle = 'rgba(0,0,0,.18)'
+  for (let y = 0; y < h; y += 3) g.fillRect(0, y, w, 1)
 }
 
 /** Arrow keys / WASD and swipes, as one direction. */

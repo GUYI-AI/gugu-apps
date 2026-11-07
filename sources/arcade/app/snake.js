@@ -1,6 +1,6 @@
 // 多人贪吃蛇: my snake lives in my presence and moves on my page; the food and the best scores are in the file.
 // I die when my head hits a wall, myself, or anyone's body as I see it — judged here, by me.
-import { board, directions, loop, playing, slot } from './net.js'
+import { PAL, board, directions, eyes, loop, playing, scanlines, slot, tile } from './net.js'
 
 export const title = '贪吃蛇'
 const W = 30, H = 22, CELL = 16, FOODS = 3
@@ -18,7 +18,7 @@ export function mount(stage, { f, nameOf }) {
   const scores = document.createElement('ul')
   scores.className = 'list scores'
   stage.append(line, canvas, scores)
-  const { g, ink, stop } = board(canvas, W * CELL, H * CELL)
+  const { g, stop } = board(canvas, W * CELL, H * CELL)
 
   let body = null, dir = [1, 0], next = dir, score = 0
   const spawn = () => {
@@ -37,12 +37,28 @@ export function mount(stage, { f, nameOf }) {
   canvas.addEventListener('click', respawn)
   addEventListener('keydown', respawn)
 
-  const cell = ([x, y], color, inset = 1) => { g.fillStyle = color; g.fillRect(x * CELL + inset, y * CELL + inset, CELL - 2 * inset, CELL - 2 * inset) }
+  const cell = ([x, y], color) => tile(g, x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, color)
+  const apple = ([x, y]) => {
+    g.fillStyle = '#e8343c'; g.beginPath(); g.arc((x + 0.5) * CELL, (y + 0.58) * CELL, CELL * 0.36, 0, Math.PI * 2); g.fill()
+    g.fillStyle = '#ffb3b3'; g.fillRect(x * CELL + 5, y * CELL + 6, 2, 2)
+    g.fillStyle = '#3fbf4a'; g.fillRect(x * CELL + 8, y * CELL + 1, 4, 3)
+  }
+  const snake = (cells, color) => {
+    for (const c of cells) cell(c, color)
+    if (cells.length > 1) eyes(g, (cells[0][0] + 0.5) * CELL, (cells[0][1] + 0.5) * CELL, [cells[0][0] - cells[1][0], cells[0][1] - cells[1][1]], CELL)
+  }
   const draw = (others) => {
-    g.clearRect(0, 0, W * CELL, H * CELL)
-    for (const c of Object.values(S().food)) cell(c, ink('foreground-warning'), 3)
-    for (const p of others) for (const c of p.state.body ?? []) cell(c, p.color || ink('foreground-muted'))
-    for (const c of body ?? []) cell(c, f.presence.self.color || ink('accent-9'))
+    g.fillStyle = PAL.screen; g.fillRect(0, 0, W * CELL, H * CELL)
+    g.fillStyle = PAL.grid
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) g.fillRect(x * CELL + CELL / 2 - 1, y * CELL + CELL / 2 - 1, 2, 2)
+    for (const c of Object.values(S().food)) apple(c)
+    for (const p of others) snake(p.state.body ?? [], p.color || PAL.them)
+    snake(body ?? [], f.presence.self.color || PAL.me)
+    if (!body && performance.now() % 1000 < 600) {
+      g.font = '16px "Arcade Start", monospace'; g.textAlign = 'center'; g.fillStyle = PAL.me
+      g.fillText('PRESS START', W * CELL / 2, H * CELL / 2)
+    }
+    scanlines(g, W * CELL, H * CELL)
     line.textContent = body ? `${score} 分 · 方向键 / WASD / 滑动` : '点一下或按空格开始'
     const live = [{ id: me(), score: body ? score : null }, ...others.map((p) => ({ id: p.userId, score: p.state.body ? p.state.score : null }))]
     const rows = live.map(({ id, score }) => `${nameOf(id)}　${score ?? '—'}　最佳 ${S().best[id] ?? 0}`)
