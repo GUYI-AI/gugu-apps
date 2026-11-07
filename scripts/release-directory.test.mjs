@@ -15,7 +15,7 @@ after(() => rmSync(work, { recursive: true, force: true }));
 const commit = 'a'.repeat(40), id = 'release-fixture', version = '0.0.1';
 const { privateKey, publicKey } = generateKeyPairSync('ed25519'); // Ephemeral fixture keys never leave memory.
 const trust = [{ id: 'fixture', appId: id, sourceRepo: 'GUYI-AI/gugu-assistant', publicKey: publicKey.export({ type: 'spki', format: 'pem' }) }];
-const contract = { appListingProblems: () => [], appPlatformProblems: () => [] };
+const contract = { appListingProblems: () => [], appPlatformProblems: () => [], safeParseExtensionManifest: () => ({ ok: true }) };
 const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 let n = 0;
 async function fixture() {

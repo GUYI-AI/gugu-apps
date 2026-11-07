@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { inspectAppDir, packDir } from './lib.mjs';
 
 // The listing and platform rules are the pinned client's (market.test.mjs runs them); these cells are about entries.
-const passing = { appListingProblems: () => [], appPlatformProblems: () => [] };
+const passing = { appListingProblems: () => [], appPlatformProblems: () => [], safeParseExtensionManifest: () => ({ ok: true }) };
 
 test('tool Apps package and inspect without HTML; HTML entry checks still reject broken pages', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'gugu-tool-market-'));

@@ -222,7 +222,14 @@ export function inspectAppDir(dir, id, version, contract) {
     .map((name) => ({ name, bytes: readFileSync(bundleFile(shotsDir, name)) }));
   const whatsNew = storeFile(dir, 'whats-new.md')?.toString('utf8').trim() ?? null;
   const icon = manifest.icon ? readFileSync(bundleFile(dir, manifest.icon)) : null;
-  const problems = [...contract.appListingProblems({ manifest, about, screenshots, whatsNew, icon }), ...contract.appPlatformProblems(manifest)];
+  // The client parses every market manifest with this schema and leaves an App it refuses out of the market.
+  const parsed = contract.safeParseExtensionManifest(manifest);
+  const problems = [
+    ...(parsed.ok ? [] : parsed.issues.map((issue) => `manifest.json ${issue}${issue.startsWith('apiVersion:')
+      ? ` — the pinned client (.github/gugu-app-contract.json) runs apiVersion ${contract.EXTENSION_API_VERSION_MIN_SUPPORTED}–${contract.EXTENSION_API_VERSION}: move the pin to a released client that runs it, or update the App` : ''}`)),
+    ...contract.appListingProblems({ manifest, about, screenshots, whatsNew, icon }),
+    ...contract.appPlatformProblems(manifest),
+  ];
   if (problems.length) fail(problems.join('; '));
   return {
     manifest,
