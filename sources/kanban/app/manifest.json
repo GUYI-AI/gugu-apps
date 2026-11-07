@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "apiVersion": 26,
   "platforms": [
     "desktop",
@@ -88,7 +88,7 @@
       }
     ],
     "skills": "skills",
-    "instructions": "Read skill kanban first. kanban__list, claim, update, move and comment work cards on this computer's board or a chat's .board.json. A fleet's lanes report on a chat's board (update waitKind, dest, head; ask the owner with ask); kanban__decisions before starting; kanban__fleet {card:true} then widget_send view fleet."
+    "instructions": "Read skill kanban first. kanban__list, claim, update, move and comment work cards on this computer's board or a chat's .board.json; fleets: see the skill."
   },
   "examples": [
     "把这件事添加到我的看板",

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1
+
+- The agents' one-line instructions are back under 160 characters: gugu 0.3.1 refused the 1.5.0 manifest, which
+  hid Teamboard from its market. The fleet tools are described in the kanban skill.
+
 ## 1.5.0
 
 舰队 (Fleet): the fleet's org chart on a chat's board (App interface 26).
