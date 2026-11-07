@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fiveInRow, turn } from '../app/gomoku.js'
+import { fiveInRow, open, swapped, turn } from '../app/gomoku.js'
 import { hits, outside, same } from '../app/snake.js'
 
 const row = (cells, c = 'b') => Object.fromEntries(cells.map((xy) => [xy.join(), c]))
@@ -18,6 +18,16 @@ test('gomoku: black moves first, then turns alternate', () => {
   assert.equal(turn({}), 'b')
   assert.equal(turn(row([[7, 7]])), 'w')
   assert.equal(turn({ '7,7': 'b', '7,8': 'w' }), 'b')
+})
+
+test('gomoku: a seat whose player left can be taken, and the next game drops them', () => {
+  const here = (id) => id !== 'gone'
+  assert.equal(open({}, 'b', here), true)
+  assert.equal(open({ b: 'ann' }, 'b', here), false)
+  assert.equal(open({ b: 'gone' }, 'b', here), true)
+  assert.deepEqual(swapped({ b: 'ann', w: 'bo' }, here), { b: 'bo', w: 'ann' })
+  assert.deepEqual(swapped({ b: 'ann', w: 'gone' }, here), { w: 'ann' })
+  assert.deepEqual(swapped({ b: 'gone' }, here), {})
 })
 
 test('snake: walls and bodies', () => {

@@ -1,6 +1,49 @@
-/* gugu's look is in the page already (guide apps-ui); only the play area on top of it. */
+/* gugu's look is in the page already (guide apps-ui); on top of it, an arcade skin: pixel fonts (assets/, OFL), pixel-stepped
+   borders drawn with box-shadow, and the play area as a cabinet screen. Lines and borders take the theme's ink, so the
+   same rules read as black-on-paper in light and light-on-night in dark; the arcade colours are fixed. */
+@font-face { font-family: 'Arcade Pixel'; src: url(assets/arcade-pixel.woff2) format('woff2'); font-display: swap; }
+@font-face { font-family: 'Arcade Start'; src: url(assets/arcade-start.woff2) format('woff2'); font-display: swap; }
+:root {
+  --pixel: 'Arcade Pixel', var(--em-font-family, system-ui), sans-serif;
+  --ink: var(--em-foreground);
+  --coin: #f8b800; --coin-ink: #1a1408; --red: #e4003a;
+  /* a 2px border with its corners knocked out, the way 8-bit games drew boxes */
+  --pixel-border: 0 -2px 0 0 var(--ink), 0 2px 0 0 var(--ink), -2px 0 0 0 var(--ink), 2px 0 0 0 var(--ink);
+}
 body { margin: 0; padding: var(--em-spacing-md); }
 body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
+
+.marquee { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-md); margin-bottom: var(--em-spacing-md); }
+.marquee h1 { margin: 0; font: 16px/1 'Arcade Start', monospace; color: var(--coin); letter-spacing: 1px;
+  text-shadow: 2px 2px 0 var(--red), 4px 4px 0 var(--coin-ink); }
+[data-gugu-theme='dark'] .marquee h1 { text-shadow: 2px 2px 0 var(--red), 4px 4px 0 #000; }
+
+[role=tablist] { display: flex; flex-wrap: wrap; gap: 8px; border: 0; border-radius: 0; overflow: visible; margin: 0; padding: 2px; background: none; }
+[role=tablist] [role=tab], #stage button {
+  font: 12px/1 var(--pixel); height: auto; min-height: 32px; padding: 8px 10px; margin: 0;
+  border: 0; border-radius: 0; background: var(--em-background); color: var(--ink); box-shadow: var(--pixel-border);
+  box-sizing: border-box; cursor: pointer;
+}
+[role=tablist] [role=tab][aria-selected='true'], #stage button.primary {
+  background: var(--coin); color: var(--coin-ink);
+  box-shadow: var(--pixel-border), inset -3px -3px 0 0 #c88400;
+}
+#stage button.primary:active, [role=tablist] [role=tab]:active { transform: translateY(2px); box-shadow: var(--pixel-border), inset 3px 3px 0 0 #c88400; }
+
+@media (max-width: 420px) { [role=tablist] [role=tab] { padding-inline: 6px; } }
+
 #stage { gap: var(--em-spacing-md); }
-canvas { display: block; touch-action: none; border-radius: var(--em-radius-control); background: var(--em-background-1); border: 1px solid var(--em-border); }
-.scores li { padding-block: 2px; }
+#stage .row { padding: 2px; }
+/* the cabinet screen: a thick bezel with stepped corners */
+canvas { display: block; touch-action: none; border-radius: 0;
+  box-shadow: 0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink); }
+
+/* the score board: what each game writes above its screen, and snake's best scores */
+#stage > p:first-child, .scores {
+  font: 12px/1.6 var(--pixel); margin: 2px; padding: 6px 10px;
+  background: #14161f; color: var(--coin); box-shadow: var(--pixel-border);
+}
+#stage > p:first-child::before { content: '▶ '; color: var(--red); }
+.scores { gap: 0; }
+.scores li { padding: 2px 0; background: none; color: inherit; min-height: 0; }
+.scores li:first-child { color: #fff; }

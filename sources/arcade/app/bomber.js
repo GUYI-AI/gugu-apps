@@ -1,7 +1,7 @@
 // 炸弹人: I walk the grid in my presence. Bombs and bricks are in the file; each page lights a bomb's fuse when the bomb
 // arrives, so it bursts at the same moment for everyone give or take the link. Whoever stands in a blast judges it on
 // their own page; the bomb's owner clears the bomb and the bricks it broke.
-import { ages, board, bump, directions, loop, playing, slot, smoother } from './net.js'
+import { PAL, ages, board, brickwork, bump, directions, eyes, loop, playing, scanlines, slot, smoother, tile } from './net.js'
 
 export const title = '炸弹人'
 const W = 15, H = 11, CELL = 32, FUSE = 2, FLAME = 0.5, RANGE = 2, MAX_BOMBS = 2
@@ -40,7 +40,7 @@ export function mount(stage, { f, nameOf }) {
   const fresh = Object.assign(document.createElement('button'), { textContent: '新的一局' })
   actions.append(drop, fresh)
   stage.append(line, canvas, actions)
-  const { g, ink, stop } = board(canvas, W * CELL, H * CELL)
+  const { g, stop } = board(canvas, W * CELL, H * CELL)
   const age = ages(), smooth = smoother(3)
 
   let pos = CORNERS[Math.floor(Math.random() * 4)], dead = 0, wait = 0
@@ -78,17 +78,26 @@ export function mount(stage, { f, nameOf }) {
       if (b.by === me() && t > FUSE + FLAME) f.transact(() => { for (const c of cells) delete B().bricks[c.join()]; delete B().bombs[id] })
     }
 
-    g.clearRect(0, 0, W * CELL, H * CELL)
-    const box = (x, y, color, inset = 1) => { g.fillStyle = color; g.fillRect(x * CELL + inset, y * CELL + inset, CELL - 2 * inset, CELL - 2 * inset) }
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (pillar(x, y)) box(x, y, ink('foreground-passive'))
-    g.globalAlpha = 0.45 // bricks: the pillars' grey, lighter, because they break
-    for (const k of Object.keys(B().bricks)) box(...k.split(',').map(Number), ink('foreground-passive'), 2)
-    g.globalAlpha = 1
-    for (const b of Object.values(B().bombs)) { g.fillStyle = ink('foreground'); g.beginPath(); g.arc((b.x + 0.5) * CELL, (b.y + 0.5) * CELL, CELL * 0.32, 0, Math.PI * 2); g.fill() }
-    for (const [x, y] of flames) box(x, y, ink('foreground-warning'), 3)
+    const box = (x, y, color, inset) => { g.fillStyle = color; g.fillRect(x * CELL + inset, y * CELL + inset, CELL - 2 * inset, CELL - 2 * inset) }
+    const player = (x, y, color) => { tile(g, x * CELL + 6, y * CELL + 6, CELL - 12, CELL - 12, color); eyes(g, (x + 0.5) * CELL, (y + 0.5) * CELL, [0, 1], 16) }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (pillar(x, y)) tile(g, x * CELL, y * CELL, CELL, CELL, PAL.stone)
+      else box(x, y, (x + y) % 2 ? PAL.grass : PAL.grass2, 0)
+    }
+    for (const k of Object.keys(B().bricks)) { const [x, y] = k.split(',').map(Number); brickwork(g, x * CELL, y * CELL, CELL, CELL) }
+    const spark = performance.now() % 200 < 100 ? PAL.flame : PAL.fire
+    for (const b of Object.values(B().bombs)) {
+      const cx = (b.x + 0.5) * CELL, cy = (b.y + 0.55) * CELL
+      g.fillStyle = '#111'; g.beginPath(); g.arc(cx, cy, CELL * 0.32, 0, Math.PI * 2); g.fill()
+      g.fillStyle = '#6b6f78'; g.fillRect(cx - 6, cy - 6, 3, 3)
+      g.fillStyle = '#8a6a3a'; g.fillRect(cx + 4, cy - CELL * 0.4, 2, 5)
+      g.fillStyle = spark; g.fillRect(cx + 3, cy - CELL * 0.48, 4, 4)
+    }
+    for (const [x, y] of flames) { box(x, y, PAL.fire, 2); box(x, y, PAL.flame, 9) }
     const others = playing(f, 'bomber')
-    for (const p of others) if (p.state.pos) { const at = smooth(p.id, ...p.state.pos, dt); box(at.x, at.y, p.color || ink('foreground-muted'), 6) }
-    if (!dead) box(...pos, f.presence.self.color || ink('accent-9'), 6)
+    for (const p of others) if (p.state.pos) { const at = smooth(p.id, ...p.state.pos, dt); player(at.x, at.y, p.color || PAL.them) }
+    if (!dead) player(...pos, f.presence.self.color || PAL.me)
+    scanlines(g, W * CELL, H * CELL)
     const score = (id) => `${nameOf(id)} ${B().kills[id] ?? 0}/${B().deaths[id] ?? 0}`
     line.textContent = `${dead ? '复活中　' : ''}炸到/被炸　${[me(), ...others.map((p) => p.userId)].map(score).join('　')}`
     return { pos: dead ? null : pos }
