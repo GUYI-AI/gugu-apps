@@ -1,0 +1,23 @@
+/* gugu's look is in the page already (guide apps-ui); only the MUD screen on top of it. */
+body { margin: 0; padding: var(--em-spacing-md); }
+body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
+#world { gap: var(--em-spacing-sm); }
+.where { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--em-spacing-sm); }
+.where h3 { margin: 0; }
+#exits button { min-height: 0; padding-block: 2px; }
+#log {
+  height: min(52vh, 460px); overflow-y: auto; padding: var(--em-spacing-sm) var(--em-spacing-md);
+  background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-xl);
+  line-height: var(--em-lh-body);
+}
+#log p { margin: 0 0 2px; white-space: pre-wrap; overflow-wrap: anywhere; }
+#log p.cmd { color: var(--em-foreground-muted); margin-top: var(--em-spacing-sm); }
+#log p.ev { color: var(--em-foreground-info); }
+#log p.sys { color: var(--em-foreground-passive); margin-top: var(--em-spacing-sm); }
+#here { gap: var(--em-spacing-xs); }
+.chip { display: inline-flex; align-items: center; gap: 4px; min-height: 0; padding: 2px 10px; border-radius: 999px; }
+.chip.carried { border: 1px dashed var(--em-border-1); color: var(--em-foreground-muted); }
+#say { flex-wrap: nowrap; }
+#say input { flex: 1; min-width: 0; }
+#quick { gap: var(--em-spacing-xs); }
+#people small.on { color: var(--em-foreground-success); }
