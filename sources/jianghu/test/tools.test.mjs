@@ -1,6 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { FILE_NAME, apply, join, run } from '../app/game.js'
+import { HOOKS } from '../app/world.js'
+
+// 雪亭镇's own tests: a newcomer starts at its inn, as before 西游记 took newcomers in.
+delete HOOKS.born
 
 // A stand-in for gugu: one chat's files, opened as live handles (saved at once), and its members.
 const files = new Map()

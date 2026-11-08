@@ -4,6 +4,10 @@ import assert from 'node:assert/strict'
 import { fresh, apply, join, run, wakes } from '../app/game.js'
 import { RESET, ONLINE, NPCS } from '../app/world.js'
 import { gameTime } from '../app/text.js'
+import { HOOKS } from '../app/world.js'
+
+// 雪亭镇's own tests: a newcomer starts at its inn, as before 西游记 took newcomers in.
+delete HOOKS.born
 
 /** The first real moment after `from` when the game's clock (60×) reads `hour`:00. */
 function at(hour, from = Date.UTC(2026, 10, 8, 3, 0, 0)) {

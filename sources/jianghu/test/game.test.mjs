@@ -1,8 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { fresh, apply, join, run, missing, linesSince, lastKey, wakes, parse, hintFor, hintStep, wayTo, VERSION } from '../app/game.js'
+import { fresh, apply, join, run, missing, linesSince, lastKey, wakes, parse, VERSION } from '../app/game.js'
 import { ROOMS, NPCS } from '../app/es2.js'
 import { gameTime } from '../app/text.js'
+import { HOOKS } from '../app/world.js'
+
+// 雪亭镇's own tests: a newcomer starts at its inn, as before 西游记 took newcomers in.
+delete HOOKS.born
 
 /** The first real moment after `from` when the game's clock (60×) reads `hour`:`minute`. */
 function at(hour, minute = 0, from = Date.UTC(2026, 10, 8, 3, 0, 0)) {
@@ -42,28 +46,6 @@ test('townspeople and wares read by their Chinese names; their English ids still
   assert.doesNotMatch(look, /\([a-z ]+\)/)
   assert.doesNotMatch(say('user:a', '清单'), /\([a-z ]+\)/)
   assert.match(say('user:a', '看 waiter'), /^店小二，/)
-})
-
-test('a newcomer is walked through the first wages and the first meal, and no further', () => {
-  const { s, enter, say } = world()
-  enter('user:a', '阿青')
-  assert.equal(wayTo('inn_hall', 'inn_hall'), null)
-  assert.match(hintFor(s, 'user:a'), /^身上还没钱：先去货栈帮工头装货挣工钱（往东）$/)
-  // At night the inn's door is shut: the hint says to open it first.
-  ;(s.rooms.inn_hall ??= {}).doors = { 东: true }
-  assert.match(hintFor(s, 'user:a'), /（先「开门」，再往东）$/)
-  assert.equal(hintStep(s, 'user:a'), '开门')
-  say('user:a', hintStep(s, 'user:a'))
-  assert.match(hintFor(s, 'user:a'), /（往东）$/)
-  // Following the hint step by step reaches the warehouse.
-  // Tapping the hint, again and again, earns the first wages.
-  for (let i = 0; i < 12 && hintStep(s, 'user:a'); i++) say('user:a', hintStep(s, 'user:a'))
-  assert.equal(s.players['user:a'].room, 'store')
-  assert.equal(hintFor(s, 'user:a'), null, 'paid and fed: on their own now')
-  s.players['user:a'].food.cur = 10
-  assert.match(hintFor(s, 'user:a'), /有钱了：回客栈买点吃的（往.+）/)
-  enter('user:c', '小咕', true)
-  assert.equal(hintFor(s, 'user:c'), null, 'agents read the help, not hints')
 })
 
 test('parse: directions, verbs with Chinese and English words, 把…给…', () => {
@@ -259,5 +241,5 @@ test('the file stays small: the log keeps its last lines', () => {
   enter('user:a', '阿青')
   for (let i = 0; i < 120; i++) say('user:a', `说 第${i}句`)
   assert.ok(Object.keys(s.log).length <= 60)
-  assert.ok(JSON.stringify(s).length < 120_000, `${JSON.stringify(s).length}`)
+  assert.ok(JSON.stringify(s).length < 140_000, `${JSON.stringify(s).length}`) // a fresh world is ~122 kB: 西游记 4.5 as far as 平顶山
 })

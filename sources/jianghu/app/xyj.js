@@ -157,7 +157,10 @@ export const ROOMS = {
   },
   "spawn": {
    "x/city/npc/xiaoshen": 1,
-   "x/city/npc/biaotou": 2
+   "x/city/npc/biaotou": 2,
+   "x/obj/misc/tables#1": 1,
+   "x/obj/misc/chairs#5": 1,
+   "x/obj/misc/chairs#0": 1
   },
   "outdoors": true,
   "area": "xyj"
@@ -180,7 +183,10 @@ export const ROOMS = {
    "南": "x/city/baihu-w1"
   },
   "spawn": {
-   "x/city/npc/bookseller": 1
+   "x/city/npc/bookseller": 1,
+   "x/obj/misc/tables#7": 1,
+   "x/obj/misc/chairs#1": 1,
+   "x/obj/misc/chairs#2": 1
   },
   "area": "xyj"
  },
@@ -191,7 +197,10 @@ export const ROOMS = {
    "东": "x/city/xuanwu-n1"
   },
   "spawn": {
-   "x/city/npc/liu": 1
+   "x/city/npc/liu": 1,
+   "x/obj/misc/tables#3": 1,
+   "x/obj/misc/chairs#5": 1,
+   "x/obj/misc/chairs#0": 1
   },
   "area": "xyj"
  },
@@ -203,7 +212,10 @@ export const ROOMS = {
   },
   "spawn": {
    "x/city/npc/shouchen": 1,
-   "x/city/npc/xiushi": 1
+   "x/city/npc/xiushi": 1,
+   "x/obj/misc/tables#4": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1
   },
   "area": "xyj"
  },
@@ -291,7 +303,16 @@ export const ROOMS = {
    "西": "x/city/wailiu2"
   },
   "spawn": {
-   "x/city/npc/lin": 1
+   "x/city/npc/lin": 1,
+   "x/obj/misc/tables#7": 1,
+   "x/obj/misc/tables#0": 1,
+   "x/obj/misc/tables#1": 1,
+   "x/obj/misc/chairs#1": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1,
+   "x/obj/misc/chairs#4": 1,
+   "x/obj/misc/chairs#5": 1,
+   "x/obj/misc/chairs#0": 1
   },
   "area": "xyj"
  },
@@ -310,7 +331,10 @@ export const ROOMS = {
    "西": "x/city/guozijian"
   },
   "spawn": {
-   "x/city/npc/xiucai4": 1
+   "x/city/npc/xiucai4": 1,
+   "x/obj/misc/tables#5": 1,
+   "x/obj/misc/chairs#1": 1,
+   "x/obj/misc/chairs#2": 1
   },
   "area": "xyj"
  },
@@ -423,7 +447,10 @@ export const ROOMS = {
    "东": "x/city/zhuque-s3"
   },
   "spawn": {
-   "x/city/npc/laosun": 1
+   "x/city/npc/laosun": 1,
+   "x/obj/misc/tables#0": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1
   },
   "area": "xyj"
  },
@@ -659,7 +686,9 @@ export const ROOMS = {
    "西": "x/city/wuguan"
   },
   "spawn": {
-   "x/city/npc/fan": 1
+   "x/city/npc/fan": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1
   },
   "area": "xyj"
  },
@@ -671,7 +700,10 @@ export const ROOMS = {
   },
   "spawn": {
    "x/city/npc/xiaoliu": 1,
-   "x/city/npc/eryi": 1
+   "x/city/npc/eryi": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1,
+   "x/obj/misc/chairs#4": 1
   },
   "area": "xyj"
  },
@@ -741,7 +773,10 @@ export const ROOMS = {
    "西": "x/city/zhuque-s2"
   },
   "spawn": {
-   "x/city/npc/yang": 1
+   "x/city/npc/yang": 1,
+   "x/obj/misc/tables#5": 1,
+   "x/obj/misc/chairs#1": 1,
+   "x/obj/misc/chairs#2": 1
   },
   "area": "xyj"
  },
@@ -780,6 +815,14 @@ export const ROOMS = {
    "南": "x/city/baihu-w2",
    "北": "x/city/datang"
   },
+  "spawn": {
+   "x/city/npc/yayi#3": 1,
+   "x/city/npc/yayi#4": 1,
+   "x/city/npc/yayi#5": 1,
+   "x/city/npc/yayi#6": 1,
+   "x/city/npc/yayi#7": 1,
+   "x/city/npc/yayi#8": 1
+  },
   "area": "xyj"
  },
  "x/city/zhongguan": {
@@ -790,7 +833,11 @@ export const ROOMS = {
    "南": "x/city/zhongguan2"
   },
   "spawn": {
-   "x/city/npc/guanjia": 1
+   "x/city/npc/guanjia": 1,
+   "x/obj/misc/tables#0": 1,
+   "x/obj/misc/chairs#0": 1,
+   "x/obj/misc/chairs#1": 1,
+   "x/obj/misc/chairs#2": 1
   },
   "outdoors": true,
   "area": "xyj"
@@ -802,7 +849,10 @@ export const ROOMS = {
    "北": "x/city/zhongguan"
   },
   "spawn": {
-   "x/city/npc/kaishan": 1
+   "x/city/npc/kaishan": 1,
+   "x/obj/misc/tables#2": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1
   },
   "area": "xyj"
  },
@@ -813,7 +863,10 @@ export const ROOMS = {
    "东": "x/city/zhuque-s2"
   },
   "spawn": {
-   "x/city/npc/jin": 1
+   "x/city/npc/jin": 1,
+   "x/obj/misc/tables#0": 1,
+   "x/obj/misc/chairs#2": 1,
+   "x/obj/misc/chairs#3": 1
   },
   "area": "xyj"
  },
@@ -879,8 +932,932 @@ export const ROOMS = {
    "南": "x/city/baihu-w3"
   },
   "spawn": {
-   "x/city/npc/xiaoer1": 1
+   "x/city/npc/xiaoer1": 1,
+   "x/obj/misc/tables#1": 1,
+   "x/obj/misc/chairs#5": 1,
+   "x/obj/misc/chairs#0": 1
   },
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/bei1": {
+  "name": "北城门",
+  "long": "宝象国的北城门，因多次发生妖祸，城门外大道已被堵塞。向西北方向看去可以见到山峦，向南极目看去，远远能看见宝象国的王宫大门。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/yedu",
+   "南": "x/qujing/baoxiang/bei2"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/bing": 2,
+   "x/qujing/baoxiang/npc/shanyao": 1,
+   "x/qujing/baoxiang/npc/people#5": 1,
+   "x/qujing/baoxiang/npc/people#6": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/bei2": {
+  "name": "北街",
+  "long": "北街上人来人往，或是渔夫担鱼或是樵夫担柴，城内家的家，户的户，只斗逍遥。熙熙攘攘，日子过得十分爽快。向北是城门，向南是王宫所在。",
+  "exits": {
+   "北": "x/qujing/baoxiang/bei1",
+   "南": "x/qujing/baoxiang/bei3"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/people#6@bei2": 1,
+   "x/qujing/baoxiang/npc/people#7": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/bei3": {
+  "name": "北街",
+  "long": "街上人很多，路两边不时传来异国情调的琴声。东面有一家小作坊，门口放着式样奇特的毯子木器之类手工制品向路人销售，南边通向王宫大门。",
+  "exits": {
+   "北": "x/qujing/baoxiang/bei2",
+   "东": "x/qujing/baoxiang/zuofang",
+   "南": "x/qujing/baoxiang/bei4"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/people#7@bei3": 1,
+   "x/qujing/baoxiang/npc/people#0": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/bei4": {
+  "name": "北街",
+  "long": "这里离城市中心很近，路面宽敞，异国情调的人们走来走去，非常热闹。东面有一马栈，不时有人挑担或牵马进去休息歇脚。往南就是王宫的大门。",
+  "exits": {
+   "北": "x/qujing/baoxiang/bei3",
+   "东": "x/qujing/baoxiang/mazhan",
+   "南": "x/qujing/baoxiang/gongmen"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/people#0@bei4": 1,
+   "x/qujing/baoxiang/npc/people#1": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/dong": {
+  "name": "波月洞",
+  "long": "洞内湿气环绕，阴森逼人。向外看，洞口苔藓斑斑；向里看，不知深浅，隐约可听见滴水之声。好一个倒木横担，枯藤挂峰，不知是妖境还是仙境。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/dongwai"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/shanyao@dong": 6,
+   "x/qujing/baoxiang/npc/huangpao": 1,
+   "x/qujing/baoxiang/npc/baihua": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/dongwai": {
+  "name": "金塔",
+  "long": "山崖边有一座宝塔，金顶放光，彩气腾腾。青青香草秀，艳艳野花开。远观如三岛天堂，近看似蓬莱仙境，果真是绝好去处。塔前有一白玉石板(shi ban)。",
+  "details": {
+   "shi ban": "碗子山波月洞"
+  },
+  "exits": {
+   "西北": "x/qujing/baoxiang/songlin"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/gongmen": {
+  "name": "王宫门",
+  "long": "宫门呈双月拱形，由山里运来的玉石筑成，上面雕有细腻的金丝银线弧形花纹。向里面看去，宫殿林立阁宇重重，祥云笼罩，气象极度非凡。",
+  "exits": {
+   "西南": "x/qujing/baoxiang/xi4",
+   "北": "x/qujing/baoxiang/bei4",
+   "东": "x/qujing/baoxiang/zhendong",
+   "南": "x/qujing/baoxiang/longfeng"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/bing@gongmen": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/longfeng": {
+  "name": "龙凤阁",
+  "long": "龙凤阁盘龙舞凤，阁内玉雕云绘层层叠叠富丽堂皇，多用金丝银线攀绕而成。阁中有琼瑶翡翠花座，四周镶嵌玛瑙涟漪纹。这里是宝象国礼待外宾的地方。",
+  "exits": {
+   "北": "x/qujing/baoxiang/gongmen",
+   "南": "x/qujing/baoxiang/yujie1"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/dashi": 1,
+   "x/qujing/baoxiang/npc/bing@longfeng": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/mazhan": {
+  "name": "马栈",
+  "long": "这里是个简易的客栈，放着一排木板斜靠椅，对面是一排长长的床榻。客人们远道而来可以将车马托交给栈后老板，然后上榻休息一番。",
+  "exits": {
+   "西": "x/qujing/baoxiang/bei4"
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/qiao1": {
+  "name": "云头桥",
+  "long": "一条河东西方向横在面前，两岸泥泞，沼泽连片。走进去怕是会陷在里面人马无归，河心更是急流滚滚。河面上有一串用船搭成的简易浮桥(qiao)。",
+  "details": {
+   "qiao": "几只船连成一座浮桥通向对岸。",
+   "浮桥": "几只船连成一座浮桥通向对岸。"
+  },
+  "exits": {
+   "东北": "x/qujing/baoxiang/shanwan3",
+   "南": "x/qujing/baoxiang/qiao2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/qiao2": {
+  "name": "云头桥",
+  "long": "一条河东西方向横在面前，两岸泥泞，沼泽连片。走进去怕是会陷在里面人马无归，河心更是急流滚滚。河面上有一串用船搭成的简易浮桥(qiao)。",
+  "details": {
+   "qiao": "几只船连成一座浮桥通向对岸。",
+   "浮桥": "几只船连成一座浮桥通向对岸。"
+  },
+  "exits": {
+   "北": "x/qujing/baoxiang/qiao1",
+   "东南": "x/qujing/baoxiang/xi1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shan2": {
+  "name": "碗子山",
+  "long": "山上黄土龟裂岩石层层，参差不奇地长着一些树林灌木。路从岩石周围绕道铺设盘山而行，迂回曲折。四处风吹草动，空谷回音。令人恍然不知所处。",
+  "exits": {
+   "南": "x/qujing/baoxiang/shanwan2",
+   "东": "x/qujing/baoxiang/shanwan1",
+   "东南": "x/qujing/baoxiang/shan3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shan3": {
+  "name": "碗子山",
+  "long": "山上黄土龟裂岩石层层，参差不奇地长着一些树林灌木。路从岩石周围绕道铺设盘山而行，迂回曲折。四处风吹草动，空谷回音。令人恍然不知所处。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/shan2",
+   "西南": "x/qujing/baoxiang/shan4",
+   "东南": "x/qujing/baoxiang/shan5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shan4": {
+  "name": "碗子山",
+  "long": "山上黄土龟裂岩石层层，参差不奇地长着一些树林灌木。路从岩石周围绕道铺设盘山而行，迂回曲折。四处风吹草动，空谷回音。令人恍然不知所处。",
+  "exits": {
+   "北": "x/qujing/baoxiang/shanwan2",
+   "东北": "x/qujing/baoxiang/shan3",
+   "东南": "x/qujing/baoxiang/shan6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shan5": {
+  "name": "碗子山",
+  "long": "山上黄土龟裂岩石层层，参差不奇地长着一些树林灌木。路从岩石周围绕道铺设盘山而行，迂回曲折。四处风吹草动，空谷回音。令人恍然不知所处。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/shan3",
+   "南": "x/qujing/baoxiang/songlin"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shan6": {
+  "name": "碗子山",
+  "long": "山上黄土龟裂岩石层层，参差不奇地长着一些树林灌木。路从岩石周围绕道铺设盘山而行，迂回曲折。四处风吹草动，空谷回音。令人恍然不知所处。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/shan4",
+   "南": "x/qujing/baoxiang/shanwan3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shanwan1": {
+  "name": "山湾",
+  "long": "山湾地带有一些缓缓急急的水流，溪水哗哗作响。岸边是松松的沼泽地，堆着枯枝烂叶。四处见山峦，路在这里显得宽畅一些，地面较平坦。",
+  "exits": {
+   "西": "x/qujing/baoxiang/shan2",
+   "东": "x/qujing/baoxiang/yelu4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shanwan2": {
+  "name": "山湾",
+  "long": "山湾地带有一些缓缓急急的水流，溪水哗哗作响。岸边是松松的沼泽地，堆着枯枝烂叶。四处见山峦，路在这里显得宽畅一些，地面较平坦。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/yelu3",
+   "北": "x/qujing/baoxiang/shan2",
+   "南": "x/qujing/baoxiang/shan4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/shanwan3": {
+  "name": "山湾",
+  "long": "山湾地带有一些缓缓急急的水流，溪水哗哗作响。岸边是松松的沼泽地，堆着枯枝烂叶。四处见山峦，路在这里显得宽畅一些，地面较平坦。",
+  "exits": {
+   "北": "x/qujing/baoxiang/shan6",
+   "西南": "x/qujing/baoxiang/qiao1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/songlin": {
+  "name": "黑松林",
+  "long": "山路崎岖，松林丛簇藤攀葛绕，边上是一带林丘，柏翠松青。林子内长满野草山花，幽幽暗暗，看起来这里草深路小，不知能通向何处。",
+  "exits": {
+   "北": "x/qujing/baoxiang/shan5",
+   "东南": "x/qujing/baoxiang/dongwai"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/tiandi": {
+  "name": "天地阁",
+  "long": "天地阁祥云飞舞瑞霭环绕，阁内绘云万道金丝银线缭绕朦胧，阁中是金光闪闪的宝座。四周文官武弁目光炯炯肃然伫立，两边自有洁衣宫女手托金银果盘，内有百味异果香醪佳酿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/yujie6"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl": 2,
+   "x/qujing/baoxiang/npc/king": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/xi1": {
+  "name": "西城门",
+  "long": "城楼高筑，旌旗飘扬。城门西北有条长河弯曲地流过，远远可以看见河上架了座浮桥。往东看是城里闹市区，许多路人正忙着进出城。西边一条小路通到山边。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/qiao2",
+   "东": "x/qujing/baoxiang/xi2"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/bing@xi1": 2,
+   "x/qujing/baoxiang/npc/people#6@xi1": 1,
+   "x/qujing/baoxiang/npc/people#7@xi1": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/xi2": {
+  "name": "西街",
+  "long": "西街上人流不息，城内家的家，户的户，只斗逍遥。大都是渔夫或樵夫，丰衣足食，日子十分爽快。向西是出城之路，向东可以抵达宝象国王宫。南边有家饭馆，飘出烤羊肉香。",
+  "exits": {
+   "西": "x/qujing/baoxiang/xi1",
+   "东": "x/qujing/baoxiang/xi3",
+   "南": "x/qujing/baoxiang/yangrou"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/people#7@xi2": 1,
+   "x/qujing/baoxiang/npc/people#0@xi2": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/xi3": {
+  "name": "西街",
+  "long": "街心由从山里运来的石板条筑成，看上去宽敞。路两边人不少，打扮装饰奇特。向东南方向望去可以见到许多高大的宫殿，那里便是王宫所在地。",
+  "exits": {
+   "西": "x/qujing/baoxiang/xi2",
+   "东": "x/qujing/baoxiang/xi4"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/people#0@xi3": 1,
+   "x/qujing/baoxiang/npc/people#1@xi3": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/xi4": {
+  "name": "西街",
+  "long": "这里差不多是市中心了，路面宽敞，人们走来走去，非常热闹。北面有一门面挂着各式各样的锡器，东南方向可以远远地看见王宫的群宫群殿。",
+  "exits": {
+   "西": "x/qujing/baoxiang/xi3",
+   "北": "x/qujing/baoxiang/xiqi",
+   "东北": "x/qujing/baoxiang/gongmen"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/people#1@xi4": 1,
+   "x/qujing/baoxiang/npc/people#2": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/xiqi": {
+  "name": "锡器铺",
+  "long": "锡器铺里挂着各式各样的器皿，有长嘴锡壶，大小锡碗锡盘锡盆。上面都打印着奇形怪状的花纹。可以听见屋后的一些小学徒正在乒乒乓乓地敲打着锡器。",
+  "exits": {
+   "南": "x/qujing/baoxiang/xi4"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/xijiang": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yangrou": {
+  "name": "羊肉馆",
+  "long": "一座沿街搭棚而建的羊肉馆，一群食客盘腿席地而坐，围着一圈陶盆陶盘聚在一起撕着羊肉进餐。从里面的厨房里不断地传出阵阵羊肉香味。",
+  "exits": {
+   "北": "x/qujing/baoxiang/xi2"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/laoban": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yedu": {
+  "name": "野渡",
+  "long": "这里是城外废弃不用的野渡口，渡口长满野生植物。遍地沼泽，笼罩着黑雾似的瘴气。散发着腥味的风一阵阵吹来，熏得人头重脚轻。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/yelu5",
+   "东南": "x/qujing/baoxiang/bei1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu1": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "东南": "x/qujing/baoxiang/yelu2",
+   "西南": "x/qujing/pingding/shan11"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu2": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/yelu1",
+   "东南": "x/qujing/baoxiang/yelu3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu3": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "西北": "x/qujing/baoxiang/yelu2",
+   "东南": "x/qujing/baoxiang/shanwan2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu4": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "西": "x/qujing/baoxiang/shanwan1",
+   "东": "x/qujing/baoxiang/yelu5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu5": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "东北": "x/qujing/baoxiang/yelu6",
+   "西": "x/qujing/baoxiang/yelu4",
+   "东南": "x/qujing/baoxiang/yedu"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu6": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "东北": "x/qujing/baoxiang/yelu7",
+   "西南": "x/qujing/baoxiang/yelu5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu7": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "东北": "x/qujing/baoxiang/yelu8",
+   "西南": "x/qujing/baoxiang/yelu6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yelu8": {
+  "name": "野路",
+  "long": "野路道路细长崎岖，起伏不停。四周远远都是大小山峦，低洼处是一片湿湿的沼泽地带，看不见人间烟火。走在山路上静悄悄，雾气浓郁，不由得让人小心加快步伐。",
+  "exits": {
+   "东": "x/westway/jiayu",
+   "西南": "x/qujing/baoxiang/yelu7"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/nuzi": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yujie1": {
+  "name": "白玉阶",
+  "long": "由白玉铺成的台阶，级级缓缓向上铺去。每一级台阶都精工细雕而成，镶嵌有金丝银线。两边各通向一宫一殿，左为大明宫，右为太极殿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/longfeng",
+   "南": "x/qujing/baoxiang/yujie2"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl@yujie1": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yujie2": {
+  "name": "白玉阶",
+  "long": "由白玉铺成的台阶，级级缓缓向上铺去。每一级台阶都精工细雕而成，镶嵌有金丝银线。两边各通向一宫一殿，左为大明宫，右为太极殿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/yujie1",
+   "南": "x/qujing/baoxiang/yujie3"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl@yujie2": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yujie3": {
+  "name": "白玉阶",
+  "long": "由白玉铺成的台阶，级级缓缓向上铺去。每一级台阶都精工细雕而成，镶嵌有金丝银线。两边各通向一宫一殿，左为大明宫，右为太极殿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/yujie2",
+   "南": "x/qujing/baoxiang/yujie4"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl@yujie3": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yujie4": {
+  "name": "白玉阶",
+  "long": "由白玉铺成的台阶，级级缓缓向上铺去。每一级台阶都精工细雕而成，镶嵌有金丝银线。两边各通向一宫一殿，左为大明宫，右为太极殿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/yujie3",
+   "南": "x/qujing/baoxiang/yujie5"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl@yujie4": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yujie5": {
+  "name": "白玉阶",
+  "long": "由白玉铺成的台阶，级级缓缓向上铺去。每一级台阶都精工细雕而成，镶嵌有金丝银线。两边各通向一宫一殿，左为大明宫，右为太极殿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/yujie4",
+   "南": "x/qujing/baoxiang/yujie6"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl@yujie5": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/yujie6": {
+  "name": "白玉阶",
+  "long": "由白玉铺成的台阶，级级缓缓向上铺去。每一级台阶都精工细雕而成，镶嵌有金丝银线。两边各通向一宫一殿，左为大明宫，右为太极殿。",
+  "exits": {
+   "北": "x/qujing/baoxiang/yujie5",
+   "南": "x/qujing/baoxiang/tiandi"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/girl@yujie6": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/zhendong": {
+  "name": "镇东场",
+  "long": "镇东场由石墙圈起，场角有一口大石井。场的东面驻有王家卫兵，西南方向更是高墙筑起，里面宫殿林立，阁宇重重，那里便是宝象国王宫。",
+  "exits": {
+   "西": "x/qujing/baoxiang/gongmen"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/bing@zhendong": 4
+  },
+  "outdoors": true,
+  "water": true,
+  "area": "xyj"
+ },
+ "x/qujing/baoxiang/zuofang": {
+  "name": "小作坊",
+  "long": "作坊的墙上挂满各式各样手工制品和织毯，一位中年男人脚踩木织机织着毯子。屋角堆满木头块和一些未完工的家俱。透过门帘，可以听见里间有人正在吱呀呀地纺线。",
+  "exits": {
+   "西": "x/qujing/baoxiang/bei3"
+  },
+  "spawn": {
+   "x/qujing/baoxiang/npc/fangzhu": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/beidong": {
+  "name": "北洞",
+  "long": "北洞里面靠墙的地方垒着几块大石头，石头已被熏得漆黑，上面吊着一口大铁锅，石头边放着山柴，干草等。西南方有一出口通向洞门。",
+  "exits": {
+   "西南": "x/qujing/pingding/dongmen"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao1": 3,
+   "x/qujing/pingding/npc/yinjiao": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/dating": {
+  "name": "大厅",
+  "long": "环顾四周，可见大厅颇具规模，里面放着木桌木椅之类，大厅的北面悬挂着一口铜钟，由蔓藤牵动着。西边有通道引向莲花洞的前厅。",
+  "exits": {
+   "西": "x/qujing/pingding/qianting"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao1@dating": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/dongmen": {
+  "name": "洞门",
+  "long": "洞门里有山涧流过，山涧之上有一石栏曲桥，一头通向洞外，另一头在洞里连向高处。高处有几个大小不同的通道，分别导向洞的纵深地带。",
+  "exits": {
+   "西北": "x/qujing/pingding/dongwai",
+   "东北": "x/qujing/pingding/beidong",
+   "南": "x/qujing/pingding/nandong",
+   "东": "x/qujing/pingding/qianting"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/hu": 1,
+   "x/qujing/pingding/npc/long": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/dongwai": {
+  "name": "洞外",
+  "long": "一道山涧从脚下流过，发出潺潺的流水声。山涧的去处有一片绿色林木，林木的后面有一山洞，洞的上沿有一凿平的石壁，上面刻着：平顶山莲花洞。",
+  "exits": {
+   "西北": "x/qujing/pingding/ping3",
+   "东南": "x/qujing/pingding/dongmen"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/chong": 1,
+   "x/qujing/pingding/npc/gui": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/nandong": {
+  "name": "南洞",
+  "long": "南洞里几块大石上晾着兽皮之类的东西，洞穴里鬼旋风打转，发出呜呜的声响。洞顶低垂，从上挂下钟乳石，洞的北面通向洞的出口。",
+  "exits": {
+   "北": "x/qujing/pingding/dongmen"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao1@nandong": 2,
+   "x/qujing/pingding/npc/jinjiao": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/neidian": {
+  "name": "内殿",
+  "long": "石洞在这里宽敞起来，形成一个殿厅。殿里有半人高的石块，上面搭着长木板，边上有石鼓和石桩子。殿的东边是卧室，东北边通向石廊。",
+  "exits": {
+   "东北": "x/qujing/pingding/shilang2",
+   "东": "x/qujing/pingding/wofang1",
+   "西南": "x/qujing/pingding/wofang2"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao2": 3
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/ping1": {
+  "name": "平顶山",
+  "long": "山岭巍峨起伏，峰顶气势缓平，天边泛起一层彩霞，云雾之中遍野林海更加郁郁苍苍。在这里道路平坦，路边有小灌木一丛一丛，古树萧萧。",
+  "exits": {
+   "东南": "x/qujing/pingding/ping3",
+   "西南": "x/qujing/pingding/ping2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/ping2": {
+  "name": "平顶山",
+  "long": "山岭巍峨起伏，峰顶气势缓平，天边泛起一层彩霞，云雾之中遍野林海更加郁郁苍苍。在这里道路平坦，路边有小灌木一丛一丛，古树萧萧。",
+  "exits": {
+   "东南": "x/qujing/pingding/ping4",
+   "西南": "x/qujing/pingding/shan2",
+   "南": "x/qujing/pingding/shan3",
+   "东北": "x/qujing/pingding/ping1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/ping3": {
+  "name": "平顶山",
+  "long": "山岭巍峨起伏，峰顶气势缓平，天边泛起一层彩霞，云雾之中遍野林海更加郁郁苍苍。在这里道路平坦，路边有小灌木一丛一丛，古树萧萧。",
+  "exits": {
+   "东南": "x/qujing/pingding/dongwai",
+   "西北": "x/qujing/pingding/ping1",
+   "南": "x/qujing/pingding/ping4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/ping4": {
+  "name": "平顶山",
+  "long": "山岭巍峨起伏，峰顶气势缓平，天边泛起一层彩霞，云雾之中遍野林海更加郁郁苍苍。在这里道路平坦，路边有小灌木一丛一丛，古树萧萧。",
+  "exits": {
+   "北": "x/qujing/pingding/ping3",
+   "西北": "x/qujing/pingding/ping2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/qianting": {
+  "name": "前厅",
+  "long": "前厅的四周是狰狞的石壁，石壁上渗出一滴滴的水珠，长着青青的苔藓。厅的西边有一个出口，通向洞门，往东是一石门洞，里面燃着篝火。",
+  "exits": {
+   "西": "x/qujing/pingding/dongmen",
+   "东": "x/qujing/pingding/dating"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao1@qianting": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan1": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东": "x/qujing/pingding/shan2",
+   "西南": "x/qujing/pingding/shan4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan10": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东南": "x/qujing/pingding/shan13",
+   "西": "x/qujing/pingding/shan9"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan11": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "西南": "x/qujing/pingding/shan13",
+   "东北": "x/qujing/baoxiang/yelu1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan12": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东北": "x/qujing/pingding/shan8",
+   "南": "x/qujing/pingding/wulin1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan13": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "西北": "x/qujing/pingding/shan10",
+   "东北": "x/qujing/pingding/shan11"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan14": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东北": "x/qujing/pingding/wulin2",
+   "西南": "x/qujing/pingding/yalong1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan2": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "西": "x/qujing/pingding/shan1",
+   "东北": "x/qujing/pingding/ping2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan3": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东南": "x/qujing/pingding/shan5",
+   "北": "x/qujing/pingding/ping2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan4": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东北": "x/qujing/pingding/shan1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan5": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "西北": "x/qujing/pingding/shan3",
+   "西南": "x/qujing/pingding/shan6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan6": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东北": "x/qujing/pingding/shan5",
+   "东南": "x/qujing/pingding/shan7"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan7": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "西北": "x/qujing/pingding/shan6",
+   "南": "x/qujing/pingding/shan8"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan8": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "北": "x/qujing/pingding/shan7",
+   "东": "x/qujing/pingding/shan9",
+   "西南": "x/qujing/pingding/shan12"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shan9": {
+  "name": "山道",
+  "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
+  "exits": {
+   "东": "x/qujing/pingding/shan10",
+   "西": "x/qujing/pingding/shan8"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shilang1": {
+  "name": "石廊",
+  "long": "洞在这里略显狭窄，左右都是粗糙的石壁，有滴水缓缓流下，落在地上发出叮咚的声音。东北方有光线从洞外斜照进来，南边仍然有另一个石壁。",
+  "exits": {
+   "西北": "x/qujing/pingding/shimen",
+   "南": "x/qujing/pingding/shilang2"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao2@shilang1": 3
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shilang2": {
+  "name": "石廊",
+  "long": "石廊在此有一点回转，两边的石壁上长着褐色的地衣，布满整个壁面。地上坑坑洼洼，积着几汪泥水。石廊的西南通向莲花洞的内殿。",
+  "exits": {
+   "北": "x/qujing/pingding/shilang1",
+   "西南": "x/qujing/pingding/neidian"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao2@shilang2": 4
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/shimen": {
+  "name": "石门",
+  "long": "山岩的下面，有一突出的巨石，宛若门檐一般。石门的一侧竖着刻有一列文字，上面写着：压龙山压龙洞。石门的东南方有一入口通向洞里面。",
+  "exits": {
+   "东北": "x/qujing/pingding/yalong2",
+   "东南": "x/qujing/pingding/shilang1"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao2@shimen": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/wofang1": {
+  "name": "卧房",
+  "long": "卧房的地上铺着野草干花，南边的石壁前有一红木桌，上面点着一盏青玉灯，北边的石壁上有一石龛。卧房的西边有一走廊通往内殿。",
+  "exits": {
+   "西": "x/qujing/pingding/neidian"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao2@wofang1": 2,
+   "x/qujing/pingding/npc/laonai": 1,
+   "x/qujing/pingding/obj/food#0": 1,
+   "x/qujing/pingding/obj/food#1": 1,
+   "x/qujing/pingding/obj/food#2": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/wofang2": {
+  "name": "卧房",
+  "long": "一个石卧房，地上铺着各种兽皮，石壁上也挂满了兽皮兽头兽角。靠墙边是一张黛色石桌，一张大木椅。东北方向有一石门通往内殿。",
+  "exits": {
+   "东北": "x/qujing/pingding/neidian"
+  },
+  "spawn": {
+   "x/qujing/pingding/npc/yao2@wofang2": 2,
+   "x/qujing/pingding/npc/huaqi": 1,
+   "x/qujing/pingding/obj/shoupi": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/pingding/wulin1": {
+  "name": "乌林子",
+  "long": "黑压压远远一片林子，树木茂密，杂草有齐胸高。乱石丛中有一条弯曲的小路，路上碎石高高低低地铺开。风吹草动，仿佛四周有眼睛在暗处盯着你。",
+  "exits": {
+   "北": "x/qujing/pingding/shan12",
+   "东南": "x/qujing/pingding/wulin2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/wulin2": {
+  "name": "乌林子",
+  "long": "黑压压远远一片林子，树木茂密，杂草有齐胸高。乱石丛中有一条弯曲的小路，路上碎石高高低低地铺开。风吹草动，仿佛四周有眼睛在暗处盯着你。",
+  "exits": {
+   "西北": "x/qujing/pingding/wulin1",
+   "西南": "x/qujing/pingding/shan14"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/yalong1": {
+  "name": "压龙山",
+  "long": "山脊起伏，云雾缥缈一片，在此可见四处森林茂密，一些山岩奇峰从树木中耸立出来，长着青苔地衣，色彩如斑如锈。小路从山脊上蜿蜒地穿过。",
+  "exits": {
+   "东北": "x/qujing/pingding/shan14",
+   "南": "x/qujing/pingding/yalong2",
+   "东南": "x/qujing/pingding/yalong3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/yalong2": {
+  "name": "压龙山",
+  "long": "山脊起伏，云雾缥缈一片，在此可见四处森林茂密，一些山岩奇峰从树木中耸立出来，长着青苔地衣，色彩如斑如锈。小路从山脊上蜿蜒地穿过。",
+  "exits": {
+   "北": "x/qujing/pingding/yalong1",
+   "东": "x/qujing/pingding/yalong3",
+   "西南": "x/qujing/pingding/shimen"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/pingding/yalong3": {
+  "name": "压龙山",
+  "long": "山脊起伏，云雾缥缈一片，在此可见四处森林茂密，一些山岩奇峰从树木中耸立出来，长着青苔地衣，色彩如斑如锈。小路从山脊上蜿蜒地穿过。",
+  "exits": {
+   "西北": "x/qujing/pingding/yalong1",
+   "西": "x/qujing/pingding/yalong2"
+  },
+  "outdoors": true,
   "area": "xyj"
  },
  "x/qujing/wuzhuang/anshi": {
@@ -1560,6 +2537,19 @@ export const ROOMS = {
   "outdoors": true,
   "area": "xyj"
  },
+ "x/westway/jiayu": {
+  "name": "嘉峪关",
+  "long": "一座雄伟的关口坐落在群山之中，嘉峪关是长城最西的关口，镇守大唐国的西域大门。关外向西便是通向西域各国的艰难道路，只见西面一片茫茫大雾如海一般恍恍惚惚什么也看不见。关内向东通向大唐国各地，南边有一个小小出口与蜂火台相连。",
+  "exits": {
+   "东": "x/westway/shizhan",
+   "西": "x/qujing/baoxiang/yelu8"
+  },
+  "spawn": {
+   "x/westway/npc/wujiang": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
  "x/westway/jincheng": {
   "name": "金城郡南",
   "long": "金城郡是西北地区的重要城镇。向西看去，茫茫一片远处隐隐约约有一群山脉。北边是金城郡南门，城门紧闭，城门洞里摆着一小食摊在卖着什么。往东有一条大官道可以通达大唐国都长安城。",
@@ -1578,9 +2568,21 @@ export const ROOMS = {
   "long": "酒泉郊外是长途车马队歇脚的另一个重要地点。这里比较热闹，尤其以产酒而闻名，“葡萄美酒夜光杯”由此而来。东面是一条马道，西面是一条石栈道，北部是座神秘的小山丘。",
   "exits": {
    "东": "x/westway/madao",
+   "西": "x/westway/shizhan",
    "北": "x/westway/yunti"
   },
   "outdoors": true,
+  "area": "xyj"
+ },
+ "x/westway/lu1": {
+  "name": "山洞内",
+  "long": "山洞里黑乎乎的。南边的洞门口堆着好些杂草，大概从外边是看不来的。北边山洞弯弯地通向深处。",
+  "exits": {
+   "南": "x/westway/shizhan"
+  },
+  "spawn": {
+   "x/westway/obj/tielong": 1
+  },
   "area": "xyj"
  },
  "x/westway/madao": {
@@ -1618,6 +2620,22 @@ export const ROOMS = {
   },
   "noFight": true,
   "noMagic": true,
+  "area": "xyj"
+ },
+ "x/westway/shizhan": {
+  "name": "石栈道",
+  "long": "这是一条极长的用大石块铺成的栈道，远处栈道伸进石坡，不得不在有的地方凿石辟路架路。据说西面再远一点就是著名的嘉峪关了，往东是去酒泉的方向。",
+  "exits": {
+   "东": "x/westway/jiuquan",
+   "西": "x/westway/jiayu"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/westway/tielong": {
+  "name": "铁笼中",
+  "long": "铁笼是由手指粗的钢条圈成，看起来十分的坚固。一般人看来是休想逃出去的，不过你也可以去试试扳开(break)它。",
+  "exits": {},
   "area": "xyj"
  },
  "x/westway/west1": {
@@ -1768,12 +2786,12 @@ export const NPCS = {
    "tou"
   ],
   "gender": "男性",
-  "age": 55,
+  "age": 59,
   "long": "看起来又干又瘦，贼眉鼠眼。他也正在上下打量着你。",
   "kind": [
    "fighter"
   ],
-  "exp": 8000,
+  "exp": 8499,
   "level": 12,
   "attrs": {
    "per": 10
@@ -1813,7 +2831,7 @@ export const NPCS = {
    "punk"
   ],
   "gender": "男性",
-  "age": 18,
+  "age": 22,
   "long": "这是长安城里一个游手好闲的小流氓，一双眼睛贼溜溜的。",
   "kind": [
    "fighter"
@@ -1824,9 +2842,9 @@ export const NPCS = {
    "per": 15
   },
   "max": {
-   "kee": 120,
-   "sen": 120,
-   "gin": 120
+   "kee": 140,
+   "sen": 140,
+   "gin": 140
   },
   "chatChance": 10,
   "chatMsg": [
@@ -1836,7 +2854,7 @@ export const NPCS = {
     "fn": "random_move"
    }
   ],
-  "coin": 40,
+  "coin": 84,
   "carry": [
    [
     "x/obj/cloth/linen",
@@ -2069,6 +3087,7 @@ export const NPCS = {
    "x/obj/cloth/bullboots": 99,
    "x/obj/cloth/choupao": 99
   },
+  "coin": 200,
   "carry": [
    [
     "x/obj/cloth/choupao",
@@ -2408,9 +3427,7 @@ export const NPCS = {
    "jiang"
   ],
   "gender": "男性",
-  "age": {
-   "raw": "random(10) + 30"
-  },
+  "age": 34,
   "long": "他威风凛凛，杀气腾腾，虽然只是个守城门的小官，当年也是打过大仗的。",
   "kind": [
    "fighter"
@@ -2430,7 +3447,7 @@ export const NPCS = {
   "max": {
    "kee": 700,
    "sen": 600,
-   "gin": 130
+   "gin": 180
   },
   "force": 400,
   "maxForce": 400,
@@ -2456,7 +3473,7 @@ export const NPCS = {
    "bing"
   ],
   "gender": "男性",
-  "age": 18,
+  "age": 22,
   "long": "这些兵士都是秦叔宝，程咬金等从部下中挑出来的精锐。",
   "kind": [
    "fighter"
@@ -2476,7 +3493,7 @@ export const NPCS = {
   "max": {
    "kee": 400,
    "sen": 400,
-   "gin": 120
+   "gin": 140
   },
   "force": 200,
   "maxForce": 200,
@@ -2729,7 +3746,7 @@ export const NPCS = {
    "monk"
   ],
   "gender": "男性",
-  "age": 30,
+  "age": 34,
   "long": "一位大和尚，看起来慈善的很，口里还不停的咏经。",
   "kind": [
    "fighter"
@@ -2740,10 +3757,10 @@ export const NPCS = {
    "per": 25
   },
   "skills": {
-   "force": 20,
-   "unarmed": 20,
-   "dodge": 20,
-   "parry": 20
+   "force": 29,
+   "unarmed": 29,
+   "dodge": 29,
+   "parry": 39
   },
   "max": {
    "kee": 380,
@@ -2766,23 +3783,23 @@ export const NPCS = {
    "seng"
   ],
   "gender": "男性",
-  "age": 30,
+  "age": 39,
   "long": "一位游方和尚，骨瘦如柴，身上的袈裟打满了补丁。",
   "kind": [
    "fighter"
   ],
-  "exp": 10000,
-  "level": 13,
+  "exp": 24999,
+  "level": 21,
   "attrs": {
    "str": 20,
    "int": 30,
    "con": 25
   },
   "skills": {
-   "force": 30,
-   "unarmed": 30,
-   "dodge": 30,
-   "parry": 30
+   "force": 49,
+   "unarmed": 49,
+   "dodge": 49,
+   "parry": 49
   },
   "max": {
    "kee": 380,
@@ -2854,7 +3871,7 @@ export const NPCS = {
   "kind": [
    "fighter"
   ],
-  "exp": 5000,
+  "exp": 5499,
   "level": 9,
   "skills": {
    "unarmed": 10,
@@ -3048,7 +4065,7 @@ export const NPCS = {
   "level": 44,
   "attrs": {
    "str": 30,
-   "per": 10
+   "per": 17
   },
   "skills": {
    "parry": 50,
@@ -3332,12 +4349,12 @@ export const NPCS = {
    "punk"
   ],
   "gender": "男性",
-  "age": 15,
+  "age": 19,
   "long": "这是一个整日里游手好闲的小痞子。",
   "kind": [
    "fighter"
   ],
-  "exp": 1500,
+  "exp": 1649,
   "level": 5,
   "attrs": {
    "str": 15,
@@ -3345,9 +4362,9 @@ export const NPCS = {
    "con": 18
   },
   "max": {
-   "kee": 105,
-   "sen": 105,
-   "gin": 105
+   "kee": 125,
+   "sen": 125,
+   "gin": 125
   },
   "carry": [
    [
@@ -3589,7 +4606,7 @@ export const NPCS = {
   "level": 31,
   "attrs": {
    "str": 23,
-   "per": 20
+   "per": 22
   },
   "skills": {
    "sword": 50,
@@ -3757,8 +4774,8 @@ export const NPCS = {
   "kind": [
    "fighter"
   ],
-  "exp": 10000,
-  "level": 13,
+  "exp": 10999,
+  "level": 14,
   "skills": {
    "unarmed": 20,
    "dodge": 20,
@@ -3794,8 +4811,8 @@ export const NPCS = {
   "kind": [
    "fighter"
   ],
-  "exp": 10000,
-  "level": 13,
+  "exp": 10999,
+  "level": 14,
   "skills": {
    "unarmed": 30,
    "dodge": 30,
@@ -3987,7 +5004,7 @@ export const NPCS = {
     "fn": "random_move"
    }
   ],
-  "coin": 10
+  "coin": 34
  },
  "x/4world/npc/kid1": {
   "name": "小男孩",
@@ -4018,7 +5035,7 @@ export const NPCS = {
     "fn": "random_move"
    }
   ],
-  "coin": 10
+  "coin": 34
  },
  "x/city/npc/yiren1": {
   "name": "江湖艺人",
@@ -4051,7 +5068,7 @@ export const NPCS = {
    "艺人拿铜锣敲了敲，喊到：各位有钱的捧个钱场，没钱的捧个人场！",
    "艺人舞了个刀花道：我这趟刀，叫五虎断门刀！"
   ],
-  "coin": 40,
+  "coin": 64,
   "carry": [
    [
     "x/obj/weapon/blade/blade",
@@ -4071,7 +5088,7 @@ export const NPCS = {
    "trainee"
   ],
   "gender": "男性",
-  "age": 18,
+  "age": 22,
   "long": "你看到一位身材高大的汉子，正在辛苦地操练着。",
   "kind": [
    "fighter"
@@ -4083,9 +5100,9 @@ export const NPCS = {
    "unarmed": 10
   },
   "max": {
-   "kee": 120,
-   "sen": 120,
-   "gin": 120
+   "kee": 140,
+   "sen": 140,
+   "gin": 140
   },
   "carry": [
    [
@@ -4468,6 +5485,270 @@ export const NPCS = {
    ],
    [
     "x/obj/weapon/blade/iceblade",
+    "wield"
+   ]
+  ]
+ },
+ "x/city/npc/yayi#3": {
+  "name": "李财俊",
+  "ids": [
+   "yayi"
+  ],
+  "title": "衙役",
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 40000,
+  "level": 27,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 50,
+   "parry": 40,
+   "stick": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 400,
+   "gin": 150
+  },
+  "force": 200,
+  "maxForce": 200,
+  "mana": 30,
+  "maxMana": 30,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/yayifu",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/stick/shawei",
+    "wield"
+   ]
+  ]
+ },
+ "x/city/npc/yayi#4": {
+  "name": "周俊彦",
+  "ids": [
+   "yayi"
+  ],
+  "title": "衙役",
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 40000,
+  "level": 27,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 50,
+   "parry": 40,
+   "stick": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 400,
+   "gin": 150
+  },
+  "force": 200,
+  "maxForce": 200,
+  "mana": 30,
+  "maxMana": 30,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/yayifu",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/stick/shawei",
+    "wield"
+   ]
+  ]
+ },
+ "x/city/npc/yayi#5": {
+  "name": "吴彦良",
+  "ids": [
+   "yayi"
+  ],
+  "title": "衙役",
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 40000,
+  "level": 27,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 50,
+   "parry": 40,
+   "stick": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 400,
+   "gin": 150
+  },
+  "force": 200,
+  "maxForce": 200,
+  "mana": 30,
+  "maxMana": 30,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/yayifu",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/stick/shawei",
+    "wield"
+   ]
+  ]
+ },
+ "x/city/npc/yayi#6": {
+  "name": "郑良志",
+  "ids": [
+   "yayi"
+  ],
+  "title": "衙役",
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 40000,
+  "level": 27,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 50,
+   "parry": 40,
+   "stick": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 400,
+   "gin": 150
+  },
+  "force": 200,
+  "maxForce": 200,
+  "mana": 30,
+  "maxMana": 30,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/yayifu",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/stick/shawei",
+    "wield"
+   ]
+  ]
+ },
+ "x/city/npc/yayi#7": {
+  "name": "王志忠",
+  "ids": [
+   "yayi"
+  ],
+  "title": "衙役",
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 40000,
+  "level": 27,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 50,
+   "parry": 40,
+   "stick": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 400,
+   "gin": 150
+  },
+  "force": 200,
+  "maxForce": 200,
+  "mana": 30,
+  "maxMana": 30,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/yayifu",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/stick/shawei",
+    "wield"
+   ]
+  ]
+ },
+ "x/city/npc/yayi#8": {
+  "name": "张忠孝",
+  "ids": [
+   "yayi"
+  ],
+  "title": "衙役",
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 40000,
+  "level": 27,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 50,
+   "parry": 40,
+   "stick": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 400,
+   "gin": 150
+  },
+  "force": 200,
+  "maxForce": 200,
+  "mana": 30,
+  "maxMana": 30,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/yayifu",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/stick/shawei",
     "wield"
    ]
   ]
@@ -4856,6 +6137,1332 @@ export const NPCS = {
    [
     "x/obj/cloth/linen",
     "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#0": {
+  "name": "渔夫",
+  "ids": [
+   "yu fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#1": {
+  "name": "樵夫",
+  "ids": [
+   "qiao fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#2": {
+  "name": "妇女",
+  "ids": [
+   "fu nu"
+  ],
+  "gender": "女性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#5": {
+  "name": "乞丐",
+  "ids": [
+   "qi gai"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#6": {
+  "name": "艺人",
+  "ids": [
+   "yi ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#7": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/bing": {
+  "name": "宫兵",
+  "ids": [
+   "gong bing",
+   "bing"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 209999,
+  "level": 64,
+  "attrs": {
+   "str": 30
+  },
+  "skills": {
+   "unarmed": 80,
+   "parry": 80,
+   "dodge": 80,
+   "blade": 80
+  },
+  "max": {
+   "kee": 600,
+   "gin": 600,
+   "sen": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 49,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/wandao#2",
+    "wield"
+   ],
+   [
+    "x/qujing/baoxiang/obj/zhanpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/shanyao": {
+  "name": "山妖",
+  "ids": [
+   "shan yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 100,
+  "long": "一个凶相毕露的山妖。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 50,
+   "unarmed": 50,
+   "dodge": 50,
+   "blade": 50,
+   "fork": 50,
+   "mace": 50,
+   "spear": 50,
+   "sword": 50,
+   "whip": 50,
+   "axe": 50,
+   "hammer": 50,
+   "rake": 50,
+   "stick": 50,
+   "staff": 50,
+   "dagger": 50
+  },
+  "max": {
+   "sen": 500,
+   "gin": 500,
+   "kee": 180
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/spqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/huangpao": {
+  "name": "黄袍怪",
+  "ids": [
+   "huangpao guai",
+   "guai"
+  ],
+  "title": "奎木狼",
+  "gender": "男性",
+  "age": 120,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 560000,
+  "level": 105,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 90,
+   "dodge": 90,
+   "parry": 90,
+   "spells": 90,
+   "force": 90,
+   "gouhunshu": 90,
+   "tonsillit": 90,
+   "ghost-steps": 90,
+   "jinghun-zhang": 90
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "dodge": "ghost-steps",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 1300,
+   "sen": 1300,
+   "gin": 1300
+  },
+  "force": 800,
+  "maxForce": 800,
+  "mana": 800,
+  "maxMana": 800,
+  "forceFactor": 90,
+  "manaFactor": 40,
+  "inquiry": {
+   "丹": {
+    "fn": "give_dan"
+   },
+   "内丹": {
+    "fn": "give_dan"
+   },
+   "舍利子": {
+    "fn": "give_dan"
+   },
+   "舍利子内丹": {
+    "fn": "give_dan"
+   }
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/sppifeng",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/baihua": {
+  "name": "百花羞",
+  "ids": [
+   "baihua xiu",
+   "baihua"
+  ],
+  "title": "三公主",
+  "gender": "女性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 250000,
+  "level": 70,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 60,
+   "dodge": 60,
+   "parry": 60,
+   "spells": 60,
+   "force": 60
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "force": 700,
+  "maxForce": 700,
+  "mana": 700,
+  "maxMana": 700,
+  "forceFactor": 50,
+  "manaFactor": 40,
+  "inquiry": {
+   "信": {
+    "fn": "execute_ask"
+   },
+   "国王": {
+    "fn": "execute_ask"
+   },
+   "letter": {
+    "fn": "execute_ask"
+   },
+   "king": {
+    "fn": "execute_ask"
+   }
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/spqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/dashi": {
+  "name": "大使",
+  "ids": [
+   "da shi",
+   "shi"
+  ],
+  "title": "阁门",
+  "gender": "男性",
+  "age": 65,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 309999,
+  "level": 78,
+  "attrs": {
+   "str": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 80,
+   "parry": 80,
+   "dodge": 80
+  },
+  "max": {
+   "kee": 600,
+   "gin": 600,
+   "sen": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 34,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/king": {
+  "name": "国王",
+  "ids": [
+   "guo wang",
+   "king"
+  ],
+  "title": "宝象国",
+  "gender": "男性",
+  "age": 80,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 220000,
+  "level": 65,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 50,
+   "dodge": 50,
+   "parry": 50,
+   "spells": 50,
+   "force": 50,
+   "seashentong": 50,
+   "dragonforce": 50,
+   "dragonstep": 50,
+   "dragonfight": 50
+  },
+  "map": {
+   "unarmed": "dragonfight",
+   "dodge": "dragonstep",
+   "force": "dragonforce",
+   "spells": "seashentong"
+  },
+  "max": {
+   "kee": 700,
+   "sen": 700,
+   "gin": 700
+  },
+  "force": 800,
+  "maxForce": 800,
+  "mana": 800,
+  "maxMana": 800,
+  "forceFactor": 50,
+  "manaFactor": 40,
+  "carry": [
+   [
+    "x/obj/cloth/mangpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/xijiang": {
+  "name": "锡匠",
+  "ids": [
+   "xi jiang",
+   "jiang"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1000,
+  "level": 4,
+  "attrs": {
+   "per": 34
+  },
+  "skills": {
+   "unarmed": 100
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "sells": {
+   "x/qujing/baoxiang/obj/xihu": 99,
+   "x/qujing/baoxiang/obj/xiwan": 99,
+   "x/qujing/baoxiang/obj/xipen": 99
+  },
+  "coin": 1500,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/laoban": {
+  "name": "老板",
+  "ids": [
+   "laoban"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 500,
+  "level": 2,
+  "attrs": {
+   "per": 34
+  },
+  "skills": {
+   "unarmed": 100
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "sells": {
+   "x/qujing/baoxiang/obj/yangtou": 99,
+   "x/qujing/baoxiang/obj/paomo": 99,
+   "x/qujing/baoxiang/obj/zasui": 99
+  },
+  "coin": 1000,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/nuzi": {
+  "name": "女子",
+  "ids": [
+   "nu zi",
+   "nu",
+   "zi"
+  ],
+  "gender": "女性",
+  "age": 18,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 400000,
+  "level": 88,
+  "attrs": {
+   "cor": 20,
+   "int": 20,
+   "con": 20,
+   "per": 30
+  },
+  "skills": {
+   "dodge": 50,
+   "parry": 50,
+   "force": 50,
+   "spells": 50,
+   "unarmed": 50,
+   "gouhunshu": 50,
+   "tonsillit": 50,
+   "ghost-steps": 50,
+   "jinghun-zhang": 50
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 700,
+   "sen": 700,
+   "gin": 700
+  },
+  "force": 800,
+  "maxForce": 800,
+  "mana": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "manaFactor": 60,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ],
+   [
+    "x/qujing/baoxiang/obj/mifan",
+    "carry"
+   ],
+   [
+    "x/qujing/baoxiang/obj/mianjin",
+    "carry"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/fangzhu": {
+  "name": "坊主",
+  "ids": [
+   "fang zhu",
+   "zhu"
+  ],
+  "gender": "男性",
+  "age": 46,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1000,
+  "level": 4,
+  "attrs": {
+   "per": 14
+  },
+  "skills": {
+   "unarmed": 100
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "sells": {
+   "x/qujing/baoxiang/obj/cspitan": 99,
+   "x/qujing/baoxiang/obj/bpitan": 99,
+   "x/qujing/baoxiang/obj/yizi": 99,
+   "x/qujing/baoxiang/obj/zhuozi": 99
+  },
+  "coin": 500,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao1": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 50,
+   "unarmed": 50,
+   "dodge": 50,
+   "blade": 50,
+   "fork": 50,
+   "mace": 50,
+   "spear": 50,
+   "sword": 50,
+   "whip": 50,
+   "axe": 50,
+   "hammer": 50,
+   "rake": 50,
+   "stick": 50,
+   "staff": 50,
+   "dagger": 50
+  },
+  "max": {
+   "sen": 500,
+   "gin": 500,
+   "kee": 130
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#1",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yinjiao": {
+  "name": "银角大王",
+  "ids": [
+   "yinjiao dawang",
+   "yinjiao",
+   "dawang",
+   "wang"
+  ],
+  "title": "莲花洞",
+  "gender": "男性",
+  "age": 54,
+  "long": "一位神态傲然的莲花洞妖王。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 950000,
+  "level": 137,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 90,
+   "dao": 90,
+   "unarmed": 95,
+   "puti-zhi": 95,
+   "dodge": 80,
+   "jindouyun": 80,
+   "parry": 95,
+   "force": 90,
+   "wuxiangforce": 90
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 1800,
+   "sen": 1800,
+   "gin": 1800
+  },
+  "force": 1200,
+  "maxForce": 1200,
+  "mana": 1200,
+  "maxMana": 1200,
+  "forceFactor": 80,
+  "manaFactor": 80,
+  "carry": [
+   [
+    "x/obj/cloth/shoupipifeng",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/pingfake",
+    "carry"
+   ],
+   [
+    "x/qujing/pingding/obj/pingreal",
+    "carry"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/hu": {
+  "name": "巴山虎",
+  "ids": [
+   "bashan hu",
+   "bashan",
+   "hu"
+  ],
+  "gender": "男性",
+  "age": 34,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 500000,
+  "level": 99,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 50,
+   "dao": 50,
+   "unarmed": 50,
+   "puti-zhi": 50,
+   "dodge": 50,
+   "jindouyun": 50,
+   "parry": 50,
+   "force": 50,
+   "wuxiangforce": 50
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "force": 600,
+  "maxForce": 600,
+  "mana": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "manaFactor": 30,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/long": {
+  "name": "倚海龙",
+  "ids": [
+   "yihai long",
+   "yihai",
+   "long"
+  ],
+  "gender": "男性",
+  "age": 34,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 500000,
+  "level": 99,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 50,
+   "dao": 50,
+   "unarmed": 50,
+   "puti-zhi": 50,
+   "dodge": 50,
+   "jindouyun": 50,
+   "parry": 50,
+   "force": 50,
+   "wuxiangforce": 50
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "force": 600,
+  "maxForce": 600,
+  "mana": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "manaFactor": 30,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/chong": {
+  "name": "伶俐虫",
+  "ids": [
+   "lingli chong",
+   "lingli",
+   "chong"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 400000,
+  "level": 88,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 40,
+   "dao": 40,
+   "unarmed": 40,
+   "puti-zhi": 40,
+   "dodge": 40,
+   "jindouyun": 40,
+   "parry": 40,
+   "force": 40,
+   "wuxiangforce": 40
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "force": 500,
+  "maxForce": 500,
+  "mana": 500,
+  "maxMana": 500,
+  "forceFactor": 20,
+  "manaFactor": 20,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/gui": {
+  "name": "精细鬼",
+  "ids": [
+   "jingxi gui",
+   "jingxi gui",
+   "gui"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 400000,
+  "level": 88,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 40,
+   "dao": 40,
+   "unarmed": 40,
+   "puti-zhi": 40,
+   "dodge": 40,
+   "jindouyun": 40,
+   "parry": 40,
+   "force": 40,
+   "wuxiangforce": 40
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "force": 500,
+  "maxForce": 500,
+  "mana": 500,
+  "maxMana": 500,
+  "forceFactor": 20,
+  "manaFactor": 20,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/jinjiao": {
+  "name": "金角大王",
+  "ids": [
+   "jinjiao dawang",
+   "jinjiao",
+   "dawang",
+   "wang"
+  ],
+  "title": "莲花洞",
+  "gender": "男性",
+  "age": 56,
+  "long": "一位神态傲然的莲花洞妖王。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 950000,
+  "level": 137,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 90,
+   "dao": 90,
+   "unarmed": 95,
+   "puti-zhi": 95,
+   "dodge": 80,
+   "jindouyun": 80,
+   "parry": 95,
+   "force": 90,
+   "wuxiangforce": 90
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 1800,
+   "sen": 1800,
+   "gin": 1800
+  },
+  "force": 1200,
+  "maxForce": 1200,
+  "mana": 1200,
+  "maxMana": 1200,
+  "forceFactor": 80,
+  "manaFactor": 80,
+  "carry": [
+   [
+    "x/obj/cloth/shoupipifeng",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/hulufake",
+    "carry"
+   ],
+   [
+    "x/qujing/pingding/obj/hulureal",
+    "carry"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao2": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "一个凶相毕露的小妖。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 150000,
+  "level": 54,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 80,
+   "unarmed": 80,
+   "dodge": 80,
+   "blade": 80,
+   "fork": 80,
+   "mace": 80,
+   "spear": 80,
+   "sword": 80,
+   "whip": 80,
+   "axe": 80,
+   "hammer": 80,
+   "rake": 80,
+   "stick": 80,
+   "staff": 80,
+   "dagger": 80
+  },
+  "max": {
+   "sen": 400,
+   "gin": 400,
+   "kee": 130
+  },
+  "force": 400,
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/laonai": {
+  "name": "老奶奶",
+  "ids": [
+   "lao nainai",
+   "lao",
+   "nainai",
+   "queen"
+  ],
+  "title": "压龙洞",
+  "gender": "女性",
+  "age": 86,
+  "long": "一位扭腰摆臀的压龙洞妖后，身上隐隐地发出狐臭。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 750000,
+  "level": 121,
+  "attrs": {
+   "per": 12
+  },
+  "skills": {
+   "spells": 50,
+   "dao": 50,
+   "unarmed": 55,
+   "puti-zhi": 55,
+   "dodge": 50,
+   "jindouyun": 50,
+   "parry": 55,
+   "force": 50,
+   "wuxiangforce": 50
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 800,
+   "sen": 800,
+   "gin": 800
+  },
+  "force": 700,
+  "maxForce": 700,
+  "mana": 700,
+  "maxMana": 700,
+  "forceFactor": 40,
+  "manaFactor": 40,
+  "carry": [
+   [
+    "x/obj/cloth/shoupipifeng",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/huaqi": {
+  "name": "狐阿七大王",
+  "ids": [
+   "huaqi dawang",
+   "huaqi",
+   "dawang",
+   "wang"
+  ],
+  "title": "压龙洞",
+  "gender": "男性",
+  "age": 64,
+  "long": "一位扭腰摆臀的压龙洞妖王，身上隐隐地发出狐臭。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 650000,
+  "level": 113,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 70,
+   "dao": 70,
+   "unarmed": 75,
+   "puti-zhi": 75,
+   "dodge": 60,
+   "jindouyun": 60,
+   "parry": 65,
+   "force": 60,
+   "wuxiangforce": 60
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce"
+  },
+  "max": {
+   "kee": 1400,
+   "sen": 1400,
+   "gin": 1400
+  },
+  "force": 1000,
+  "maxForce": 1000,
+  "mana": 1000,
+  "maxMana": 1000,
+  "forceFactor": 60,
+  "manaFactor": 60,
+  "carry": [
+   [
+    "x/obj/cloth/shoupipifeng",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/shengfake",
+    "carry"
+   ],
+   [
+    "x/qujing/pingding/obj/shengreal",
+    "carry"
    ]
   ]
  },
@@ -5474,6 +8081,50 @@ export const NPCS = {
    ]
   ]
  },
+ "x/westway/npc/wujiang": {
+  "name": "边关守将",
+  "ids": [
+   "wu jiang",
+   "wu",
+   "jiang"
+  ],
+  "gender": "男性",
+  "age": 39,
+  "long": "他威风凛凛，杀气腾腾，虽然只是个守城门的小官，当年也是打过大仗的。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 214999,
+  "level": 65,
+  "attrs": {
+   "str": 30
+  },
+  "skills": {
+   "unarmed": 110,
+   "force": 110,
+   "spear": 110,
+   "dodge": 110,
+   "parry": 110
+  },
+  "max": {
+   "kee": 800,
+   "sen": 800,
+   "gin": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 30,
+  "carry": [
+   [
+    "x/obj/weapon/spear/tieqiang",
+    "wield"
+   ],
+   [
+    "x/obj/armor/tiejia",
+    "wear"
+   ]
+  ]
+ },
  "x/westway/npc/tanfan": {
   "name": "摊贩",
   "ids": [
@@ -5515,8 +8166,8 @@ export const NPCS = {
   "kind": [
    "fighter"
   ],
-  "exp": 10000,
-  "level": 13,
+  "exp": 12499,
+  "level": 15,
   "attrs": {
    "str": 35,
    "per": 45
@@ -5558,7 +8209,7 @@ export const NPCS = {
    "dao"
   ],
   "gender": "男性",
-  "age": 22,
+  "age": 26,
   "long": "一个蛮横凶狠的马盗，专门袭击过路马车。",
   "kind": [
    "fighter"
@@ -5576,11 +8227,396 @@ export const NPCS = {
    "stick": 30
   },
   "max": {
-   "kee": 140,
-   "sen": 140,
-   "gin": 140
+   "kee": 160,
+   "sen": 160,
+   "gin": 160
   },
   "coin": 200
+ },
+ "x/qujing/baoxiang/npc/furen": {
+  "name": "老妇人",
+  "ids": [
+   "fu ren",
+   "fu",
+   "ren"
+  ],
+  "gender": "女性",
+  "age": 80,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 400000,
+  "level": 88,
+  "attrs": {
+   "cor": 20,
+   "int": 20,
+   "con": 20,
+   "per": 30
+  },
+  "skills": {
+   "dodge": 50,
+   "parry": 50,
+   "force": 50,
+   "spells": 50,
+   "unarmed": 50,
+   "gouhunshu": 50,
+   "tonsillit": 50,
+   "ghost-steps": 50,
+   "jinghun-zhang": 50
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 700,
+   "sen": 700,
+   "gin": 700
+  },
+  "force": 800,
+  "maxForce": 800,
+  "mana": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "manaFactor": 60,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ],
+   [
+    "x/qujing/baoxiang/obj/zhuzhang",
+    "carry"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/gonggong": {
+  "name": "老公公",
+  "ids": [
+   "gong gong",
+   "gong"
+  ],
+  "gender": "男性",
+  "age": 80,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 400000,
+  "level": 88,
+  "attrs": {
+   "cor": 20,
+   "int": 20,
+   "con": 20,
+   "per": 30
+  },
+  "skills": {
+   "dodge": 50,
+   "parry": 50,
+   "force": 50,
+   "spells": 50,
+   "unarmed": 50,
+   "gouhunshu": 50,
+   "tonsillit": 50,
+   "ghost-steps": 50,
+   "jinghun-zhang": 50
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 700,
+   "sen": 700,
+   "gin": 700
+  },
+  "force": 800,
+  "maxForce": 800,
+  "mana": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "manaFactor": 60,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ],
+   [
+    "x/qujing/baoxiang/obj/longtou",
+    "carry"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/lanpao": {
+  "name": "蓝袍怪",
+  "ids": [
+   "lanpao guai",
+   "guai"
+  ],
+  "title": "天狈星",
+  "gender": "男性",
+  "age": 60,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1500000,
+  "level": 172,
+  "attrs": {
+   "str": 30,
+   "cor": 30,
+   "int": 10,
+   "cps": 10,
+   "con": 20,
+   "per": 20
+  },
+  "skills": {
+   "dodge": 180,
+   "force": 180,
+   "spells": 180,
+   "unarmed": 180,
+   "gouhunshu": 180,
+   "tonsillit": 180,
+   "ghost-steps": 180,
+   "jinghun-zhang": 180
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 2500,
+   "sen": 2500,
+   "gin": 2500
+  },
+  "force": 2500,
+  "maxForce": 2500,
+  "mana": 2500,
+  "maxMana": 2500,
+  "forceFactor": 30,
+  "manaFactor": 80,
+  "inquiry": {
+   "兄弟": {
+    "fn": "allow_split"
+   },
+   "brother": {
+    "fn": "allow_split"
+   },
+   "brothers": {
+    "fn": "allow_split"
+   }
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/sppifeng",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/lupao": {
+  "name": "绿袍怪",
+  "ids": [
+   "lupao guai",
+   "guai"
+  ],
+  "title": "天狐星",
+  "gender": "男性",
+  "age": 60,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1500000,
+  "level": 172,
+  "attrs": {
+   "str": 30,
+   "cor": 30,
+   "int": 10,
+   "cps": 10,
+   "con": 20,
+   "per": 20
+  },
+  "skills": {
+   "dodge": 180,
+   "force": 180,
+   "spells": 180,
+   "unarmed": 180,
+   "gouhunshu": 180,
+   "tonsillit": 180,
+   "ghost-steps": 180,
+   "jinghun-zhang": 180
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 2500,
+   "sen": 2500,
+   "gin": 2500
+  },
+  "force": 2500,
+  "maxForce": 2500,
+  "mana": 2500,
+  "maxMana": 2500,
+  "forceFactor": 30,
+  "manaFactor": 80,
+  "inquiry": {
+   "兄弟": {
+    "fn": "allow_split"
+   },
+   "brother": {
+    "fn": "allow_split"
+   },
+   "brothers": {
+    "fn": "allow_split"
+   }
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/sppifeng",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/qingpao": {
+  "name": "青袍怪",
+  "ids": [
+   "qingpao guai",
+   "guai"
+  ],
+  "title": "天狗星",
+  "gender": "男性",
+  "age": 60,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1500000,
+  "level": 172,
+  "attrs": {
+   "str": 30,
+   "cor": 30,
+   "int": 10,
+   "cps": 10,
+   "con": 20,
+   "per": 20
+  },
+  "skills": {
+   "dodge": 180,
+   "force": 180,
+   "spells": 180,
+   "unarmed": 180,
+   "gouhunshu": 180,
+   "tonsillit": 180,
+   "ghost-steps": 180,
+   "jinghun-zhang": 180
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 2500,
+   "sen": 2500,
+   "gin": 2500
+  },
+  "force": 2500,
+  "maxForce": 2500,
+  "mana": 2500,
+  "maxMana": 2500,
+  "forceFactor": 30,
+  "manaFactor": 80,
+  "inquiry": {
+   "兄弟": {
+    "fn": "allow_split"
+   },
+   "brother": {
+    "fn": "allow_split"
+   },
+   "brothers": {
+    "fn": "allow_split"
+   }
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/sppifeng",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/zipao": {
+  "name": "紫袍怪",
+  "ids": [
+   "zipao guai",
+   "guai"
+  ],
+  "title": "天豺星",
+  "gender": "男性",
+  "age": 60,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1500000,
+  "level": 172,
+  "attrs": {
+   "str": 30,
+   "cor": 30,
+   "int": 10,
+   "cps": 10,
+   "con": 20,
+   "per": 20
+  },
+  "skills": {
+   "dodge": 180,
+   "force": 180,
+   "spells": 180,
+   "unarmed": 180,
+   "gouhunshu": 180,
+   "tonsillit": 180,
+   "ghost-steps": 180,
+   "jinghun-zhang": 180
+  },
+  "map": {
+   "unarmed": "jinghun-zhang",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 2500,
+   "sen": 2500,
+   "gin": 2500
+  },
+  "force": 2500,
+  "maxForce": 2500,
+  "mana": 2500,
+  "maxMana": 2500,
+  "forceFactor": 30,
+  "manaFactor": 80,
+  "inquiry": {
+   "兄弟": {
+    "fn": "allow_split"
+   },
+   "brother": {
+    "fn": "allow_split"
+   },
+   "brothers": {
+    "fn": "allow_split"
+   }
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/sppifeng",
+    "wear"
+   ]
+  ]
  },
  "x/city/npc/wujiang@ximen": {
   "name": "守城武将",
@@ -5590,9 +8626,7 @@ export const NPCS = {
    "jiang"
   ],
   "gender": "男性",
-  "age": {
-   "raw": "random(10) + 30"
-  },
+  "age": 34,
   "long": "他威风凛凛，杀气腾腾，虽然只是个守城门的小官，当年也是打过大仗的。",
   "kind": [
    "fighter"
@@ -5612,7 +8646,7 @@ export const NPCS = {
   "max": {
    "kee": 700,
    "sen": 600,
-   "gin": 130
+   "gin": 180
   },
   "force": 400,
   "maxForce": 400,
@@ -5638,7 +8672,7 @@ export const NPCS = {
    "bing"
   ],
   "gender": "男性",
-  "age": 18,
+  "age": 22,
   "long": "这些兵士都是秦叔宝，程咬金等从部下中挑出来的精锐。",
   "kind": [
    "fighter"
@@ -5658,7 +8692,7 @@ export const NPCS = {
   "max": {
    "kee": 400,
    "sen": 400,
-   "gin": 120
+   "gin": 140
   },
   "force": 200,
   "maxForce": 200,
@@ -5670,6 +8704,1256 @@ export const NPCS = {
    ],
    [
     "x/obj/cloth/bingfu",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#6@bei2": {
+  "name": "艺人",
+  "ids": [
+   "yi ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#7@bei3": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#0@bei4": {
+  "name": "渔夫",
+  "ids": [
+   "yu fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/shanyao@dong": {
+  "name": "山妖",
+  "ids": [
+   "shan yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 100,
+  "long": "一个凶相毕露的山妖。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 50,
+   "unarmed": 50,
+   "dodge": 50,
+   "blade": 50,
+   "fork": 50,
+   "mace": 50,
+   "spear": 50,
+   "sword": 50,
+   "whip": 50,
+   "axe": 50,
+   "hammer": 50,
+   "rake": 50,
+   "stick": 50,
+   "staff": 50,
+   "dagger": 50
+  },
+  "max": {
+   "sen": 500,
+   "gin": 500,
+   "kee": 180
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/spqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/bing@gongmen": {
+  "name": "宫兵",
+  "ids": [
+   "gong bing",
+   "bing"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 209999,
+  "level": 64,
+  "attrs": {
+   "str": 30
+  },
+  "skills": {
+   "unarmed": 80,
+   "parry": 80,
+   "dodge": 80,
+   "blade": 80
+  },
+  "max": {
+   "kee": 600,
+   "gin": 600,
+   "sen": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 49,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/wandao#2",
+    "wield"
+   ],
+   [
+    "x/qujing/baoxiang/obj/zhanpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/bing@longfeng": {
+  "name": "宫兵",
+  "ids": [
+   "gong bing",
+   "bing"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 209999,
+  "level": 64,
+  "attrs": {
+   "str": 30
+  },
+  "skills": {
+   "unarmed": 80,
+   "parry": 80,
+   "dodge": 80,
+   "blade": 80
+  },
+  "max": {
+   "kee": 600,
+   "gin": 600,
+   "sen": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 49,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/wandao#2",
+    "wield"
+   ],
+   [
+    "x/qujing/baoxiang/obj/zhanpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/bing@xi1": {
+  "name": "宫兵",
+  "ids": [
+   "gong bing",
+   "bing"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 209999,
+  "level": 64,
+  "attrs": {
+   "str": 30
+  },
+  "skills": {
+   "unarmed": 80,
+   "parry": 80,
+   "dodge": 80,
+   "blade": 80
+  },
+  "max": {
+   "kee": 600,
+   "gin": 600,
+   "sen": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 49,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/wandao#2",
+    "wield"
+   ],
+   [
+    "x/qujing/baoxiang/obj/zhanpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#6@xi1": {
+  "name": "艺人",
+  "ids": [
+   "yi ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#7@xi1": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#7@xi2": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#0@xi2": {
+  "name": "渔夫",
+  "ids": [
+   "yu fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#0@xi3": {
+  "name": "渔夫",
+  "ids": [
+   "yu fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#1@xi3": {
+  "name": "樵夫",
+  "ids": [
+   "qiao fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/people#1@xi4": {
+  "name": "樵夫",
+  "ids": [
+   "qiao fu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 599,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 175,
+   "sen": 175,
+   "gin": 175
+  },
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl@yujie1": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl@yujie2": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl@yujie3": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl@yujie4": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl@yujie5": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/girl@yujie6": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/baoxiang/npc/bing@zhendong": {
+  "name": "宫兵",
+  "ids": [
+   "gong bing",
+   "bing"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 209999,
+  "level": 64,
+  "attrs": {
+   "str": 30
+  },
+  "skills": {
+   "unarmed": 80,
+   "parry": 80,
+   "dodge": 80,
+   "blade": 80
+  },
+  "max": {
+   "kee": 600,
+   "gin": 600,
+   "sen": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "forceFactor": 49,
+  "carry": [
+   [
+    "x/qujing/baoxiang/obj/wandao#2",
+    "wield"
+   ],
+   [
+    "x/qujing/baoxiang/obj/zhanpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao1@dating": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 50,
+   "unarmed": 50,
+   "dodge": 50,
+   "blade": 50,
+   "fork": 50,
+   "mace": 50,
+   "spear": 50,
+   "sword": 50,
+   "whip": 50,
+   "axe": 50,
+   "hammer": 50,
+   "rake": 50,
+   "stick": 50,
+   "staff": 50,
+   "dagger": 50
+  },
+  "max": {
+   "sen": 500,
+   "gin": 500,
+   "kee": 130
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#1",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao1@nandong": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 50,
+   "unarmed": 50,
+   "dodge": 50,
+   "blade": 50,
+   "fork": 50,
+   "mace": 50,
+   "spear": 50,
+   "sword": 50,
+   "whip": 50,
+   "axe": 50,
+   "hammer": 50,
+   "rake": 50,
+   "stick": 50,
+   "staff": 50,
+   "dagger": 50
+  },
+  "max": {
+   "sen": 500,
+   "gin": 500,
+   "kee": 130
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#1",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao1@qianting": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 50,
+   "unarmed": 50,
+   "dodge": 50,
+   "blade": 50,
+   "fork": 50,
+   "mace": 50,
+   "spear": 50,
+   "sword": 50,
+   "whip": 50,
+   "axe": 50,
+   "hammer": 50,
+   "rake": 50,
+   "stick": 50,
+   "staff": 50,
+   "dagger": 50
+  },
+  "max": {
+   "sen": 500,
+   "gin": 500,
+   "kee": 130
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#1",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao2@shilang1": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "一个凶相毕露的小妖。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 150000,
+  "level": 54,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 80,
+   "unarmed": 80,
+   "dodge": 80,
+   "blade": 80,
+   "fork": 80,
+   "mace": 80,
+   "spear": 80,
+   "sword": 80,
+   "whip": 80,
+   "axe": 80,
+   "hammer": 80,
+   "rake": 80,
+   "stick": 80,
+   "staff": 80,
+   "dagger": 80
+  },
+  "max": {
+   "sen": 400,
+   "gin": 400,
+   "kee": 130
+  },
+  "force": 400,
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao2@shilang2": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "一个凶相毕露的小妖。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 150000,
+  "level": 54,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 80,
+   "unarmed": 80,
+   "dodge": 80,
+   "blade": 80,
+   "fork": 80,
+   "mace": 80,
+   "spear": 80,
+   "sword": 80,
+   "whip": 80,
+   "axe": 80,
+   "hammer": 80,
+   "rake": 80,
+   "stick": 80,
+   "staff": 80,
+   "dagger": 80
+  },
+  "max": {
+   "sen": 400,
+   "gin": 400,
+   "kee": 130
+  },
+  "force": 400,
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao2@shimen": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "一个凶相毕露的小妖。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 150000,
+  "level": 54,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 80,
+   "unarmed": 80,
+   "dodge": 80,
+   "blade": 80,
+   "fork": 80,
+   "mace": 80,
+   "spear": 80,
+   "sword": 80,
+   "whip": 80,
+   "axe": 80,
+   "hammer": 80,
+   "rake": 80,
+   "stick": 80,
+   "staff": 80,
+   "dagger": 80
+  },
+  "max": {
+   "sen": 400,
+   "gin": 400,
+   "kee": 130
+  },
+  "force": 400,
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao2@wofang1": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "一个凶相毕露的小妖。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 150000,
+  "level": 54,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 80,
+   "unarmed": 80,
+   "dodge": 80,
+   "blade": 80,
+   "fork": 80,
+   "mace": 80,
+   "spear": 80,
+   "sword": 80,
+   "whip": 80,
+   "axe": 80,
+   "hammer": 80,
+   "rake": 80,
+   "stick": 80,
+   "staff": 80,
+   "dagger": 80
+  },
+  "max": {
+   "sen": 400,
+   "gin": 400,
+   "kee": 130
+  },
+  "force": 400,
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/pingding/npc/yao2@wofang2": {
+  "name": "小妖",
+  "ids": [
+   "xiao yao",
+   "yao"
+  ],
+  "gender": "男性",
+  "age": 20,
+  "long": "一个凶相毕露的小妖。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 150000,
+  "level": 54,
+  "attrs": {
+   "per": 15
+  },
+  "skills": {
+   "parry": 80,
+   "unarmed": 80,
+   "dodge": 80,
+   "blade": 80,
+   "fork": 80,
+   "mace": 80,
+   "spear": 80,
+   "sword": 80,
+   "whip": 80,
+   "axe": 80,
+   "hammer": 80,
+   "rake": 80,
+   "stick": 80,
+   "staff": 80,
+   "dagger": 80
+  },
+  "max": {
+   "sen": 400,
+   "gin": 400,
+   "kee": 130
+  },
+  "force": 400,
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ],
+   [
+    "x/qujing/pingding/obj/armor#2",
     "wear"
    ]
   ]
@@ -5688,7 +9972,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 4,
+   "armor": 1,
    "personality": 1
   }
  },
@@ -5755,7 +10039,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 5
+   "armor": 1
   }
  },
  "x/obj/weapon/sword/changjian": {
@@ -5779,6 +10063,136 @@ export const ITEMS = {
     0
    ]
   }
+ },
+ "x/obj/misc/tables#0": {
+  "name": "大仙桌",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/tables#1": {
+  "name": "小镶玉案",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/tables#2": {
+  "name": "黑兽脚桌",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/tables#3": {
+  "name": "方木案",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/tables#4": {
+  "name": "圆仙桌",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/tables#5": {
+  "name": "白漆镶玉案",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/tables#7": {
+  "name": "紫漆木案",
+  "ids": [
+   "table"
+  ],
+  "unit": "张",
+  "value": 2000,
+  "long": "这是一张桌子。",
+  "weight": 30000
+ },
+ "x/obj/misc/chairs#0": {
+  "name": "锦面大长椅",
+  "ids": [
+   "chair"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "long": "这是一把椅子。",
+  "weight": 28000
+ },
+ "x/obj/misc/chairs#1": {
+  "name": "缎面扶手躺椅",
+  "ids": [
+   "chair"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "long": "这是一把椅子。",
+  "weight": 28000
+ },
+ "x/obj/misc/chairs#2": {
+  "name": "鹅绒靠背长椅",
+  "ids": [
+   "chair"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "long": "这是一把椅子。",
+  "weight": 28000
+ },
+ "x/obj/misc/chairs#3": {
+  "name": "丝绣折叠躺椅",
+  "ids": [
+   "chair"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "long": "这是一把椅子。",
+  "weight": 28000
+ },
+ "x/obj/misc/chairs#4": {
+  "name": "锦面安乐长椅",
+  "ids": [
+   "chair"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "long": "这是一把椅子。",
+  "weight": 28000
+ },
+ "x/obj/misc/chairs#5": {
+  "name": "缎面躺椅",
+  "ids": [
+   "chair"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "long": "这是一把椅子。",
+  "weight": 28000
  },
  "x/obj/cloth/pink_cloth": {
   "name": "粉红绸衫",
@@ -5809,7 +10223,7 @@ export const ITEMS = {
   "weight": 6000,
   "wearAs": "shield",
   "apply": {
-   "armor": 15
+   "armor": 2
   }
  },
  "x/obj/weapon/blade/blade": {
@@ -5934,7 +10348,7 @@ export const ITEMS = {
   "weight": 1700,
   "wearAs": "feet_eq",
   "apply": {
-   "armor": 2,
+   "armor": 1,
    "personality": 1
   }
  },
@@ -5966,7 +10380,7 @@ export const ITEMS = {
   "weight": 700,
   "wearAs": "feet_eq",
   "apply": {
-   "armor": 3
+   "armor": 1
   }
  },
  "x/obj/book/nowords": {
@@ -6070,7 +10484,7 @@ export const ITEMS = {
   "weight": 40000,
   "wearAs": "armor",
   "apply": {
-   "armor": 40,
+   "armor": 4,
    "dodge": -10
   }
  },
@@ -6086,7 +10500,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 10
+   "armor": 1
   }
  },
  "x/obj/cloth/monkcloth": {
@@ -6099,7 +10513,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 15
+   "armor": 2
   }
  },
  "x/gao/obj/changpao": {
@@ -6113,7 +10527,7 @@ export const ITEMS = {
   "weight": 2000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 5
+   "armor": 1
   }
  },
  "x/obj/cloth/sengyi": {
@@ -6126,7 +10540,7 @@ export const ITEMS = {
   "weight": 1000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 2
+   "armor": 1
   }
  },
  "x/obj/food/baijiu": {
@@ -6212,7 +10626,7 @@ export const ITEMS = {
   "weight": 50000,
   "wearAs": "armor",
   "apply": {
-   "armor": 45,
+   "armor": 4,
    "dodge": -15
   }
  },
@@ -6282,7 +10696,7 @@ export const ITEMS = {
   "weight": 2000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 10,
+   "armor": 1,
    "dodge": 5,
    "spells": 5
   }
@@ -6297,7 +10711,7 @@ export const ITEMS = {
   "weight": 4000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 10
+   "armor": 1
   }
  },
  "x/obj/magic/hwhite": {
@@ -6413,7 +10827,7 @@ export const ITEMS = {
   "weapon": {
    "whip": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6435,7 +10849,7 @@ export const ITEMS = {
   "weapon": {
    "spear": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6457,7 +10871,7 @@ export const ITEMS = {
   "weapon": {
    "mace": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6479,7 +10893,7 @@ export const ITEMS = {
   "weapon": {
    "stick": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6501,7 +10915,7 @@ export const ITEMS = {
   "weapon": {
    "sword": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6523,7 +10937,7 @@ export const ITEMS = {
   "weapon": {
    "hammer": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6545,7 +10959,7 @@ export const ITEMS = {
   "weapon": {
    "fork": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6567,7 +10981,7 @@ export const ITEMS = {
   "weapon": {
    "blade": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6589,7 +11003,7 @@ export const ITEMS = {
   "weapon": {
    "axe": [
     1,
-    10,
+    19,
     0,
     0
    ]
@@ -6654,7 +11068,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 5
+   "armor": 1
   }
  },
  "x/city/obj/mudao": {
@@ -6792,7 +11206,7 @@ export const ITEMS = {
   "weight": 2000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 5
+   "armor": 1
   }
  },
  "x/obj/weapon/whip/fuchen": {
@@ -6824,7 +11238,7 @@ export const ITEMS = {
   "value": 500,
   "weight": 1000,
   "apply": {
-   "armor": 2,
+   "armor": 1,
    "spells": 2
   }
  },
@@ -6861,7 +11275,7 @@ export const ITEMS = {
   "weight": 2000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 3,
+   "armor": 1,
    "spells": 5
   }
  },
@@ -7011,7 +11425,7 @@ export const ITEMS = {
   "weight": 800,
   "wearAs": "head_eq",
   "apply": {
-   "armor": 2
+   "armor": 1
   }
  },
  "x/gao/obj/shoes": {
@@ -7024,7 +11438,7 @@ export const ITEMS = {
   "weight": 800,
   "wearAs": "feet_eq",
   "apply": {
-   "armor": 3
+   "armor": 1
   }
  },
  "x/gao/obj/piyi": {
@@ -7037,7 +11451,7 @@ export const ITEMS = {
   "weight": 4000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 10
+   "armor": 1
   }
  },
  "x/obj/cloth/nichang": {
@@ -7187,7 +11601,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 4,
+   "armor": 1,
    "personality": 1
   }
  },
@@ -7205,6 +11619,40 @@ export const ITEMS = {
   "wieldAs": "blade",
   "weapon": {
    "blade": [
+    1,
+    20,
+    0,
+    0
+   ]
+  }
+ },
+ "x/obj/cloth/yayifu": {
+  "name": "衙役服",
+  "ids": [
+   "yayi cloth",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 500,
+  "long": "一件青色短装，嵌以红边，是上堂的衙役穿的．",
+  "weight": 2000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1
+  }
+ },
+ "x/obj/weapon/stick/shawei": {
+  "name": "杀威大棒",
+  "ids": [
+   "shawei bang",
+   "bang"
+  ],
+  "unit": "把",
+  "value": 200,
+  "weight": 3000,
+  "wieldAs": "stick",
+  "weapon": {
+   "stick": [
     1,
     20,
     0,
@@ -7318,7 +11766,7 @@ export const ITEMS = {
   "weight": 3000,
   "wearAs": "cloth",
   "apply": {
-   "armor": 15,
+   "armor": 2,
    "spells": 10,
    "dodge": 5
   }
@@ -7335,9 +11783,491 @@ export const ITEMS = {
   "weight": 1000,
   "wearAs": "feet_eq",
   "apply": {
-   "armor": 3,
+   "armor": 1,
    "dodge": 3
   }
+ },
+ "x/qujing/baoxiang/obj/changpao": {
+  "name": "长袍",
+  "ids": [
+   "chang pao",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 300,
+  "long": "一件长袍。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/baoxiang/obj/wandao#2": {
+  "name": "月牙弯刀",
+  "ids": [
+   "yueya wan dao",
+   "wan dao",
+   "blade"
+  ],
+  "unit": "把",
+  "value": 400,
+  "long": "一把弯弯的战刀．",
+  "weight": 2000,
+  "wieldAs": "blade",
+  "weapon": {
+   "blade": [
+    1,
+    25,
+    0,
+    0
+   ]
+  }
+ },
+ "x/qujing/baoxiang/obj/zhanpao": {
+  "name": "战袍",
+  "ids": [
+   "zhan pao",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 600,
+  "long": "一件战袍。",
+  "weight": 4000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 3
+  }
+ },
+ "x/qujing/baoxiang/obj/spqun": {
+  "name": "兽皮裙",
+  "ids": [
+   "shoupi qun",
+   "cloth"
+  ],
+  "unit": "条",
+  "value": 300,
+  "long": "一条兽皮裙。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/baoxiang/obj/sppifeng": {
+  "name": "兽皮披风",
+  "ids": [
+   "shoupi pifeng",
+   "pifeng",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 700,
+  "long": "一件兽皮披风。",
+  "weight": 4500,
+  "wearAs": "surcoat",
+  "apply": {
+   "armor": 4
+  }
+ },
+ "x/qujing/baoxiang/obj/gongpao": {
+  "name": "宫袍",
+  "ids": [
+   "gong pao",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 300,
+  "long": "一件宫袍。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/obj/cloth/mangpao": {
+  "name": "大红蟒袍",
+  "ids": [
+   "mangpao",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 7000,
+  "long": "一件大红色的长袍，上绣一条青龙，还有日月山河的图形．",
+  "weight": 6000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/baoxiang/obj/xihu": {
+  "name": "锡壶",
+  "ids": [
+   "xi hu",
+   "xihu",
+   "hu"
+  ],
+  "unit": "把",
+  "value": 1000,
+  "long": "一把细嘴锡壶．",
+  "weight": 900,
+  "water": 10,
+  "liquid": "清水"
+ },
+ "x/qujing/baoxiang/obj/xiwan": {
+  "name": "锡碗",
+  "ids": [
+   "xi wan",
+   "xiwan",
+   "wan"
+  ],
+  "unit": "只",
+  "value": 800,
+  "long": "一只镶边锡碗．",
+  "weight": 900,
+  "water": 5,
+  "liquid": "清水"
+ },
+ "x/qujing/baoxiang/obj/xipen": {
+  "name": "锡盆",
+  "ids": [
+   "xi pen",
+   "xipen",
+   "pen"
+  ],
+  "unit": "只",
+  "value": 2000,
+  "long": "一只印花大锡盆．",
+  "weight": 1100
+ },
+ "x/qujing/baoxiang/obj/yangtou": {
+  "name": "熏羊头",
+  "ids": [
+   "yang tou",
+   "yangtou",
+   "tou"
+  ],
+  "unit": "只",
+  "value": 200,
+  "long": "一只熏得红透了的羊头。",
+  "weight": 1000,
+  "foodStuff": 40,
+  "bites": 5,
+  "wieldAs": "hammer",
+  "weapon": {
+   "hammer": [
+    1,
+    1,
+    0,
+    0
+   ]
+  }
+ },
+ "x/qujing/baoxiang/obj/paomo": {
+  "name": "羊肉泡馍",
+  "ids": [
+   "pao mo",
+   "paomo"
+  ],
+  "unit": "碗",
+  "value": 100,
+  "long": "一碗热乎乎的羊肉泡馍。",
+  "weight": 1000,
+  "foodStuff": 50,
+  "bites": 4
+ },
+ "x/qujing/baoxiang/obj/zasui": {
+  "name": "羊肉杂碎",
+  "ids": [
+   "za sui",
+   "zasui"
+  ],
+  "unit": "碗",
+  "value": 100,
+  "long": "一碗热乎乎的羊肉杂碎。",
+  "weight": 1000,
+  "foodStuff": 50,
+  "bites": 4
+ },
+ "x/obj/cloth/skirt": {
+  "name": "轻纱长裙",
+  "ids": [
+   "skirt",
+   "cloth"
+  ],
+  "unit": "条",
+  "value": 0,
+  "long": "一条朦朦胧胧的纱裙，闻起来还有一股淡香。",
+  "weight": 1000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1,
+   "personality": 3
+  }
+ },
+ "x/qujing/baoxiang/obj/mifan": {
+  "name": "米饭",
+  "ids": [
+   "mi fan",
+   "fan",
+   "rice"
+  ],
+  "unit": "青砂罐",
+  "value": 90,
+  "long": "一青砂罐香米饭。",
+  "weight": 100,
+  "foodStuff": 35,
+  "bites": 5
+ },
+ "x/qujing/baoxiang/obj/mianjin": {
+  "name": "面筋",
+  "ids": [
+   "mian jin",
+   "mian",
+   "jin"
+  ],
+  "unit": "绿磁瓶",
+  "value": 90,
+  "long": "一绿磁瓶炒面筋。",
+  "weight": 100,
+  "foodStuff": 30,
+  "bites": 4
+ },
+ "x/qujing/baoxiang/obj/cspitan": {
+  "name": "彩色披毯",
+  "ids": [
+   "caise pitan",
+   "caisepitan",
+   "pitan"
+  ],
+  "unit": "件",
+  "value": 400,
+  "long": "一件彩色披毯。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/baoxiang/obj/bpitan": {
+  "name": "白披毯",
+  "ids": [
+   "bai pitan",
+   "baipitan",
+   "pitan"
+  ],
+  "unit": "件",
+  "value": 400,
+  "long": "一件白色披毯。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/baoxiang/obj/yizi": {
+  "name": "雕木斜靠椅",
+  "ids": [
+   "yi zi",
+   "yizi",
+   "seat"
+  ],
+  "unit": "把",
+  "value": 900,
+  "long": "一把雕木斜靠椅。",
+  "weight": 7000
+ },
+ "x/qujing/baoxiang/obj/zhuozi": {
+  "name": "镂空木桌",
+  "ids": [
+   "zhuo zi",
+   "zhuozi",
+   "table"
+  ],
+  "unit": "张",
+  "value": 1200,
+  "long": "一张镂空木桌。",
+  "weight": 9000
+ },
+ "x/obj/cloth/shoupiqun": {
+  "name": "兽皮裙",
+  "ids": [
+   "shoupi qun",
+   "cloth"
+  ],
+  "unit": "条",
+  "value": 300,
+  "long": "一条兽皮裙。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/pingding/obj/armor#1": {
+  "name": "白铜甲",
+  "ids": [
+   "armor",
+   "jia"
+  ],
+  "unit": "件",
+  "value": 200,
+  "weight": 20000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 2,
+   "dodge": -5
+  }
+ },
+ "x/qujing/pingding/obj/armor#2": {
+  "name": "灰铁甲",
+  "ids": [
+   "armor",
+   "jia"
+  ],
+  "unit": "件",
+  "value": 200,
+  "weight": 20000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 2,
+   "dodge": -5
+  }
+ },
+ "x/obj/cloth/shoupipifeng": {
+  "name": "兽皮披风",
+  "ids": [
+   "shoupi pifeng",
+   "pifeng",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 700,
+  "long": "一件兽皮披风。",
+  "weight": 4500,
+  "wearAs": "surcoat",
+  "apply": {
+   "armor": 4
+  }
+ },
+ "x/qujing/pingding/obj/pingfake": {
+  "name": "羊脂玉净瓶",
+  "ids": [
+   "jing ping",
+   "jing",
+   "ping",
+   "fabao"
+  ],
+  "unit": "只",
+  "value": 100000,
+  "long": "一只几乎透明的羊脂玉净瓶。",
+  "weight": 5000
+ },
+ "x/qujing/pingding/obj/pingreal": {
+  "name": "羊脂玉净瓶",
+  "ids": [
+   "jing ping",
+   "jing",
+   "ping",
+   "fabao"
+  ],
+  "unit": "只",
+  "value": 100000,
+  "long": "一只几乎透明的羊脂玉净瓶。",
+  "weight": 5000
+ },
+ "x/qujing/pingding/obj/hulufake": {
+  "name": "紫金红葫芦",
+  "ids": [
+   "hu lu",
+   "hu",
+   "lu",
+   "fabao"
+  ],
+  "unit": "只",
+  "value": 100000,
+  "long": "一只红里透紫的金葫芦。",
+  "weight": 5000
+ },
+ "x/qujing/pingding/obj/hulureal": {
+  "name": "紫金红葫芦",
+  "ids": [
+   "hu lu",
+   "hu",
+   "lu",
+   "fabao"
+  ],
+  "unit": "只",
+  "value": 100000,
+  "long": "一只红里透紫的金葫芦。",
+  "weight": 5000
+ },
+ "x/qujing/pingding/obj/food#0": {
+  "name": "油焖山笋尖",
+  "ids": [
+   "food"
+  ],
+  "unit": "些",
+  "value": 120,
+  "weight": 1000,
+  "foodStuff": 35,
+  "bites": 6
+ },
+ "x/qujing/pingding/obj/food#1": {
+  "name": "清烧地龙衣",
+  "ids": [
+   "food"
+  ],
+  "unit": "些",
+  "value": 120,
+  "weight": 1000,
+  "foodStuff": 35,
+  "bites": 6
+ },
+ "x/qujing/pingding/obj/food#2": {
+  "name": "炖汤蘑菇",
+  "ids": [
+   "food"
+  ],
+  "unit": "些",
+  "value": 120,
+  "weight": 1000,
+  "foodStuff": 35,
+  "bites": 6
+ },
+ "x/qujing/pingding/obj/shengfake": {
+  "name": "幌金绳",
+  "ids": [
+   "huangjin sheng",
+   "sheng",
+   "fabao"
+  ],
+  "unit": "根",
+  "value": 100000,
+  "long": "一根可长可短的幌金绳。",
+  "weight": 5000
+ },
+ "x/qujing/pingding/obj/shengreal": {
+  "name": "幌金绳",
+  "ids": [
+   "huangjin sheng",
+   "sheng",
+   "fabao"
+  ],
+  "unit": "根",
+  "value": 100000,
+  "long": "一根可长可短的幌金绳。",
+  "weight": 5000
+ },
+ "x/qujing/pingding/obj/shoupi": {
+  "name": "兽皮",
+  "ids": [
+   "shou pi",
+   "pi"
+  ],
+  "unit": "件",
+  "value": 600,
+  "long": "一件硝好的花兽皮。",
+  "weight": 7000
  },
  "x/obj/food/dbc": {
   "name": "大白菜",
@@ -7525,22 +12455,6 @@ export const ITEMS = {
    ]
   }
  },
- "x/obj/cloth/skirt": {
-  "name": "轻纱长裙",
-  "ids": [
-   "skirt",
-   "cloth"
-  ],
-  "unit": "条",
-  "value": 0,
-  "long": "一条朦朦胧胧的纱裙，闻起来还有一股淡香。",
-  "weight": 1000,
-  "wearAs": "cloth",
-  "apply": {
-   "armor": 1,
-   "personality": 3
-  }
- },
  "x/obj/cloth/shoes": {
   "name": "绣花小鞋",
   "ids": [
@@ -7693,6 +12607,18 @@ export const ITEMS = {
   "water": 20,
   "liquid": "羊奶酒"
  },
+ "x/westway/obj/tielong": {
+  "name": "破铁笼",
+  "ids": [
+   "tie long",
+   "long"
+  ],
+  "unit": "把",
+  "value": 2000,
+  "noGet": 1,
+  "long": "一个破铁笼。",
+  "weight": 2800000
+ },
  "x/qujing/wuzhuang/obj/huangtong-key": {
   "name": "黄铜钥匙",
   "ids": [
@@ -7714,5 +12640,70 @@ export const ITEMS = {
   "value": 500000,
   "long": "白白胖胖的一枚人参果。三千年一开花，三千年一结果，再三千年才得熟，实是天地间的灵宝。",
   "weight": 100
+ },
+ "x/qujing/baoxiang/obj/letter": {
+  "name": "秘信",
+  "ids": [
+   "mi xin",
+   "letter"
+  ],
+  "unit": "封",
+  "long": "一封秘信，上书“平安”二字．",
+  "weight": 100
+ },
+ "x/qujing/baoxiang/obj/ling": {
+  "name": "军令牌",
+  "ids": [
+   "junling pai",
+   "pai"
+  ],
+  "unit": "支",
+  "value": 200000,
+  "noGet": 1,
+  "long": "／＼｜    ｜｜ 军 ｜｜    ｜｜ 令 ｜｜    ｜｜ 牌 ｜｜    ｜｜    ｜－－－",
+  "weight": 1100
+ },
+ "x/qujing/baoxiang/obj/zhuzhang": {
+  "name": "竹杖",
+  "ids": [
+   "zhu zhang",
+   "zhang",
+   "staff"
+  ],
+  "unit": "根",
+  "value": 100,
+  "long": "一根长长的竹杖。",
+  "weight": 800,
+  "wieldAs": "staff",
+  "weapon": {
+   "staff": [
+    1,
+    10,
+    0,
+    0
+   ]
+  }
+ },
+ "x/qujing/baoxiang/obj/longtou": {
+  "name": "龙头拐",
+  "ids": [
+   "long tou guai",
+   "long tou",
+   "guai",
+   "staff"
+  ],
+  "unit": "根",
+  "value": 100,
+  "long": "一根长长的龙头拐杖。",
+  "weight": 800,
+  "wieldAs": "staff",
+  "weapon": {
+   "staff": [
+    1,
+    10,
+    0,
+    0
+   ]
+  }
  }
 }

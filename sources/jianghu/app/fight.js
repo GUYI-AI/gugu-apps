@@ -306,6 +306,7 @@ export function die(x, id, killer, say = null) {
   if (isNpc(id)) {
     c.dead = x.now
     delete c.out
+    HOOKS.npc[baseOf(id)]?.die?.(x, id, killer) // die(): what a death sets off
     return
   }
   // A ghost: no 气, no fights, until 土地公庙.
