@@ -21,3 +21,6 @@ body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
 #say input { flex: 1; min-width: 0; }
 #quick { gap: var(--em-spacing-xs); }
 #people small.on { color: var(--em-foreground-success); }
+#stats { gap: var(--em-spacing-sm); font-size: var(--em-fs-caption, 12px); color: var(--em-foreground-muted); }
+#stats .stat { display: inline-flex; align-items: center; gap: 4px; }
+#stats meter { width: 52px; height: 8px; }

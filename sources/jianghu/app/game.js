@@ -1,27 +1,39 @@
 // 文字江湖's engine: one text command in, what the player reads and what changes in the world file out. The page and
-// the agents' tools (tools.js) both run it, so a person typing 「拿 酒葫芦」 and an agent calling act with the same words
-// do the same thing. No clock and no heartbeat: nothing happens unless someone types, and the town's people answer
-// from fixed tables, the same on every computer.
+// the agents' tools (tools.js) both run it, so a person typing 「拿 木剑」 and an agent calling act with the same words
+// do the same thing. The world is ES2's 雪亭镇 (es2.js, story.js); the rules are ES2's (world.js, fight.js).
 //
-// The world file (`文字江湖.jianghu.json`, the chat's) holds only what changes: where each player stands, where each
-// thing lies, how far the errand went, and the last lines said and done (`log`). Rooms and people are in world.js.
-import { START, DIRS, BACK, ROOMS, NPCS, ITEMS, QUEST } from './world.js'
+// No server clock: time moves when someone types. Each command first lets the town catch up (advance): the people
+// in the rooms where players stand say and do what they would have in the meantime (a few beats at most), the inn
+// opens and closes by the game's clock, and every half hour the town resets.
+import {
+  ROOMS, NPCS, ITEMS, HOOKS, START, BEAT, RESET, LOG_MAX, ch, isNpc, isThing, baseOf, npcData, alive, awake, nameOf, who,
+  thingName, thingShort, thingGroups, itemOf, attr, skillLv, levelOf, clsOf, newPlayer, spawnNpc, peopleIn, npcsIn, playersIn,
+  thingsAt, makeThing, moveThing, heap, resetId, destroy, weightOf, carriage, load, isMoney, purse, wealth, pay, vision, tell, npcSay,
+  emote, render, regen, supplement, consume, heal, passed, online,
+} from './world.js'
+import { DIRS, BACK, ATTR_NAMES, SCORE_NAMES, CLASS_NAMES, EMOTES, HUNT_MSG, woundMsg, phaseOf, timeText, priceText, cn } from './text.js'
+import { brawl, improve, skillName, weaponOf } from './fight.js'
+import './story.js'
 
 export const FILE_NAME = '文字江湖.jianghu.json'
-export const VERSION = 1
-/** Lines kept in the file: older ones drop out as new ones come. */
-export const LOG_MAX = 80
+export const VERSION = 3
 export const MAX_SAY = 200
+export { START }
 
-/** What a new world's file starts as. */
-export function fresh() {
-  return { version: VERSION, players: {}, items: Object.fromEntries(Object.entries(ITEMS).map(([id, it]) => [id, it.at])), quest: {}, log: {} }
+// ── the file ─────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** What a new world's file starts as: 雪亭镇 with its people and things where ES2 puts them. */
+export function fresh({ now = Date.now(), rand = Math.random } = {}) {
+  const x = ctx({ version: VERSION, t: now, reset: now, players: {}, npcs: {}, things: {}, rooms: {}, sold: {}, log: {} }, null, now, rand)
+  resetTown(x)
+  return x.w
 }
 
-/** The keys a file still lacks to be a world: written once by whoever opens it first. */
-export function missing(data) {
-  const base = fresh()
-  return Object.keys(base).filter((k) => data?.[k] === undefined).map((k) => [[k], base[k]])
+/** The keys a file still lacks to be this version's world: an older world starts over. */
+export function missing(data, opts) {
+  if (data?.version !== VERSION) return Object.entries(fresh(opts)).map(([k, v]) => [[k], v])
+  const base = { players: {}, npcs: {}, things: {}, rooms: {}, sold: {}, log: {} }
+  return Object.keys(base).filter((k) => data[k] === undefined).map((k) => [[k], base[k]])
 }
 
 /** Apply `[path, value]` changes to `target` (the live `f.data`, or a plain copy); `undefined` deletes. */
@@ -39,135 +51,343 @@ export function apply(target, ops) {
   return target
 }
 
-// ── names ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** The changes from `a` to `b`, one op per player, townsperson, thing or room that differs. */
+function diff(a, b) {
+  const ops = []
+  for (const k of ['version', 't', 'reset']) if (a[k] !== b[k]) ops.push([[k], b[k]])
+  for (const k of ['players', 'npcs', 'things', 'rooms', 'sold']) {
+    for (const id of new Set([...Object.keys(a[k] ?? {}), ...Object.keys(b[k] ?? {})])) {
+      const x = a[k]?.[id]; const y = b[k]?.[id]
+      if (JSON.stringify(x) !== JSON.stringify(y)) ops.push([[k, id], y === undefined ? undefined : structuredClone(y)])
+    }
+  }
+  return ops
+}
 
-const nameOf = (s, id) => s.players?.[id]?.name || '一位侠客'
-const who = (s, id, viewer) => (id === viewer ? '你' : nameOf(s, id))
-const roomName = (room) => ROOMS[room]?.name ?? room
-const thingName = (key) => (key.startsWith('npc:') ? NPCS[key.slice(4)]?.name : null) ?? key
+function ctx(w, me, now, rand) {
+  return { w, me, now, rand, out: [], events: [] }
+}
+const rnd = (x, n) => (n > 0 ? Math.floor(x.rand() * n) : 0)
+const pick = (x, list) => list[rnd(x, list.length)]
+
+// ── the log ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Log keys sort by time: base-36 milliseconds, then a few random letters. */
 export function logKey(now, rand = Math.random) {
   return now.toString(36).padStart(9, '0') + rand().toString(36).slice(2, 6).padEnd(4, '0')
 }
-
 const sortedLog = (s) => Object.entries(s.log ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+export const lastKey = (s) => sortedLog(s).at(-1)?.[0] ?? ''
 
-// ── what a player reads ───────────────────────────────────────────────────────────────────────────────────────────
-
-const here = (s, room) => ({
-  npcs: Object.entries(NPCS).filter(([, n]) => n.room === room).map(([id]) => id),
-  items: Object.entries(s.items ?? {}).filter(([, at]) => at === room).map(([id]) => id),
-  players: Object.entries(s.players ?? {}).filter(([, p]) => p.room === room).map(([id]) => id),
-})
-
-export const carrying = (s, me) => Object.entries(s.items ?? {}).filter(([, at]) => at === me).map(([id]) => id)
-
-const exitsLine = (room) => `出口：${Object.keys(ROOMS[room].exits).map((d) => DIRS[d].name).join('、')}。`
-
-/** A room as the one standing in it sees it. */
-export function lookText(s, me) {
-  const room = s.players?.[me]?.room ?? START
-  const r = ROOMS[room]
-  const h = here(s, room)
-  const lines = [`【${r.name}】`, r.long]
-  for (const id of h.items) lines.push(ITEMS[id].at === room ? ITEMS[id].lying : `地上放着一个${ITEMS[id].name}。`)
-  if (h.npcs.length) lines.push(`这里有：${h.npcs.map((id) => NPCS[id].name).join('、')}。`)
-  const others = h.players.filter((id) => id !== me)
-  if (others.length) lines.push(`同在这里：${others.map((id) => nameOf(s, id) + (s.players[id].agent ? '（agent）' : '')).join('、')}。`)
-  lines.push(exitsLine(room))
-  return lines.join('\n')
+/** Whether `viewer` in `room` sees a line: what happens in the room, what is told to them, and their name said aloud. */
+export function sees(s, ev, viewer, room) {
+  if (ev.only) return ev.only === viewer
+  if (ev.k === 'team') return Boolean(s.players?.[viewer]?.team) && s.players[viewer].team === ev.team
+  if (ev.room === room) return true
+  const name = s.players?.[viewer]?.name
+  return ev.k === 'say' && Boolean(name) && String(ev.text).includes(name)
 }
 
-/** A line of the log as `viewer` reads it. */
-export function eventText(s, ev, viewer) {
-  const by = who(s, ev.by, viewer)
-  const to = ev.to ? (ev.to.startsWith('npc:') ? thingName(ev.to) : who(s, ev.to, viewer)) : ''
-  const item = ev.item ? ITEMS[ev.item]?.name ?? ev.item : ''
-  switch (ev.k) {
-    case 'join': return `${by}走进了饮风客栈。`
-    case 'leave': return `${by}往${DIRS[ev.dir]?.name ?? ''}边离开了。`
-    case 'arrive': return `${by}从${DIRS[ev.dir]?.name ?? ''}边走了过来。`
-    case 'say': return `${by}说：「${ev.text}」`
-    case 'sayto': return `${by}对${to}说：「${ev.text}」`
-    case 'take': return `${by}拿起了${item}。`
-    case 'drop': return `${by}放下了${item}。`
-    case 'give': return `${by}把${item}交给了${to}。`
-    case 'ask': return `${by}向${NPCS[ev.npc]?.name}打听「${ev.topic}」。\n${NPCS[ev.npc]?.name}说：「${ev.reply}」`
-    case 'npc': return ev.text
-    case 'quest': return ev.text
-    case 'reset': return `${by}让江湖重开了一回：东西都回到了原处。`
-    default: return ''
+/** The log after `since` (a key; '' for all) that `viewer` sees from `room`, minus what their own commands made. */
+export function linesSince(s, viewer, room, since = '', limit = 30) {
+  const rows = sortedLog(s).filter(([k, ev]) => k > since && ev.by !== viewer && sees(s, ev, viewer, room))
+  return rows.slice(-limit).map(([k, ev]) => ({
+    key: k,
+    text: (ev.room !== room && ev.k === 'say' ? `（${ROOMS[ev.room]?.name ?? ''}）` : '') + render(s, ev, viewer),
+  }))
+}
+
+/** Who to wake for a line a person made: an agent spoken to, named, handed something or attacked. Agents wake nobody. */
+export function wakes(s, ev) {
+  if (!s.players?.[ev.by] || s.players[ev.by].agent) return []
+  const agents = Object.entries(s.players ?? {}).filter(([, p]) => p.agent).map(([id]) => id)
+  if (ev.to && agents.includes(ev.to)) return [ev.to]
+  if (ev.k === 'say') return agents.filter((id) => ev.text.includes(s.players[id].name))
+  return []
+}
+export const wakeText = (s, ev, agent) => `文字江湖（${ROOMS[ev.room]?.name ?? ''}）：${render(s, ev, agent)}`
+
+// ── the clock ────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** The town after a reset: the dead back at home, the lost things again where they lay, shops restocked. */
+function resetTown(x) {
+  const w = x.w
+  // The reset of this half hour: every page crossing it makes the same one (resetId), so it is written once.
+  w.reset = epochOf(x.now)
+  x.reset = w.reset / RESET
+  w.rooms = {}
+  w.sold = {} // shops restocked
+  for (const [room, r] of Object.entries(ROOMS)) {
+    for (const [key, n] of Object.entries(r.spawn ?? {})) {
+      if (NPCS[key]) {
+        for (let i = 1; i <= n; i++) {
+          const id = `n:${key}${i > 1 ? '.' + i : ''}`
+          const c = w.npcs[id]
+          if (!c || c.dead) spawnNpc(x, id, room)
+          else {
+            delete c.hate; delete c.flags
+            if (c.room !== room && !(c.out > x.now)) c.room = room
+          }
+        }
+      } else if (ITEMS[key]) {
+        const have = Object.values(w.things).filter((t) => t.id === key && t.home === room).reduce((s, t) => s + (t.n ?? 1), 0)
+        const lacking = n - have
+        if (lacking > 0) {
+          if (ITEMS[key].baseUnit) makeThing(x, key, room, lacking, { home: room }, resetId(x, room, key))
+          else for (let i = 0; i < lacking; i++) makeThing(x, key, room, 1, { home: room }, resetId(x, room, key, i))
+        }
+      }
+    }
+  }
+  HOOKS.reset?.(x)
+  delete x.reset
+}
+const epochOf = (now) => Math.floor(now / RESET) * RESET
+
+/** Let the town catch up to now: wake-ups, the inn's hours, corpses rotting, a few beats of the townspeople. */
+function advance(x) {
+  const w = x.w
+  if (epochOf(x.now) > (w.reset ?? 0)) resetTown(x)
+  const since = w.t ?? x.now
+  for (const [hhmm, fn] of HOOKS.schedule ?? []) if (passed(since, x.now, hhmm)) fn(x)
+  // Corpses rot (obj/corpse.c): rotten after 3 minutes, bones after 6, dust after 9 — with what was in them.
+  for (const [tid, t] of Object.entries(w.things)) {
+    if (t.id !== 'corpse') continue
+    const age = x.now - t.decay
+    if (age >= 9 * 60_000) { if (playersIn(w, t.at).length) vision(x, t.at, `一阵风吹过，把${t.name}化成骨灰吹散了。`); destroy(x, tid) }
+    else if (age >= 6 * 60_000 && t.stage !== 2) { t.stage = 2; t.name = '枯干的骸骨' }
+    else if (age >= 3 * 60_000 && !t.stage) { t.stage = 1; t.name = `腐烂的${t.name.replace(/的尸体$/, '')}尸体` }
+  }
+  // Those knocked out come to.
+  for (const id of [...Object.keys(w.players), ...Object.keys(w.npcs)]) {
+    const c = ch(w, id)
+    if (c.out && c.out <= x.now) {
+      delete c.out
+      supplement(c, 'gin', attr(w, id, 'dex')); supplement(c, 'kee', attr(w, id, 'con')); supplement(c, 'sen', attr(w, id, 'spi'))
+      vision(x, c.room, '$N慢慢睁开眼睛，清醒了过来。', id)
+      if (!isNpc(id)) tell(x, id, '慢慢地你终于又有了知觉....')
+    }
+  }
+  const beats = Math.min(15, Math.floor((x.now - since) / BEAT))
+  if (beats > 0) w.t = x.now
+  const watched = new Set(Object.values(w.players).map((p) => p.room))
+  for (let b = 0; b < beats; b++) {
+    for (const [id, c] of Object.entries(w.npcs)) {
+      if (c.dead || c.out > x.now || !watched.has(c.room)) continue
+      const d = npcData(id)
+      if (d.chatMsg && rnd(x, 100) < (d.chatChance ?? 0)) act(x, id, pick(x, d.chatMsg))
+    }
+    HOOKS.beat?.(x)
   }
 }
 
-/** Whether `viewer` standing in `room` sees the line: what happens in the room, and anyone saying their name anywhere. */
-export function sees(s, ev, viewer, room) {
-  if (ev.room === room || ev.k === 'reset') return true
-  const name = s.players?.[viewer]?.name
-  return ev.k === 'say' && Boolean(name) && ev.text.includes(name)
+/** One thing an NPC says or does: a line, a say, a command, or a behaviour of its own (chat_msg, do_chat). */
+export function act(x, id, what) {
+  const c = ch(x.w, id)
+  if (!c || c.dead) return
+  if (typeof what === 'function') return what(x, id)
+  if (typeof what === 'string') return vision(x, c.room, what, id)
+  if (what.say) return npcSay(x, id, what.say)
+  if (what.emote) return emote(x, id, EMOTES[what.emote] ?? [what.emote, what.emote], what.at ?? null)
+  if (what.fn === 'random_move') return randomMove(x, id)
+  if (what.do === 'get all') {
+    for (const tid of thingsAt(x.w, c.room)) if (!itemOf(x.w, tid)?.noGet && x.w.things[tid].id !== 'corpse') { moveThing(x, tid, id); vision(x, c.room, `$N捡起${thingName(x.w, tid)}。`, id) }
+    return
+  }
+  if (what.do) return emote(x, id, EMOTES[what.do] ?? ['$N' + what.do, '$N' + what.do])
+  if (what.fn) return HOOKS.chat[what.fn]?.(x, id, what)
+}
+export function randomMove(x, id) {
+  const c = ch(x.w, id)
+  const exits = Object.entries(ROOMS[c.room].exits).filter(([d]) => !closed(x.w, c.room, d))
+  if (!exits.length) return
+  const [dir, to] = pick(x, exits)
+  move(x, id, dir, to)
 }
 
-/** The log after `since` (a key; '' for all) that `viewer` sees from `room`, minus their own, oldest first. */
-export function linesSince(s, viewer, room, since = '', limit = 30) {
-  const rows = sortedLog(s).filter(([k, ev]) => k > since && ev.by !== viewer && sees(s, ev, viewer, room))
-  return rows.slice(-limit).map(([k, ev]) => ({ key: k, text: (ev.room !== room && ev.k === 'say' ? `（${roomName(ev.room)}）` : '') + eventText(s, ev, viewer) }))
+// ── moving ───────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const closed = (w, room, dir) => Boolean(ROOMS[room].doors?.[dir]) && (w.rooms[room]?.doors?.[dir] ?? ROOMS[room].doors[dir].closed)
+export function setDoor(x, room, dir, isClosed) {
+  const to = ROOMS[room].exits[dir]
+  ;(x.w.rooms[room] ??= {}).doors = { ...(x.w.rooms[room].doors ?? {}), [dir]: isClosed }
+  const back = Object.entries(ROOMS[to]?.doors ?? {}).find(([, d]) => d.name === ROOMS[room].doors[dir].name)?.[0]
+  if (back) (x.w.rooms[to] ??= {}).doors = { ...(x.w.rooms[to].doors ?? {}), [back]: isClosed }
 }
 
-/** The newest key of the log, '' when it is empty. */
-export const lastKey = (s) => sortedLog(s).at(-1)?.[0] ?? ''
-
-/**
- * Who to wake for a line: an agent spoken to, named, or handed something — and only by a person, so two agents never
- * keep each other talking.
- */
-export function wakes(s, ev) {
-  if (s.players?.[ev.by]?.agent) return []
-  const agents = Object.entries(s.players ?? {}).filter(([, p]) => p.agent).map(([id]) => id)
-  if ((ev.k === 'sayto' || ev.k === 'give') && agents.includes(ev.to)) return [ev.to]
-  if (ev.k === 'say') return agents.filter((id) => ev.text.includes(nameOf(s, id)))
-  return []
+/** Someone goes `dir` to `to`: the rooms see them leave and arrive; those following them come along. */
+export function move(x, id, dir, to, { how = null, quiet = false } = {}) {
+  const w = x.w
+  const c = ch(w, id)
+  const from = c.room
+  if (!quiet) vision(x, from, how?.leave ?? `$N往${dir}边离开。`, id, null, { k: 'move' })
+  c.room = to
+  if (c.temp?.sitting) delete c.temp.sitting
+  if (!quiet) vision(x, to, how?.arrive ?? (BACK[dir] ? `$N从${BACK[dir]}边走了过来。` : '$N走了过来。'), id, null, { k: 'move' })
+  if (id === x.me) x.out.push(lookText(w, id, x.now))
+  // followers (feature/char/team.c follow_me)
+  for (const f of peopleIn(w, from)) {
+    const fc = ch(w, f)
+    if (f !== id && fc.follow === id && awake(w, f, x.now)) move(x, f, dir, to)
+  }
+  arrive(x, id)
 }
 
-/** The whisper that wakes an agent for a line. */
-export const wakeText = (s, ev, agent) => `文字江湖（${roomName(ev.room)}）：${eventText(s, ev, agent)}`
+/** What arriving sets off: greetings, grudges (combatd.c auto_fight), and each person's own init. */
+function arrive(x, id) {
+  const w = x.w
+  const room = ch(w, id).room
+  if (!awake(w, id, x.now)) return
+  for (const n of npcsIn(w, room)) {
+    if (n === id || !awake(w, n, x.now)) continue
+    if (!isNpc(id)) {
+      const c = ch(w, n)
+      const d = npcData(n)
+      if (c.hate?.[id] && !ROOMS[room].noFight) {
+        brawl(x, n, id, 'kill', [[pick(x, HUNT_MSG), n, id]])
+        return
+      }
+      if (d.vendettaMark && w.players[id].vendetta?.[d.vendettaMark] && !ROOMS[room].noFight) {
+        brawl(x, n, id, 'kill', [[pick(x, HUNT_MSG), n, id]])
+        return
+      }
+    }
+    HOOKS.npc[baseOf(n)]?.init?.(x, n, id)
+  }
+  if (isNpc(id)) for (const p of playersIn(w, room)) HOOKS.npc[baseOf(id)]?.init?.(x, id, p)
+}
 
-// ── commands ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// ── what a player reads ──────────────────────────────────────────────────────────────────────────────────────────
+
+const exitsLine = (w, room) => {
+  const ex = Object.keys(ROOMS[room].exits)
+  return ex.length ? `这里明显的出口是 ${ex.map((d) => (ROOMS[room].doors?.[d] ? `${d}（${ROOMS[room].doors[d].name}${closed(w, room, d) ? '，关着' : ''}）` : d)).join('、')}。` : '这里没有任何明显的出路。'
+}
+
+/** A room as the one standing in it sees it. */
+export function lookText(w, me, now = Date.now()) {
+  const p = ch(w, me)
+  const room = p?.room in ROOMS ? p.room : START
+  const r = ROOMS[room]
+  const lines = [`【${r.name}】`, r.long + (r.outdoors ? `${phaseOf(now)[2]}。` : '')]
+  if (room === 'small_temple' && p?.ghost) lines.push('你看见地面上有一个红色的漩涡(swirl)在不断旋转 ...')
+  lines.push(exitsLine(w, room))
+  const things = thingGroups(w, room).map(([, text]) => text)
+  if (things.length) lines.push(`这里有：${things.join('、')}。`)
+  const people = peopleIn(w, room).filter((id) => id !== me).map((id) => personShort(w, id, now))
+  if (people.length) lines.push(...people.map((t) => `  ${t}`))
+  return lines.join('\n')
+}
+
+function personShort(w, id, now) {
+  const c = ch(w, id)
+  if (isNpc(id)) {
+    const d = npcData(id)
+    return `${d.nickname ? `「${d.nickname}」` : ''}${d.name}(${d.ids[0]})${c.out > now ? ' <昏迷不醒>' : ''}`
+  }
+  const title = c.title ?? CLASS_NAMES[c.cls] ?? ''
+  return `${title} ${nameOf(w, id)}${c.agent ? '（agent）' : ''}${c.out > now ? ' <昏迷不醒>' : ''}`
+}
+
+function lookAt(x, target) {
+  const w = x.w
+  if (target.kind === 'detail') return ROOMS[ch(w, x.me).room].details[target.key]
+  if (target.kind === 'thing') {
+    const t = w.things[target.key]
+    if (t.id === 'corpse') {
+      const inside = thingGroups(w, target.key).map(([, text]) => text)
+      return `${t.name}${t.stage === 2 ? '已经躺在这里很久了。' : t.stage ? '显然已经躺在这里有一段时间了，正散发着一股腐尸的味道。' : '。'}${inside.length ? `\n里面有：${inside.join('、')}。` : ''}`
+    }
+    const it = itemOf(w, target.key)
+    const inside = thingGroups(w, target.key).map(([, text]) => text)
+    const water = t.water ? `\n里面装着${t.water}口水。` : ''
+    return `${thingName(w, target.key)}：${it?.long ?? ''}${inside.length ? `\n里面有：${inside.join('、')}。` : ''}${water}`
+  }
+  const id = target.key
+  const c = ch(w, id)
+  const lines = []
+  if (isNpc(id)) {
+    const d = npcData(id)
+    lines.push(`${d.nickname ? `「${d.nickname}」` : ''}${d.name}${d.age ? `，看起来约${cn(Math.floor(d.age / 10) * 10)}多岁` : ''}。`, d.long)
+  } else {
+    lines.push(`${personShort(w, id, x.now).trim()}，${CLASS_NAMES[c.cls] ?? ''}，${levelOf(w, id)} 级。`)
+  }
+  const eq = thingsAt(w, id).filter((tid) => w.things[tid].eq).map((tid) => thingName(w, tid))
+  if (eq.length) lines.push(`身上装备着：${eq.join('、')}。`)
+  if (!c.ghost) lines.push(woundMsg(Math.floor(c.kee.eff * 100 / c.kee.max)).replace('$N', id === x.me ? '你' : nameOf(w, id)))
+  return lines.join('\n')
+}
+
+// ── commands ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
 export const HELP = [
-  '看 / 看 <东西或人>　四处看看，或细看一样东西',
-  '东 西 南 北（也可以 走 东）　往那边走',
-  '说 <话>　对这里的人说话；对 <人> 说 <话>　对一个人说',
-  '问 <人> <事>　向镇上的人打听，比如：问 店小二 李先生',
-  '拿 <东西> / 放下 <东西> / 给 <人> <东西>',
-  '背包　看身上带着什么；任务　看差事进展；谁　看大家在哪',
+  '看 / 看 <人或东西>　东 西 南 北 上 下 出去（也可以 走 东）',
+  '说 <话>　对 <人> 说 <话>　队 <话>（队伍里说）',
+  '拿 <东西> [从 <尸体等>] / 放下 / 给 <人> [数量] <东西>　背包',
+  '穿 / 脱 <衣物>　装备 / 卸下 <兵器>　吃 <东西>　喝 <水缸等>',
+  '清单（看店里卖什么）　买 <东西>　兑换 <数量> <钱> 成 <钱>',
+  '比武 <人>（点到为止）　杀 <人>　跟随 <人>|无　组队 <人>　离队　队伍',
+  '状态 / 属性 / 技能　拜师 <人>　请教 <人> <技能>　偷 <东西> 从 <人>',
+  '爬 / 钻 / 进 / 搜 / 坐 / 装车 / 开门 / 关门（看地方）　时间　谁',
 ].join('\n')
 
 const VERBS = [
-  [['看看', '看', '瞧', '观察', 'look', 'l'], 'look'],
-  [['走', '去', '往', '向', 'go'], 'go'],
-  [['说', 'say'], 'say'],
+  [['看看', '看', '瞧', 'look', 'l'], 'look'],
+  [['走', '去', '往', 'go'], 'go'],
+  [['说', 'say', "'"], 'say'],
   [['对'], 'sayto'],
-  [['问', '打听', 'ask'], 'ask'],
-  [['拿起', '拿', '捡起', '捡', '取', 'get', 'take'], 'take'],
-  [['放下', '丢下', '丢', '放', 'drop'], 'drop'],
+  [['队伍', 'team'], 'team'],
+  [['队', 'tt'], 'tt'],
+  [['组队'], 'teamwith'],
+  [['离队'], 'teamleave'],
+  [['拿起', '拿', '捡起', '捡', 'get', 'take'], 'get'],
+  [['放下', '丢下', '丢', 'drop'], 'drop'],
   [['交给', '给', 'give'], 'give'],
   [['背包', '身上', 'inventory', 'inv', 'i'], 'inv'],
-  [['任务', '差事', '提示', 'quest', 'hint'], 'quest'],
+  [['穿上', '穿', '戴上', '戴', 'wear'], 'wear'],
+  [['脱下', '脱', 'remove'], 'remove'],
+  [['装备', '拿兵器', 'wield'], 'wield'],
+  [['卸下', 'unwield'], 'unwield'],
+  [['吃', '服', 'eat'], 'eat'],
+  [['喝', 'drink'], 'drink'],
+  [['装水', 'fill'], 'fill'],
+  [['清单', '看货', 'list'], 'list'],
+  [['买', '点', 'buy'], 'buy'],
+  [['兑换', '换钱', 'convert'], 'convert'],
+  [['比武', '切磋', 'fight'], 'fight'],
+  [['杀', '打', 'kill'], 'kill'],
+  [['停手', '罢手', 'halt'], 'halt'],
+  [['跟随', '跟着', '跟', 'follow'], 'follow'],
+  [['状态', 'hp'], 'hp'],
+  [['属性', '分数', 'score'], 'score'],
+  [['技能', '武功', 'skills'], 'skills'],
+  [['拜师', '拜', 'apprentice'], 'apprentice'],
+  [['请教', '求教', 'acquire'], 'acquire'],
+  [['偷', 'steal'], 'steal'],
+  [['开门', 'open'], 'open'],
+  [['关门', 'close'], 'close'],
+  [['时间', 'time'], 'time'],
   [['谁', 'who'], 'who'],
   [['帮助', 'help', '?', '？'], 'help'],
-  [['重来', '重开', 'reset'], 'reset'],
+  // Room actions (story.js): the verb goes to the room.
+  [['爬上', '爬', '翻', 'climb'], 'climb'],
+  [['钻进', '钻', '进去', '进', '走进', 'enter'], 'enter'],
+  [['搜', '找', '搜索', 'search'], 'search'],
+  [['坐下', '坐', 'sit'], 'sit'],
+  [['装车', '装上车', '装', 'load'], 'load'],
+  [['领信札', '领', 'request'], 'request'],
 ]
 
-const ascii = (w) => /^[a-z?]+$/i.test(w)
+const ascii = (w) => /^[a-z?']+$/i.test(w)
+const dirOf = (word) => Object.keys(DIRS).find((d) => DIRS[d].includes(String(word).toLowerCase().replace(/^[往向]/, '').replace(/边$/, '')))
 
 /** The verb a line starts with and the rest: an English verb needs a space or the end after it. */
 export function parse(line) {
   const text = String(line ?? '').trim().replace(/\s+/g, ' ').replace(/[。！!]+$/, '')
-  const lower = text.toLowerCase()
-  for (const d of Object.keys(DIRS)) if (DIRS[d].words.includes(lower)) return { verb: 'go', rest: d }
+  if (dirOf(text)) return { verb: 'go', rest: dirOf(text) }
   const ba = text.match(/^把\s*(.+?)\s*(?:交给|给)\s*(.+)$/)
   if (ba) return { verb: 'give', rest: `${ba[2]} ${ba[1]}` }
+  const lower = text.toLowerCase()
   let best = null
   for (const [words, verb] of VERBS) {
     for (const w of words) {
@@ -180,194 +400,637 @@ export function parse(line) {
   return { verb: best.verb, rest: text.slice(best.w.length).trim() }
 }
 
-/** The direction a word names. */
-const dirOf = (word) => Object.keys(DIRS).find((d) => DIRS[d].words.includes(word.toLowerCase().replace(/^[往向]/, '')))
-
-/**
- * The thing `text` starts with, among `cands` (`{ key, names }`), longest name first, and what follows it.
- */
+/** The thing `text` starts with among `cands` (`{ key, kind, names }`), longest name first, and what follows. */
 function lead(cands, text) {
   let best = null
+  const t = text.toLowerCase()
   for (const c of cands) for (const n of c.names) {
-    if (n && text.toLowerCase().startsWith(n.toLowerCase()) && (!best || n.length > best.n.length)) best = { c, n }
+    if (n && t.startsWith(n.toLowerCase()) && (!best || n.length > best.n.length)) best = { c, n }
   }
-  return best ? { key: best.c.key, kind: best.c.kind, rest: text.slice(best.n.length).trim() } : null
+  if (best) return { key: best.c.key, kind: best.c.kind, rest: text.slice(best.n.length).trim() }
+  // A part of a name will do: 「掌柜」 for 药铺掌柜.
+  const [word, ...more] = text.split(' ')
+  const part = word && cands.find((c) => c.names.some((n) => n.length > word.length && n.includes(word)))
+  return part ? { key: part.key, kind: part.kind, rest: more.join(' ') } : null
 }
+const personNames = (w, id) => (isNpc(id) ? [npcData(id).name, ...npcData(id).ids] : [w.players[id].name, nameOf(w, id)])
+const thingNames = (w, tid) => [thingName(w, tid), ...(itemOf(w, tid)?.ids ?? []), ...(w.things[tid].id === 'corpse' ? ['尸体', 'corpse', '骸骨'] : [])]
+const people = (w, me, room) => peopleIn(w, room).filter((id) => id !== me && !(ch(w, id).ghost && !ch(w, me).ghost)).map((id) => ({ key: id, kind: 'person', names: personNames(w, id) }))
+const things = (w, at) => thingsAt(w, at).map((tid) => ({ key: tid, kind: 'thing', names: thingNames(w, tid) }))
 
-/** Everything a player can name where they stand. */
-function nameable(s, me, room) {
-  const h = here(s, room)
-  return [
-    ...h.npcs.map((id) => ({ key: id, kind: 'npc', names: [NPCS[id].name, ...NPCS[id].words] })),
-    ...h.players.filter((id) => id !== me).map((id) => ({ key: id, kind: 'player', names: [nameOf(s, id)] })),
-    ...[...carrying(s, me), ...h.items].map((id) => ({ key: id, kind: 'item', names: [ITEMS[id].name, ...ITEMS[id].words] })),
-    ...Object.keys(ROOMS[room].details ?? {}).map((d) => ({ key: d, kind: 'detail', names: [d] })),
-  ]
+const AMOUNT = /^(\d+|[一二两三四五六七八九十百千]+)\s*(?:个|枚|文|两|粒|颗|株|根|把|件|只|张|堆|些)?\s*/
+function amount(text) {
+  const m = text.match(AMOUNT)
+  if (!m || !m[1]) return { n: undefined, rest: text }
+  let n = Number(m[1])
+  if (Number.isNaN(n)) {
+    const D = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 }
+    n = 0; let cur = 0
+    for (const ch2 of m[1]) {
+      if (D[ch2]) cur = D[ch2]
+      else { const u = { 十: 10, 百: 100, 千: 1000 }[ch2]; n += (cur || 1) * u; cur = 0 }
+    }
+    n += cur
+  }
+  return { n, rest: text.slice(m[0].length) }
 }
+/** 钱 / 银子 / 黄金 in what people type. */
+const MONEY_WORDS = { 'stock/coin': ['文钱', '钱', '铜钱', 'coin'], 'stock/silver': ['两银子', '银子', '碎银', 'silver'], 'stock/gold': ['两黄金', '黄金', '金子', 'gold'] }
+const moneyOf = (text) => Object.entries(MONEY_WORDS).find(([, ws]) => ws.some((w) => text.startsWith(w)))?.[0]
 
 /**
- * Run one command of `me` against the world `s` (a plain copy). Returns `{ reply, ops, events }`: what `me` reads,
+ * Run one command of `me` against the world `s` (left as it is). Returns `{ reply, ops, events }`: what `me` reads,
  * the changes to make (apply), and the log lines they add (already in ops).
- * `opts`: `{ now, rand }`.
  */
 export function run(s, me, line, { now = Date.now(), rand = Math.random } = {}) {
-  const player = s.players?.[me]
-  if (!player) return { reply: '你还不在江湖里。', ops: [], events: [] }
-  const room = player.room in ROOMS ? player.room : START
-  const ops = []
-  const events = []
+  if (!s.players?.[me]) return { reply: '你还不在江湖里。', ops: [], events: [] }
+  const w = structuredClone(s)
+  const x = ctx(w, me, now, rand)
+  advance(x)
+  const before = x.out.length
+  regen(x, me)
+  const p = w.players[me]
+  if (!(p.room in ROOMS)) p.room = START
+  if (p.out > now) x.out.push('你还昏迷不醒，什么也做不了。')
+  else command(x, line)
+  if (x.out.length === before) x.out.push(lookText(w, me, now))
+  p.at = now
+  if (!p.agent) p.here = now
+  // Lines go into the log; older ones drop out as new ones come.
+  const ops = diff(s, w)
   let t = now
-  const log = (ev) => {
-    const e = { ...ev, by: ev.by ?? me, room: ev.room ?? room, at: now }
+  const added = []
+  for (const ev of x.events) {
     const key = logKey(t++, rand)
-    ops.push([['log', key], e])
-    events.push({ key, ...e })
-    return e
+    ops.push([['log', key], ev])
+    added.push({ key, ...ev })
   }
-  const done = (reply) => {
-    // Older lines go as new ones come: the file keeps LOG_MAX.
-    const keys = sortedLog(s).map(([k]) => k)
-    const over = keys.length + events.length - LOG_MAX
-    for (const k of keys.slice(0, Math.max(0, over))) ops.push([['log', k], undefined])
-    ops.push([['players', me, 'at'], now])
-    return { reply, ops, events }
-  }
+  const keys = sortedLog(s).map(([k]) => k)
+  for (const k of keys.slice(0, Math.max(0, keys.length + added.length - LOG_MAX))) ops.push([['log', k], undefined])
+  return { reply: x.out.join('\n'), ops, events: added }
+}
+
+function command(x, line) {
+  const w = x.w
+  const me = x.me
+  const p = w.players[me]
+  const room = p.room
   const { verb, rest } = parse(line)
+  const reply = (t) => x.out.push(t)
+  const ghostNo = () => { reply('你现在是鬼魂，做不了这件事。快去土地公庙找城隍复活吧！'); return true }
+  const roomHook = (v) => HOOKS.room[room]?.[v]?.(x, rest)
 
   switch (verb) {
     case null:
-      return done(rest ? `「${rest}」？江湖上没这个说法。输入「帮助」看看能做什么。` : lookText(s, me))
+      return reply(rest ? `「${rest}」？江湖上没这个说法。输入「帮助」看看能做什么。` : lookText(w, me, x.now))
     case 'help':
-      return done(HELP)
+      return reply(HELP)
+    case 'time':
+      return reply(`现在是${timeText(x.now)}，${phaseOf(x.now)[2]}。`)
     case 'look': {
-      if (!rest) return done(lookText(s, me))
-      const t2 = lead(nameable(s, me, room), rest)
-      if (!t2) return done(`你看了半天，没看到「${rest}」。`)
-      if (t2.kind === 'npc') return done(`${NPCS[t2.key].name}：${NPCS[t2.key].long}`)
-      if (t2.kind === 'item') return done(`${ITEMS[t2.key].name}：${ITEMS[t2.key].long}`)
-      if (t2.kind === 'detail') return done(ROOMS[room].details[t2.key])
-      const has = carrying(s, t2.key).map((id) => ITEMS[id].name)
-      return done(`${nameOf(s, t2.key)}${s.players[t2.key].agent ? '（agent）' : ''}站在这里。${has.length ? `身上带着：${has.join('、')}。` : ''}`)
+      if (!rest) return reply(lookText(w, me, x.now))
+      const t = lead([...people(w, me, room), ...things(w, me), ...things(w, room), ...Object.keys(ROOMS[room].details ?? {}).map((d) => ({ key: d, kind: 'detail', names: [d] }))], rest)
+      if (t) return reply(lookAt(x, t))
+      if (roomHook('look')) return
+      return reply(`你看了半天，没看到「${rest}」。`)
     }
     case 'go': {
       const d = dirOf(rest)
-      if (!d) return done(rest ? `「${rest}」是哪个方向？${exitsLine(room)}` : `往哪走？${exitsLine(room)}`)
+      if (!d) return reply(rest ? `「${rest}」是哪个方向？${exitsLine(w, room)}` : `往哪走？${exitsLine(w, room)}`)
+      for (const n of npcsIn(w, room)) if (awake(w, n, x.now) && !p.ghost && HOOKS.npc[baseOf(n)]?.go?.(x, n, d)) return
       const to = ROOMS[room].exits[d]
-      if (!to) return done(`${DIRS[d].name}边没有路。${exitsLine(room)}`)
-      log({ k: 'leave', dir: d })
-      log({ k: 'arrive', dir: BACK[d], room: to })
-      ops.push([['players', me, 'room'], to])
-      const after = apply(structuredClone(s), [[['players', me, 'room'], to]])
-      return done(lookText(after, me))
+      if (!to) return reply('这个方向没有出路。')
+      if (closed(w, room, d)) return reply(`你必须先把${ROOMS[room].doors[d].name}打开。`)
+      return move(x, me, d, to)
     }
     case 'say': {
       const text = rest.slice(0, MAX_SAY)
-      if (!text) return done('你想说什么？')
-      return done(eventText(s, log({ k: 'say', text }), me))
+      if (!text) return reply('你自言自语不知道在说些什么。')
+      vision(x, room, `$N说道：${text}`, me, null, { k: 'say', text })
+      for (const n of npcsIn(w, room)) if (awake(w, n, x.now)) HOOKS.npc[baseOf(n)]?.say?.(x, n, me, text)
+      return
     }
     case 'sayto': {
       const m = rest.match(/^(.+?)\s*说[：:]?\s*(.*)$/)
-      const t2 = m && lead(nameable(s, me, room).filter((c) => c.kind === 'npc' || c.kind === 'player'), m[1])
-      if (!m || !t2 || t2.rest) return done('对谁说？这样说：对 <这里的人> 说 <话>')
+      const t = m && lead(people(w, me, room), m[1])
+      if (!m || !t || t.rest) return reply('对谁说？这样说：对 <这里的人> 说 <话>')
       const text = m[2].slice(0, MAX_SAY)
-      if (!text) return done('你想说什么？')
-      if (t2.kind === 'npc') return done(ask(t2.key, text))
-      return done(eventText(s, log({ k: 'sayto', to: t2.key, text }), me))
-    }
-    case 'ask': {
-      const t2 = lead(nameable(s, me, room).filter((c) => c.kind === 'npc'), rest)
-      if (!t2) return done(rest ? `这里没有「${rest.split(' ')[0]}」可以打听。` : '问谁？这样问：问 <人> <事>')
-      return done(ask(t2.key, t2.rest.replace(/^(关于|有关|about)\s*/i, '').replace(/的事$/, '')))
-    }
-    case 'take': {
-      const t2 = lead(here(s, room).items.map((id) => ({ key: id, kind: 'item', names: [ITEMS[id].name, ...ITEMS[id].words] })), rest)
-      if (!t2) return done(rest ? `这里没有「${rest}」可以拿。` : '拿什么？')
-      ops.push([['items', t2.key], me])
-      return done(eventText(s, log({ k: 'take', item: t2.key }), me))
-    }
-    case 'drop': {
-      const t2 = lead(carrying(s, me).map((id) => ({ key: id, kind: 'item', names: [ITEMS[id].name, ...ITEMS[id].words] })), rest)
-      if (!t2) return done(rest ? `你身上没有「${rest}」。` : '放下什么？')
-      ops.push([['items', t2.key], room])
-      return done(eventText(s, log({ k: 'drop', item: t2.key }), me))
-    }
-    case 'give': {
-      // 给 <人> <东西>; 把 <东西> 给 <人> comes here turned around (parse).
-      const people = nameable(s, me, room).filter((c) => c.kind === 'npc' || c.kind === 'player')
-      const mine = carrying(s, me).map((id) => ({ key: id, kind: 'item', names: [ITEMS[id].name, ...ITEMS[id].words] }))
-      const p = lead(people, rest)
-      const it = p && lead(mine, p.rest)
-      if (!p) return done(rest ? `这里没有「${rest.split(' ')[0]}」。` : '给谁？这样给：给 <人> <东西>')
-      if (!it) return done(p.rest ? `你身上没有「${p.rest}」。` : `给${p.kind === 'npc' ? NPCS[p.key].name : nameOf(s, p.key)}什么？`)
-      return done(give(p, it.key))
+      if (!text) return reply('你想说什么？')
+      vision(x, room, `$N对$n说道：${text}`, me, t.key, { k: 'say', text, to: t.key })
+      if (isNpc(t.key) && awake(w, t.key, x.now)) HOOKS.npc[baseOf(t.key)]?.say?.(x, t.key, me, text)
+      return
     }
     case 'inv': {
-      const has = carrying(s, me).map((id) => ITEMS[id].name)
-      return done(has.length ? `你身上带着：${has.join('、')}。` : '你身上空空如也。')
+      const mine = thingGroups(w, me).map(([tid, text]) => text + (w.things[tid].eq ? '（装备中）' : ''))
+      return reply(mine.length ? `你身上带着：\n  ${mine.join('\n  ')}\n（负重 ${Math.round(load(w, me) * 100 / carriage(w, me))}%）` : '你身上空空如也。')
     }
-    case 'quest':
-      return done(questText(s))
+    case 'get': {
+      if (p.ghost) return ghostNo()
+      if (!rest) return reply('你要捡起什么东西？')
+      const m = rest.match(/^(.+?)\s*(?:从|from)\s*(.+)$/)
+      let from = room
+      let what = rest
+      if (m) {
+        const box = lead([...things(w, room), ...things(w, me)], m[2])
+        if (!box) return reply(`你找不到 ${m[2]} 这样东西。`)
+        from = box.key
+        what = m[1]
+      }
+      if (/^(全部|所有|一切|all)$/.test(what)) {
+        const all = thingsAt(w, from).filter((tid) => !itemOf(w, tid)?.noGet && w.things[tid].id !== 'corpse')
+        if (!all.length) return reply('这里没有可以拿的东西。')
+        for (const tid of all) take(x, tid, from)
+        return
+      }
+      const { n, rest: what2 } = amount(what)
+      const money = moneyOf(what2)
+      const t = money ? { key: heap(x, from, money) } : lead(things(w, from), what2)
+      if (!t?.key) return reply(from === room ? '这里没有这样东西。' : '那里面没有这样东西。')
+      if (HOOKS.item[w.things[t.key].id]?.get?.(x, t.key) === true) return
+      return take(x, t.key, from, n)
+    }
+    case 'drop': {
+      const { n, rest: what } = amount(rest)
+      const money = moneyOf(what)
+      const t = money ? { key: heap(x, me, money) } : lead(things(w, me), what)
+      if (!t?.key) return reply(rest ? '你身上没有这样东西。' : '你要丢弃什么东西？')
+      const name = n ? `${cn(n)}${itemOf(w, t.key).baseUnit}${thingName(w, t.key)}` : thingShort(w, t.key)
+      moveThing(x, t.key, room, n)
+      return vision(x, room, `$N丢下${name}。`, me)
+    }
+    case 'give': {
+      if (p.ghost) return ghostNo()
+      const to = lead(people(w, me, room), rest)
+      if (!to) return reply(rest ? `这里没有「${rest.split(' ')[0]}」这个人。` : '你要给谁什么东西？')
+      const { n, rest: what } = amount(to.rest)
+      const money = moneyOf(what)
+      const t = money ? { key: heap(x, me, money) } : lead(things(w, me), what)
+      if (!t?.key) return reply(to.rest ? '你身上没有这样东西。' : `给${nameOf(w, to.key)}什么？`)
+      // One of a stack unless a number is said; money all of it.
+      const stack = itemOf(w, t.key)?.baseUnit && !money ? 1 : undefined
+      return give(x, to.key, t.key, n ?? stack)
+    }
+    case 'wear': case 'remove': case 'wield': case 'unwield': {
+      if (p.ghost) return ghostNo()
+      const t = lead(things(w, me), rest)
+      if (!t) return reply(rest ? '你身上没有这样东西。' : '什么？')
+      return equip(x, t.key, verb)
+    }
+    case 'eat': {
+      if (p.ghost) return reply('你没有形体，无法进食。')
+      const t = lead([...things(w, me), ...things(w, room)], rest)
+      if (!t) return reply(rest ? '这里没有这样东西 ...。' : '你要吃什么？')
+      return eat(x, t.key)
+    }
+    case 'drink': case 'fill': {
+      if (p.ghost) return reply('你没有形体，喝不了东西。')
+      if (roomHook(verb)) return
+      const t = lead([...things(w, me), ...things(w, room)], rest.replace(/^(从|from)\s*/, ''))
+      if (!t) return reply(rest ? '这里没有这样东西 ...。' : '你要喝什么？')
+      return verb === 'drink' ? drink(x, t.key) : fill(x, t.key)
+    }
+    case 'list': {
+      const v = npcsIn(w, room).find((n) => npcData(n).sells && awake(w, n, x.now))
+      if (!v) return reply('这里没有人做买卖。')
+      const rows = Object.entries(npcData(v).sells).map(([key, n]) => {
+        const left = n - Object.keys(w.sold).filter((k) => k.startsWith(`${baseOf(v)}|${key}|`)).length
+        const it = ITEMS[key]
+        return left > 0 ? `${it.baseUnit ? '一' + it.baseUnit : '一' + (it.unit ?? '个')}${it.name}(${it.ids[0]})：${priceText(it.baseValue ?? it.value ?? 0)}` : null
+      }).filter(Boolean)
+      return reply(rows.length ? `你可以向${nameOf(w, v)}购买下列这些东西：\n-------------------------\n${rows.join('\n')}` : `${nameOf(w, v)}的货物已经全部卖光了，下次早一点来吧！`)
+    }
+    case 'buy': return buy(x, rest)
+    case 'convert': return convert(x, rest)
+    case 'fight': case 'kill': {
+      if (p.ghost) return reply('人死了就一了百了，快去找城隍复活吧!!')
+      const t = lead(people(w, me, room), rest)
+      if (!t) return reply(rest ? '这里没有这个人。' : verb === 'fight' ? '你想攻击谁？' : '你想杀谁？')
+      return attackCmd(x, t.key, verb)
+    }
+    case 'halt':
+      delete p.killing
+      return reply(p.challenge ? (delete p.challenge, '你收回了挑战。') : '你现在并没有在战斗。')
+    case 'follow': {
+      if (!rest || /^(无|none|不跟了)$/.test(rest)) { delete p.follow; return reply('你决定不再跟随任何人。') }
+      const t = lead(people(w, me, room), rest)
+      if (!t) return reply(`这里没有 ${rest}。`)
+      p.follow = t.key
+      return vision(x, room, '$N决定开始跟随$n一起行动。', me, t.key, { to: t.key })
+    }
+    case 'team': {
+      if (/^(with|和)\s*/.test(rest)) return teamWith(x, rest.replace(/^(with|和)\s*/, ''))
+      if (/^(dismiss|解散)/.test(rest)) return teamLeave(x)
+      if (!p.team) return reply('你现在并没有参加任何队伍。')
+      const ms = Object.entries(w.players).filter(([, q]) => q.team === p.team).map(([id]) => `${who(w, id, me)}（${ROOMS[ch(w, id).room]?.name}）`)
+      return reply(`你现在队伍中的成员有：\n  ${ms.join('\n  ')}`)
+    }
+    case 'teamwith': return teamWith(x, rest)
+    case 'teamleave': return teamLeave(x)
+    case 'tt': {
+      if (!p.team) return reply('你现在并没有和别人组成队伍。')
+      if (!rest) return reply('你想对队友说什么？')
+      vision(x, room, `【队伍】$N：${rest.slice(0, MAX_SAY)}`, me, null, { k: 'team', team: p.team })
+      return
+    }
+    case 'hp': return reply(hpText(w, me))
+    case 'score': return reply(scoreText(w, me))
+    case 'skills': {
+      const sk = Object.entries(p.skills).filter(([, v]) => v > 0)
+      const learning = Object.entries(p.learned).filter(([k, v]) => v > 0 && !p.skills[k])
+      if (!sk.length && !learning.length) return reply('你目前并没有学会任何技能。')
+      return reply(['你目前学过的技能：', ...sk.map(([k, v]) => `  ${skillName(k)}(${k})　${v} 级`), ...learning.map(([k]) => `  ${skillName(k)}(${k})　刚入门`)].join('\n'))
+    }
+    case 'apprentice': case 'acquire': {
+      if (p.ghost) return ghostNo()
+      const t = lead(people(w, me, room).filter((c) => isNpc(c.key)), rest)
+      if (!t) return reply(verb === 'apprentice' ? '你要拜谁为师？' : '你要向谁请教？')
+      const hook = HOOKS.npc[baseOf(t.key)]?.[verb]
+      if (verb === 'apprentice') vision(x, room, '$N想要拜$n为师。', me, t.key)
+      if (!hook || !hook(x, t.key, t.rest)) reply(verb === 'apprentice' ? `${nameOf(w, t.key)}似乎没有收你为徒的打算。` : `${nameOf(w, t.key)}似乎不愿意教你这个。`)
+      return
+    }
+    case 'steal': return steal(x, rest)
+    case 'open': case 'close': {
+      const d = Object.keys(ROOMS[room].doors ?? {})[0]
+      if (!d) return reply('这里没有门。')
+      const isClosed = closed(w, room, d)
+      if ((verb === 'open') !== isClosed) return reply(`${ROOMS[room].doors[d].name}已经是${isClosed ? '关' : '开'}着的了。`)
+      setDoor(x, room, d, verb === 'close')
+      return vision(x, room, `$N把${ROOMS[room].doors[d].name}${verb === 'open' ? '打开' : '关上'}了。`, me)
+    }
     case 'who': {
-      const rows = Object.entries(s.players ?? {}).map(([id, p]) => `${who(s, id, me)}${p.agent ? '（agent）' : ''}：${roomName(p.room)}`)
-      return done(rows.length ? rows.join('\n') : '江湖上还没有人。')
+      const rows = Object.entries(w.players).map(([id, q]) => `${who(w, id, me)}${q.agent ? '（agent）' : ''}：${ROOMS[q.room]?.name ?? ''}`)
+      return reply(rows.length ? rows.join('\n') : '江湖上还没有人。')
     }
-    case 'reset': {
-      if (!s.quest?.done) return done('差事还没办完，不能重开。办完之后输入「重来」，东西会回到原处。')
-      for (const [id, it] of Object.entries(ITEMS)) ops.push([['items', id], it.at])
-      ops.push([['quest'], {}])
-      return done(eventText(s, log({ k: 'reset' }), me))
+    case 'climb': case 'enter': case 'search': case 'sit': case 'load': case 'request': {
+      if (verb === 'enter' && room === 'small_temple' && /漩涡|swirl/.test(rest)) return revive(x)
+      if (p.ghost && verb !== 'enter') return ghostNo()
+      if (roomHook(verb)) return
+      if (verb === 'search') return reply(rest ? `你仔细找了找 ${rest}，但是啥特别的东西也没找到。` : '你仔细四处翻翻找找，但没看到啥特别的东西。')
+      return reply('什么？')
     }
   }
-  return done(HELP)
-
-  /** Asking a townsperson: their line, said aloud in the room. */
-  function ask(npc, topic) {
-    const n = NPCS[npc]
-    const key = Object.keys(n.topics).find((k) => topic.includes(k))
-    let reply = key ? n.topics[key] : n.idle
-    if (reply === 'quest') {
-      reply = s.quest?.done ? QUEST.done : QUEST.ask
-      if (!s.quest?.asked) ops.push([['quest', 'asked'], me])
-    }
-    return eventText(s, log({ k: 'ask', npc, topic: topic || '近况', reply }), me)
-  }
-
-  /** Handing a thing over: to a player it is theirs; of the town, only the storyteller takes the gourd. */
-  function give(p, item) {
-    const name = ITEMS[item].name
-    if (p.kind === 'player') {
-      ops.push([['items', item], p.key])
-      return eventText(s, log({ k: 'give', to: p.key, item }), me)
-    }
-    const n = NPCS[p.key]
-    if (p.key === 'storyteller' && item === 'hulu') {
-      ops.push([['items', item], 'npc:storyteller'], [['quest', 'done'], me], [['quest', 'at'], now])
-      const a = log({ k: 'give', to: 'npc:storyteller', item })
-      const b = log({ k: 'quest', text: `${QUEST.given}\n——「${QUEST.name}」完成了！输入「重来」可以让江湖重开一回。` })
-      return `${eventText(s, a, me)}\n${eventText(s, b, me)}`
-    }
-    if (p.key === 'junkman' && item !== 'hulu') {
-      ops.push([['items', item], `npc:junkman`])
-      const a = log({ k: 'give', to: 'npc:junkman', item })
-      return `${eventText(s, a, me)}\n拾荒老头把${name}揣进怀里，咧嘴一笑。`
-    }
-    if (item === 'hulu') return `${n.name}看了看葫芦上的红纸：「这是给李先生的，可别给错了人。」`
-    return `${n.name}摇摇头，没有接你的${name}。`
-  }
+  return reply(HELP)
 }
 
-/** How far the errand went, as the 任务 command shows it. */
-export function questText(s) {
-  const at = s.items?.hulu
-  const steps = [Boolean(s.quest?.asked), Boolean(s.quest?.done) || (typeof at === 'string' && at.startsWith('user:')), Boolean(s.quest?.done)]
-  const lines = [`差事：${QUEST.name}`, ...QUEST.hint.map((h, i) => `${steps[i] ? '✓' : '·'} ${h}`)]
-  if (s.quest?.done) lines.push(`已经办完了：${nameOf(s, s.quest.done)}把酒送到了。`)
-  else if (typeof at === 'string' && at.startsWith('user:')) lines.push(`酒葫芦现在在${nameOf(s, at)}身上。`)
-  return lines.join('\n')
+// ── things in hand ───────────────────────────────────────────────────────────────────────────────────────────────
+
+function take(x, tid, from, n) {
+  const w = x.w
+  const me = x.me
+  const it = itemOf(w, tid)
+  if (it?.noGet || w.things[tid].id === 'corpse') return x.out.push('这个东西拿不起来。')
+  if (thingsAt(w, me).length >= 20) return x.out.push('你身上已经没有空位再携带其他东西了。')
+  if (load(w, me) + weightOf(w, tid) * (n ? n / (w.things[tid].n ?? 1) : 1) > carriage(w, me)) return x.out.push(`${thingName(w, tid)}现在对你来说太重了。`)
+  const name = n ? `${cn(n)}${it.baseUnit}${thingName(w, tid)}` : thingShort(w, tid)
+  const fromName = from === ch(w, me).room ? '' : thingName(w, from)
+  moveThing(x, tid, me, n)
+  vision(x, ch(w, me).room, fromName ? `$N从${fromName}中拿出${name}。` : `$N捡起${name}。`, me)
 }
+
+/** give.lpc: to a player it is theirs; a townsperson takes it only if they want it (accept_object). */
+export function give(x, to, tid, n) {
+  const w = x.w
+  const me = x.me
+  const room = ch(w, me).room
+  const it = itemOf(w, tid)
+  const name = n && it?.baseUnit ? `${cn(n)}${it.baseUnit}${thingName(w, tid)}` : thingShort(w, tid)
+  if (isNpc(to)) {
+    const hook = HOOKS.npc[baseOf(to)]?.accept
+    if (!awake(w, to, x.now) || !hook) return x.out.push(`看起来${nameOf(w, to)}并不愿意收下这${it?.unit ?? '个'}${thingName(w, tid)}。`)
+    const moved = moveThing(x, tid, to, n)
+    vision(x, room, `$N拿出${name}交给$n。`, me, to)
+    if (!hook(x, to, moved)) {
+      moveThing(x, moved, me)
+      x.out.push(`看起来${nameOf(w, to)}并不愿意收下这${it?.unit ?? '个'}${thingName(w, tid)}。`)
+    }
+    return
+  }
+  if (thingsAt(w, to).length >= 20 || load(w, to) + weightOf(w, tid) > carriage(w, to)) return x.out.push(`${nameOf(w, to)}已经负荷过重，再也搬不动任何东西了。`)
+  moveThing(x, tid, to, n)
+  vision(x, room, `$N拿出${name}交给$n。`, me, to, { k: 'give', to })
+}
+
+const SLOT_WORD = { cloth: '穿上', armor: '穿上', head_eq: '戴上', feet_eq: '穿上', waist_eq: '系上' }
+function equip(x, tid, verb) {
+  const w = x.w
+  const me = x.me
+  const room = ch(w, me).room
+  const t = w.things[tid]
+  const it = itemOf(w, tid) ?? {}
+  if (verb === 'wear') {
+    if (!it.wearAs) return x.out.push('你不能穿戴这一种护具。')
+    if (t.eq) return x.out.push('你已经装备着了。')
+    if (thingsAt(w, me).some((o) => w.things[o].eq === 'wear' && itemOf(w, o)?.wearAs === it.wearAs)) return x.out.push('你已经穿戴同类的护具了。')
+    t.eq = 'wear'
+    return vision(x, room, `$N${SLOT_WORD[it.wearAs] ?? '装备'}一${it.unit ?? '件'}${thingName(w, tid)}。`, me)
+  }
+  if (verb === 'remove' || verb === 'unwield') {
+    if (!t.eq) return x.out.push('你并没有装备这样东西。')
+    delete t.eq
+    return vision(x, room, verb === 'remove' ? `$N将${thingName(w, tid)}脱了下来。` : `$N放下手中的${thingName(w, tid)}。`, me)
+  }
+  if (!it.wieldAs) return x.out.push('这样东西不能当作武器。')
+  if (t.eq) return x.out.push('你已经装备着了。')
+  if (thingsAt(w, me).some((o) => w.things[o].eq === 'wield')) return x.out.push('你的双手都没有空可以装备这个武器。')
+  // humanoid.c valid_wield: 膂力 against the weapon's weight.
+  const two = [it.wieldAs].flat().every((a) => a.startsWith('twohanded'))
+  const need = Math.floor((it.weight ?? 0) / (two ? 1000 : 500))
+  const str = attr(w, me, 'str')
+  if (str < need - 1) return x.out.push(`这${it.unit}${thingName(w, tid)}对你来说太重了，你根本挥不动这么沉重的兵刃。`)
+  t.eq = 'wield'
+  vision(x, room, `$N装备${thingName(w, tid)}作武器。`, me)
+  x.out.push(str > need + 6 ? `这${it.unit}${thingName(w, tid)}拿在手里轻飘飘的，不是十分趁手。` : str >= need ? `这${it.unit}${thingName(w, tid)}的重量对你来说刚刚好，相当趁手。` : `这${it.unit}${thingName(w, tid)}的份量重了点，不过你勉强使得动。`)
+}
+
+/** feature/food.c, and the medicines' own stuff_ob (obj/medication). */
+const MEDICINE = {
+  'stock/black_pill': { room: 5, msg: '$N吞下一粒黑黑的药丸。', fx: (c) => { consume(c, 'water', 30); c.food.cur += 5; c.sen.eff = Math.max(0, c.sen.eff - 1); consume(c, 'sen', 4); supplement(c, 'gin', 15); supplement(c, 'kee', 15) } },
+  'stock/boar_berry': { room: 20, msg: '$N吃下一颗发着恶臭的山猪果 ... 天啊，$N竟然吞得下去 .... 。', fx: (c) => { c.food.cur += 10; consume(c, 'water', 20); heal(c, 'sen', 15); supplement(c, 'sen', 10) } },
+  'stock/dragon_saliva': { room: 10, msg: '$N拿出一株龙涎草放入口中嚼了嚼吞了下去。', fx: (c) => { consume(c, 'water', 10); c.food.cur += 10; consume(c, 'sen', 3); heal(c, 'kee', 30) } },
+  'stock/wild_ginseng': { room: 50, msg: '$N拿出一株野山参放入口中嚼了嚼吞了下去。', fx: (c) => { c.food.cur += 50; heal(c, 'gin', 5); heal(c, 'kee', 5); heal(c, 'sen', 5) } },
+}
+function eat(x, tid) {
+  const w = x.w
+  const me = x.me
+  const c = w.players[me]
+  const t = w.things[tid]
+  const it = itemOf(w, tid) ?? {}
+  const med = MEDICINE[t.id]
+  if (med) {
+    if (c.food.max - c.food.cur < med.room) return x.out.push('你的肚子已经撑得什么东西也吞不下去了。')
+    vision(x, c.room, med.msg, me)
+    med.fx(c)
+    c.food.cur = Math.min(c.food.max, c.food.cur)
+  } else if (it.foodStuff) {
+    if (c.food.cur + it.foodStuff > c.food.max) return x.out.push(`你的肚子已经装不下这${it.baseUnit ?? it.unit}${thingName(w, tid)}了。`)
+    vision(x, c.room, `$N吃下一${it.baseUnit ?? it.unit}${thingName(w, tid)}。`, me)
+    c.food.cur += it.foodStuff
+    if (it.healKee) { supplement(c, 'kee', it.healKee); x.out.push('你吃了营养的食物，觉得气力恢复了一些。') }
+  } else return x.out.push('这样东西不能吃。')
+  if ((t.n ?? 1) > 1) t.n -= 1
+  else destroy(x, tid)
+}
+
+/** feature/drink.c: a third of what one can hold, from something holding water. */
+function drink(x, tid) {
+  const w = x.w
+  const c = w.players[x.me]
+  const t = w.things[tid]
+  const it = itemOf(w, tid) ?? {}
+  if (!it.liquidContainer && t.water === undefined) return x.out.push(`${thingName(w, tid)}并不是装水的容器。`)
+  if (t.water === 0) return x.out.push(`${thingName(w, tid)}里没有任何能喝的东西。`)
+  if (c.water.cur >= c.water.max) return x.out.push('你已经涨得喝不下一滴水了。')
+  c.water.cur = Math.min(c.water.max, c.water.cur + Math.floor(c.water.max / 3))
+  if (t.water !== undefined) t.water -= 1
+  vision(x, c.room, `$N从${thingName(w, tid)}喝了几口水。`, x.me)
+}
+/** fill: a bottle from the water vat (or the river). */
+function fill(x, tid) {
+  const w = x.w
+  const room = w.players[x.me].room
+  const t = w.things[tid]
+  if (t.id !== 'stock/bottle') return x.out.push(`${thingName(w, tid)}不能装水。`)
+  const src = thingsAt(w, room).find((o) => itemOf(w, o)?.liquidContainer) ?? (ROOMS[room].water ? 'river' : null)
+  if (!src) return x.out.push('这附近没有水可以装。')
+  t.water = 5
+  vision(x, room, `$N将${thingName(w, tid)}装满了水。`, x.me)
+}
+
+function buy(x, rest) {
+  const w = x.w
+  const me = x.me
+  const room = w.players[me].room
+  const v = npcsIn(w, room).find((n) => npcData(n).sells && awake(w, n, x.now))
+  if (!v) return x.out.push('你要跟谁买东西？')
+  const sells = npcData(v).sells
+  const want = rest.replace(/^(一|1)\s*(个|把|件|顶|粒|颗|株|根|只|片|份)?\s*/, '').replace(/\s*(from|向|跟).*$/, '')
+  const key = Object.keys(sells).find((k) => [ITEMS[k].name, ...ITEMS[k].ids].some((n) => n.toLowerCase() === want.toLowerCase()))
+    ?? Object.keys(sells).find((k) => ITEMS[k].name.includes(want) && want)
+  if (!key) return x.out.push(`${nameOf(w, v)}并没有卖 ${want || '什么'} 这种东西。`)
+  // One key a sale in one map that is always there, not a count: two buying at once both count.
+  const shelf = `${baseOf(v)}|${key}|`
+  if (Object.keys(w.sold).filter((k) => k.startsWith(shelf)).length >= sells[key]) return x.out.push(`${ITEMS[key].name}已经卖完了，待会儿再来吧。`)
+  const it = ITEMS[key]
+  const price = it.baseValue ?? it.value ?? 0
+  const paid = pay(x, me, price, v)
+  if (paid === 0) return x.out.push('你身上的钱不够。')
+  if (paid === 2) return x.out.push('你没有足够的零钱，而对方也找不开...。')
+  const tid = makeThing(x, key, me, 1)
+  w.sold[shelf + tid] = 1
+  if (key === 'stock/bottle') w.things[tid].water = 0
+  vision(x, room, `$N向$n买下一${it.baseUnit ?? it.unit ?? '个'}${it.name}。`, me, v)
+  HOOKS.npc[baseOf(v)]?.sold?.(x, v, me, tid)
+}
+
+/** std/room/bank.c convert, at 鱼记小铺: coins, silver and gold at 1, 100, 10000. */
+function convert(x, rest) {
+  const w = x.w
+  const me = x.me
+  const room = w.players[me].room
+  if (room !== 'bazar') return x.out.push('这里没有钱庄。')
+  const m = rest.match(/^(.+?)\s*(?:成|换成|to)\s*(.+)$/)
+  if (!m) return x.out.push('这样兑换：兑换 <数量> <钱币> 成 <钱币>，比如：兑换 100 文钱 成 银子')
+  const { n, rest: what } = amount(m[1])
+  const from = moneyOf(what)
+  const to = moneyOf(m[2])
+  if (!n || !from || !to || from === to) return x.out.push('这样兑换：兑换 <数量> <钱币> 成 <钱币>，比如：兑换 100 文钱 成 银子')
+  const V = { 'stock/coin': 1, 'stock/silver': 100, 'stock/gold': 10000 }
+  if ((purse(w, me)[from] ?? 0) < n) return x.out.push(`你身上没有那么多${ITEMS[from].name}。`)
+  const value = n * V[from]
+  if (value % V[to]) return x.out.push('这些钱换不成整数，换个数目吧。')
+  const tid = heap(x, me, from)
+  destroy(x, moveThing(x, tid, 'gone', n))
+  makeThing(x, to, me, value / V[to])
+  vision(x, room, `$N把${cn(n)}${ITEMS[from].baseUnit}${ITEMS[from].name}换成了${cn(value / V[to])}${ITEMS[to].baseUnit}${ITEMS[to].name}。`, me)
+}
+
+// ── fights, teams, stealing ──────────────────────────────────────────────────────────────────────────────────────
+
+/** fight.c / kill.lpc, then the fight itself. */
+function attackCmd(x, t, verb) {
+  const w = x.w
+  const me = x.me
+  const room = w.players[me].room
+  const c = ch(w, t)
+  if (c.ghost) return x.out.push('你的攻击从对方身上穿透过去。')
+  if (verb === 'fight') {
+    if (ROOMS[room].noFight) return x.out.push('这里禁止战斗。')
+    if (!isNpc(t)) {
+      // Both players must ask: the second one starts it.
+      if (c.challenge === me) {
+        delete c.challenge
+        return brawl(x, me, t, 'fight', [[`$N对着$n说道：在下${nameOf(w, me)}，领教这位朋友的高招！`, me, t]])
+      }
+      w.players[me].challenge = t
+      vision(x, room, `$N对着$n说道：在下${nameOf(w, me)}，领教这位朋友的高招！`, me, t, { k: 'attack', to: t })
+      return x.out.push(`由于对方是由玩家控制的人物，你必须等对方同意才能进行比试（对方也要对你「比武」）。`)
+    }
+    if (!awake(w, t, x.now)) return x.out.push(`${nameOf(w, t)}现在没有办法和你比试。`)
+    const hook = HOOKS.npc[baseOf(t)]?.fight
+    const answer = hook ? hook(x, t) : defaultAcceptFight(x, t)
+    if (answer === 'kill') return brawl(x, t, me, 'kill', [[`$N对着$n说道：在下${nameOf(w, me)}，领教这位朋友的高招！`, me, t]])
+    if (!answer) return x.out.push(`看起来${nameOf(w, t)}并不想跟你较量。`)
+    return brawl(x, me, t, 'fight', [[`$N对着$n说道：在下${nameOf(w, me)}，领教这位朋友的高招！`, me, t]])
+  }
+  if (ROOMS[room].noFight) return x.out.push('这里不准战斗。')
+  const rude = pick(x, ['今日不是你死就是我活', '纳命来', '明年的今天就是你的忌日'])
+  const lead = [[`$N对着$n喝道：「家伙！${rude}！」`, me, t]]
+  if (isNpc(t)) {
+    HOOKS.npc[baseOf(t)]?.kill?.(x, t, me, lead)
+    if (npcData(t).kind.includes('villager') && !HOOKS.npc[baseOf(t)]?.kill) lead.push([`${nameOf(w, t)}说道：咦？怎么动起粗来了？救命哪 ...`])
+  } else {
+    // Players kill players as in ES2, but only someone here now: never an agent, never someone away.
+    if (c.agent) return x.out.push(`${nameOf(w, t)}是 agent，玩家之间不能对 agent 下杀手；想较量就找它「比武」。`)
+    if (!online(w, t, x.now)) return x.out.push(`${nameOf(w, t)}现在不在线，不能对不在线的人下杀手。`)
+    ;(w.players[me].killing ??= {})[t] = true
+  }
+  brawl(x, me, t, 'kill', lead)
+  if (!isNpc(t)) vision(x, room, '', me, t, { k: 'attack', to: t, t: '看起来$N想杀死$n！' })
+}
+
+/** F_VILLAGER refuses with a shake or a word; F_FIGHTER takes a spar; F_BANDIT turns it into a kill. */
+function defaultAcceptFight(x, t) {
+  const d = npcData(t)
+  if (d.kind.includes('bandit')) { npcSay(x, t, pick(x, ['哈！看来你是活得不耐烦了，让我来教训教训你！', '「哼」地一声，那得瞧你有没有这个本事！'])); return 'kill' }
+  if (d.kind.includes('fighter')) { npcSay(x, t, '不敢，请赐招！'); return true }
+  if (d.kind.includes('soldier')) { npcSay(x, t, '走开走开！'); return false }
+  const r = rnd(x, 5)
+  if (r === 0) emote(x, t, EMOTES.shake)
+  else if (r === 1) emote(x, t, EMOTES['?'])
+  else if (r === 2) emote(x, t, EMOTES.smile)
+  else vision(x, ch(x.w, t).room, `${nameOf(x.w, t)}武功我可不会，失礼了。`)
+  return false
+}
+
+/** How long an invitation to a team stands. */
+const INVITE_FOR = 5 * 60_000
 
 /**
- * The changes that bring `me` into the world, or update their name: a new player starts in the inn's hall.
+ * cmds/std/team.c `team with`: ask someone, or answer someone who asked. A leader who answers takes the asker in, with
+ * the asker's own team if they lead one; someone without a team joins the asker's. An invitation lapses after
+ * INVITE_FOR and with any change to the asker's team.
+ */
+function teamWith(x, rest) {
+  const w = x.w
+  const me = x.me
+  const p = w.players[me]
+  const t = lead(people(w, me, p.room).filter((c) => !isNpc(c.key)), rest)
+  if (!t) return x.out.push('你想和谁成为伙伴？')
+  const o = w.players[t.key]
+  const asked = o.invite === me && x.now - (o.invitedAt ?? 0) < INVITE_FOR && (!o.team || o.team === t.key)
+  if (asked) {
+    if (p.team && p.team !== me) return x.out.push('你已经在别人的队伍里了，先「离队」才能加入别的队伍。')
+    if (p.team === me) {
+      for (const q of [t.key, ...membersOf(w, t.key)]) setTeam(w, q, me)
+      return vision(x, p.room, '$N决定让$n加入队伍。', me, t.key, { to: t.key })
+    }
+    setTeam(w, t.key, t.key)
+    setTeam(w, me, t.key)
+    return vision(x, p.room, '$N决定加入$n的队伍。', me, t.key, { to: t.key })
+  }
+  if (p.team && p.team !== me) return x.out.push('只有队伍领袖可以邀请别人加入。')
+  p.invite = t.key
+  p.invitedAt = x.now
+  vision(x, p.room, '$N邀请$n加入$P的队伍。', me, t.key, { to: t.key })
+  tell(x, t.key, `如果你愿意加入，请用「组队 ${p.name}」。`)
+}
+const membersOf = (w, leader) => Object.keys(w.players).filter((id) => id !== leader && w.players[id].team === leader)
+/** A player into a team (or out, with none); whatever they had asked lapses. */
+function setTeam(w, id, team) {
+  const q = w.players[id]
+  if (team) q.team = team
+  else delete q.team
+  delete q.invite
+  delete q.invitedAt
+}
+function teamLeave(x) {
+  const w = x.w
+  const p = w.players[x.me]
+  if (!p.team) return x.out.push('你现在并没有参加任何队伍。')
+  const team = p.team
+  if (team === x.me) {
+    for (const id of [x.me, ...membersOf(w, x.me)]) setTeam(w, id, null)
+    vision(x, p.room, '$N将队伍解散了。', x.me, null, { k: 'team', team })
+  } else {
+    vision(x, p.room, '$N决定脱离队伍。', x.me, null, { k: 'team', team })
+    setTeam(w, x.me, null)
+  }
+}
+
+/** steal.c: 妙手空空之技 against how watchful the other is; caught, a townsperson turns on you. */
+function steal(x, rest) {
+  const w = x.w
+  const me = x.me
+  const room = w.players[me].room
+  if (ROOMS[room].noFight) return x.out.push('这里禁止行窃。')
+  const m = rest.match(/^(.+?)\s*(?:从|from)\s*(.+)$/)
+  if (!m) return x.out.push('这样偷：偷 <东西> 从 <人>')
+  const t = lead(people(w, me, room), m[2])
+  if (!t) return x.out.push('你想行窃的对象不在这里。')
+  if (!skillLv(w, me, 'stealing', true)) return x.out.push('你必须学会妙手空空之技才能行窃!')
+  const money = moneyOf(m[1])
+  const tid = money ? heap(x, t.key, money) : lead(things(w, t.key).filter((c) => !w.things[c.key].eq), m[1])?.key
+  if (!tid) return x.out.push(`${nameOf(w, t.key)}身上看起来没有什么值钱的东西好偷。`)
+  const mine = skillLv(w, me, 'stealing') * 2 + attr(w, me, 'dex')
+  const theirs = Math.floor(attr(w, t.key, 'cps') * attr(w, t.key, 'spi') / 10) + levelOf(w, t.key)
+  x.out.push(`你不动声色地慢慢靠近${nameOf(w, t.key)}，等待机会下手 ...`)
+  if (rnd(x, mine + theirs) < mine) {
+    const n = money ? Math.max(1, Math.floor((w.things[tid].n ?? 1) * (1 + rnd(x, 3)) / 10)) : undefined
+    const what = `${n ? cn(n) + itemOf(w, tid).baseUnit : '一' + (itemOf(w, tid)?.unit ?? '个')}${thingName(w, tid)}`
+    moveThing(x, tid, me, n)
+    improve(x, me, 'stealing', 1)
+    // A player robbed is told (and an agent woken): nothing of theirs goes without a word.
+    if (!isNpc(t.key)) tell(x, t.key, `你忽然觉得身上一轻，发现${what}不见了 —— ${nameOf(w, me)}刚刚从你身边走开。`, { k: 'steal', to: t.key })
+    return x.out.push(`得手了！\n你成功地偷到${what}！`)
+  }
+  vision(x, room, `$N一回头，正好发现$n的手正抓着$N身上的${thingName(w, tid)}！\n$N喝道：「干什么！」`, t.key, me, { to: t.key })
+  if (isNpc(t.key) && !npcData(t.key).kind.includes('villager')) brawl(x, t.key, me, 'kill')
+}
+
+/** 土地公庙's swirl (std/room/temple.c, chard.c make_living): alive again; if the corpse is gone, 气 −10%. */
+function revive(x) {
+  const w = x.w
+  const p = w.players[x.me]
+  if (!p.ghost) return x.out.push('你走进漩涡的中央，但甚么事都没有发生。')
+  x.out.push('你觉得一阵晕眩 ...')
+  const corpse = Object.values(w.things).some((t) => t.id === 'corpse' && t.of === x.me)
+  if (!corpse) { p.kee.max = Math.max(10, Math.floor(p.kee.max * 0.9)); x.out.push('你的尸体已经化成灰了，你觉得元气大伤。') }
+  delete p.ghost
+  delete p.diedAt
+  for (const k of ['gin', 'kee', 'sen']) { p[k].eff = p[k].max; p[k].cur = p[k].max }
+  p.hp.cur = p.hp.max
+  vision(x, p.room, '$N从漩涡中走了出来，又活过来了。', x.me)
+}
+
+// ── status ───────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** hp.c */
+export function hpText(w, id) {
+  const c = ch(w, id)
+  const f = (k) => `${c[k].cur}/${c[k].eff}${c[k].max !== undefined && c[k].eff !== c[k].max ? `(${c[k].max})` : ''}`
+  return [
+    `形体 ${c.hp.cur}/${c.hp.max}　精 ${f('gin')}　气 ${f('kee')}　神 ${f('sen')}`,
+    `食物 ${c.food.cur}/${c.food.max}　饮水 ${c.water.cur}/${c.water.max}`,
+    ...(c.ghost ? ['你现在是鬼魂。'] : []),
+  ].join('\n')
+}
+/** score.lpc */
+export function scoreText(w, id) {
+  const p = w.players[id]
+  const money = wealth(w, id)
+  return [
+    `【${CLASS_NAMES[p.cls] ?? p.cls}】${p.title ? p.title + ' ' : ''}${p.name}　${p.level} 级`,
+    Object.entries(ATTR_NAMES).map(([k, n]) => `${n} ${attr(w, id, k)}`).join('　'),
+    hpText(w, id),
+    `身上的钱：${money ? priceParts(money) : '没有'}`,
+    ...Object.entries(p.score).filter(([, v]) => v).map(([k, v]) => `${SCORE_NAMES[k] ?? k}：${v}`),
+  ].join('\n')
+}
+const priceParts = (v) => [[10000, '两黄金'], [100, '两银子'], [1, '文钱']].map(([u, n]) => { const k = Math.floor(v / u); v %= u; return k ? `${cn(k)}${n}` : '' }).join('')
+
+/**
+ * The changes that bring `me` into the world, or update their name: a new player starts in 客栈大堂.
  * `agent`: they play through the App's tools (the page wakes them when spoken to).
  */
 export function join(s, me, { name, agent = false, now = Date.now(), rand = Math.random } = {}) {
@@ -378,9 +1041,15 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
     if (agent && !p.agent) ops.push([['players', me, 'agent'], true])
     return ops
   }
-  const key = logKey(now, rand)
-  return [
-    [['players', me], { name: name || '一位侠客', room: START, joined: now, at: now, ...(agent ? { agent: true } : {}) }],
-    [['log', key], { k: 'join', by: me, room: START, at: now }],
-  ]
+  const w = structuredClone(s)
+  const x = ctx(w, me, now, rand)
+  w.players[me] = newPlayer(x, name, agent)
+  vision(x, START, '$N走进了饮风客栈。', me)
+  arrive(x, me)
+  const ops = diff(s, w)
+  let t = now
+  for (const ev of x.events) ops.push([['log', logKey(t++, rand)], ev])
+  return ops
 }
+
+export { hpText as statusText }
