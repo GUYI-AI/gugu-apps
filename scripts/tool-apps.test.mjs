@@ -32,7 +32,7 @@ test('both first-party tool App sources are inspectable; only Computer Use has a
     'browser-use': undefined,
     'computer-use': [
       { name: 'settings', title: 'Settings', hostPage: 'settings' },
-      { name: 'preview', title: '电脑', entry: 'preview.html', icon: 'icon.png', perSession: true },
+      { name: 'preview', title: 'Computer', entry: 'preview.html', icon: 'icon.png', perSession: true },
     ],
   };
   for (const [id, expected] of Object.entries(tabs)) {

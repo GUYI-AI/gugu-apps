@@ -1,1 +1,1 @@
-Follows the task it sits beside by the task's working copy (App interface 25). Needs a gugu with App interface 25.
+The task page's tab now reads Computer in English and 电脑 in Chinese.
