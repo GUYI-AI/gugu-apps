@@ -8,24 +8,39 @@
 </head>
 <body>
 <div id="status" role="status"></div>
-<main id="world" class="stack">
-  <header class="where">
-    <h3 id="room"></h3>
-    <div id="exits" class="row" aria-label="出口"></div>
-  </header>
-  <div id="stats" class="row" aria-label="精气神"></div>
-  <div id="log" role="log" aria-label="江湖" aria-live="polite"></div>
-  <div id="here" class="row" aria-label="这里"></div>
-  <form id="say" class="row">
-    <input id="line" autocomplete="off" enterkeyhint="send" aria-label="指令" placeholder="说点什么，或输入指令：看、东、买 牛肉包子…" />
-    <button class="primary" type="submit">发送</button>
-  </form>
-  <div id="quick" class="row" aria-label="常用指令"></div>
-  <section aria-labelledby="people-h">
-    <h5 id="people-h">江湖中人</h5>
-    <ul id="people" class="list"></ul>
-  </section>
-</main>
+<div id="world">
+  <main>
+    <header class="top">
+      <div><h3 id="room"></h3><small id="clock"></small></div>
+      <button id="crowd" type="button" class="crowd" aria-controls="people" aria-expanded="false"></button>
+    </header>
+    <div id="stats" class="stats" aria-label="精气神"></div>
+    <div id="guide"></div>
+    <div id="log" role="log" aria-label="江湖" aria-live="polite"></div>
+    <div id="next" class="next" role="button" tabindex="0" hidden></div>
+    <div id="here" class="chips" aria-label="这里"></div>
+    <div class="dock">
+      <div id="pad" class="compass small" aria-label="出口"></div>
+      <div class="dock-right">
+        <div id="quick" class="quick" aria-label="常用指令"></div>
+        <form id="say" class="say">
+          <input id="line" autocomplete="off" enterkeyhint="send" aria-label="指令" placeholder="说话，或输入指令" />
+          <button class="primary" type="submit">发送</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <aside id="side">
+    <h5>方向</h5>
+    <div id="compass" class="compass" aria-label="出口"></div>
+    <h5>这里</h5>
+    <ul id="here-list" class="rows"></ul>
+    <section id="people-box">
+      <h5>江湖中人</h5>
+      <ul id="people" class="rows"></ul>
+    </section>
+  </aside>
+</div>
 <script type="module" src="main.js"></script>
 </body>
 </html>

@@ -285,7 +285,7 @@ function personShort(w, id, now) {
   const c = ch(w, id)
   if (isNpc(id)) {
     const d = npcData(id)
-    return `${d.nickname ? `「${d.nickname}」` : ''}${d.name}(${d.ids[0]})${c.out > now ? ' <昏迷不醒>' : ''}`
+    return `${d.nickname ? `「${d.nickname}」` : ''}${d.name}${c.out > now ? ' <昏迷不醒>' : ''}`
   }
   const title = c.title ?? CLASS_NAMES[c.cls] ?? ''
   return `${title} ${nameOf(w, id)}${c.agent ? '（agent）' : ''}${c.out > now ? ' <昏迷不醒>' : ''}`
@@ -604,7 +604,7 @@ function command(x, line) {
       const rows = Object.entries(npcData(v).sells).map(([key, n]) => {
         const left = n - Object.keys(w.sold).filter((k) => k.startsWith(`${baseOf(v)}|${key}|`)).length
         const it = ITEMS[key]
-        return left > 0 ? `${it.baseUnit ? '一' + it.baseUnit : '一' + (it.unit ?? '个')}${it.name}(${it.ids[0]})：${priceText(it.baseValue ?? it.value ?? 0)}` : null
+        return left > 0 ? `${it.baseUnit ? '一' + it.baseUnit : '一' + (it.unit ?? '个')}${it.name}：${priceText(it.baseValue ?? it.value ?? 0)}` : null
       }).filter(Boolean)
       return reply(rows.length ? `你可以向${nameOf(w, v)}购买下列这些东西：\n-------------------------\n${rows.join('\n')}` : `${nameOf(w, v)}的货物已经全部卖光了，下次早一点来吧！`)
     }
@@ -1064,3 +1064,37 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
 }
 
 export { hpText as statusText }
+
+// ── the first steps (the page's 下一步 line): the starting errand only, nothing of the town's stories ──────────────
+
+/** The first direction of the shortest way from room `from` to room `to`, or null. */
+export function wayTo(from, to) {
+  const first = new Map([[from, null]])
+  const queue = [from]
+  while (queue.length && !first.has(to)) {
+    const r = queue.shift()
+    for (const [d, n] of Object.entries(ROOMS[r]?.exits ?? {})) if (ROOMS[n] && !first.has(n)) { first.set(n, first.get(r) ?? d); queue.push(n) }
+  }
+  return first.get(to) ?? null
+}
+
+/** What a newcomer might do next, [words, the command that does it]: earn wages at the warehouse, then eat. */
+function nextStep(w, me) {
+  const p = w.players?.[me]
+  if (!p || p.ghost || p.agent) return null
+  const go = (to, what) => {
+    if (p.room === to) return null
+    const d = wayTo(p.room, to)
+    if (!d) return [what, null]
+    return closed(w, p.room, d) ? [`${what}（先「开门」，再往${d}）`, '开门'] : [`${what}（往${d}）`, d]
+  }
+  if (p.temp?.wage) return go('store', '回货栈对工头说「工钱」') ?? ['对工头说「工钱」领钱，或者再扛一箱', '对 工头 说 工钱']
+  if (thingsAt(w, me).some((t) => w.things[t].id === 'crate')) return go('store', '把木箱扛回货栈') ?? ['装车 木箱', '装车 木箱']
+  if (!wealth(w, me)) return go('store', '身上还没钱：先去货栈帮工头装货挣工钱') ?? ['拿 木箱，再 装车 木箱；装完对工头说「工钱」', '拿 木箱']
+  if (p.food.cur < p.food.max * 0.6) return go('inn_hall', '有钱了：回客栈买点吃的') ?? ['买 包子，再 吃 包子', '买 包子']
+  return null
+}
+/** The 下一步 line's words, null once a newcomer is on their way. */
+export const hintFor = (w, me) => nextStep(w, me)?.[0] ?? null
+/** What tapping the 下一步 line does. */
+export const hintStep = (w, me) => nextStep(w, me)?.[1] ?? null

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+A new screen. On a phone: the room and the time of day on top, the six stats (精气神, body, food, water) as one row
+of small bars, the story in a book face, who and what is here as buttons, and at the bottom a small compass, the
+everyday commands and the line to type. On a wide window the compass, who and what is here (each with what one can
+do with them) and the people of the town sit in a column on the right. A newcomer gets a card on how to play and a
+「下一步」 line that walks them through earning their first wages and their first meal (and nothing further). The room's
+name is no longer repeated in the story, and townspeople show without their English ids.
+新界面：手机单列加罗盘，桌面右侧栏；精气神等六项常驻小条；出口做成方向键；新手引导卡和「下一步」提示（只带入门：打工、领工钱、吃饭）；日志用书宋体。
+
 ## 0.2.1
 
 The world file no longer grows with each sale: what is paid at a shop leaves the world, and coins given to townspeople
