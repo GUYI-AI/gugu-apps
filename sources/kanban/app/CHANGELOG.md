@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.0
+
+One page for the board and the fleet (owner 11-08): 看板, 团队 and 决策 are views of the same page, so the org chart can
+no longer strand the person in a tab with no way back.
+
+- The org chart was a second tab (`org`) the board opened with `openLink`; it had no toolbar and no link back, and in
+  the Dock and on a phone it replaced the board. The tab is gone: the views switch in the page, and the fleet message
+  card opens the board on its 团队 view (`?view=team`).
+- Who holds what: a card's holder (the newest task linked to it) shows with its face, name and state on the card; a
+  row of faces narrows every view to one holder or to the unclaimed cards, and holds across views. The 团队 view lists
+  each lane's cards beside it and the unclaimed cards in a column of their own.
+- One panel for a card or an agent, each leading to the other. An agent's panel keeps the chart's actions (message,
+  transcript, PR, move under, hand over, archive, supervisor mark). An unclaimed card can be given to an agent
+  (派给…), which is told to claim it with the tools.
+- What waits on the person shows above every view, in its card and under 决策, and is answered there; a plain wait on
+  the person (no question) is answered with a line that goes to the holder and clears the wait. Messages to agents name
+  the board and card so they can act on them with the tools.
+- Agents: `list` starts with `yours`, `waitingOnOwner` and `unclaimed`, and gives each card its `holder` and question;
+  the tool descriptions and the skill describe the one page and the answer coming back as a message.
+
 ## 1.5.2
 
 - A question asked on a card no lane holds (a supervisor's own card, a card whose task ended) now waits on the person

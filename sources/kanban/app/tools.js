@@ -66,7 +66,7 @@ const progressArgs = {
   waitingOn: { type: 'string', description: 'Who or what the card waits on now; empty string when nothing.' },
   next: { type: 'string', description: 'The next step.' },
   due: { type: 'string', description: 'When it is due, as people say it (16:30, 10-25).' },
-  waitKind: { type: 'string', enum: [...WAIT_KINDS, ''], description: 'What kind of wait waitingOn is, for the fleet view: owner (deciding), review (a developer reviewing), ci, merge, lane (another lane: put its session in waitWho), quota, other; empty string when nothing.' },
+  waitKind: { type: 'string', enum: [...WAIT_KINDS, ''], description: 'What kind of wait waitingOn is, coloured on the card and in the team view: owner (deciding — prefer ask, which gives the owner answer buttons), review (a developer reviewing), ci, merge, lane (another lane: put its session in waitWho), quota, other; empty string when nothing.' },
   waitWho: { type: 'string', description: 'The session a lane waits on (waitKind lane), or who is to merge or review.' },
   dest: { type: 'string', description: "Where the work goes, as a short label: '→ 18:00 Beta', '明天起', '不进包'." },
   head: { type: 'string', description: "Your branch's head commit sha (7–40 hex)." },
@@ -74,9 +74,11 @@ const progressArgs = {
 
 export const list = {
   description:
-    "A board's columns and cards: this computer's board, a chat's default with chat, or a specific file with board. Each card with its id, title, who made " +
-    'it, its progress (progress, waitingOn, next, due, stale) and its tasks with their status (running, parked, approval, ' +
-    'answer, done, stopped, error, gone). Use column to see one column whole when the answer says cards were left out.',
+    "A board's columns and cards: this computer's board, a chat's default with chat, or a specific file with board. On " +
+    'top: yours (the cards you hold), waitingOnOwner (what the owner has to decide, with its question) and unclaimed (how ' +
+    'many open cards nobody holds). Each card with its id, title, holder (you, another task, or null), its progress ' +
+    '(progress, waitingOn, waitKind, next, due, dest, stale), its question to the owner (asks) and its tasks with their status ' +
+    '(running, parked, approval, answer, done, stopped, error, gone). Use column to see one column whole when cards were left out.',
   inputSchema: { type: 'object', properties: { chat: chatArg, board: boardArg, column: { type: 'string', description: 'A column by name (待办, doing …).' } } },
   annotations: { readOnlyHint: true },
   _meta: forAgents,
@@ -136,9 +138,10 @@ export const create = {
 
 export const claim = {
   description:
-    'Take a card: your task is linked to it (people see its status and your machine on the card and open it from ' +
-    'there) and the card moves to the doing column. Keep it current with update; when the work is done, move it to ' +
-    'review and link what you made.',
+    'Take a card: you become its holder. Your task is linked to it and the card moves to the doing column; the board ' +
+    "page shows your face and status on the card, lists the card under you in its 团队 (team) view, and opens you from " +
+    'there. Claim before you start work on a card, including one you were handed. Keep it current with update; ask the ' +
+    'owner with ask; when the work is done, move it to review and link what you made.',
   inputSchema: { type: 'object', required: ['card'], properties: { chat: chatArg, board: boardArg, card: cardArg } },
   _meta: forAgents,
   async run({ chat, board: boardFile, card }, call) {
@@ -157,8 +160,9 @@ export const claim = {
 export const update = {
   description:
     "Report a card's progress: how far along, who or what it waits on (empty string when nothing any more) and of which " +
-    'kind, the next step, when it is due, where it goes (dest) and your head commit; and its title or note. Only what you pass changes. Every update stamps the card as updated ' +
-    'now, so a lane that keeps reporting never shows as stale.',
+    'kind, the next step, when it is due, where it goes (dest) and your head commit; and its title or note. Only what you ' +
+    'pass changes, and the page shows it at once. To have the owner decide something, use ask, not waitKind owner. Every ' +
+    'update stamps the card as updated now, so a holder that keeps reporting never shows as stale.',
   inputSchema: {
     type: 'object',
     required: ['card'],
@@ -173,7 +177,7 @@ export const update = {
 }
 
 export const move = {
-  description: 'Move a card to another column (by name).',
+  description: 'Move a card to another column (by name). Finished work goes to review (待验收), never to done: the person checks it and moves it.',
   inputSchema: { type: 'object', required: ['card', 'column'], properties: { chat: chatArg, board: boardArg, card: cardArg, column: { type: 'string' } } },
   _meta: forAgents,
   async run({ chat, board: boardFile, card, column }, call) {
@@ -253,9 +257,10 @@ async function fleetSnapshot() {
 
 export const ask = {
   description:
-    'Ask the owner to decide something your lane waits on: the question and up to 6 short answers. It shows at the ' +
-    "top of the fleet's org chart with the answers as buttons; the owner's pick is recorded in the decision ledger and " +
-    'sent to you as a message. Until then your card counts as waiting on the owner.',
+    'Ask the owner to decide something your card waits on: the question and up to 6 short answers. The board page shows ' +
+    'it as "waiting on you" above every view, on your card and in 决策 (decisions), with the answers as buttons. The ' +
+    "owner's pick is recorded in the decision ledger and comes back to you as a message naming the card; carry on from " +
+    'it. Until then your card waits on the owner. Do not also ask in the chat.',
   inputSchema: {
     type: 'object', required: ['card', 'question'],
     properties: { chat: chatArg, board: boardArg, card: cardArg, question: { type: 'string' }, options: { type: 'array', items: { type: 'string' }, maxItems: 6 } },
@@ -337,8 +342,8 @@ export const sync_prs = {
 
 export const supervisor = {
   description:
-    "Name a session as its machine's supervisor on the fleet's org chart: it heads its machine's column and is never " +
-    'offered for archiving. Agents can only add the mark; only the person removes it, on the chart.',
+    "Name a session as its machine's supervisor: it heads its machine in the board page's 团队 (team) view and is never " +
+    'offered for archiving. Agents can only add the mark; only the person removes it, on the page.',
   inputSchema: { type: 'object', properties: { chat: chatArg, board: boardArg, session: { type: 'string', description: 'session:<id>; default: your own.' } } },
   _meta: forAgents,
   async run({ chat, board: boardFile, session }, call) {
@@ -352,9 +357,9 @@ export const supervisor = {
 
 export const fleet = {
   description:
-    "The fleet in short: every machine with its supervisor and lanes, what each waits on, and the counts. With card: " +
-    "the exact text and data for widget_send { chat_id, app: 'kanban', view: 'fleet', text, data } — the message card " +
-    'that opens the org chart.',
+    "The fleet in short, across computers: every machine with its supervisor and lanes, what each waits on, and the " +
+    "counts. With card: the exact text and data for widget_send { chat_id, app: 'kanban', view: 'fleet', text, data } — " +
+    "the message card that opens the board's 团队 (team) view.",
   inputSchema: { type: 'object', properties: { chat: chatArg, board: boardArg, card: { type: 'boolean', description: 'Return the widget_send text and data.' } } },
   annotations: { readOnlyHint: true },
   _meta: forAgents,

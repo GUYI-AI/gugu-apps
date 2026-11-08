@@ -333,7 +333,7 @@ export function applyOp(board, op, { by, now, id }) {
       return { decision: did, n, label: decisionLabel(board, board.decisions[did]) }
     }
     case 'decision.decide': {
-      // Only the person answers, from the org chart: no agent tool makes this operation. Whoever asked never answers.
+      // Only the person answers, on the board page: no agent tool makes this operation. Whoever asked never answers.
       const decision = needDecision(board, op.decision)
       if (decision.status !== 'pending') throw new Error(`${decisionLabel(board, decision)} is ${decision.status} already`)
       if (decision.by === by) throw new Error('a question is answered by the owner, not by whoever asked it')
