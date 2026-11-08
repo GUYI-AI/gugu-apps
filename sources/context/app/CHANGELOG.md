@@ -1,6 +1,6 @@
 ## 0.4.1
 
-English: the page, its rule titles and explanations, previews, errors and the prompts copied for an agent follow the client's language, Chinese for a Chinese client and English for any other. The page passes its language to each program call; an agent's call without one still gets Chinese.
+English: the page, its rule titles and explanations, previews, errors and the prompts copied for an agent follow the client's language, Chinese for a Chinese client and English for any other, and switch when the client's language changes. The page passes its language to each program call; an agent's call without one still gets Chinese.
 
 ## 0.4.0
 

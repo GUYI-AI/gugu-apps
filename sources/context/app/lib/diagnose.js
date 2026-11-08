@@ -202,8 +202,10 @@ export function promptFor(report, id, words = ZH) {
   const definition = agentsIn(words).find((r) => r.id === id) || report.rules.find((r) => r.id === id)
   if (!definition) throw new Error(`Unknown rule: ${id}`)
   const pairs = report._memories.flatMap((m) => m.semantic?.pairs || [])
-  const goal = words.goals[id] || words.goal(definition.title)
+  // The saved report keeps the titles of the call that measured it; word them for this caller.
+  const title = words.rules[id] || definition.title
+  const goal = words.goals[id] || words.goal(title)
   const context = [...report._instructions.map((f) => f.path), ...report._memories.map((m) => path.join(m.root, 'MEMORY.md'))]
   const body = id.startsWith('A') ? pairs.map(words.pair).join('\n\n') || words.noPairs : JSON.stringify(definition.findings, null, 2)
-  return words.prompt(report.project.root, definition.title, goal, context.join('\n'), body)
+  return words.prompt(report.project.root, title, goal, context.join('\n'), body)
 }

@@ -8,7 +8,7 @@ const DAY = 86400000
 const INDEX_ROUNDS = 20
 
 export async function sessionIndex(host, { deadline = Infinity, words = ZH } = {}) {
-  if (!host?.sessions?.index) return { rows: [], complete: false, reason: words.noIndex }
+  if (!host?.sessions?.index) return { rows: [], complete: false, reason: words.noIndex, reasonKey: 'noIndex' }
   let rows = [], seenOffsets = new Set(), rounds = 1
   let offset = 0
   while (true) {
@@ -18,7 +18,7 @@ export async function sessionIndex(host, { deadline = Infinity, words = ZH } = {
     if (page.rows.some((row) => !row.group || !Object.hasOwn(row.group, 'key'))) throw new Error(words.noOwner)
     rows.push(...page.rows)
     if (page.pending && rounds < INDEX_ROUNDS && Date.now() < deadline) { rows = []; seenOffsets = new Set(); offset = 0; rounds++; continue }
-    if (page.pending || page.stale) return { rows, complete: false, reason: words.indexUpdating, total: page.total, progress: page.pending ? { pending: page.pending } : null }
+    if (page.pending || page.stale) return { rows, complete: false, reason: words.indexUpdating, reasonKey: 'indexUpdating', total: page.total, progress: page.pending ? { pending: page.pending } : null }
     if (page.nextOffset === null || page.nextOffset === undefined) return { rows: [...new Map(rows.map((r) => [`${r.source}:${r.providerSessionId}`, r])).values()], complete: true, total: page.total }
     offset = page.nextOffset
   }
@@ -39,7 +39,7 @@ export function taskActivity(rows, firstTurns, now = Date.now()) {
 
 // contexts and firstTurns carry over between calls, so a call that hits its deadline leaves the next call less to read.
 export async function observe(host, rows, { sample = 300, now = Date.now(), firstTurns = new Map(), contexts = new Map(), deadline = Infinity, words = ZH } = {}) {
-  if (!host?.sessions?.read) return { complete: false, reason: words.noRead, sessions: [], hot: null }
+  if (!host?.sessions?.read) return { complete: false, reason: words.noRead, reasonKey: 'noRead', sessions: [], hot: null }
   const selected = rows.toSorted((a, b) => b.updatedAt - a.updatedAt)
   const contextKey = (row) => `${row.source}:${row.providerSessionId}:${row.updatedAt}`
   const owed = (row, i) => (i < sample && !contexts.has(contextKey(row))) || (row.updatedAt >= now - 7 * DAY && !firstTurns.has(`${row.source}:${row.providerSessionId}`))
@@ -61,7 +61,7 @@ export async function observe(host, rows, { sample = 300, now = Date.now(), firs
     }
   }))
   const left = selected.filter(owed).length
-  if (left) return { complete: false, reason: words.readingTasks, progress: { done: selected.length - left, total: selected.length }, sessions: [], hot: null }
+  if (left) return { complete: false, reason: words.readingTasks, reasonKey: 'readingTasks', progress: { done: selected.length - left, total: selected.length }, sessions: [], hot: null }
   const observations = selected.slice(0, sample).map((row) => ({ ...row, ...contexts.get(contextKey(row)) }))
   return {
     complete: true, sessions: observations, sample: observations.length, total: rows.length,

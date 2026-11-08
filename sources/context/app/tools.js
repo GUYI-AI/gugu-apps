@@ -69,6 +69,8 @@ function summary(report, id) {
     rules: report.rules.map(({ findings, ...rule }) => ({ ...rule, count: rule.count ?? findings.length, fixable: findings.some((f) => f.repair) })) }
 }
 function onlyPerson(call, words) { if (call?.agent) throw new Error(words.personOnly) }
+// inventory outlives one call, and calls come in either language: its reason is kept as a key (reasonKey) and worded for each caller.
+const reasonIn = (result, words) => result.reasonKey ? words[result.reasonKey] : result.reason
 const rowsFor = (project) => inventory.rows.filter((row) => project.global ? row.group?.key === 'gugu:task-home' : row.group?.key === project.key || project.sessionCwds?.includes(row.cwd) || project.locations.includes(row.cwd) || row.cwd === project.root)
 
 export const discover = {
@@ -82,7 +84,7 @@ export const discover = {
     inventory.contexts = carried?.contexts || new Map()
     const found = await find({ settings: settings(), sessions: inventory.rows }, words)
     inventory.discovered = found
-    return { ...found, history: { complete: inventory.complete, reason: inventory.reason, total: inventory.total, progress: inventory.progress } }
+    return { ...found, history: { complete: inventory.complete, reason: reasonIn(inventory, words), total: inventory.total, progress: inventory.progress } }
   },
 }
 export const activity = {
@@ -97,7 +99,7 @@ export const activity = {
     inventory.discovered ||= await find({ settings: settings(), sessions: inventory.rows }, words)
     const read = inventory.complete ? await observe(host(), inventory.rows, { sample: 0, firstTurns: inventory.firstTurns, deadline, words }) : inventory
     const unknown = { hot: null, hotTasks: [], unknownStarts: [] }
-    return { complete: read.complete, reason: read.reason, progress: read.progress, unassigned: read.complete ? taskActivity(rowsFor({ global: true }), inventory.firstTurns) : unknown, projects: inventory.discovered.projects.map((project) => ({ key: project.key, ...(read.complete ? taskActivity(rowsFor(project), inventory.firstTurns) : unknown) })) }
+    return { complete: read.complete, reason: reasonIn(read, words), progress: read.progress, unassigned: read.complete ? taskActivity(rowsFor({ global: true }), inventory.firstTurns) : unknown, projects: inventory.discovered.projects.map((project) => ({ key: project.key, ...(read.complete ? taskActivity(rowsFor(project), inventory.firstTurns) : unknown) })) }
   },
 }
 export const diagnose = {
@@ -113,9 +115,9 @@ export const diagnose = {
     inventory.contexts ||= new Map()
     const found = await projectFor(project, inventory.rows, inventory.discovered, words)
     const rows = rowsFor(found)
-    const history = inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300), firstTurns: inventory.firstTurns, contexts: inventory.contexts, deadline, words }) : { complete: false, reason: inventory.reason, sessions: [], hot: null }
+    const history = inventory.complete ? await observe(host(), rows, { sample: Number(settings().sample || 300), firstTurns: inventory.firstTurns, contexts: inventory.contexts, deadline, words }) : { complete: false, reason: reasonIn(inventory, words), sessions: [], hot: null }
     // Reading stopped at the deadline: say how far it got and let the page call again, rather than outrun the host's request timeout.
-    if (history.progress) return { complete: false, reason: history.reason, progress: history.progress, project: found }
+    if (history.progress) return { complete: false, reason: reasonIn(history, words), progress: history.progress, project: found }
     const report = await measure(found, history, { words })
     return summary(report, await saveReport(report, words))
   },

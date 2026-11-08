@@ -5,11 +5,19 @@ const g = window.gugu
 const root = document.getElementById('app')
 const dialog = document.getElementById('dialog')
 let ctx = await g.getContext()
-// The language is fixed when the page opens; the program is told the same one with each call.
-const lang = String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en'
-const t = wordsFor(lang)
-document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
-document.title = t.app
+// The page's language follows the client (see onContextChanged below); the program is told the same one with each call.
+const langOf = (locale) => String(locale ?? '').startsWith('zh') ? 'zh' : 'en'
+let lang, t, region, SNAPSHOT
+function speak(next) {
+  lang = next
+  t = wordsFor(lang)
+  region = lang === 'zh' ? 'zh-CN' : 'en-US'
+  // Saved results carry the program's words, so each language keeps its own.
+  SNAPSHOT = lang === 'zh' ? 'context-snapshot-v1' : 'context-snapshot-v1-en'
+  document.documentElement.lang = region
+  document.title = t.app
+}
+speak(langOf(ctx.locale))
 for (const line of root.querySelectorAll('[role=status]')) line.textContent = t.finding
 const settingsLink = await g.linkTo({ kind: 'app', tab: 'settings' })
 let machines = []
@@ -36,8 +44,6 @@ async function settle(machine, tool, args, label) {
     machine.progress = { label, ...progress }; render()
   }
 }
-// Saved results carry the program's words, so each language keeps its own.
-const SNAPSHOT = lang === 'zh' ? 'context-snapshot-v1' : 'context-snapshot-v1-en'
 let lastAt = null
 function saveSnapshot() {
   lastAt = Date.now()
@@ -113,7 +119,7 @@ function tile(k, v, unit, n, tone = '', extra = null) { return el('div', { class
 
 function listView() {
   const all = groups(), grouped = mainGroups(all), shown = new Set(grouped.map((group) => group.key))
-  const when = lastAt ? (() => { const t = document.createElement('gugu-time'); t.setAttribute('datetime', new Date(lastAt).toISOString()); return t })() : null
+  const when = lastAt ? (() => { const time = document.createElement('gugu-time'); time.setAttribute('datetime', new Date(lastAt).toISOString()); return time })() : null
   root.append(el('header', { class: 'top' }, el('h1', { tabindex: '-1' }, t.app), el('span', { class: 'sub' }, t.summary(all.length, machines.length), when),
     el('div', { class: 'acts' }, button(t.settings, (event) => runAction(event.currentTarget, () => g.openLink(settingsLink)), { class: 'px-button', 'aria-label': t.settings }), button(loading ? t.computing : t.recompute, refresh, { disabled: loading, class: 'px-button primary' }))))
   for (const machine of machines.filter((m) => m.progress)) {
@@ -130,10 +136,10 @@ function listView() {
     const tasks = grouped.some((gr) => gr.bars.hot.count === null) ? null : grouped.reduce((n, gr) => n + gr.bars.hot.count, 0)
     const clean = grouped.flatMap((gr) => gr.items.flatMap((e) => e.report?.rules || [])).filter((r) => r.severity === 'clean').reduce((n, r) => n + (r.count || 0), 0)
     root.append(el('div', { class: 'tiles' },
-      tile(t.toFix, String(need.length), t.projectsUnit, t.reds(reds), reds ? 'red' : need.length ? 'yellow' : ''),
+      tile(t.toFix, String(need.length), t.projectsUnit(need.length), t.reds(reds), reds ? 'red' : need.length ? 'yellow' : ''),
       tile(t.fullest, top.bars.capacity.percent === null ? t.notYet : `${top.bars.capacity.percent}%`, '', top.project.name, toneFor('capacity', top.bars.capacity.cells), bar('capacity', top.bars.capacity.cells)),
       tile(t.tasks7, tasks === null ? t.notYet : String(tasks), tasks === null ? '' : t.timesUnit, t.projects(grouped.length)),
-      tile(t.canClean, String(clean), t.spotsUnit, t.noHealthCost)))
+      tile(t.canClean, String(clean), t.spotsUnit(clean), t.noHealthCost)))
   }
   root.append(el('div', { class: 'sect' }, t.projectsSect, el('small', {}, t.byActivity)))
   if (!grouped.length) root.append(el('gugu-empty', { icon: 'layers' }, el('strong', {}, loading ? t.readingRecent : t.noProjects), el('small', {}, t.noProjectsHint)))
@@ -156,7 +162,7 @@ function listView() {
   if (other.length) {
     const details = el('details', { class: 'fold' }, el('summary', {}, t.otherDirs(other.length)))
     const list = el('ul', { class: 'directory-list' })
-    for (const { entry, directory } of other) list.append(el('li', {}, button(entry.project.name, () => { void openGroup(all.find((group) => group.items.includes(entry))) }, { class: 'px-text-link' }), el('code', { class: 'path px-mono' }, directory), el('span', { class: 'path' }, t.lastActive(entry.machine.name, entry.project.lastActiveAt === null ? t.unknown : new Date(entry.project.lastActiveAt).toLocaleString()))))
+    for (const { entry, directory } of other) list.append(el('li', {}, button(entry.project.name, () => { void openGroup(all.find((group) => group.items.includes(entry))) }, { class: 'px-text-link' }), el('code', { class: 'path px-mono' }, directory), el('span', { class: 'path' }, t.lastActive(entry.machine.name, entry.project.lastActiveAt === null ? t.unknown : new Date(entry.project.lastActiveAt).toLocaleString(region)))))
     details.append(list)
     root.append(details)
   }
@@ -246,7 +252,7 @@ function detailView(group) {
   const b = group.bars
   const fc = group.items.flatMap((e) => e.report?.capacityForecasts || [])
   root.append(el('div', { class: 'tiles tiles3' },
-    tile(t.activity7, b.hot.count === null ? '—' : String(b.hot.count), t.taskUnit, null, '', bar('hot', b.hot.cells, { big: true })),
+    tile(t.activity7, b.hot.count === null ? '—' : String(b.hot.count), t.taskUnit(b.hot.count), null, '', bar('hot', b.hot.cells, { big: true })),
     tile(t.health, b.health.complete ? String(b.health.value) : '—', '/ 10', t.healthNote(b.health.red, b.health.yellow, b.health.complete), toneFor('health', b.health.complete ? b.health.value : null), bar('health', b.health.complete ? b.health.value : null, { big: true })),
     tile(t.capacity, b.capacity.percent === null ? '—' : `${b.capacity.percent}%`, '', fc.length ? t.fullIn(Math.min(...fc.map((f) => f.daysLeft))) : t.capacityNote, toneFor('capacity', b.capacity.cells), bar('capacity', b.capacity.cells, { big: true }))))
   if (problem) root.append(el('p', { role: 'alert' }, problem))
@@ -267,7 +273,7 @@ function detailView(group) {
       const cap = (entry.report?.capacities || []).filter((c) => c.harness === (harness === 'Claude' ? 'claude' : 'codex')).toSorted((a, b) => b.ratio - a.ratio)[0]
       const paths = cap ? cap.harness === 'claude' ? [cap.path] : cap.files : entry.report?.instructions?.filter((p) => harness === 'Codex' ? /AGENTS(?:\.override)?\.md$/.test(p) : /CLAUDE(?:\.local)?\.md$/.test(p)) || []
       const count = entry.report?.history?.sources?.[harness === 'Claude' ? 'claude-code' : 'codex']
-      body.append(el('tr', {}, el('td', {}, el('span', { class: 'pill' }, icon('monitor'), entry.machine.name, el('span', { class: 'h' }, harness))), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? t.claudeCap(cap.chars.toLocaleString(), cap.lines) : t.codexCap(cap.bytes.toLocaleString()) : t.noMemoryIndex), el('div', { class: 'p px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? t.notYet : count === null ? t.startUnknown : t.per7(count)), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
+      body.append(el('tr', {}, el('td', {}, el('span', { class: 'pill' }, icon('monitor'), entry.machine.name, el('span', { class: 'h' }, harness))), el('td', {}, el('span', {}, cap ? cap.harness === 'claude' ? t.claudeCap(cap.chars.toLocaleString(region), cap.lines) : t.codexCap(cap.bytes.toLocaleString(region)) : t.noMemoryIndex), el('div', { class: 'p px-mono' }, paths.join(' · '))), el('td', {}, count === undefined ? t.notYet : count === null ? t.startUnknown : t.per7(count)), el('td', {}, cap ? bar('capacity', Math.min(10, Math.max(cap.ratio > 0 ? 1 : 0, Math.round(cap.ratio * 10)))) : '—')))
     }
   }
   root.append(el('div', { class: 'box table-scroll' }, el('table', { class: 'mt' }, el('thead', {}, el('tr', {}, t.tableHead.map((name) => el('th', {}, name)))), body)))
@@ -296,6 +302,7 @@ async function openGroup(group) {
 }
 async function refresh() {
   if (loading) return
+  const asked = lang
   // Keep the last results on screen; each machine's part is replaced in place as it is recalculated.
   loading = true; problem = ''; render()
   try {
@@ -307,9 +314,11 @@ async function refresh() {
     entries = entries.filter((e) => machines.includes(e.machine))
     render()
     await Promise.all(machines.map(refreshMachine))
-    saveSnapshot()
+    if (asked === lang) saveSnapshot()
   } catch (e) { problem = e.message || String(e) }
   finally { loading = false; render() }
+  // The language changed while this ran: its results are in the old words, so calculate again in the new.
+  if (asked !== lang) await refresh()
 }
 async function refreshMachine(machine) {
   if (!machine.online && !machine.thisMachine) { machine.error = t.offline; render(); return }
@@ -340,6 +349,18 @@ async function refreshMachine(machine) {
 g.onContextChanged(async () => {
   const previous = ctx
   ctx = await g.getContext()
+  const next = langOf(ctx.locale)
+  if (next !== lang) {
+    // The program's words (rule titles, reasons, errors) are inside the results: show this language's saved
+    // results, or calculate them. A running calculation recalculates itself when it ends (see refresh).
+    speak(next)
+    if (dialog.open) dialog.close()
+    if (loading) { render(); return }
+    machines = []; entries = []; lastAt = null; problem = ''
+    if (loadSnapshot()) render()
+    else await refresh()
+    return
+  }
   // Coming back to the tab shows what is already here; recalculating is the person's 「重新计算」.
   if (previous.workspace?.deviceId !== ctx.workspace?.deviceId) render()
 })

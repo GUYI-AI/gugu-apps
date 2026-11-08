@@ -96,6 +96,10 @@
     "en": {
       "name": "Context",
       "subtitle": "Context health and capacity",
+      "examples": [
+        "Check this project's context health",
+        "Which memories have dangling links?"
+      ],
       "tabs": {
         "main": {
           "title": "Context"
