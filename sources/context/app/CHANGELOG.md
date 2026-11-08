@@ -1,3 +1,7 @@
+## 0.4.1
+
+English: the page, its rule titles and explanations, previews, errors and the prompts copied for an agent follow the client's language, Chinese for a Chinese client and English for any other. The page passes its language to each program call; an agent's call without one still gets Chinese.
+
 ## 0.4.0
 
 App interface 25: the machine it follows is `ctx.workspace.deviceId` (was `ctx.session.deviceId`).

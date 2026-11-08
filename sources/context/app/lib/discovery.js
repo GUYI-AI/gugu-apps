@@ -3,6 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { ZH } from '../words.js'
 
 const exec = promisify(execFile)
 export const expand = (p, home = os.homedir()) => p === '~' ? home : p.startsWith('~/') ? path.join(home, p.slice(2)) : path.resolve(p)
@@ -51,7 +52,7 @@ export async function discoverRoots(settings = {}, env = process.env, home = os.
   return { claude: await unique(claude), codex: await unique(codex) }
 }
 
-export async function discover({ settings = {}, sessions = [], extraPaths = [], groupPaths, env, home = os.homedir() } = {}) {
+export async function discover({ settings = {}, sessions = [], extraPaths = [], groupPaths, env, home = os.homedir(), words = ZH } = {}) {
   const roots = await discoverRoots(settings, env, home)
   const candidates = new Set([...split(settings.projects), ...extraPaths, ...sessions.flatMap((s) => [s.cwd, path.isAbsolute(s.group?.key || '') ? s.group.key : null]).filter(Boolean)].map((p) => expand(p, home)))
   for (const root of roots.claude) {
@@ -81,7 +82,7 @@ export async function discover({ settings = {}, sessions = [], extraPaths = [], 
     for (const item of queried) groups.set(item.path, item.group)
     for (const cwd of missingGroups) {
       const group = groups.get(cwd)
-      if (!group) throw new Error(`宿主没有返回目录归属：${cwd}`)
+      if (!group) throw new Error(words.groupMissing(cwd))
       groups.set(cwd, group)
     }
   }

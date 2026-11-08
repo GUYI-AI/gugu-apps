@@ -5,10 +5,11 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { expand, pathStatus } from './discovery.js'
 import { lines } from './markdown.js'
+import { ZH } from '../words.js'
 
 const exec = promisify(execFile)
 
-export async function missingPaths(files, project) {
+export async function missingPaths(files, project, words = ZH) {
   if (!files.some((f) => f.file.endsWith('.md'))) return { findings: [], metrics: { checkedPaths: 0, missingPaths: 0, affectedFiles: 0, nonTemporaryFiles: 0, classes: Object.fromEntries(['deleted-worktree', 'temporary', 'moved-or-shorthand', 'missing', 'unverifiable'].map((kind) => [kind, { paths: 0, files: 0 }])) } }
   const repositories = [project.root]
   for (const e of await fs.readdir(project.root, { withFileTypes: true })) if (e.isDirectory() && !e.name.startsWith('.') && await pathStatus(path.join(project.root, e.name, '.git')) === 'present') repositories.push(path.join(project.root, e.name))
@@ -48,12 +49,12 @@ export async function missingPaths(files, project) {
       const choices = absolute ? [expand(token)] : repoChoices.flatMap(({ root, name, parent }) => [path.join(root, token), ...(token.startsWith(`${name}/`) ? [path.join(parent, token)] : [])])
       if (!absolute && !path.extname(token)) {
         const parents = await Promise.all(choices.map((p) => directory(path.dirname(p))))
-        if (!parents.includes('present')) return parents.includes('unverifiable') ? { kind: 'unverifiable', reason: '父目录无法读取，不能核实路径' } : false
+        if (!parents.includes('present')) return parents.includes('unverifiable') ? { kind: 'unverifiable', reason: words.parentUnreadable } : false
       }
       const statuses = await Promise.all(choices.map(check))
       if (statuses.includes('present')) return null
-      if (statuses.includes('unverifiable')) return { kind: 'unverifiable', reason: '路径存在但当前用户无法核实', repair: null }
-      if (path.isAbsolute(token) && !token.startsWith(`${expand('~')}/`) && !token.startsWith(`${project.root}/`) && !/^\/(?:private\/)?tmp\//.test(token)) return { kind: 'unverifiable', reason: '另一台机器的绝对路径，未在本机判为失效', repair: null }
+      if (statuses.includes('unverifiable')) return { kind: 'unverifiable', reason: words.cannotVerify, repair: null }
+      if (path.isAbsolute(token) && !token.startsWith(`${expand('~')}/`) && !token.startsWith(`${project.root}/`) && !/^\/(?:private\/)?tmp\//.test(token)) return { kind: 'unverifiable', reason: words.foreignAbsolute, repair: null }
       const kind = /(?:^|\/)\.worktrees\//.test(token) ? 'deleted-worktree' : /(?:^|\/)tmp\/|scratchpad/.test(token) ? 'temporary' : suffixes.has(token) || basenames.has(path.basename(token)) ? 'moved-or-shorthand' : 'missing'
       return { kind }
     })()
@@ -76,7 +77,7 @@ export async function missingPaths(files, project) {
         seen.add(key)
         const lineNumber = firstLine + i
         const foreign = /^~\/(?:Codebase(?:\/|$)|work(?:\/|$)|gugu-)/.test(token) && otherMachine
-        results.push((foreign ? Promise.resolve({ kind: 'unverifiable', reason: '同一文件注明了另一台机器，无法在本机核实' }) : classify(token)).then((result) => {
+        results.push((foreign ? Promise.resolve({ kind: 'unverifiable', reason: words.foreignFile }) : classify(token)).then((result) => {
           if (result === false) return null
           if (result?.kind !== 'unverifiable') checked.add(token)
           if (!result) return null
