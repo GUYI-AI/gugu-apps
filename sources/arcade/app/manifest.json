@@ -3,8 +3,11 @@
   "name": "联机小游戏",
   "defaultLocale": "zh-CN",
   "subtitle": "群里一起玩的实时小游戏",
+  "localized": {
+    "en": { "name": "Arcade", "subtitle": "Real-time games for the group", "tabs": { "main": { "title": "Arcade" }, "room": { "title": "Arcade" } } }
+  },
   "author": "咕咕",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "apiVersion": 26,
   "platforms": ["desktop", "phone"],
   "engines": { "gugu": ">=0.3.1" },
