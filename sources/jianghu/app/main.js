@@ -1,9 +1,9 @@
 // 文字江湖's page: the chat's world (its chatFile) as a MUD screen — where you stand, what was said and done here, a
 // line to type in. Every command goes through game.js, as the agents' do through tools.js; what lasts goes into the
-// file, presence only says who has the page open. A person speaking to an agent, naming it or handing it something
-// wakes it with a whisper (game.js wakes); nothing else does.
-import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText } from './game.js'
-import { ROOMS, NPCS, ITEMS, DIRS, START } from './world.js'
+// file, presence only says who has the page open. A person speaking to an agent, naming it, handing it something or
+// attacking it wakes it with a whisper (game.js wakes); nothing else does.
+import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText, START } from './game.js'
+import { ROOMS, peopleIn, thingGroups, nameOf, isNpc, npcData } from './world.js'
 
 const $ = (sel) => document.querySelector(sel)
 const ctx = await window.gugu.getContext()
@@ -24,7 +24,7 @@ function fail(what, e) {
 }
 
 if (!ctx.file) {
-  $('#world').replaceChildren(h('gugu-empty', { icon: 'compass' }, h('strong', {}, '在群里打开'), h('small', {}, `群聊 → 应用 → 文字江湖：群里的人和 agent 一起在雪亭镇走走、聊聊、跑个差事。`)))
+  $('#world').replaceChildren(h('gugu-empty', { icon: 'compass' }, h('strong', {}, '在群里打开'), h('small', {}, '群聊 → 应用 → 文字江湖：群里的人和 agent 一起在东方故事 2 的雪亭镇闯荡。')))
 } else {
   const f = await window.gugu.files.open(ctx.file)
   // Names as the chat shows them now (the context's copy can be older: a task renamed since).
@@ -57,7 +57,7 @@ if (!ctx.file) {
     for (const [id, p] of Object.entries(f.data.players ?? {})) if (id !== me && members.get(id) && members.get(id) !== p.name) ops.push([['players', id, 'name'], members.get(id)])
     if (ops.length) f.transact(() => apply(f.data, ops))
     const s = f.toJSON()
-    say(lookText(s, me), 'me')
+    say(lookText(s, me, Date.now()), 'me')
     const room = s.players[me]?.room ?? START
     const recent = linesSince(s, me, room, '', 8)
     if (recent.length) {
@@ -97,34 +97,35 @@ if (!ctx.file) {
     }
   }
 
-  const QUICK = ['看', '背包', '任务', '谁', '帮助']
+  const QUICK = ['看', '背包', '状态', '技能', '时间', '谁', '帮助']
   const go = (line) => () => command(line).catch((e) => fail('没做成', e))
   const fill = (text) => () => { $('#line').value = text; $('#line').focus() }
+  const bar = (label, [cur, eff, max = eff]) => h('span', { className: 'stat', title: `${label} ${cur}/${eff}/${max}` },
+    label, h('meter', { min: 0, max, low: max * 0.3, high: max * 0.6, optimum: max, value: cur }), `${cur}`)
 
   function draw() {
     const s = f.toJSON()
-    const room = s.players?.[me]?.room ?? START
+    const p = s.players?.[me]
+    const room = p?.room in ROOMS ? p.room : START
     const r = ROOMS[room]
     $('#room').textContent = r.name
-    $('#exits').replaceChildren(...Object.keys(r.exits).map((d) => h('button', { type: 'button', onclick: go(DIRS[d].name), title: ROOMS[r.exits[d]].name }, `${DIRS[d].name} · ${ROOMS[r.exits[d]].name}`)))
-    const npcs = Object.entries(NPCS).filter(([, n]) => n.room === room)
-    const items = Object.entries(s.items ?? {}).filter(([, at]) => at === room).map(([id]) => id)
-    const mine = Object.entries(s.items ?? {}).filter(([, at]) => at === me).map(([id]) => id)
-    const others = Object.entries(s.players ?? {}).filter(([id, p]) => p.room === room && id !== me)
+    $('#exits').replaceChildren(...Object.entries(r.exits).map(([d, to]) => h('button', { type: 'button', onclick: go(d), title: ROOMS[to].name }, `${d} · ${ROOMS[to].name}`)))
+    $('#stats').replaceChildren(...(p ? [bar('精', p.gin), bar('气', p.kee), bar('神', p.sen), bar('形体', p.hp)] : []), ...(p?.ghost ? [h('strong', {}, '鬼魂')] : []))
+    const shop = peopleIn(s, room).some((id) => isNpc(id) && npcData(id).sells)
     $('#here').replaceChildren(
-      ...npcs.map(([, n]) => h('button', { type: 'button', className: 'chip npc', onclick: fill(`问 ${n.name} `) }, h('gugu-icon', { name: 'user' }), n.name)),
-      ...others.map(([id, p]) => h('button', { type: 'button', className: 'chip', onclick: fill(`对 ${p.name} 说 `) }, h('gugu-avatar', { user: id, size: 'xs' }), p.name)),
-      ...items.map((id) => h('button', { type: 'button', className: 'chip item', onclick: go(`拿 ${ITEMS[id].name}`) }, h('gugu-icon', { name: 'plus' }), `拿 ${ITEMS[id].name}`)),
-      ...mine.map((id) => h('span', { className: 'chip carried' }, h('gugu-icon', { name: 'archive' }), ITEMS[id].name)),
+      ...peopleIn(s, room).filter((id) => id !== me).map((id) => isNpc(id)
+        ? h('button', { type: 'button', className: 'chip npc', onclick: go(`看 ${npcData(id).name}`) }, h('gugu-icon', { name: 'user' }), npcData(id).name)
+        : h('button', { type: 'button', className: 'chip', onclick: fill(`对 ${s.players[id].name} 说 `) }, h('gugu-avatar', { user: id, size: 'xs' }), nameOf(s, id))),
+      ...thingGroups(s, room).map(([tid, text]) => h('button', { type: 'button', className: 'chip item', onclick: go(`看 ${nameOf(s, tid)}`) }, h('gugu-icon', { name: 'archive' }), text)),
     )
-    $('#quick').replaceChildren(...[...QUICK, ...(s.quest?.done ? ['重来'] : [])].map((w) => h('button', { type: 'button', onclick: go(w) }, w)))
-    const online = new Set([me, ...f.presence.others.map((p) => p.userId)])
+    $('#quick').replaceChildren(...[...QUICK.slice(0, 4), ...(shop ? ['清单'] : []), ...QUICK.slice(4)].map((w) => h('button', { type: 'button', onclick: go(w) }, w)))
+    const online = new Set([me, ...f.presence.others.map((q) => q.userId)])
     $('#people').replaceChildren(...Object.entries(s.players ?? {})
       .sort(([a, pa], [b, pb]) => Number(online.has(b) || !!pb.agent) - Number(online.has(a) || !!pa.agent) || (pb.at ?? 0) - (pa.at ?? 0))
-      .map(([id, p]) => h('li', {},
+      .map(([id, q]) => h('li', {},
         h('gugu-avatar', { user: id }),
-        h('div', {}, h('strong', {}, id === me ? `${p.name}（你）` : p.name), h('span', {}, ROOMS[p.room]?.name ?? '')),
-        h('small', { className: online.has(id) ? 'on' : 'muted' }, p.agent ? 'agent' : online.has(id) ? '在线' : '离开'))))
+        h('div', {}, h('strong', {}, id === me ? `${q.name}（你）` : q.name), h('span', {}, `${ROOMS[q.room]?.name ?? ''}${q.ghost ? ' · 鬼魂' : ''}`)),
+        h('small', { className: online.has(id) ? 'on' : 'muted' }, q.agent ? 'agent' : online.has(id) ? '在线' : '离开'))))
   }
 
   $('#say').onsubmit = (ev) => {

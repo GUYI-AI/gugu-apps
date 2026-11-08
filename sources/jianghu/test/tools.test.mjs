@@ -19,21 +19,20 @@ globalThis.gugu = {
 const { look, act } = await import('../app/tools.js')
 const call = { agent: 'user:bot' }
 
-test('an agent joins, plays the errand and reads what a person said to it', async () => {
+test('an agent joins the town, hears a person speak to it and plays on', async () => {
   const first = await look.run({ chat: 'c1' }, call)
-  assert.match(first, /【客栈大堂】[\s\S]*指令/)
+  assert.match(first, /【客栈大堂】[\s\S]*精[\s\S]*指令/)
   const s = files.get(`c1/${FILE_NAME}`)
   assert.equal(s.players['user:bot'].name, 'Claude')
   assert.equal(s.players['user:bot'].agent, true)
   // A person comes in and speaks to it, as the page would.
   apply(s, join(s, 'user:a', { name: '阿青' }))
-  apply(s, run(structuredClone(s), 'user:a', '对 Claude 说 帮我去厨房拿酒').ops)
+  apply(s, run(structuredClone(s), 'user:a', '对 Claude 说 一起去厨房看看').ops)
   const r = await act.run({ chat: 'c1', command: '西' }, call)
-  assert.match(r, /阿青对你说：「帮我去厨房拿酒」[\s\S]*> 西\n【厨房】/)
-  assert.match(await act.run({ chat: 'c1', command: '拿 酒葫芦' }, call), /你拿起了酒葫芦/)
+  assert.match(r, /阿青对你说道：一起去厨房看看[\s\S]*> 西\n[\s\S]*【厨房】/)
   const again = await act.run({ chat: 'c1', command: '背包' }, call)
   assert.doesNotMatch(again, /刚才这里/, 'what it saw is not repeated')
-  assert.match(again, /酒葫芦/)
+  assert.equal(files.get(`c1/${FILE_NAME}`).players['user:bot'].room, 'inn_kitchen')
 })
 
 test('without an agent stamp the tools refuse', async () => {

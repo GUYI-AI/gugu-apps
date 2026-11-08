@@ -1,12 +1,11 @@
-// 文字江湖's tools: an agent plays as a person does, by text commands. look shows where it stands and what was said
-// there since it last looked; act runs one command (the same game.js the page runs) and answers what it reads.
+// 文字江湖's tools: an agent plays as a person does, by text commands. look shows where it stands, how it is and what
+// was said there since it last looked; act runs one command (the same game.js the page runs) and answers what it reads.
 // Who calls is `agent`, stamped by gugu — never an argument. The world is the chat's `文字江湖.jianghu.json`; the first
 // call in a chat with none makes it.
 //
 // Waking goes one way: the page whispers an agent when a person speaks to it, names it or hands it something
 // (game.js wakes). Nothing an agent does wakes anyone, so two agents never keep each other going.
-import { FILE_NAME, HELP, fresh, missing, apply, join, run, lookText, linesSince, lastKey, carrying } from './game.js'
-import { ITEMS, START } from './world.js'
+import { FILE_NAME, HELP, missing, apply, join, run, lookText, linesSince, lastKey, statusText, START } from './game.js'
 
 // One program serves every session: calls are taken one at a time, so two moves never interleave.
 let lane = Promise.resolve()
@@ -35,7 +34,7 @@ async function openWorld(chat) {
     f = await gugu.files.open({ chat, name: FILE_NAME })
   } catch (e) {
     if (e.code !== 'not-found') throw e
-    await gugu.files.create({ chat, name: FILE_NAME }, fresh())
+    await gugu.files.create({ chat, name: FILE_NAME }, apply({}, missing(null)))
     f = await gugu.files.open({ chat, name: FILE_NAME })
   }
   const lacking = missing(f.data)
@@ -71,19 +70,18 @@ const CHAT = { type: 'string', format: 'gugu-chat', description: 'The chat whose
 
 export const look = {
   description:
-    'Look around in 文字江湖, the chat\'s text MUD (a wuxia town, played together by people and agents): where you ' +
-    'stand, who and what is here, the exits, and what was said and done here since you last looked. Joins you the ' +
-    'first time. Then play with act.',
+    'Look around in 文字江湖, the chat\'s text MUD (ES2\'s 雪亭镇, played together by people and agents): where you ' +
+    'stand, who and what is here, the exits, your 精气神, and what was said and done here since you last looked. Joins ' +
+    'you the first time. Then play with act.',
   inputSchema: { type: 'object', required: ['chat'], properties: { chat: CHAT } },
   run: ({ chat }, { agent }) => oneAtATime(async () => {
     const { f, unseen } = await enter(chat, agent)
     const s = f.toJSON()
-    const has = carrying(s, agent).map((id) => ITEMS[id].name)
     markSeen(f, agent)
     await whenSaved(f)
     return [
       lookText(s, agent),
-      has.length ? `你身上带着：${has.join('、')}。` : null,
+      statusText(s, agent),
       unseen.length ? `\n—— 刚才这里：\n${unseen.map((l) => l.text).join('\n')}` : null,
       `\n—— 指令（act 的 command）：\n${HELP}`,
     ].filter(Boolean).join('\n')
@@ -92,9 +90,9 @@ export const look = {
 
 export const act = {
   description:
-    'Do one thing in 文字江湖 by a text command, as a person types it: 东 / 西 / 南 / 北 to walk, 看, 看 <thing>, ' +
-    '说 <话>, 对 <人> 说 <话>, 问 <人> <事>, 拿 / 放下 <东西>, 给 <人> <东西>, 背包, 任务, 谁, 帮助. Answers what you ' +
-    'read: first what others said and did here since your last call, then the result of your command.',
+    'Do one thing in 文字江湖 by a text command, as a person types it: 东 / 西 / 南 / 北 / 上 / 下 to walk, 看, ' +
+    '看 <人或东西>, 说 <话>, 对 <人> 说 <话>, 拿 / 放下 / 给, 买 / 清单, 吃 / 喝, 比武 / 杀, 组队 / 跟随, 状态, ' +
+    '帮助. Answers what you read: first what others said and did here since your last call, then the result.',
   inputSchema: {
     type: 'object',
     required: ['chat', 'command'],

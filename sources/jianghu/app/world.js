@@ -1,195 +1,327 @@
-// The world: eight rooms of 雪亭镇 (Snow Pavilion Town) around the 饮风客栈 inn, the people in them and one errand.
-// Rooms, details and most NPC lines are taken from ES2 (东方故事2) by Annihilator, MIT — see SOURCE.md; turned into
-// simplified Chinese and trimmed. 说书的李先生 is only named in ES2 (the waiter wonders how he is); here he sits in the
-// herb shop, and the errand around him is this App's own.
+// The world's state and the verbs every rule uses: who is who, where things are, what is said where, the clock.
+//
+// The chat's world file holds everything that changes: each player and each townsperson as a character (stats, room,
+// skills), each thing and where it is (a room, someone's hands, a corpse, the wagon), and the last lines said and done
+// (`log`). Rooms, people and things as ES2 made them are in es2.js. A command runs on a copy of the file (`x.w`); what
+// differs afterwards is written back (game.js diff), so the rules below just change `x.w` in place.
+import { ROOMS, NPCS, ITEMS } from './es2.js'
+import { gameTime, cn } from './text.js'
 
 export const START = 'inn_hall'
+/** ES2's heart beat: an NPC may say something or wander once per beat. */
+export const BEAT = 2000
+/** How often stats regenerate, food runs down (ES2: every 5–14 beats). */
+export const TICK = 20_000
+/** How often the town resets: the dead come back, shops restock, lost things lie where they were (ES2 reset). */
+export const RESET = 30 * 60_000
+export const LOG_MAX = 60
 
-/** Directions: what a command may say, and how the room text names it. */
-export const DIRS = {
-  east: { name: '东', words: ['东', '东边', 'e', 'east'] },
-  west: { name: '西', words: ['西', '西边', 'w', 'west'] },
-  south: { name: '南', words: ['南', '南边', 's', 'south'] },
-  north: { name: '北', words: ['北', '北边', 'n', 'north'] },
-}
-export const BACK = { east: 'west', west: 'east', south: 'north', north: 'south' }
+/** Hooks of particular people and rooms (story.js fills them): what they do beyond the general rules. */
+export const HOOKS = { npc: {}, room: {}, chat: {}, item: {} }
 
-export const ROOMS = {
-  inn_kitchen: {
-    name: '厨房',
-    long: '这里是一间宽敞的厨房，一座大灶占据了东边半个墙壁，南边的柜子整整齐齐地放着许多锅碗瓢盆。这里平常是相当忙碌的，如果你要在这里东张西望的话，最好小心别被店小二端着的热汤给烫到了。往东可以回到客栈里。',
-    details: {
-      柜子: '这些柜子里放的是给客人用的碗盘碟筷，分门别类装在几个大柜子里，柜子的门都拆了，想是方便取用。',
-      大灶: '一座燃烧着熊熊炭火的大灶，灶口可以容纳一个汉子爬进去，不过白天炭火烧得正热，当然不会有人干这种傻事。',
-    },
-    exits: { east: 'inn_hall' },
-  },
-  inn_hall: {
-    name: '客栈大堂',
-    long: '这里是一家客栈的大堂，老旧的桌椅因为经年的使用而变得乌黑黝亮。西边隔着一层竹帘隐隐传来一阵阵锅铲的声音，大概是客栈的厨房。靠北边的墙壁边上有一道通往二楼雅座的楼梯，楼梯下就是柜台。东边是客栈的出口，门口一串纸糊灯笼随风摇摆，上面写着「饮风客栈」：意思是即使你没有钱，也欢迎来这里聊天听书，喝西北风。',
-    details: {
-      酒缸: '你仔细地瞧了瞧酒缸上贴的红纸，不得了，有延德年间的高粱，京城廖麻子酒坊火漆封印的「拔舌酒」，有四季红的一品醉美人，还有好几坛贴着西郊大鼓楼的陈年老酒。',
-      灯笼: '一串纸糊的大灯笼高高地挂在屋前的旗杆上，共是五个，分别写着「饮风客栈」四个大字，最下面的灯笼画着一个葫芦。',
-      桌椅: '这些桌椅零零散散地放置在客栈的厅中，看来相当老旧了。',
-      楼梯: '这道楼梯通往二楼的雅座跟客房。',
-      竹帘: '竹帘用来隔开客人用膳跟厨房的炉灶，但是挡不住从厨房飘出来的香气。',
-      柜台: '柜台后面陈列着一坛坛贴着红纸条的酒缸，这些是客栈掌柜视如性命的陈年老酒。',
-    },
-    exits: { west: 'inn_kitchen', east: 'square_w' },
-  },
-  square_w: {
-    name: '广场西',
-    long: '这里是雪亭镇广场的西边，往东可以看见广场中央的大榕树。一家小客栈坐落在西边不远处，客栈前的一串灯笼上写着「饮风客栈」四个大字。广场上铺着整齐的石板，在这样的小镇通常是因为驿站的缘故才会费事铺设。',
-    details: {
-      石板: '一块块青石板铺得整整齐齐，缝里长着些青苔。',
-      灯笼: '客栈门前的一串纸糊灯笼，写着「饮风客栈」四个大字。',
-    },
-    exits: { west: 'inn_hall', east: 'square' },
-  },
-  square: {
-    name: '广场中央',
-    long: '这里是雪亭镇广场的中央，一株巨大的老榕树盘根错结地站在中央，一些孩童常常爬上这株老榕嬉戏。榕树下七横八竖地放着几张长凳供人歇息聊天，树旁还有一个水缸供路人取水解渴。',
-    details: {
-      榕树: '这株榕树少说也有两三百岁了，一条条长长的须根几乎垂到地面，树干因为经常被人抚摸而显得光滑。',
-      长凳: '十分普通常见的长凳，如果你累了，不必客气，尽管坐下来休息。',
-      水缸: '一口大水缸，水面上漂着一只木瓢。',
-    },
-    exits: { west: 'square_w', east: 'square_e', north: 'square_n' },
-  },
-  square_n: {
-    name: '广场北',
-    long: '这里是雪亭镇广场北边，平常是附近孩童嬉戏游玩的地方，初一十五则是市集的所在。往南可以看见一株大榕树，往北则是一条笔直的街道。',
-    details: {
-      街道: '一条笔直的街道通往镇北的山路，今天没有市集，冷冷清清的。',
-    },
-    exits: { south: 'square' },
-  },
-  square_e: {
-    name: '广场东',
-    long: '这里是雪亭镇广场东边，往东是一条僻静的巷子，西边有一株高大的榕树，南边是一家打铁铺子，不过店门不在这一边。',
-    details: {
-      打铁铺子: '隔着墙也听得见叮叮当当的打铁声。',
-    },
-    exits: { west: 'square', east: 'epath' },
-  },
-  epath: {
-    name: '僻静小巷',
-    long: '这里是条僻静的小巷子，往西不远处通往雪亭镇的广场。小巷的北面是一些瓦屋，围绕着高高的围墙，看来是有钱人的屋子；南边有家小药铺，门口挂了好些晒干的药草。',
-    details: {
-      围墙: '这间屋子的围墙看起来相当高，不过如果你跳起来的话勉强可以够得着。',
-      药草: '一束束晒干的药草挂在药铺门口，闻起来有股甘草味。',
-    },
-    exits: { west: 'square_e', south: 'herb_shop' },
-  },
-  herb_shop: {
-    name: '小药铺',
-    long: '这里是一间小药铺，连像样一点的招牌都没有，只在门边挂着一块不甚起眼的木牌，上面写着「顺生堂」三个字。老旧的柜台后面陈列着一列药柜，药柜的每个抽屉按药铺的规矩都没有任何标签。西面的墙上吊着几束晒干的甘草，角落里摆着一张旧躺椅。',
-    details: {
-      药柜: '药柜的每个抽屉都没有标签，只有药铺掌柜自己知道哪个抽屉放什么。',
-      甘草: '像这种小药铺没有钱烧檀香祛除药味，只好用甘草替代。',
-      躺椅: '一张竹编的旧躺椅，看来是给病人歇脚用的。',
-    },
-    exits: { north: 'epath' },
-  },
+// ── ids ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+export const isNpc = (id) => typeof id === 'string' && id.startsWith('n:')
+export const isThing = (id) => typeof id === 'string' && id.startsWith('t:')
+/** n:child3.2 → child3: the person in es2.js an NPC is one of. */
+export const baseOf = (id) => id.slice(2).split('.')[0]
+export const npcData = (id) => NPCS[baseOf(id)]
+export const ch = (w, id) => (isNpc(id) ? w.npcs?.[id] : w.players?.[id])
+export const alive = (w, id) => { const c = ch(w, id); return Boolean(c) && !c.dead }
+export const awake = (w, id, now) => { const c = ch(w, id); return Boolean(c) && !c.dead && !c.ghost && !(c.out > now) }
+
+export function newId(x, prefix) {
+  x.seq = (x.seq ?? 0) + 1
+  return `${prefix}${x.now.toString(36)}${Math.floor(x.rand() * 1296).toString(36).padStart(2, '0')}${x.seq.toString(36)}`
 }
+
+// ── names ────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+export function nameOf(w, id) {
+  if (isNpc(id)) return npcData(id)?.name ?? '某人'
+  if (isThing(id)) return thingName(w, id)
+  const p = w.players?.[id]
+  if (!p) return '一位侠客'
+  return p.ghost ? `${p.name}的鬼魂` : p.name
+}
+/** How `viewer` reads a name: themselves as 你. */
+export const who = (w, id, viewer) => (id === viewer ? '你' : nameOf(w, id))
+
+const count = (n) => (n === 2 ? '两' : cn(n))
+
+export const itemOf = (w, tid) => ITEMS[w.things[tid]?.id]
+export function thingName(w, tid) {
+  const t = w.things[tid]
+  if (!t) return '某样东西'
+  return t.name ?? ITEMS[t.id]?.name ?? t.id
+}
+/** 「两个牛肉包子」「一把木剑」: how a thing is counted where it lies. */
+export function thingShort(w, tid) {
+  const t = w.things[tid]
+  const it = ITEMS[t.id] ?? {}
+  if (it.baseUnit) return `${count(t.n ?? 1)}${it.baseUnit}${thingName(w, tid)}`
+  return `一${it.unit ?? t.unit ?? '个'}${thingName(w, tid)}`
+}
+/** What lies somewhere, alike things counted together (「三个大木箱」): [a thing of each kind, how it reads]. */
+export function thingGroups(w, at) {
+  const groups = new Map()
+  for (const tid of thingsAt(w, at)) {
+    const t = w.things[tid]
+    const key = ITEMS[t.id]?.baseUnit ? tid : `${t.id}|${thingName(w, tid)}`
+    if (groups.has(key)) groups.get(key).push(tid)
+    else groups.set(key, [tid])
+  }
+  return [...groups.values()].map((tids) => {
+    if (tids.length === 1) return [tids[0], thingShort(w, tids[0])]
+    const t = w.things[tids[0]]
+    return [tids[0], `${count(tids.length)}${ITEMS[t.id]?.unit ?? t.unit ?? '个'}${thingName(w, tids[0])}`]
+  })
+}
+
+// ── characters ───────────────────────────────────────────────────────────────────────────────────────────────────
+
+const ATTRS = ['str', 'cor', 'int', 'spi', 'cps', 'dex', 'con', 'wis']
+
+/** Bonuses from what someone wears and wields (apply_armor, apply_weapon), and a human's natural armor 3. */
+export function applied(w, id, key) {
+  let v = key === 'armor' ? 3 : 0
+  for (const tid of thingsAt(w, id)) {
+    const t = w.things[tid]
+    if (t.eq) v += ITEMS[t.id]?.apply?.[key] ?? 0
+  }
+  return v
+}
+export function attr(w, id, k) {
+  const base = isNpc(id) ? npcData(id)?.attrs?.[k] ?? 15 : w.players[id]?.attrs?.[k] ?? 15
+  return base + applied(w, id, k)
+}
+export function skillLv(w, id, s, raw = false) {
+  const c = ch(w, id)
+  const own = (isNpc(id) ? npcData(id)?.skills?.[s] : c?.skills?.[s]) ?? 0
+  if (raw) return own
+  const mapped = (isNpc(id) ? npcData(id)?.map : c?.map)?.[s]
+  const v = own + applied(w, id, s)
+  return mapped ? Math.floor((v + skillLv(w, id, mapped)) / 2) : v
+}
+export const levelOf = (w, id) => (isNpc(id) ? npcData(id)?.level ?? 1 : w.players[id]?.level ?? 1)
+export const clsOf = (w, id) => (isNpc(id) ? npcData(id)?.cls ?? 'commoner' : w.players[id]?.cls ?? 'commoner')
+
+/** A new character's stats: ES2's human (daemon/race/human.c): 精气神 30, 形体 根骨×5, food and water by attributes. */
+export function newStats(attrs, more = {}) {
+  const stat = (k) => { const m = more.max?.[k] ?? 30 + (more.advance?.[k] ?? 0); return [m, m, m] }
+  return {
+    gin: stat('gin'), kee: stat('kee'), sen: stat('sen'),
+    hp: [attrs.con * 5, attrs.con * 5],
+    food: [attrs.con * 10 + attrs.str * 5, attrs.con * 10 + attrs.str * 5],
+    water: [attrs.cps * 10 + attrs.dex * 5, attrs.cps * 10 + attrs.dex * 5],
+  }
+}
+
+/** A player as they enter the world: attributes rolled 13–18 each (human.c), level 1, a commoner, empty hands. */
+export function newPlayer(x, name, agent) {
+  const attrs = Object.fromEntries(ATTRS.map((k) => [k, 13 + Math.floor(x.rand() * 6)]))
+  return {
+    name: name || '一位侠客', room: START, joined: x.now, at: x.now, rt: x.now, ...(agent ? { agent: true } : {}),
+    attrs, level: 1, cls: 'commoner', skills: {}, learned: {}, score: {}, temp: {}, ...newStats(attrs),
+  }
+}
+
+export function spawnNpc(x, id, room) {
+  const d = npcData(id)
+  const attrs = Object.fromEntries(ATTRS.map((k) => [k, d.attrs?.[k] ?? 15]))
+  const st = newStats(attrs, d)
+  x.w.npcs[id] = { room, home: room, rt: x.now, ...st }
+  for (const [key, how] of d.carry ?? []) {
+    if (!ITEMS[key]) continue
+    const tid = makeThing(x, key, id)
+    if (how === 'wear' || how === 'wield') x.w.things[tid].eq = how
+  }
+  if (d.coin) makeThing(x, 'stock/coin', id, d.coin)
+  return id
+}
+
+export const roomOf = (w, id) => (isThing(id) ? w.things[id]?.at : ch(w, id)?.room)
+export const peopleIn = (w, room) => [
+  ...Object.entries(w.npcs ?? {}).filter(([, c]) => c.room === room && !c.dead).map(([id]) => id),
+  ...Object.entries(w.players ?? {}).filter(([, c]) => c.room === room).map(([id]) => id),
+]
+export const npcsIn = (w, room) => Object.entries(w.npcs ?? {}).filter(([, c]) => c.room === room && !c.dead).map(([id]) => id)
+export const playersIn = (w, room) => Object.entries(w.players ?? {}).filter(([, c]) => c.room === room).map(([id]) => id)
+
+// ── stats (feature/statistic.c) ─────────────────────────────────────────────────────────────────────────────────
+
+/** Spend current (consume_stat); below 0 it stays at 0 and the stat is exhausted. */
+export function consume(c, k, n) { c[k][0] -= n; if (c[k][0] < 0) { c[k][0] = 0; return true } return false }
+/** Wound: lower the effective ceiling (damage_stat); below 0 the stat is destroyed. */
+export function wound(c, k, n) { c[k][1] -= n; if (c[k][0] > c[k][1]) c[k][0] = Math.max(0, c[k][1]); if (c[k][1] < 0) { c[k][1] = 0; return true } return false }
+/** Restore current up to effective (supplement_stat). */
+export function supplement(c, k, n) { c[k][0] = Math.min(c[k][1], c[k][0] + n) }
+/** Heal the effective ceiling up to the maximum (heal_stat). */
+export function heal(c, k, n) { c[k][1] = Math.min(c[k][2], c[k][1] + n) }
 
 /**
- * People of the town. `topics`: what asking about a word gets (the first key found in what was asked); `idle`: the
- * answer to anything else. Deterministic — every page and every agent's call says the same.
+ * Regeneration since the character last had it (health_regenerator, every TICK): current back towards effective by
+ * 机敏 / 根骨 / 灵性, then effective back towards the maximum while fed. Players' food and water run down 1 a tick;
+ * at none, 气 drains — but time away only wastes 30 ticks, and never knocks anyone out.
  */
-export const NPCS = {
-  waiter: {
-    name: '店小二', words: ['小二', 'waiter'], room: 'inn_hall',
-    long: '一个约二十出头的年轻小伙计，正忙进忙出招呼客人。',
-    idle: '客官今天怎么有空，最近可有新鲜事能说来听听吗？',
-    topics: {
-      李先生: 'quest',
-      说书: 'quest',
-      酒: 'quest',
-      送: 'quest',
-      帮忙: 'quest',
-      掌柜: '掌柜？在柜台后头打算盘呢，那几坛老酒他可宝贝得紧。',
-      菜: '今天有包子、馒头、红烧肉，还有刚出炉的烤鸡！',
-      天气: '这几天天气不错，真想出去走走。',
-    },
-  },
-  innkeeper: {
-    name: '掌柜', words: ['innkeeper', 'keeper'], room: 'inn_hall',
-    long: '这位便是这家客栈的掌柜，看起来福福泰泰像是个老好人。',
-    idle: '欢迎！欢迎！请里面坐！',
-    topics: {
-      酒: '柜台后头那几坛可是小老儿的命根子，不卖不卖。厨房那壶倒是给李先生留的。',
-      李先生: '李先生在小店说书说了二十年，这回受了风寒，在顺生堂歇着。小二会跟你说。',
-      顺生堂: '出门往东过了广场，进那条僻静小巷，南边就是。',
-      药铺: '出门往东过了广场，进那条僻静小巷，南边就是。',
-    },
-  },
-  gammer: {
-    name: '瞎眼老太婆', words: ['老太婆', '婆婆', 'gammer'], room: 'square',
-    long: '一个瞎了眼睛的老太婆，满脸皱纹，但是却给人一种亲切的感觉。',
-    idle: '阿宝？是你吗？',
-    topics: {
-      阿宝: '阿宝那孩子，又不知道跑哪儿玩去了……',
-      李先生: '李先生的书说得好啊，老婆子眼睛看不见，耳朵可灵着呢。',
-    },
-  },
-  junkman: {
-    name: '拾荒老头', words: ['老头', 'junkman'], room: 'square',
-    long: '一个佝偻的拾荒老头，靠捡拾废物维生。',
-    idle: '老头儿弯着腰在石板缝里找东西，头也不抬：「有不要的东西，给我就是了。」',
-    topics: {
-      石头: '石头？广场西边多的是，那可不值钱。',
-    },
-  },
-  child: {
-    name: '小孩', words: ['孩子', 'child'], room: 'square_n',
-    long: '一个流着鼻涕的小孩，睁着一双无邪的眼睛望着你。',
-    idle: '小孩吸了吸鼻涕，睁着一双无邪的眼睛望着你。',
-    topics: {
-      阿宝: '阿宝姐姐刚才还在榕树上呢！',
-      榕树: '我能爬到最高那根枝子上！',
-    },
-  },
-  herbalist: {
-    name: '药铺掌柜', words: ['药铺老板', 'herbalist'], room: 'herb_shop',
-    long: '药铺掌柜的是位胖胖的中年男子，虽然年纪有四五十岁了，不过看起来依然红光满面、精神焕发。',
-    idle: '客官要抓什么药？',
-    topics: {
-      李先生: '李先生受了风寒，在躺椅上歇着。喝点酒驱驱寒，倒也无妨。',
-      药: '小店的药柜没有标签，客官要什么，说给我听就是。',
-    },
-  },
-  storyteller: {
-    name: '李先生', words: ['说书先生', '说书的', 'storyteller', 'li'], room: 'herb_shop',
-    long: '一位清瘦的老先生，裹着厚厚的棉袍半躺在躺椅上，手里还捏着一块惊堂木。',
-    idle: '咳咳……老朽这嗓子，怕是好些日子说不了书了。',
-    topics: {
-      说书: '等老朽好了，回饮风客栈给大家说一段《雪亭镇外三把刀》。',
-      酒: '饮风客栈的酒？老朽可想得紧……',
-    },
-  },
+export function regen(x, id) {
+  const c = ch(x.w, id)
+  if (!c || c.dead) return
+  const ticks = Math.floor((x.now - (c.rt ?? x.now)) / TICK)
+  if (ticks <= 0) return
+  c.rt = (c.rt ?? x.now) + ticks * TICK
+  const player = !isNpc(id)
+  const k2a = { gin: 'dex', kee: 'con', sen: 'spi' }
+  for (let i = 0; i < Math.min(ticks, 200); i++) {
+    if (player && (c.water[0] < 1 || c.ghost)) break
+    for (const k of ['gin', 'kee', 'sen']) {
+      const a = attr(x.w, id, k2a[k])
+      if (c[k][0] < c[k][1]) supplement(c, k, a)
+      else if ((!player || c.food[0] >= 1) && c[k][1] < c[k][2]) heal(c, k, Math.floor(a / 6) + 1)
+    }
+    if (c.hp[0] < c.hp[1]) c.hp[0] += 1
+  }
+  if (!player || c.ghost) return
+  for (let i = 0; i < Math.min(ticks, 30); i++) {
+    for (const k of ['food', 'water']) {
+      if (c[k][0] > 0) c[k][0] -= 1
+      else c.kee[0] = Math.max(1, c.kee[0] - 1)
+    }
+  }
+  if (c.food[0] === 0) tell(x, id, '你已经饿得两眼昏花，四肢无力了，最好找点东西来吃。')
+  if (c.water[0] === 0) tell(x, id, '你觉得口干舌燥，开始出现脱水的现象了，最好找点水喝。')
 }
 
-/** Things that can be picked up, and where each lies when a world begins. */
-export const ITEMS = {
-  hulu: {
-    name: '酒葫芦', words: ['葫芦', '酒', 'gourd', 'hulu'], at: 'inn_kitchen',
-    long: '一只红漆酒葫芦，塞子封得紧紧的，摇一摇咣当作响，闻得到一股陈年老酒的香气。葫芦上贴着一张红纸：「李先生」。',
-    lying: '大灶边上放着一只红漆酒葫芦。',
-  },
-  stone: {
-    name: '石头', words: ['石块', 'stone'], at: 'square_w',
-    long: '一块拳头大小的石头，不知是谁从石板路上撬下来的。',
-    lying: '地上有一块石头。',
-  },
+// ── things ───────────────────────────────────────────────────────────────────────────────────────────────────────
+
+export const thingsAt = (w, at) => Object.entries(w.things ?? {}).filter(([, t]) => t.at === at).map(([id]) => id)
+export const isMoney = (key) => ['stock/coin', 'stock/silver', 'stock/gold'].includes(key)
+const combined = (key) => Boolean(ITEMS[key]?.baseUnit)
+
+/** A new thing of `key` at `at` (`n` of a stack); a stack joins one of the same kind already there. */
+export function makeThing(x, key, at, n = 1, extra = {}) {
+  if (combined(key)) {
+    const same = thingsAt(x.w, at).find((tid) => x.w.things[tid].id === key && !x.w.things[tid].home)
+    if (same && !extra.home) { x.w.things[same].n = (x.w.things[same].n ?? 1) + n; return same }
+  }
+  const tid = newId(x, 't:')
+  x.w.things[tid] = { id: key, at, ...(combined(key) ? { n } : {}), ...extra }
+  return tid
 }
 
-/** The errand: the waiter asks for it, the storyteller ends it. */
-export const QUEST = {
-  name: '给李先生送酒',
-  ask: '说书的李先生病了好几天了。掌柜要我送一壶老酒去顺生堂给他驱寒，可店里实在离不开人……酒葫芦就在厨房大灶边上，劳驾客官替我跑一趟？出门往东过了广场，进僻静小巷，南边就是顺生堂。',
-  again: '酒葫芦在厨房大灶边上，送到顺生堂交给李先生就成，多谢客官！',
-  done: '李先生已经收到酒了？多谢客官！改天来听书，小的给您留个好座儿。',
-  given: '李先生接过酒葫芦，拔开塞子闻了闻，眼睛一亮：「好酒！是饮风客栈的拔舌酒！」他抿了一口，咳嗽也止了几分，一拍惊堂木：「诸位，老朽病中无以为报，就给诸位说上一段——话说那雪亭镇外，有三把刀……」',
-  hint: ['问问客栈大堂的店小二有没有要帮忙的（问 店小二 李先生）', '到西边厨房拿酒葫芦（拿 酒葫芦）', '去小药铺把酒葫芦交给李先生（给 李先生 酒葫芦）'],
+/** Move `n` of a thing (all of it by default) to `to`; stacks merge there. Returns the id of what arrived. */
+export function moveThing(x, tid, to, n) {
+  const t = x.w.things[tid]
+  if (combined(t.id) && n !== undefined && n < (t.n ?? 1)) {
+    t.n -= n
+    return makeThing(x, t.id, to, n)
+  }
+  delete t.eq
+  delete t.home
+  if (combined(t.id)) {
+    const same = thingsAt(x.w, to).find((o) => o !== tid && x.w.things[o].id === t.id && !x.w.things[o].home)
+    if (same) { x.w.things[same].n = (x.w.things[same].n ?? 1) + (t.n ?? 1); destroy(x, tid); return same }
+  }
+  t.at = to
+  return tid
 }
+
+/** A thing gone from the world, with what was in it. */
+export function destroy(x, tid) {
+  for (const inner of thingsAt(x.w, tid)) destroy(x, inner)
+  delete x.w.things[tid]
+}
+
+export function weightOf(w, tid) {
+  const t = w.things[tid]
+  const it = ITEMS[t.id] ?? {}
+  return it.baseWeight ? it.baseWeight * (t.n ?? 1) : it.weight ?? 0
+}
+/** feature/char/combat.c: a character carries 膂力² × 200 g, and at most 20 things. */
+export const carriage = (w, id) => attr(w, id, 'str') ** 2 * 200
+export const load = (w, id) => thingsAt(w, id).reduce((sum, tid) => sum + weightOf(w, tid), 0)
+
+// ── money (feature/char/finance.c) ───────────────────────────────────────────────────────────────────────────────
+
+const COIN_VALUE = { 'stock/coin': 1, 'stock/silver': 100, 'stock/gold': 10000 }
+export function purse(w, id) {
+  const out = { 'stock/coin': 0, 'stock/silver': 0, 'stock/gold': 0 }
+  for (const tid of thingsAt(w, id)) if (isMoney(w.things[tid].id)) out[w.things[tid].id] += w.things[tid].n ?? 1
+  return out
+}
+export const wealth = (w, id) => Object.entries(purse(w, id)).reduce((s, [k, n]) => s + COIN_VALUE[k] * n, 0)
+
+/** Pay `price` exactly, coins being 1, silver 100, gold 10000: 1 paid, 0 too little, 2 enough but no change (ES2 gives none). */
+export function pay(x, id, price, to = null) {
+  const have = purse(x.w, id)
+  for (let g = Math.min(have['stock/gold'], Math.floor(price / 10000)); g >= 0; g--) {
+    const rest = price - g * 10000
+    const s = Math.min(have['stock/silver'], Math.floor(rest / 100))
+    const c = rest - s * 100
+    if (c <= have['stock/coin']) {
+      for (const [key, n] of [['stock/gold', g], ['stock/silver', s], ['stock/coin', c]]) {
+        if (!n) continue
+        const tid = thingsAt(x.w, id).find((t) => x.w.things[t].id === key)
+        const moved = moveThing(x, tid, to ?? 'gone', n)
+        if (!to) destroy(x, moved)
+      }
+      return 1
+    }
+  }
+  return wealth(x.w, id) >= price ? 2 : 0
+}
+
+// ── messages ─────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A line everyone in `room` sees (message_vision): `$N` is `a`, `$n` / `$p` is `b`, each read as 你 by themselves.
+ * `k` marks lines the page reacts to (say, give, attack: who to wake).
+ */
+export function vision(x, room, text, a = null, b = null, more = {}) {
+  const ev = { k: 'v', room, t: text, ...(a ? { a } : {}), ...(b ? { b } : {}), ...more }
+  emit(x, ev)
+}
+/** A line only `id` reads (tell_object / write). */
+export function tell(x, id, text) {
+  if (id === x.me) x.out.push(text)
+  else if (!isNpc(id)) emit(x, { k: 'tell', only: id, room: roomOf(x.w, id), t: text }, false)
+}
+/** An NPC says a line in its room (command("say …")). */
+export const npcSay = (x, id, text) => vision(x, ch(x.w, id).room, `$N说道：${text}`, id)
+/** An emote of data/emoted.o, at someone or not. */
+export function emote(x, id, lines, target = null) {
+  vision(x, ch(x.w, id).room, target ? lines[1] : lines[0], id, target)
+}
+
+function emit(x, ev, mine = true) {
+  ev.at = x.now
+  ev.by = x.me
+  x.events.push(ev)
+  if (mine && ev.room === roomOf(x.w, x.me) && !(ev.k === 'move' && ev.a === x.me)) x.out.push(render(x.w, ev, x.me))
+}
+
+/** A logged line as `viewer` reads it. */
+export function render(w, ev, viewer) {
+  const lines = ev.lines ?? [[ev.t, ev.a, ev.b]]
+  return lines.map(([t, a, b]) => fill(w, t, a, b, viewer)).join('\n')
+}
+export function fill(w, t, a, b, viewer) {
+  return String(t)
+    .replaceAll('$N', a ? who(w, a, viewer) : '')
+    .replaceAll('$n', b ? who(w, b, viewer) : '')
+    .replaceAll('$p', b ? who(w, b, viewer) : '')
+    .replaceAll('$P', a ? who(w, a, viewer) : '')
+}
+
+// ── time ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** Whether the game clock passed `hhmm` (as ES2 schedules say it: 700, 2200) between two moments. */
+export function passed(since, now, hhmm) {
+  if (now - since >= 24 * 60_000) return true
+  const mins = (t) => { const g = gameTime(t); return g.hour * 60 + g.minute }
+  const at = Math.floor(hhmm / 100) * 60 + (hhmm % 100)
+  const a = mins(since); const b = mins(now)
+  return a <= b ? a < at && at <= b : a < at || at <= b
+}
+
+export { ROOMS, NPCS, ITEMS }

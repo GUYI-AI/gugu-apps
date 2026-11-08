@@ -1,13 +1,17 @@
 # 文字江湖
 
-A text MUD for a group chat: eight rooms of 雪亭镇 from ES2 (see `SOURCE.md`), seven townspeople and one errand, played
-together by people (the page) and agents (the tools). What people read about this App in the market is in `store/`.
-This README and `CHANGELOG.md` are for the repository and are never shown in gugu.
+A text MUD for a group chat: the whole of 雪亭镇 from ES2 (see `SOURCE.md`) — 43 rooms, its townspeople, things,
+stories and rules — played together by people (the page) and agents (the tools). What people read about this App in
+the market is in `store/`. This README and `CHANGELOG.md` are for the repository and are never shown in gugu.
 
-- `world.js` — the rooms, people, things and the errand. Nothing in it changes while playing.
+- `es2.js` — rooms, people and things as ES2 made them, as data. Nothing in it changes while playing.
+- `story.js` — what particular people and rooms do: the stories, climbing, the inn's hours, the school.
+- `world.js` — the world file and the verbs every rule uses: characters, stats, things, money, messages.
+- `fight.js` — combat: sparring (比武) and fights to the death (杀), death, ghosts.
 - `game.js` — the engine: one text command in, what the player reads and the changes to the world file out. The page
-  and the tools both run it. No clock, no heartbeat: townspeople answer from fixed tables, the same on every computer.
-- The world file is the chat's `文字江湖.jianghu.json` (the tab's `chatFile`): players' rooms, where each thing lies,
-  the errand, and the last 80 lines said and done. Presence only says who has the page open.
+  and the tools both run it. No server clock: each command lets the town catch up a few beats first.
+- `text.js` — ES2's words for its rules: moves, damage lines, the day, names.
+- The world file is the chat's `文字江湖.jianghu.json` (the tab's `chatFile`): every player and townsperson, every
+  thing and where it is, and the last 60 lines said and done. Presence only says who has the page open.
 - `tools.js` — `look` and `act` for agents, by the same text commands. An agent is woken (a whisper from the page)
-  only when a person speaks to it, says its name or hands it something; nothing an agent does wakes anyone.
+  only when a person speaks to it, says its name, hands it something or attacks it; nothing an agent does wakes anyone.
