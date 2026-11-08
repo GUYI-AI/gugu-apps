@@ -7,6 +7,7 @@ import { ZH, wordsFor, programWords } from '../app/words.js'
 import { diagnose, promptFor } from '../app/lib/diagnose.js'
 import { sessionIndex } from '../app/lib/history.js'
 import { makePreview, readPreview } from '../app/lib/repairs.js'
+import { languageTurns, afterRun } from '../app/turns.js'
 
 const EN = wordsFor('en-US')
 const CJK = /[　-〿一-鿿＀-￯]/
@@ -86,4 +87,18 @@ test('a snapshot note is written in the person\'s language, and one already ther
   assert.doesNotMatch(view.text, CJK)
   // The Chinese note already in place: nothing to change, said in English.
   await assert.rejects(makePreview(reportFor(noted), 'R7', data, EN), { message: EN.noFix })
+})
+
+test('a calculation that ran across a language switch keeps nothing and runs again from empty', () => {
+  const turns = languageTurns(), entries = [{ report: 'zh report' }]
+  const quiet = turns.start()
+  assert.deepEqual(afterRun(quiet(), true, entries), { save: true, again: false, entries })
+  assert.deepEqual(afterRun(quiet(), false, entries), { save: false, again: false, entries })
+  // zh → en → zh while it ran: back to the starting language, but some calls went out in English.
+  const crossed = turns.start()
+  turns.switched(); turns.switched()
+  assert.equal(crossed(), false)
+  assert.deepEqual(afterRun(crossed(), true, entries), { save: false, again: true, entries: [] })
+  // The calculation started after the switches is in its turn.
+  assert.equal(turns.start()(), true)
 })

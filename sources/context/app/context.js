@@ -1,5 +1,6 @@
 import { el, character, sprite, bar, button, toneFor } from './pixel-kit.js'
 import { wordsFor } from './words.js'
+import { languageTurns, afterRun } from './turns.js'
 
 const g = window.gugu
 const root = document.getElementById('app')
@@ -8,7 +9,9 @@ let ctx = await g.getContext()
 // The page's language follows the client (see onContextChanged below); the program is told the same one with each call.
 const langOf = (locale) => String(locale ?? '').startsWith('zh') ? 'zh' : 'en'
 let lang, t, region, SNAPSHOT
+const turns = languageTurns()
 function speak(next) {
+  turns.switched()
   lang = next
   t = wordsFor(lang)
   region = lang === 'zh' ? 'zh-CN' : 'en-US'
@@ -192,14 +195,19 @@ function showDialog(title, content, controls = []) {
 }
 
 async function showPrompt(entry, id) {
+  const inTurn = turns.start()
   const answer = await call(entry.machine, 'agent_prompt', { report: entry.report.id, rule: id })
+  // The language changed meanwhile: the dialog was closed, so don't reopen it in the old words.
+  if (!inTurn()) return
   const status = el('p', { role: 'status' })
   const copy = button(t.copyForAgent, async (event) => runAction(event.currentTarget, async () => { await g.clipboard.writeText(answer.prompt); status.textContent = t.copied }))
   showDialog(t.promptTitle, el('div', {}, el('pre', { class: 'px-mono' }, answer.prompt), status), [copy])
 }
 
 async function showPreview(entry, id) {
+  const inTurn = turns.start()
   const preview = await call(entry.machine, 'preview', { report: entry.report.id, rule: id })
+  if (!inTurn()) return
   const pre = el('pre', { class: 'px-mono', tabindex: '0' })
   const status = el('p', { role: 'status' })
   const check = el('input', { type: 'checkbox' })
@@ -302,7 +310,8 @@ async function openGroup(group) {
 }
 async function refresh() {
   if (loading) return
-  const asked = lang
+  const inTurn = turns.start()
+  let done = false
   // Keep the last results on screen; each machine's part is replaced in place as it is recalculated.
   loading = true; problem = ''; render()
   try {
@@ -314,11 +323,15 @@ async function refresh() {
     entries = entries.filter((e) => machines.includes(e.machine))
     render()
     await Promise.all(machines.map(refreshMachine))
-    if (asked === lang) saveSnapshot()
+    done = true
   } catch (e) { problem = e.message || String(e) }
-  finally { loading = false; render() }
-  // The language changed while this ran: its results are in the old words, so calculate again in the new.
-  if (asked !== lang) await refresh()
+  finally { loading = false }
+  // The language changed while this ran: its results are in more than one language, so drop them and calculate again.
+  const after = afterRun(inTurn(), done, entries)
+  entries = after.entries
+  if (after.save) saveSnapshot()
+  render()
+  if (after.again) await refresh()
 }
 async function refreshMachine(machine) {
   if (!machine.online && !machine.thisMachine) { machine.error = t.offline; render(); return }
