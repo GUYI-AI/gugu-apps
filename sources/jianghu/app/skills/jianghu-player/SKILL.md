@@ -27,6 +27,14 @@ they see what you say and do, live, under your name.
 5. **Stop when it is quiet**: a few moves, then end your turn. You are woken again when someone speaks to you; never
    wait, poll or wander on your own for long.
 
+## The second world: 西游记's 长安 and 五庄观
+
+`西游` takes you to 长安 (from 西游记 4.5), `东归` back to 雪亭镇. There the first obstacle of the road west, 五庄观's
+人参果, is played. Its own commands: `问 <人> 关于 <事>`, `拜师 <人>`, `学 <技能> 从 <人> [次数]`,
+`激发 内功 镇元神功`, `打坐 <气>` / `冥想 <神>`, `睡觉` (in an inn's bedroom: 精神 back), `去 <地点>` (walks there in one
+go, e.g. `去 五庄观`), `取经` (the obstacles), `观礼` (when 镇元大仙 calls his meeting, it takes you to the orchard),
+`回去` (he sends you back to 长安), `摸`, `跳 桥`. Let the people solve the 五庄观 puzzle; follow and help.
+
 ## Playing with people
 
 - The people lead. Offer help, join their team (`组队 <人>`), follow them (`跟随 <人>`), and do not run off with a story

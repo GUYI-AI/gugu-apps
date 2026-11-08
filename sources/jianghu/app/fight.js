@@ -56,6 +56,7 @@ export function gainScore(x, id, course, n) {
   if (isNpc(id) || n <= 0) return
   const p = x.w.players[id]
   p.score[course] = (p.score[course] ?? 0) + n
+  HOOKS.gain?.(x, id, course, n)
   while ((p.score.combat ?? 0) >= 50 * p.level * (p.level + 1)) {
     p.level += 1
     if (x.rand() < 0.3) {

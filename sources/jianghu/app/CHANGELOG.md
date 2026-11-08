@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0
+
+A second world beside 雪亭镇, which stays the place to begin: 西游记 4.5's 长安城, the road west and 五庄观 (141
+rooms, 87 people), with XYJ's 气血, 精神, 内力, 法力, 道行, 潜能 and masters, and the first obstacle of the road west,
+五庄观's 人参果: the key under 牡丹亭, the 八卦桥, the orchard gate and 镇元大仙's meeting. 「西游」 goes there,
+「东归」 comes back. Played through, then made to keep moving: the meeting gives its fruit after a minute (XYJ: six),
+「睡觉」 in an inn's bedroom restores 精神 at once, the masters no longer wander off mid-lesson, a board at the 八卦桥
+tells its rule and each bridge says how many are crossed, 「去 <地点>」 walks to a place in one go (never over the
+八卦桥 or through a shut door), and 镇元大仙 stays to send whoever ate a fruit back to 长安 (「回去」). The status bars
+and the 「下一步」 line follow the world one is in. See `SOURCE.md`.
+第二个世界：《西游记》4.5 的长安、西行路和五庄观，人参果一关可以玩通；雪亭镇留作新手村。品尝大会一分钟、睡觉回精神、师父不乱走、八卦桥有木牌说明规矩、「去 <地点>」一次走到（不代走八卦桥）；状态条和「下一步」随世界变。
+
 ## 0.3.0
 
 A new screen. On a phone: the room and the time of day on top, the six stats (精气神, body, food, water) as one row
