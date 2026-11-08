@@ -145,10 +145,10 @@ export function spawnNpc(x, id, room) {
   x.w.npcs[id] = { room, home: room, rt: x.now, ...st }
   for (const [i, [key, how]] of (d.carry ?? []).entries()) {
     if (!ITEMS[key]) continue
-    const tid = makeThing(x, key, id, 1, {}, resetId(x, id.slice(2), i))
+    const tid = makeThing(x, key, id, 1, {}, resetId(x, id, i))
     if (how === 'wear' || how === 'wield') x.w.things[tid].eq = how
   }
-  if (d.coin) makeThing(x, 'stock/coin', id, d.coin, {}, resetId(x, id.slice(2), 'coin'))
+  if (d.coin) makeThing(x, 'stock/coin', id, d.coin, {}, resetId(x, id, 'coin'))
   return id
 }
 
@@ -235,7 +235,10 @@ export function heap(x, at, key) {
   return first
 }
 
-/** Move `n` of a thing (all of it by default) to `to`. Returns the id of what arrived. */
+/**
+ * Move `n` of a thing (all of it by default) to `to`. Returns the id of what arrived. Split only a heap the one acting
+ * holds: two pages splitting one heap at once each keep a part and one of the counts, and money is made or lost.
+ */
 export function moveThing(x, tid, to, n) {
   const t = x.w.things[tid]
   if (combined(t.id) && n !== undefined && n < (t.n ?? 1)) {
@@ -273,8 +276,11 @@ export function purse(w, id) {
 }
 export const wealth = (w, id) => Object.entries(purse(w, id)).reduce((s, [k, n]) => s + COIN_VALUE[k] * n, 0)
 
-/** Pay `price` exactly, coins being 1, silver 100, gold 10000: 1 paid, 0 too little, 2 enough but no change (ES2 gives none). */
-export function pay(x, id, price, to = null) {
+/**
+ * Pay `price` exactly, coins being 1, silver 100, gold 10000: 1 paid, 0 too little, 2 enough but no change (ES2 gives none).
+ * What is paid leaves the world: a shopkeeper's till would only grow the file, a new heap each sale.
+ */
+export function pay(x, id, price) {
   const have = purse(x.w, id)
   for (let g = Math.min(have['stock/gold'], Math.floor(price / 10000)); g >= 0; g--) {
     const rest = price - g * 10000
@@ -283,8 +289,7 @@ export function pay(x, id, price, to = null) {
     if (c <= have['stock/coin']) {
       for (const [key, n] of [['stock/gold', g], ['stock/silver', s], ['stock/coin', c]]) {
         if (!n) continue
-        const moved = moveThing(x, heap(x, id, key), to ?? 'gone', n)
-        if (!to) destroy(x, moved)
+        destroy(x, moveThing(x, heap(x, id, key), 'gone', n))
       }
       return 1
     }

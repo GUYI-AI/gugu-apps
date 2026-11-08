@@ -99,6 +99,57 @@ test('coins handed over while the other pays: neither is lost; two buying at onc
   assert.match(say('user:b', '背包'), /五十文钱/, 'heaps read as one')
 })
 
+test('two taking different amounts from one heap on the floor at once: no money made or lost', () => {
+  const { s, enter, clock } = world()
+  enter('user:a', '阿青')
+  enter('user:b', '大壮')
+  const room = s.players['user:a'].room
+  s.things['t:floor'] = { id: 'stock/coin', at: room, n: 100 }
+  together(s, ['user:a', '拿 30 文钱', clock.now + 1000], ['user:b', '拿 40 文钱', clock.now + 1100])
+  assert.equal(coins(s, room) + coins(s, 'user:a') + coins(s, 'user:b'), 100)
+  assert.equal(coins(s, room), 0, 'a heap not on you is taken whole')
+})
+
+test('a thief takes a whole heap while its owner gives from it: no money made', () => {
+  const { s, enter, clock } = world(3)
+  enter('user:a', '阿青')
+  enter('user:b', '大壮')
+  enter('user:c', '小翠')
+  for (const id of ['user:a', 'user:b', 'user:c']) s.players[id].room = 'nstreet2'
+  s.players['user:a'].skills.stealing = 100
+  s.things['t:purse'] = { id: 'stock/coin', at: 'user:b', n: 100 }
+  const all = () => coins(s, 'user:a') + coins(s, 'user:b') + coins(s, 'user:c')
+  let thief
+  for (let i = 0; i < 20 && !/得手了/.test(thief?.reply ?? ''); i++) {
+    const t = (clock.now += 10_000)
+    ;[thief] = together(s, ['user:a', '偷 文钱 从 大壮', t], ['user:b', '给 小翠 10 文钱', t + 100])
+    assert.equal(all(), 100)
+  }
+  assert.match(thief.reply, /得手了/)
+})
+
+test('what is paid leaves the world, and coins given to townspeople are gathered at the reset', () => {
+  const { s, enter, say, clock } = world()
+  enter('user:a', '阿青')
+  s.things['t:purse'] = { id: 'stock/coin', at: 'user:a', n: 500 }
+  const heaps = () => Object.values(s.things).filter((t) => t.id === 'stock/coin').length
+  const before = heaps()
+  for (let i = 0; i < 5; i++) say('user:a', '买 包子')
+  assert.equal(coins(s, 'user:a'), 450)
+  assert.equal(heaps(), before, 'no new heap of coins at the counter each sale')
+  const v = Object.keys(s.npcs).find((id) => s.npcs[id].room === s.players['user:a'].room && id !== 'n:man')
+  for (let i = 0; i < 3; i++) s.things[`t:gift${i}`] = { id: 'stock/coin', at: v, n: 5 }
+  const had = coins(s, v)
+  clock.now = Math.floor(clock.now / RESET) * RESET + RESET + 100
+  say('user:a', '看')
+  assert.equal(Object.values(s.things).filter((t) => t.at === v && t.id === 'stock/coin').length, 1)
+  assert.equal(coins(s, v), had)
+  // Reset ids say what made them, a room or a townsperson, so a room and a townsperson of one name never meet.
+  const made = Object.keys(s.things).filter((tid) => tid.startsWith('t:r'))
+  assert.ok(made.length)
+  for (const tid of made) assert.match(tid, /^t:r[0-9a-z]+\.[rn]:/)
+})
+
 test('teams: a leader takes in a whole team; invitations lapse, and do not outlive a change of team', () => {
   const { s, enter, say, clock } = world()
   for (const [id, name] of [['user:a', '阿青'], ['user:b', '大壮'], ['user:c', '小咕'], ['user:d', '小翠']]) enter(id, name)

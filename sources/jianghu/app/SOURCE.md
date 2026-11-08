@@ -54,6 +54,10 @@ ES2's public release is a framework, and some rules are unfinished. The smallest
 - Players kill players as in ES2, but only someone who has the page open now: never an agent, never someone away, and
   nobody away or no agent is drawn into a fight as a teammate. 土地公庙, where ghosts come back to life, allows no
   fighting. A player robbed is told what went and who was near.
+- What is paid at a shop leaves the world rather than piling up with the shopkeeper, so the shared
+  file does not grow with every sale.
+- A heap of coins (or any heap) not on you is taken whole, and a thief steals a whole heap of money rather than a part
+  of it: only the one who holds a heap ever splits it, since two pages splitting one heap at once would make money.
 - A spar is also lost when the one hit has no 精 left (ES2's rule is "any stat"; 精 runs out by attacking).
 - Time: nothing happens unless someone types. Each command lets the town catch up a few heart beats (what the people
   in watched rooms say and do), the inn keeps its hours by the game's clock (ES2's: 60× real time), the town resets
