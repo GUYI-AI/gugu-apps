@@ -1,6 +1,6 @@
 // 舰队 in a message: four numbers and the machines, read when the card is shown — the message's own data is fixed
 // when sent and names only the board (`{ board: <file id> }`), so a card sent this morning still shows the fleet as it
-// is now. Its text (previews, quotes) keeps the counts of the moment it was sent. A click opens the org chart.
+// is now. Its text (previews, quotes) keeps the counts of the moment it was sent. A click opens the board on its 团队 view.
 import { filled, openChatBoard } from './lib/chat-board.js'
 import { fleetOf } from './lib/fleet.js'
 import { wordsFor } from './lib/fleet-text.js'
@@ -61,7 +61,7 @@ function draw() {
 
 $('card').addEventListener('click', async () => {
   try {
-    const link = await g.linkTo({ kind: 'app', tab: 'org', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: boardId ? { board: boardId } : {} })
+    const link = await g.linkTo({ kind: 'app', tab: ctx.chat ? 'file' : 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: { view: 'team', ...(boardId ? { board: boardId } : {}) } })
     await g.openLink(link)
   } catch (error) {
     g.reportError?.(error?.message ?? String(error))

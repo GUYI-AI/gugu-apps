@@ -1,4 +1,10 @@
-/* The message card: the fleet in one glance, read live when shown; a click opens the org chart. */
+/* The message card: the fleet in one glance, read live when shown; a click opens the board's 团队 view. */
+.muted { color: var(--em-foreground-muted); }
+.tone-run { --tone: var(--em-foreground-success); --tone-bg: var(--em-background-success); }
+.tone-owner { --tone: var(--em-foreground-warning); --tone-bg: var(--em-background-warning); }
+.tone-review, .tone-ci, .tone-merge { --tone: var(--em-foreground-info); --tone-bg: var(--em-background-info); }
+.tone-lane, .tone-other { --tone: var(--em-foreground-muted); --tone-bg: var(--em-hover); }
+.tone-quota, .tone-error { --tone: var(--em-foreground-destructive); --tone-bg: var(--em-background-destructive); }
 body.fleet-card { margin: 0; height: 100vh; overflow: hidden; }
 #card { box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; gap: 6px; padding: 10px 12px; text-align: left; border: 0; border-radius: 0; background: var(--em-background-1); box-shadow: none; font-weight: normal; cursor: pointer; }
 #card:hover { background: var(--em-hover); }

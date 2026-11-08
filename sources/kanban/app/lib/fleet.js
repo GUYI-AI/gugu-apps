@@ -1,6 +1,6 @@
 // The fleet, as data: the person's agents on every computer, laid out the way the fleet runs — each machine's
 // supervisor, the lanes under it — joined with the board's cards (a lane is the card its task is linked to). What
-// each lane waits on, read from the card, its task and its pull request. No DOM: the org page, the message card and
+// each lane waits on, read from the card, its task and its pull request. No DOM: the board page, the message card and
 // the tools read the same file.
 import { taskState, pendingAsk, prNumber, decisionsInOrder, STALE_MS } from './core.js'
 
