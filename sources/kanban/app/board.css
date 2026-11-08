@@ -361,7 +361,16 @@ button.plain:hover { background: var(--em-hover); color: var(--em-foreground); }
   .member .who { width: auto; flex: 1 1 200px; }
   .held { flex: 1 1 100%; padding-left: 46px; }
 }
+/* Before Chrome 114 (older phones' WebViews) `popover` does nothing and a column's menu would simply lie over the cards. */
+@supports not selector(:popover-open) {
+  .col > h2 .menu { display: none; }
+}
 @container shell (max-width: 640px) {
+  #bar { flex-wrap: wrap; }
+  #bar h1 { font-size: var(--em-font-heading); }
+  #summary { display: none; }
+  .owners .owner { max-width: 100%; min-width: 0; }
+  .owners .owner .muted { display: none; }
   #bar #filters { margin-left: 0; }
   #people, #asks { margin: 0 var(--em-spacing-md); }
   #team, #ledger { padding: 0 var(--em-spacing-md) var(--em-spacing-lg); }

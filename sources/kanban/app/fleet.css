@@ -12,7 +12,7 @@ body.fleet-card { margin: 0; height: 100vh; overflow: hidden; }
 #title { font-size: var(--em-font-body); }
 #when { margin-left: auto; }
 #nums { display: flex; gap: 6px; }
-.num { flex: 1; border-radius: var(--em-radius-control); padding: 4px 6px; background: var(--tone-bg, var(--em-hover)); color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
+.num { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: var(--em-radius-control); padding: 4px 6px; background: var(--tone-bg, var(--em-hover)); color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
 .num b { display: block; font-size: 17px; line-height: 1.2; color: var(--tone, var(--em-foreground)); font-variant-numeric: tabular-nums; }
 .num.zero { --tone: var(--em-foreground-passive); --tone-bg: var(--em-hover); }
 #machines { display: flex; gap: 8px; align-items: center; color: var(--em-foreground-muted); font-size: var(--em-font-caption); white-space: nowrap; overflow: hidden; }
