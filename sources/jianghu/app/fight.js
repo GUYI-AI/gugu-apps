@@ -89,13 +89,15 @@ export function brawl(x, a, b, mode, lead = []) {
   }
   for (const [k, v] of Object.entries(ch(w, a).hate ?? {})) if (v && k === b) kills.add(`${a}>${b}`)
   const side = { [a]: 0, [b]: 1 }
-  // Helpers: teammates in the room, guards of the one attacked, soldiers for soldiers.
+  // Helpers: teammates in the room (not when two of one team fight each other), guards of the one attacked, soldiers
+  // for soldiers.
+  const oneTeam = !isNpc(a) && !isNpc(b) && ch(w, a).team && ch(w, a).team === ch(w, b).team
   for (const id of peopleIn(w, room)) {
     if (id in side || !awake(w, id, x.now)) continue
     const c = ch(w, id)
     for (const [s0, who0] of [[0, a], [1, b]]) {
       const lead0 = ch(w, who0)
-      const team = !isNpc(id) && !isNpc(who0) && lead0.team && lead0.team === c.team
+      const team = !oneTeam && !isNpc(id) && !isNpc(who0) && lead0.team && lead0.team === c.team
       const guard = c.guarding === who0
       const soldier = isNpc(id) && isNpc(who0) && npcData(id).kind.includes('soldier') && npcData(who0).kind.includes('soldier') && mode === 'kill'
       if (team || guard || soldier) {

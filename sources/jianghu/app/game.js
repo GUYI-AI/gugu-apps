@@ -902,15 +902,18 @@ function teamWith(x, rest) {
   const t = lead(people(w, me, p.room).filter((c) => !isNpc(c.key)), rest)
   if (!t) return x.out.push('你想和谁成为伙伴？')
   const o = w.players[t.key]
-  if (o.invite === me || (o.team && o.team === p.invite)) {
-    // They asked first: join their team.
-    const team = o.team ?? t.key
-    o.team = team
-    p.team = team
+  if (p.team && p.team !== me) return x.out.push('只有队伍领袖可以邀请别人加入。')
+  if (o.invite === me) {
+    // They asked first: a leader takes them into the team, anyone else joins theirs (cmds/std/team.c).
     delete o.invite
+    if (p.team === me) {
+      o.team = me
+      return vision(x, p.room, '$N决定让$n加入队伍。', me, t.key, { to: t.key })
+    }
+    o.team = t.key
+    p.team = t.key
     return vision(x, p.room, '$N决定加入$n的队伍。', me, t.key, { to: t.key })
   }
-  if (p.team && p.team !== me) return x.out.push('只有队伍领袖可以邀请别人加入。')
   p.invite = t.key
   vision(x, p.room, '$N邀请$n加入$P的队伍。', me, t.key, { to: t.key })
   tell(x, t.key, `如果你愿意加入，请用「组队 ${p.name}」。`)

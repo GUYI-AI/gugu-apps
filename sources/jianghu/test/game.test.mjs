@@ -113,10 +113,14 @@ test('sparring only tires; the loser is left with 1 气 and nobody is hurt', () 
   const { s, enter, say } = world(3)
   enter('user:a', '阿青')
   enter('user:b', '大壮')
-  s.players['user:a'].room = s.players['user:b'].room = 'square_e'
+  enter('user:c', '小咕')
+  s.players['user:a'].room = s.players['user:b'].room = s.players['user:c'].room = 'square_e'
+  // All three in one team: the third keeps out of a spar between the other two.
+  say('user:a', '组队 大壮'); say('user:b', '组队 阿青'); say('user:c', '组队 阿青'); say('user:a', '组队 小咕')
   assert.match(say('user:a', '比武 大壮'), /必须等对方同意/)
   const r = say('user:b', '比武 阿青')
   assert.match(r, /领教这位朋友的高招[\s\S]*输掉了这场比试/)
+  assert.doesNotMatch(r, /小咕/)
   for (const id of ['user:a', 'user:b']) {
     assert.equal(s.players[id].ghost, undefined)
     assert.equal(s.players[id].kee[1], s.players[id].kee[2], 'no wounds in a spar')
@@ -132,6 +136,12 @@ test('teammates fight together; the dead NPC leaves a corpse with its things', (
   for (const id of ['user:a', 'user:b']) s.things[`t:sw-${id}`] = { id: 'woodsword', at: id, eq: 'wield' }
   say('user:a', '组队 大壮')
   assert.match(say('user:b', '组队 阿青'), /你决定加入阿青的队伍/)
+  // A third asks the leader: the leader takes them in and the team stays one.
+  enter('user:c', '小咕')
+  s.players['user:c'].room = 'nstreet2'
+  say('user:c', '组队 阿青')
+  assert.match(say('user:a', '组队 小咕'), /你决定让小咕加入队伍/)
+  assert.deepEqual(['user:a', 'user:b', 'user:c'].map((id) => s.players[id].team), ['user:a', 'user:a', 'user:a'])
   const r = say('user:a', '杀 路人')
   assert.match(r, /大壮加入了战团/)
   assert.ok(s.npcs['n:man'].dead)
