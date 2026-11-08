@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+The task page's tab is titled Computer in English (it read 电脑 to everyone); Chinese keeps 电脑 through `localized.zh-CN`.
+
 ## 0.4.0
 
 App interface 25: the preview follows `ctx.workspace.sessionId` (was `ctx.session.id`).
