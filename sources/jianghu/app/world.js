@@ -5,6 +5,7 @@
 // (`log`). Rooms, people and things as ES2 made them are in es2.js. A command runs on a copy of the file (`x.w`); what
 // differs afterwards is written back (game.js diff), so the rules below just change `x.w` in place.
 import { ROOMS, NPCS, ITEMS } from './es2.js'
+import * as XYJ from './xyj.js'
 import { gameTime, cn } from './text.js'
 
 export const START = 'inn_hall'
@@ -17,7 +18,12 @@ export const RESET = 30 * 60_000
 export const LOG_MAX = 60
 
 /** Hooks of particular people and rooms (story.js fills them): what they do beyond the general rules. */
-export const HOOKS = { npc: {}, room: {}, chat: {}, item: {} }
+export const HOOKS = { npc: {}, room: {}, chat: {}, item: {}, cmd: {} }
+
+// 西游记's 长安 and 五庄观 (xyj.js) are a second world beside 雪亭镇: no exit joins them (xyj-story.js 西游 / 东归).
+Object.assign(ROOMS, XYJ.ROOMS)
+Object.assign(NPCS, XYJ.NPCS)
+Object.assign(ITEMS, XYJ.ITEMS)
 
 // ── ids ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 

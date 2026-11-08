@@ -26,7 +26,7 @@ function world(seed = 7) {
 const thingsOf = (s, at) => Object.values(s.things).filter((t) => t.at === at).map((t) => t.id)
 
 test('the whole of ES2 snow is here: every room reachable, every exit leads to a room', () => {
-  assert.equal(Object.keys(ROOMS).length, 43)
+  assert.equal(Object.keys(ROOMS).filter((id) => ROOMS[id].area !== 'xyj').length, 43)
   for (const [id, r] of Object.entries(ROOMS)) for (const to of Object.values(r.exits)) assert.ok(ROOMS[to], `${id} → ${to}`)
   const s = fresh({ now: 0, rand: () => 0.5 })
   for (const [id, r] of Object.entries(ROOMS)) for (const k of Object.keys(r.spawn ?? {})) if (NPCS[k]) assert.ok(s.npcs[`n:${k}`], `${k} in ${id}`)

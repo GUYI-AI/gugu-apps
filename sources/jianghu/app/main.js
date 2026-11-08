@@ -2,7 +2,7 @@
 // line to type in. Every command goes through game.js, as the agents' do through tools.js; what lasts goes into the
 // file, presence only says who has the page open. A person speaking to an agent, naming it, handing it something or
 // attacking it wakes it with a whisper (game.js wakes); nothing else does.
-import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText, hintFor, hintStep, wayTo, START } from './game.js'
+import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText, hintFor, hintStep, wayTo, statBars, START } from './game.js'
 import { ROOMS, peopleIn, thingGroups, nameOf, isNpc, npcData } from './world.js'
 import { gameTime, phaseOf } from './text.js'
 
@@ -10,7 +10,6 @@ import { gameTime, phaseOf } from './text.js'
 // gets a side column with the compass, who and what is here, and who is in the town.
 const ROOM_TITLES = new Set(Object.values(ROOMS).map((r) => `【${r.name}】`))
 const SHICHEN = '子丑寅卯辰巳午未申酉戌亥'
-const STATS = [['精', 'gin'], ['气', 'kee'], ['神', 'sen'], ['体', 'hp'], ['食', 'food'], ['水', 'water']]
 const COMPASS = ['西北', '北', '东北', '西', null, '东', '西南', '南', '东南']
 const EXTRA = ['上', '下', '出去']
 
@@ -113,8 +112,7 @@ if (!ctx.file) {
   const button = (text, onclick, className = '') => h('button', { type: 'button', className, onclick }, text)
 
   /** 精气神, body, food and water: each a short bar, green, then yellow below 60%, red below 30%. */
-  const bar = (p, [label, k]) => {
-    const { cur, max } = p[k]
+  const bar = ([label, { cur, max }]) => {
     const r = max ? cur / max : 0
     return h('span', { className: `bar ${r > 0.6 ? 'ok' : r > 0.3 ? 'warn' : 'bad'}`, title: `${label} ${cur}/${max}` },
       h('b', {}, label), h('i', {}, h('u', { style: `width:${Math.round(Math.min(1, r) * 100)}%` })), h('small', {}, `${cur}`))
@@ -166,7 +164,7 @@ if (!ctx.file) {
     const now = Date.now()
     $('#room').textContent = r.name
     $('#clock').textContent = `${SHICHEN[Math.floor(((gameTime(now).hour + 1) % 24) / 2)]}时 · ${phaseOf(now)[2]}`
-    $('#stats').replaceChildren(...(p ? STATS.filter(([, k]) => p[k]).map((st) => bar(p, st)) : []), ...(p?.ghost ? [h('strong', {}, '鬼魂')] : []))
+    $('#stats').replaceChildren(...(p ? statBars(p).map(bar) : []), ...(p?.ghost ? [h('strong', {}, '鬼魂')] : []))
     const hint = p ? hintFor(s, me) : null
     // Above the log, not in it: the log scrolls to its newest line, and the card must stay in sight.
     const card = guide(p, hint)

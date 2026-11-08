@@ -14,6 +14,7 @@ import {
 import { DIRS, BACK, ATTR_NAMES, SCORE_NAMES, CLASS_NAMES, EMOTES, HUNT_MSG, woundMsg, phaseOf, timeText, priceText, cn } from './text.js'
 import { brawl, improve, skillName, weaponOf } from './fight.js'
 import './story.js'
+import './xyj-story.js'
 
 export const FILE_NAME = '文字江湖.jianghu.json'
 export const VERSION = 3
@@ -83,6 +84,7 @@ export const lastKey = (s) => sortedLog(s).at(-1)?.[0] ?? ''
 export function sees(s, ev, viewer, room) {
   if (ev.only) return ev.only === viewer
   if (ev.k === 'team') return Boolean(s.players?.[viewer]?.team) && s.players[viewer].team === ev.team
+  if (ev.k === 'chat') return true // a word to the whole world (xyj-story.js: 镇元大仙's 人参果 meeting)
   if (ev.room === room) return true
   const name = s.players?.[viewer]?.name
   return ev.k === 'say' && Boolean(name) && String(ev.text).includes(name)
@@ -256,6 +258,7 @@ function arrive(x, id) {
     }
     HOOKS.npc[baseOf(n)]?.init?.(x, n, id)
   }
+  if (!isNpc(id)) HOOKS.room[room]?.init?.(x, id)
   if (isNpc(id)) for (const p of playersIn(w, room)) HOOKS.npc[baseOf(id)]?.init?.(x, id, p)
 }
 
@@ -285,7 +288,7 @@ function personShort(w, id, now) {
   const c = ch(w, id)
   if (isNpc(id)) {
     const d = npcData(id)
-    return `${d.nickname ? `「${d.nickname}」` : ''}${d.name}${c.out > now ? ' <昏迷不醒>' : ''}`
+    return `${d.title ? `${d.title} ` : ''}${d.nickname ? `「${d.nickname}」` : ''}${d.name}${c.out > now ? ' <昏迷不醒>' : ''}`
   }
   const title = c.title ?? CLASS_NAMES[c.cls] ?? ''
   return `${title} ${nameOf(w, id)}${c.agent ? '（agent）' : ''}${c.out > now ? ' <昏迷不醒>' : ''}`
@@ -331,6 +334,7 @@ export const HELP = [
   '比武 <人>（点到为止）　杀 <人>　跟随 <人>|无　组队 <人>　离队　队伍',
   '状态 / 属性 / 技能　拜师 <人>　请教 <人> <技能>　偷 <东西> 从 <人>',
   '爬 / 钻 / 进 / 搜 / 坐 / 装车 / 开门 / 关门（看地方）　时间　谁',
+  '西游（去《西游记》的长安）/ 东归　那边还有：去 <地点>　问 <人> 关于 <事>　学 <技能> 从 <人>　睡觉　激发　打坐 / 冥想 <数>　取经　腾云',
 ].join('\n')
 
 const VERBS = [
@@ -378,6 +382,21 @@ const VERBS = [
   [['坐下', '坐', 'sit'], 'sit'],
   [['装车', '装上车', '装', 'load'], 'load'],
   [['领信札', '领', 'request'], 'request'],
+  // 西游记's commands (xyj-story.js, HOOKS.cmd).
+  [['西游', '去长安', 'xiyou'], 'xiyou'],
+  [['睡觉', '睡', 'sleep'], 'sleep'],
+  [['东归', '回雪亭', 'donggui'], 'donggui'],
+  [['学习', '学', 'learn'], 'learn'],
+  [['激发', 'enable'], 'enable'],
+  [['打坐', '练内力', 'exercise'], 'exercise'],
+  [['冥想', '冥思', 'meditate'], 'meditate'],
+  [['取经', '关卡', 'obstacles'], 'obstacles'],
+  [['腾云', '飞', 'fly'], 'fly'],
+  [['打听', '问', 'ask'], 'ask'],
+  [['摸', 'mo'], 'mo'],
+  [['跳下', '跳', 'jump'], 'jump'],
+  [['接受', '观礼', 'accept'], 'accept'],
+  [['回去', 'back'], 'back'],
 ]
 
 const ascii = (w) => /^[a-z?']+$/i.test(w)
@@ -481,6 +500,8 @@ function command(x, line) {
   const reply = (t) => x.out.push(t)
   const ghostNo = () => { reply('你现在是鬼魂，做不了这件事。快去土地公庙找城隍复活吧！'); return true }
   const roomHook = (v) => HOOKS.room[room]?.[v]?.(x, rest)
+  // A world's own command, or its own way with a common one (false: not here).
+  if (HOOKS.cmd[verb] && HOOKS.cmd[verb](x, rest) !== false) return
 
   switch (verb) {
     case null:
@@ -499,6 +520,7 @@ function command(x, line) {
     case 'go': {
       const d = dirOf(rest)
       if (!d) return reply(rest ? `「${rest}」是哪个方向？${exitsLine(w, room)}` : `往哪走？${exitsLine(w, room)}`)
+      if (d === '进去' && !ROOMS[room].exits[d] && roomHook('enter')) return
       for (const n of npcsIn(w, room)) if (awake(w, n, x.now) && !p.ghost && HOOKS.npc[baseOf(n)]?.go?.(x, n, d)) return
       const to = ROOMS[room].exits[d]
       if (!to) return reply('这个方向没有出路。')
@@ -660,8 +682,10 @@ function command(x, line) {
     }
     case 'steal': return steal(x, rest)
     case 'open': case 'close': {
+      if (roomHook(verb)) return
       const d = Object.keys(ROOMS[room].doors ?? {})[0]
       if (!d) return reply('这里没有门。')
+      if (verb === 'open' && ROOMS[room].doors[d].locked && closed(w, room, d)) return reply(ROOMS[room].doors[d].locked)
       const isClosed = closed(w, room, d)
       if ((verb === 'open') !== isClosed) return reply(`${ROOMS[room].doors[d].name}已经是${isClosed ? '关' : '开'}着的了。`)
       setDoor(x, room, d, verb === 'close')
@@ -767,6 +791,7 @@ function eat(x, tid) {
   const t = w.things[tid]
   const it = itemOf(w, tid) ?? {}
   const med = MEDICINE[t.id]
+  if (HOOKS.item[t.id]?.eat?.(x, tid)) return
   if (med) {
     if (c.food.max - c.food.cur < med.room) return x.out.push('你的肚子已经撑得什么东西也吞不下去了。')
     vision(x, c.room, med.msg, me)
@@ -776,6 +801,7 @@ function eat(x, tid) {
     if (c.food.cur + it.foodStuff > c.food.max) return x.out.push(`你的肚子已经装不下这${it.baseUnit ?? it.unit}${thingName(w, tid)}了。`)
     vision(x, c.room, `$N吃下一${it.baseUnit ?? it.unit}${thingName(w, tid)}。`, me)
     c.food.cur += it.foodStuff
+    if (it.bites > 1 && (t.bites = (t.bites ?? it.bites) - 1) > 0) return x.out.push(`${thingName(w, tid)}还剩下${cn(t.bites)}口。`)
     if (it.healKee) { supplement(c, 'kee', it.healKee); x.out.push('你吃了营养的食物，觉得气力恢复了一些。') }
   } else return x.out.push('这样东西不能吃。')
   if ((t.n ?? 1) > 1) t.n -= 1
@@ -788,12 +814,13 @@ function drink(x, tid) {
   const c = w.players[x.me]
   const t = w.things[tid]
   const it = itemOf(w, tid) ?? {}
+  if (t.water === undefined && it.water) t.water = it.water
   if (!it.liquidContainer && t.water === undefined) return x.out.push(`${thingName(w, tid)}并不是装水的容器。`)
   if (t.water === 0) return x.out.push(`${thingName(w, tid)}里没有任何能喝的东西。`)
   if (c.water.cur >= c.water.max) return x.out.push('你已经涨得喝不下一滴水了。')
   c.water.cur = Math.min(c.water.max, c.water.cur + Math.floor(c.water.max / 3))
   if (t.water !== undefined) t.water -= 1
-  vision(x, c.room, `$N从${thingName(w, tid)}喝了几口水。`, x.me)
+  vision(x, c.room, `$N从${thingName(w, tid)}喝了几口${it.liquid ?? '水'}。`, x.me)
 }
 /** fill: a bottle from the water vat (or the river). */
 function fill(x, tid) {
@@ -1065,6 +1092,10 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
 
 export { hpText as statusText }
 
+const BARS = [['精', 'gin'], ['气', 'kee'], ['神', 'sen'], ['体', 'hp'], ['食', 'food'], ['水', 'water']]
+/** The page's status bars, [label, {cur, max}]: 精气神, body, food and water, or another world's own; one missing is left out. */
+export const statBars = (p) => HOOKS.bars?.(p) ?? BARS.filter(([, k]) => p[k]).map(([label, k]) => [label, p[k]])
+
 // ── the first steps (the page's 下一步 line): the starting errand only, nothing of the town's stories ──────────────
 
 /** The first direction of the shortest way from room `from` to room `to`, or null. */
@@ -1082,6 +1113,8 @@ export function wayTo(from, to) {
 function nextStep(w, me) {
   const p = w.players?.[me]
   if (!p || p.ghost || p.agent) return null
+  const other = HOOKS.hint?.(w, me) // another world's first steps
+  if (other !== undefined) return other
   const go = (to, what) => {
     if (p.room === to) return null
     const d = wayTo(p.room, to)
