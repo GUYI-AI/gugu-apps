@@ -3,7 +3,6 @@
 // their own page; the bomb's owner clears the bomb and the bricks it broke.
 import { PAL, ages, board, brickwork, bump, directions, eyes, loop, playing, scanlines, slot, smoother, tile } from './net.js'
 
-export const title = '炸弹人'
 const W = 15, H = 11, CELL = 32, FUSE = 2, FLAME = 0.5, RANGE = 2, MAX_BOMBS = 2
 const CORNERS = [[1, 1], [W - 2, 1], [1, H - 2], [W - 2, H - 2]]
 
@@ -30,14 +29,14 @@ export function blast(x, y, brick) {
   return cells
 }
 
-export function mount(stage, { f, nameOf }) {
+export function mount(stage, { f, t, nameOf }) {
   const B = slot(f, 'bomber', { bricks: bricks(), bombs: {}, kills: {}, deaths: {} })
   const me = () => f.presence.self.userId
   const canvas = document.createElement('canvas')
   const line = document.createElement('p')
   const actions = Object.assign(document.createElement('div'), { className: 'row' })
-  const drop = Object.assign(document.createElement('button'), { className: 'primary', textContent: '放炸弹' })
-  const fresh = Object.assign(document.createElement('button'), { textContent: '新的一局' })
+  const drop = Object.assign(document.createElement('button'), { className: 'primary', textContent: t.drop })
+  const fresh = Object.assign(document.createElement('button'), { textContent: t.fresh })
   actions.append(drop, fresh)
   stage.append(line, canvas, actions)
   const { g, stop } = board(canvas, W * CELL, H * CELL)
@@ -99,7 +98,7 @@ export function mount(stage, { f, nameOf }) {
     if (!dead) player(...pos, f.presence.self.color || PAL.me)
     scanlines(g, W * CELL, H * CELL)
     const score = (id) => `${nameOf(id)} ${B().kills[id] ?? 0}/${B().deaths[id] ?? 0}`
-    line.textContent = `${dead ? '复活中　' : ''}炸到/被炸　${[me(), ...others.map((p) => p.userId)].map(score).join('　')}`
+    line.textContent = `${dead ? t.respawn : ''}${t.bombScore}${t.sep}${[me(), ...others.map((p) => p.userId)].map(score).join(t.sep)}`
     return { pos: dead ? null : pos }
   })
   return () => { stopLoop(); offDirs(); stop(); removeEventListener('keydown', space) }

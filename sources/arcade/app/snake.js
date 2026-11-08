@@ -2,7 +2,6 @@
 // I die when my head hits a wall, myself, or anyone's body as I see it — judged here, by me.
 import { PAL, board, directions, eyes, loop, playing, scanlines, slot, tile } from './net.js'
 
-export const title = '贪吃蛇'
 const W = 30, H = 22, CELL = 16, FOODS = 3
 
 export const same = (a, b) => a[0] === b[0] && a[1] === b[1]
@@ -10,7 +9,7 @@ export const hits = (head, cells) => cells.some((c) => same(head, c))
 export const outside = ([x, y]) => x < 0 || y < 0 || x >= W || y >= H
 const anywhere = () => [Math.floor(Math.random() * W), Math.floor(Math.random() * H)]
 
-export function mount(stage, { f, nameOf }) {
+export function mount(stage, { f, t, nameOf }) {
   const S = slot(f, 'snake', { food: {}, best: {} })
   const me = () => f.presence.self.userId
   const canvas = document.createElement('canvas')
@@ -59,9 +58,9 @@ export function mount(stage, { f, nameOf }) {
       g.fillText('PRESS START', W * CELL / 2, H * CELL / 2)
     }
     scanlines(g, W * CELL, H * CELL)
-    line.textContent = body ? `${score} 分 · 方向键 / WASD / 滑动` : '点一下或按空格开始'
+    line.textContent = body ? t.snakeScore(score) : t.snakeStart
     const live = [{ id: me(), score: body ? score : null }, ...others.map((p) => ({ id: p.userId, score: p.state.body ? p.state.score : null }))]
-    const rows = live.map(({ id, score }) => `${nameOf(id)}　${score ?? '—'}　最佳 ${S().best[id] ?? 0}`)
+    const rows = live.map(({ id, score }) => `${nameOf(id)}${t.sep}${score ?? '—'}${t.sep}${t.best} ${S().best[id] ?? 0}`)
     if (scores.textContent !== rows.join('')) scores.replaceChildren(...rows.map((t) => Object.assign(document.createElement('li'), { textContent: t })))
   }
 

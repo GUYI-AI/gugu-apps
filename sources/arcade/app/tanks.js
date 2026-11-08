@@ -2,7 +2,6 @@
 // on its own clock from when it arrived. A shell that reaches me is judged here: the shooter's kill goes in the file.
 import { PAL, ages, board, brickwork, bump, loop, near, playing, scanlines, slot, smoother, tile } from './net.js'
 
-export const title = '坦克大战'
 const W = 480, H = 320, SPEED = 90, TURN = 3, SHELL = 260, LIFE = 1.4, RELOAD = 0.4, R = 11
 const WALLS = [[100, 60, 20, 90], [360, 170, 20, 90], [200, 150, 80, 20], [60, 250, 90, 16], [330, 50, 90, 16]]
 
@@ -18,11 +17,11 @@ export function flight(s, t) {
   return { x: s.x + s.vx * t, y: s.y + s.vy * t }
 }
 
-export function mount(stage, { f, nameOf }) {
+export function mount(stage, { f, t, nameOf }) {
   const T = slot(f, 'tanks', { kills: {}, deaths: {} })
   const me = () => f.presence.self.userId
   const canvas = document.createElement('canvas')
-  const fire = Object.assign(document.createElement('button'), { className: 'primary', textContent: '开火' })
+  const fire = Object.assign(document.createElement('button'), { className: 'primary', textContent: t.fire })
   const line = document.createElement('p')
   stage.append(line, canvas, fire)
   const { g, stop } = board(canvas, W, H)
@@ -97,7 +96,7 @@ export function mount(stage, { f, nameOf }) {
     for (const s of [...shells, ...others.flatMap((p) => p.state.shells ?? [])]) { const at = flight(s, age(s.id)); if (at) g.fillRect(at.x - 2, at.y - 2, 4, 4) }
     scanlines(g, W, H)
     const score = (id) => `${nameOf(id)} ${T().kills[id] ?? 0}/${T().deaths[id] ?? 0}`
-    line.textContent = `${dead ? '复活中　' : ''}击毁/被毁　${[me(), ...others.map((p) => p.userId)].map(score).join('　')}`
+    line.textContent = `${dead ? t.respawn : ''}${t.tankScore}${t.sep}${[me(), ...others.map((p) => p.userId)].map(score).join(t.sep)}`
     return { tank: dead ? null : tank, shells }
   })
   return () => { stopLoop(); stop(); removeEventListener('keydown', key); removeEventListener('keyup', key) }

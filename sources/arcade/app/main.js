@@ -4,19 +4,24 @@ import * as gomoku from './gomoku.js'
 import * as snake from './snake.js'
 import * as tanks from './tanks.js'
 import * as bomber from './bomber.js'
+import { wordsFor } from './words.js'
 
 const GAMES = { gomoku, snake, tanks, bomber }
 const tabs = document.querySelector('[role=tablist]')
 const stage = document.querySelector('#stage')
 const ctx = await window.gugu.getContext()
+const t = wordsFor(ctx.locale)
+document.documentElement.lang = String(ctx.locale ?? '').startsWith('zh') ? 'zh-CN' : 'en'
+tabs.setAttribute('aria-label', t.gamesLabel)
+document.title = t.app
 
 if (!ctx.file) {
-  stage.innerHTML = '<gugu-empty icon="gamepad-2"><strong>在群里打开</strong><small>群聊 → 应用 → 联机小游戏，群里的人一起玩</small></gugu-empty>'
+  stage.innerHTML = `<gugu-empty icon="gamepad-2"><strong>${t.openInGroup}</strong><small>${t.openHint}</small></gugu-empty>`
 } else {
   const f = await window.gugu.files.open(ctx.file)
   const names = new Map((ctx.chat?.members ?? []).map((m) => [m.id, m.name]))
   const here = (id) => (id === f.presence.self.userId ? f.presence.self : f.presence.others.find((p) => p.userId === id))
-  const room = { f, nameOf: (id) => here(id)?.name ?? names.get(id) ?? '已离开的成员' }
+  const room = { f, t, nameOf: (id) => here(id)?.name ?? names.get(id) ?? t.left }
   let current = null
   let stop = () => {}
   const show = (name) => {
@@ -33,7 +38,7 @@ if (!ctx.file) {
     const b = document.createElement('button')
     b.setAttribute('role', 'tab')
     b.setAttribute('aria-selected', String(name === current))
-    b.textContent = here ? `${game.title} · ${here}` : game.title
+    b.textContent = here ? `${t[name]} · ${here}` : t[name]
     b.onclick = () => show(name)
     return b
   }))
