@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>gugu contribution</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <main class="stack" id="app" hidden>
+    <header class="head">
+      <div role="tablist" id="tabs">
+        <button role="tab" id="tab-start" data-tab="start"></button>
+        <button role="tab" id="tab-mine" data-tab="mine"></button>
+        <button role="tab" id="tab-board" data-tab="board"></button>
+      </div>
+      <small class="muted" id="who"></small>
+      <button id="refresh"><gugu-icon name="refresh"></gugu-icon></button>
+    </header>
+    <div role="alert" id="err" hidden></div>
+    <section id="view" class="stack" role="tabpanel"></section>
+    <small class="muted" id="stamp"></small>
+  </main>
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

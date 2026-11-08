@@ -1,0 +1,57 @@
+{
+  "id": "gugu-contribution",
+  "name": "咕咕贡献",
+  "defaultLocale": "zh-CN",
+  "subtitle": "一起开发咕咕：报问题、修 bug、写 App",
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 32,
+  "platforms": [
+    "desktop",
+    "phone"
+  ],
+  "engines": {
+    "gugu": ">=0.3.2"
+  },
+  "entry": "panel.html",
+  "icon": "icon.png",
+  "categories": [
+    "productivity"
+  ],
+  "permissions": {
+    "capabilities": [
+      "agents:tools"
+    ],
+    "network": [
+      "api.github.com"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "panel",
+        "title": "咕咕贡献",
+        "entry": "panel.html"
+      }
+    ],
+    "skills": "skills",
+    "instructions": "When gugu errs, confuses the person or lacks a feature, or they want to contribute, read skill gugu-contribution before reporting or proposing an App."
+  },
+  "examples": [
+    "这像是咕咕的 bug，帮我报给咕咕",
+    "我想给咕咕贡献代码，从哪开始？",
+    "我想要的这个功能咕咕没有，能做成一个 App 吗？"
+  ],
+  "license": "MIT",
+  "localized": {
+    "en": {
+      "name": "gugu contribution",
+      "subtitle": "Build gugu with your agent",
+      "tabs": {
+        "panel": {
+          "title": "gugu contribution"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+/* The host styles the elements; only the layout is the App's. */
+html { scrollbar-gutter: stable; }
+body { margin: 0; }
+#app { box-sizing: border-box; padding: var(--em-spacing-lg) var(--em-spacing-md); gap: var(--em-spacing-md); max-width: 680px; margin: 0 auto; }
+#app[hidden] { display: none; }
+.head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--em-spacing-sm); }
+#tabs { margin: 0 auto 0 0; flex-wrap: wrap; }
+#who { white-space: nowrap; }
+#view { gap: var(--em-spacing-md); }
+#view p { margin: 0; }
+.way { gap: var(--em-spacing-sm); }
+.way h4, #view h2 { margin: 0; }
+.way .row { margin-top: var(--em-spacing-xs); }
+.way details { margin-top: var(--em-spacing-xs); }
+#view > .list { margin-inline: calc(-1 * var(--em-spacing-sm)); }
+#view > details p { margin-top: var(--em-spacing-sm); }
+.center { text-align: center; }
+.way .actions { align-items: center; gap: var(--em-spacing-md); }
+.way details ol { margin: var(--em-spacing-sm) 0; padding-inline-start: var(--em-spacing-xl); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--em-spacing-sm); }
+.stats .card strong { display: block; font-size: var(--em-font-heading); line-height: var(--em-lh-heading); }
+.list li > div:not(.pts) { flex: 1; min-width: 0; }
+.list .title { display: block; white-space: normal; overflow-wrap: anywhere; }
+.list li > div span { display: block; white-space: normal; overflow-wrap: anywhere; }
+.list li > button, .list li > strong:not(.rank) { flex: none; }
+.rank { min-width: 1.5em; font-variant-numeric: tabular-nums; }
+.pts { flex: none; text-align: right; }
+.pts strong { display: block; font-size: var(--em-font-title); line-height: var(--em-lh-title); }
+.pts small { white-space: nowrap; }
+.score { color: var(--em-foreground-success); }
+.conflict { color: var(--em-foreground-destructive); }
+.me { background: var(--em-selected); }
+.stale .stats, .stale .list { opacity: 0.6; }
+#err { overflow-wrap: anywhere; }
+code { white-space: nowrap; }
+@media (max-width: 480px) {
+  #who { display: none; }
+  .head { flex-wrap: nowrap; }
+  #refresh { flex: none; padding-inline: var(--em-spacing-xs); }
+  .list li:has(> button) { flex-wrap: wrap; }
+  .list li:has(> button) > div { flex: 1 1 100%; }
+}
