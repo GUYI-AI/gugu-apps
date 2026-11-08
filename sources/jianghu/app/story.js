@@ -69,8 +69,8 @@ R.river1 = {
   drink(x, arg) {
     if (arg && !/水|溪|河/.test(arg)) return false
     const c = x.w.players[x.me]
-    if (c.water[0] >= c.water[1]) { x.out.push('你已经涨得喝不下一滴水了。'); return true }
-    c.water[0] = Math.min(c.water[1], c.water[0] + Math.floor(c.water[1] / 3))
+    if (c.water.cur >= c.water.max) { x.out.push('你已经涨得喝不下一滴水了。'); return true }
+    c.water.cur = Math.min(c.water.max, c.water.cur + Math.floor(c.water.max / 3))
     vision(x, 'river1', '$N捧起溪水喝了几口。', x.me)
     return true
   },
@@ -121,7 +121,7 @@ R.store = {
 HOOKS.item.crate = {
   /** npc/obj/crate.c: lifting one takes 10 气. */
   get(x, tid) {
-    if (x.w.players[x.me].kee[0] < 10) { x.out.push('你的力气不够了，休息一下再说吧。'); return true }
+    if (x.w.players[x.me].kee.cur < 10) { x.out.push('你的力气不够了，休息一下再说吧。'); return true }
     moveThing(x, tid, x.me)
     vision(x, meRoom(x), `$N弯下腰将地上的${thingName(x.w, tid)}扛了起来。`, x.me)
     return true
@@ -152,6 +152,9 @@ function closeInn(x) {
   c.room = 'inn_staff_room'
 }
 HOOKS.schedule = [[700, openInn], [2200, closeInn]]
+
+// The App's rule, not ES2's: no fighting at 土地公庙, where ghosts come back to life.
+ROOMS.small_temple.noFight = true
 
 HOOKS.reset = (x) => {
   const { hour } = gameTime(x.now)

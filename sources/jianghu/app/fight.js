@@ -7,7 +7,7 @@
 // and skills and levels rise with use.
 import { ACTIONS, IDLE, LIMBS, SKILL_NAMES, ATTR_NAMES, damageMsg, woundMsg, tiredMsg, DEAD_MSG } from './text.js'
 import {
-  HOOKS, ITEMS, ROOMS, ch, isNpc, baseOf, npcData, attr, skillLv, applied, consume, wound, thingsAt, makeThing,
+  HOOKS, ITEMS, ROOMS, online, ch, isNpc, baseOf, npcData, attr, skillLv, applied, consume, wound, thingsAt, makeThing,
   moveThing, vision, tell, nameOf, regen, peopleIn, awake,
 } from './world.js'
 
@@ -26,12 +26,12 @@ export function weaponOf(w, id) {
 
 // combat.c query_ability / query_strength
 const ability = {
-  attack: (w, id, c) => Math.floor(attr(w, id, 'dex') * attr(w, id, 'cor') / 10) + (c.gin[0] >> 5) + applied(w, id, 'attack'),
-  defense: (w, id, c) => Math.floor(attr(w, id, 'dex') * attr(w, id, 'cps') / 10) + (c.gin[0] >> 5) + applied(w, id, 'defense'),
-  intimidate: (w, id, c) => Math.floor(attr(w, id, 'cor') * attr(w, id, 'str') / 10) + (c.kee[0] >> 5) + applied(w, id, 'intimidate'),
-  wittiness: (w, id, c) => Math.floor(attr(w, id, 'cps') * attr(w, id, 'wis') / 10) + (c.kee[0] >> 4),
+  attack: (w, id, c) => Math.floor(attr(w, id, 'dex') * attr(w, id, 'cor') / 10) + (c.gin.cur >> 5) + applied(w, id, 'attack'),
+  defense: (w, id, c) => Math.floor(attr(w, id, 'dex') * attr(w, id, 'cps') / 10) + (c.gin.cur >> 5) + applied(w, id, 'defense'),
+  intimidate: (w, id, c) => Math.floor(attr(w, id, 'cor') * attr(w, id, 'str') / 10) + (c.kee.cur >> 5) + applied(w, id, 'intimidate'),
+  wittiness: (w, id, c) => Math.floor(attr(w, id, 'cps') * attr(w, id, 'wis') / 10) + (c.kee.cur >> 4),
 }
-const strength = (w, id, c) => attr(w, id, 'str') * attr(w, id, 'cor') * 150 + c.kee[0] * 30
+const strength = (w, id, c) => attr(w, id, 'str') * attr(w, id, 'cor') * 150 + c.kee.cur * 30
 
 /** Learned points into a skill; a level comes when they reach (level+1)² (ES2 leaves this to skill files it lacks). */
 export function improve(x, id, s, n) {
@@ -70,7 +70,7 @@ export function gainScore(x, id, course, n) {
 
 /**
  * A fight `a` starts against `b`: everyone with a side in this room takes part (teammates and protectors help,
- * soldiers stand by each other), and rounds run until one side cannot go on, someone flees, or 40 rounds pass.
+ * soldiers stand by each other), and rounds run until one side cannot go on, someone flees, or 150 rounds pass.
  * `mode`: 'fight' spars, 'kill' is to the death. `lead`: what was said as it began.
  */
 export function brawl(x, a, b, mode, lead = []) {
@@ -85,7 +85,7 @@ export function brawl(x, a, b, mode, lead = []) {
   if (mode === 'kill') {
     kills.add(`${a}>${b}`)
     if (isNpc(b)) kills.add(`${b}>${a}`)
-    else if (ch(w, b).killing?.includes(a)) kills.add(`${b}>${a}`)
+    else if (ch(w, b).killing?.[a]) kills.add(`${b}>${a}`)
   }
   for (const [k, v] of Object.entries(ch(w, a).hate ?? {})) if (v && k === b) kills.add(`${a}>${b}`)
   const side = { [a]: 0, [b]: 1 }
@@ -93,7 +93,8 @@ export function brawl(x, a, b, mode, lead = []) {
   // for soldiers.
   const oneTeam = !isNpc(a) && !isNpc(b) && ch(w, a).team && ch(w, a).team === ch(w, b).team
   for (const id of peopleIn(w, room)) {
-    if (id in side || !awake(w, id, x.now)) continue
+    // Nobody joins a spar; no agent and nobody away joins a fight.
+    if (id in side || !awake(w, id, x.now) || mode !== 'kill' || !(isNpc(id) || online(w, id, x.now))) continue
     const c = ch(w, id)
     for (const [s0, who0] of [[0, a], [1, b]]) {
       const lead0 = ch(w, who0)
@@ -182,12 +183,12 @@ function attack(x, id, t, killing, say) {
   let str = strength(w, id, me)
   const force = skillLv(w, id, 'force')
   if (force) {
-    const bonus = Math.floor(force * me.kee[0] * 3)
+    const bonus = Math.floor(force * me.kee.cur * 3)
     if (isNpc(id)) str += bonus
-    else if (me.kee[0] > bonus / 500) { consume(me, 'kee', Math.floor(bonus / 500)); str += bonus }
+    else if (me.kee.cur > bonus / 500) { consume(me, 'kee', Math.floor(bonus / 500)); str += bonus }
   }
   if (!isNpc(id)) {
-    if (me.gin[0] > 1) consume(me, 'gin', 1)
+    if (me.gin.cur > 1) consume(me, 'gin', 1)
     else { abil = Math.floor(abil / 2); str = Math.floor(str / 2) }
   }
   abil = Math.max(1, abil)
@@ -216,7 +217,7 @@ function attack(x, id, t, killing, say) {
     improve(x, id, wp.skill, 1)
     gainScore(x, id, 'combat', 1 + rnd(x, Math.floor(attr(w, id, 'int') / 3)))
   }
-  const pct = dmg * 100 / Math.max(1, op.kee[1])
+  const pct = dmg * 100 / Math.max(1, op.kee.eff)
   say(`${msg}，${damageMsg(pct, type).replace('$l', limb).replaceAll('$w', wname)}`, id, t)
   return receive(x, t, id, dmg, killing, say)
 }
@@ -228,27 +229,27 @@ function receive(x, t, from, dmg, killing, say) {
   if (dmg <= 0) return null
   const out = op.out > x.now
   if (out) {
-    op.hp[0] -= dmg * 10
+    op.hp.cur -= dmg * 10
   } else {
     consume(op, 'kee', dmg)
     if (killing) {
-      if (rnd(x, Math.floor(op.kee[1] / 3)) < dmg) { wound(op, 'kee', dmg); gainScore(x, t, 'survive', dmg) }
-      if (rnd(x, op.kee[0]) < dmg) op.hp[0] -= rnd(x, dmg) + 1
+      if (rnd(x, Math.floor(op.kee.eff / 3)) < dmg) { wound(op, 'kee', dmg); gainScore(x, t, 'survive', dmg) }
+      if (rnd(x, op.kee.cur) < dmg) op.hp.cur -= rnd(x, dmg) + 1
     }
   }
-  if (op.hp[0] <= 0) { die(x, t, from, say); return null }
-  if (!out) say(killing && op.kee[1] < op.kee[2] ? woundMsg(Math.floor(op.kee[1] * 100 / op.kee[2])) : tiredMsg(Math.floor(op.kee[0] * 100 / Math.max(1, op.kee[1]))), t)
+  if (op.hp.cur <= 0) { die(x, t, from, say); return null }
+  if (!out) say(killing && op.kee.eff < op.kee.max ? woundMsg(Math.floor(op.kee.eff * 100 / op.kee.max)) : tiredMsg(Math.floor(op.kee.cur * 100 / Math.max(1, op.kee.eff))), t)
   // A spar is lost when any stat of the one hit is spent (receive_damage): 气 by blows, 精 by one's own attacks.
-  if (!killing && !out && op.gin[0] <= 1) { op.gin[0] = 1; return sparOver(x, t, from, say) }
-  if (op.kee[0] <= 0 && !out) {
+  if (!killing && !out && op.gin.cur <= 1) { op.gin.cur = 1; return sparOver(x, t, from, say) }
+  if (op.kee.cur <= 0 && !out) {
     // Exhausted: a spar is lost (its stats back to 1); otherwise down.
-    if (!killing) { op.kee[0] = 1; return sparOver(x, t, from, say) }
+    if (!killing) { op.kee.cur = 1; return sparOver(x, t, from, say) }
     knockOut(x, t, say)
     return null
   }
   // set_stat_notify: under this share of 气, an NPC reacts (most flee).
   const d = isNpc(t) ? npcData(t) : null
-  if (d?.notify?.kee && op.kee[0] * 100 < op.kee[2] * d.notify.kee) {
+  if (d?.notify?.kee && op.kee.cur * 100 < op.kee.max * d.notify.kee) {
     const hook = HOOKS.npc[baseOf(t)]?.notify
     if (hook) return hook(x, t, from, say, killing)
     return flee(x, t, say)
@@ -309,11 +310,11 @@ export function die(x, id, killer, say = null) {
   // A ghost: no 气, no fights, until 土地公庙.
   c.ghost = true
   c.diedAt = x.now
-  c.hp[0] = 0
+  c.hp.cur = 0
   delete c.out
   delete c.follow
   delete c.killing
-  c.kee[0] = 0
+  c.kee.cur = 0
   tell(x, id, '你死了！！')
   for (const n of Object.values(w.npcs)) if (n.hate) delete n.hate[id]
 }

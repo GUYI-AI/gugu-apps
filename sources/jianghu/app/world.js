@@ -26,6 +26,12 @@ export const isThing = (id) => typeof id === 'string' && id.startsWith('t:')
 /** n:child3.2 → child3: the person in es2.js an NPC is one of. */
 export const baseOf = (id) => id.slice(2).split('.')[0]
 export const npcData = (id) => NPCS[baseOf(id)]
+/**
+ * A person with the page open now: the page marks `here` while open (main.js). Only they can be killed by another
+ * player or be drawn into someone's fight; agents and people away never are.
+ */
+export const ONLINE = 150_000
+export const online = (w, id, now) => { const p = w.players?.[id]; return Boolean(p) && !p.agent && now - (p.here ?? 0) < ONLINE }
 export const ch = (w, id) => (isNpc(id) ? w.npcs?.[id] : w.players?.[id])
 export const alive = (w, id) => { const c = ch(w, id); return Boolean(c) && !c.dead }
 export const awake = (w, id, now) => { const c = ch(w, id); return Boolean(c) && !c.dead && !c.ghost && !(c.out > now) }
@@ -67,14 +73,17 @@ export function thingGroups(w, at) {
   const groups = new Map()
   for (const tid of thingsAt(w, at)) {
     const t = w.things[tid]
-    const key = ITEMS[t.id]?.baseUnit ? tid : `${t.id}|${thingName(w, tid)}`
+    const key = `${t.id}|${thingName(w, tid)}|${t.eq ?? ''}`
     if (groups.has(key)) groups.get(key).push(tid)
     else groups.set(key, [tid])
   }
   return [...groups.values()].map((tids) => {
     if (tids.length === 1) return [tids[0], thingShort(w, tids[0])]
     const t = w.things[tids[0]]
-    return [tids[0], `${count(tids.length)}${ITEMS[t.id]?.unit ?? t.unit ?? '个'}${thingName(w, tids[0])}`]
+    const it = ITEMS[t.id] ?? {}
+    // Stacks of one kind (several heaps of coins) read as one heap.
+    if (it.baseUnit) return [tids[0], `${count(tids.reduce((n, tid) => n + (w.things[tid].n ?? 1), 0))}${it.baseUnit}${thingName(w, tids[0])}`]
+    return [tids[0], `${count(tids.length)}${it.unit ?? t.unit ?? '个'}${thingName(w, tids[0])}`]
   })
 }
 
@@ -108,12 +117,14 @@ export const clsOf = (w, id) => (isNpc(id) ? npcData(id)?.cls ?? 'commoner' : w.
 
 /** A new character's stats: ES2's human (daemon/race/human.c): 精气神 30, 形体 根骨×5, food and water by attributes. */
 export function newStats(attrs, more = {}) {
-  const stat = (k) => { const m = more.max?.[k] ?? 30 + (more.advance?.[k] ?? 0); return [m, m, m] }
+  // Named keys, never arrays: two pages writing one character at once merge leaf by leaf.
+  const stat = (k) => { const m = more.max?.[k] ?? 30 + (more.advance?.[k] ?? 0); return { cur: m, eff: m, max: m } }
+  const full = (m) => ({ cur: m, max: m })
   return {
     gin: stat('gin'), kee: stat('kee'), sen: stat('sen'),
-    hp: [attrs.con * 5, attrs.con * 5],
-    food: [attrs.con * 10 + attrs.str * 5, attrs.con * 10 + attrs.str * 5],
-    water: [attrs.cps * 10 + attrs.dex * 5, attrs.cps * 10 + attrs.dex * 5],
+    hp: full(attrs.con * 5),
+    food: full(attrs.con * 10 + attrs.str * 5),
+    water: full(attrs.cps * 10 + attrs.dex * 5),
   }
 }
 
@@ -126,19 +137,26 @@ export function newPlayer(x, name, agent) {
   }
 }
 
+/** An NPC (back) in the world with what it carries; in a town reset its things take the reset's ids (resetId). */
 export function spawnNpc(x, id, room) {
   const d = npcData(id)
   const attrs = Object.fromEntries(ATTRS.map((k) => [k, d.attrs?.[k] ?? 15]))
   const st = newStats(attrs, d)
   x.w.npcs[id] = { room, home: room, rt: x.now, ...st }
-  for (const [key, how] of d.carry ?? []) {
+  for (const [i, [key, how]] of (d.carry ?? []).entries()) {
     if (!ITEMS[key]) continue
-    const tid = makeThing(x, key, id)
+    const tid = makeThing(x, key, id, 1, {}, resetId(x, id.slice(2), i))
     if (how === 'wear' || how === 'wield') x.w.things[tid].eq = how
   }
-  if (d.coin) makeThing(x, 'stock/coin', id, d.coin)
+  if (d.coin) makeThing(x, 'stock/coin', id, d.coin, {}, resetId(x, id.slice(2), 'coin'))
   return id
 }
+
+/**
+ * The id of a thing a town reset makes: the same on every page that runs the same reset (`x.reset` is its number), so
+ * two pages crossing the half hour together write one set of things, not two. Outside a reset: a fresh id.
+ */
+export const resetId = (x, ...where) => (x.reset ? ['t:r' + x.reset.toString(36), ...where].join('.') : undefined)
 
 export const roomOf = (w, id) => (isThing(id) ? w.things[id]?.at : ch(w, id)?.room)
 export const peopleIn = (w, room) => [
@@ -151,13 +169,13 @@ export const playersIn = (w, room) => Object.entries(w.players ?? {}).filter(([,
 // ── stats (feature/statistic.c) ─────────────────────────────────────────────────────────────────────────────────
 
 /** Spend current (consume_stat); below 0 it stays at 0 and the stat is exhausted. */
-export function consume(c, k, n) { c[k][0] -= n; if (c[k][0] < 0) { c[k][0] = 0; return true } return false }
+export function consume(c, k, n) { c[k].cur -= n; if (c[k].cur < 0) { c[k].cur = 0; return true } return false }
 /** Wound: lower the effective ceiling (damage_stat); below 0 the stat is destroyed. */
-export function wound(c, k, n) { c[k][1] -= n; if (c[k][0] > c[k][1]) c[k][0] = Math.max(0, c[k][1]); if (c[k][1] < 0) { c[k][1] = 0; return true } return false }
+export function wound(c, k, n) { c[k].eff -= n; if (c[k].cur > c[k].eff) c[k].cur = Math.max(0, c[k].eff); if (c[k].eff < 0) { c[k].eff = 0; return true } return false }
 /** Restore current up to effective (supplement_stat). */
-export function supplement(c, k, n) { c[k][0] = Math.min(c[k][1], c[k][0] + n) }
+export function supplement(c, k, n) { c[k].cur = Math.min(c[k].eff, c[k].cur + n) }
 /** Heal the effective ceiling up to the maximum (heal_stat). */
-export function heal(c, k, n) { c[k][1] = Math.min(c[k][2], c[k][1] + n) }
+export function heal(c, k, n) { c[k].eff = Math.min(c[k].max, c[k].eff + n) }
 
 /**
  * Regeneration since the character last had it (health_regenerator, every TICK): current back towards effective by
@@ -173,23 +191,23 @@ export function regen(x, id) {
   const player = !isNpc(id)
   const k2a = { gin: 'dex', kee: 'con', sen: 'spi' }
   for (let i = 0; i < Math.min(ticks, 200); i++) {
-    if (player && (c.water[0] < 1 || c.ghost)) break
+    if (player && (c.water.cur < 1 || c.ghost)) break
     for (const k of ['gin', 'kee', 'sen']) {
       const a = attr(x.w, id, k2a[k])
-      if (c[k][0] < c[k][1]) supplement(c, k, a)
-      else if ((!player || c.food[0] >= 1) && c[k][1] < c[k][2]) heal(c, k, Math.floor(a / 6) + 1)
+      if (c[k].cur < c[k].eff) supplement(c, k, a)
+      else if ((!player || c.food.cur >= 1) && c[k].eff < c[k].max) heal(c, k, Math.floor(a / 6) + 1)
     }
-    if (c.hp[0] < c.hp[1]) c.hp[0] += 1
+    if (c.hp.cur < c.hp.max) c.hp.cur += 1
   }
   if (!player || c.ghost) return
   for (let i = 0; i < Math.min(ticks, 30); i++) {
     for (const k of ['food', 'water']) {
-      if (c[k][0] > 0) c[k][0] -= 1
-      else c.kee[0] = Math.max(1, c.kee[0] - 1)
+      if (c[k].cur > 0) c[k].cur -= 1
+      else c.kee.cur = Math.max(1, c.kee.cur - 1)
     }
   }
-  if (c.food[0] === 0) tell(x, id, '你已经饿得两眼昏花，四肢无力了，最好找点东西来吃。')
-  if (c.water[0] === 0) tell(x, id, '你觉得口干舌燥，开始出现脱水的现象了，最好找点水喝。')
+  if (c.food.cur === 0) tell(x, id, '你已经饿得两眼昏花，四肢无力了，最好找点东西来吃。')
+  if (c.water.cur === 0) tell(x, id, '你觉得口干舌燥，开始出现脱水的现象了，最好找点水喝。')
 }
 
 // ── things ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -198,18 +216,26 @@ export const thingsAt = (w, at) => Object.entries(w.things ?? {}).filter(([, t])
 export const isMoney = (key) => ['stock/coin', 'stock/silver', 'stock/gold'].includes(key)
 const combined = (key) => Boolean(ITEMS[key]?.baseUnit)
 
-/** A new thing of `key` at `at` (`n` of a stack); a stack joins one of the same kind already there. */
-export function makeThing(x, key, at, n = 1, extra = {}) {
-  if (combined(key)) {
-    const same = thingsAt(x.w, at).find((tid) => x.w.things[tid].id === key && !x.w.things[tid].home)
-    if (same && !extra.home) { x.w.things[same].n = (x.w.things[same].n ?? 1) + n; return same }
-  }
-  const tid = newId(x, 't:')
+/**
+ * A new thing of `key` at `at` (`n` of a stack). Stacks never merge into one already there: someone else may be
+ * counting that one at the same moment, and one of the two counts would be lost. Lists count alike things together.
+ */
+export function makeThing(x, key, at, n = 1, extra = {}, tid = newId(x, 't:')) {
   x.w.things[tid] = { id: key, at, ...(combined(key) ? { n } : {}), ...extra }
   return tid
 }
 
-/** Move `n` of a thing (all of it by default) to `to`; stacks merge there. Returns the id of what arrived. */
+/**
+ * The heaps of `key` (coins, say) at `at` gathered into one, for whoever is about to count them out: what others hand
+ * over arrives as new heaps, so gathering one's own never loses theirs. Undefined when there is none.
+ */
+export function heap(x, at, key) {
+  const [first, ...more] = thingsAt(x.w, at).filter((tid) => x.w.things[tid].id === key)
+  for (const tid of more) { x.w.things[first].n = (x.w.things[first].n ?? 1) + (x.w.things[tid].n ?? 1); destroy(x, tid) }
+  return first
+}
+
+/** Move `n` of a thing (all of it by default) to `to`. Returns the id of what arrived. */
 export function moveThing(x, tid, to, n) {
   const t = x.w.things[tid]
   if (combined(t.id) && n !== undefined && n < (t.n ?? 1)) {
@@ -218,10 +244,6 @@ export function moveThing(x, tid, to, n) {
   }
   delete t.eq
   delete t.home
-  if (combined(t.id)) {
-    const same = thingsAt(x.w, to).find((o) => o !== tid && x.w.things[o].id === t.id && !x.w.things[o].home)
-    if (same) { x.w.things[same].n = (x.w.things[same].n ?? 1) + (t.n ?? 1); destroy(x, tid); return same }
-  }
   t.at = to
   return tid
 }
@@ -261,8 +283,7 @@ export function pay(x, id, price, to = null) {
     if (c <= have['stock/coin']) {
       for (const [key, n] of [['stock/gold', g], ['stock/silver', s], ['stock/coin', c]]) {
         if (!n) continue
-        const tid = thingsAt(x.w, id).find((t) => x.w.things[t].id === key)
-        const moved = moveThing(x, tid, to ?? 'gone', n)
+        const moved = moveThing(x, heap(x, id, key), to ?? 'gone', n)
         if (!to) destroy(x, moved)
       }
       return 1
@@ -282,9 +303,9 @@ export function vision(x, room, text, a = null, b = null, more = {}) {
   emit(x, ev)
 }
 /** A line only `id` reads (tell_object / write). */
-export function tell(x, id, text) {
+export function tell(x, id, text, more = {}) {
   if (id === x.me) x.out.push(text)
-  else if (!isNpc(id)) emit(x, { k: 'tell', only: id, room: roomOf(x.w, id), t: text }, false)
+  else if (!isNpc(id)) emit(x, { k: 'tell', only: id, room: roomOf(x.w, id), t: text, ...more }, false)
 }
 /** An NPC says a line in its room (command("say …")). */
 export const npcSay = (x, id, text) => vision(x, ch(x.w, id).room, `$N说道：${text}`, id)

@@ -49,7 +49,11 @@ ES2's public release is a framework, and some rules are unfinished. The smallest
 - Only swords and fists have moves in ES2; other weapons never swing. Here they swing with three plain lines of this
   App's own (`text.js` ACTIONS.other).
 - 纵跃闪躲之法 counts in defence (it has no file in ES2), and grows when one dodges.
-- Teammates in the room join each other's fights, as a guard would (ES2's teams are only a member list).
+- Teammates in the room join each other's fights to the death, as a guard would (ES2's teams are only a member list); a
+  spar stays between the two who agreed to it.
+- Players kill players as in ES2, but only someone who has the page open now: never an agent, never someone away, and
+  nobody away or no agent is drawn into a fight as a teammate. 土地公庙, where ghosts come back to life, allows no
+  fighting. A player robbed is told what went and who was near.
 - A spar is also lost when the one hit has no 精 left (ES2's rule is "any stat"; 精 runs out by attacking).
 - Time: nothing happens unless someone types. Each command lets the town catch up a few heart beats (what the people
   in watched rooms say and do), the inn keeps its hours by the game's clock (ES2's: 60× real time), the town resets

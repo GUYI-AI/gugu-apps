@@ -65,6 +65,7 @@ if (!ctx.file) {
       for (const l of recent) say(l.text, 'ev')
     }
     shown = lastKey(s)
+    markHere()
     draw()
   }
 
@@ -100,7 +101,7 @@ if (!ctx.file) {
   const QUICK = ['看', '背包', '状态', '技能', '时间', '谁', '帮助']
   const go = (line) => () => command(line).catch((e) => fail('没做成', e))
   const fill = (text) => () => { $('#line').value = text; $('#line').focus() }
-  const bar = (label, [cur, eff, max = eff]) => h('span', { className: 'stat', title: `${label} ${cur}/${eff}/${max}` },
+  const bar = (label, { cur, max, eff = max }) => h('span', { className: 'stat', title: `${label} ${cur}/${eff}/${max}` },
     label, h('meter', { min: 0, max, low: max * 0.3, high: max * 0.6, optimum: max, value: cur }), `${cur}`)
 
   function draw() {
@@ -137,6 +138,9 @@ if (!ctx.file) {
 
   f.onChange(() => { enter(); catchUp(); draw() })
   f.presence.onChange(() => { enter(); draw() })
+  // Marked here while the page is open (world.js online): only people here can be killed or drawn into a fight.
+  function markHere() { if (joined && f.data.players?.[me]) f.transact(() => { f.data.players[me].here = Date.now() }) }
+  setInterval(markHere, 60_000)
   f.onStatus(() => {
     document.body.dataset.file = f.status
     if (f.status === 'gone') $('#status').textContent = '江湖的文件不在了'

@@ -106,7 +106,7 @@ test('a ghost revives at 土地公庙; a corpse left too long costs 气', () => 
   assert.match(say('user:a', '看'), /红色的漩涡/)
   assert.match(say('user:a', '进 漩涡'), /又活过来了/)
   assert.equal(s.players['user:a'].ghost, undefined)
-  assert.equal(s.players['user:a'].kee[2], 27)
+  assert.equal(s.players['user:a'].kee.max, 27)
 })
 
 test('sparring only tires; the loser is left with 1 气 and nobody is hurt', () => {
@@ -123,7 +123,7 @@ test('sparring only tires; the loser is left with 1 气 and nobody is hurt', () 
   assert.doesNotMatch(r, /小咕/)
   for (const id of ['user:a', 'user:b']) {
     assert.equal(s.players[id].ghost, undefined)
-    assert.equal(s.players[id].kee[1], s.players[id].kee[2], 'no wounds in a spar')
+    assert.equal(s.players[id].kee.eff, s.players[id].kee.max, 'no wounds in a spar')
   }
 })
 
