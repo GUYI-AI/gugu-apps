@@ -1,0 +1,16 @@
+{
+  "id": "gugu-contribution",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/gugu-contribution/app",
+      "commit": "cb8f8cc72df79568526c2c5039a73ec5d4b0a7bf",
+      "sha256": "7140c527a7b849c168a049026fe3ac823d2303a73d6f490625708cdadecb4e5e",
+      "bytes": 27460,
+      "yanked": null
+    }
+  ]
+}

@@ -2,7 +2,6 @@
 // Presence only shows where the other player is hovering.
 import { board, slot } from './net.js'
 
-export const title = '五子棋'
 const N = 15, CELL = 28, PAD = CELL / 2
 
 export const turn = (stones) => (Object.keys(stones).length % 2 ? 'w' : 'b')
@@ -23,7 +22,7 @@ export function fiveInRow(stones, x, y) {
   })
 }
 
-export function mount(stage, { f, nameOf }) {
+export function mount(stage, { f, t, nameOf }) {
   const G = slot(f, 'gomoku', { stones: {}, seats: {}, winner: null })
   const me = () => f.presence.self.userId
   const here = (id) => id === me() || f.presence.others.some((p) => p.userId === id)
@@ -57,8 +56,8 @@ export function mount(stage, { f, nameOf }) {
     return b
   }
   const seat = (c) => G().seats[c] === me()
-    ? button(c === 'b' ? '离开黑座' : '离开白座', () => f.transact(() => { delete G().seats[c] }))
-    : open(G().seats, c, here) ? button(c === 'b' ? '执黑' : '执白', () => f.transact(() => { G().seats[c] = me() }), true) : null
+    ? button(t.stand[c], () => f.transact(() => { delete G().seats[c] }))
+    : open(G().seats, c, here) ? button(t.sit[c], () => f.transact(() => { G().seats[c] = me() }), true) : null
   const again = () => f.transact(() => {
     const game = G()
     game.stones = {}
@@ -93,11 +92,11 @@ export function mount(stage, { f, nameOf }) {
     g.globalAlpha = 1
     for (const [key, c] of Object.entries(game.stones)) stone(...key.split(',').map(Number), c)
     for (const p of f.presence.others) if (p.state?.game === 'gomoku' && p.state.hover && !game.stones[p.state.hover.join()]) stone(...p.state.hover, turn(game.stones), 0.4)
-    const c = turn(game.stones), who = (k) => (!game.seats[k] ? '空位' : here(game.seats[k]) ? nameOf(game.seats[k]) : `${nameOf(game.seats[k])}（已离开）`)
+    const c = turn(game.stones), who = (k) => (!game.seats[k] ? t.empty : here(game.seats[k]) ? nameOf(game.seats[k]) : t.gone(nameOf(game.seats[k])))
     line.textContent = game.winner
-      ? `${nameOf(game.winner)} 赢了`
-      : `黑：${who('b')}　白：${who('w')}　· 轮到${c === 'b' ? '黑' : '白'}${game.seats[c] === me() ? '（你）' : ''}`
-    actions.replaceChildren(...[seat('b'), seat('w'), game.winner || Object.keys(game.stones).length ? button('再来一局', again) : null].filter(Boolean))
+      ? t.won(nameOf(game.winner))
+      : t.seats(who('b'), who('w'), t.colour[c], game.seats[c] === me())
+    actions.replaceChildren(...[seat('b'), seat('w'), game.winner || Object.keys(game.stones).length ? button(t.again, again) : null].filter(Boolean))
   }
   const offs = [f.onChange(draw), f.presence.onChange(draw)]
   draw()
