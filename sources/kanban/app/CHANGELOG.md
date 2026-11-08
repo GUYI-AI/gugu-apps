@@ -17,6 +17,9 @@ no longer strand the person in a tab with no way back.
 - What waits on the person shows above every view, in its card and under 决策, and is answered there; a plain wait on
   the person (no question) is answered with a line that goes to the holder and clears the wait. Messages to agents name
   the board and card so they can act on them with the tools.
+- One item in a task's「+」: the message card (`widget_send`) moves from a `fleet` tab of its own onto the `board` tab, so
+  `view` is now `board`. Every tab that opens no file is listed in that menu and a widget tab cannot open files, so a
+  card's own tab showed as a second item. Cards already sent with `view: "fleet"` show as unavailable: send a new one.
 - Agents: `list` starts with `yours`, `waitingOnOwner` and `unclaimed`, and gives each card its `holder` and question;
   the tool descriptions and the skill describe the one page and the answer coming back as a message.
 

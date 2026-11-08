@@ -358,7 +358,7 @@ export const supervisor = {
 export const fleet = {
   description:
     "The fleet in short, across computers: every machine with its supervisor and lanes, what each waits on, and the " +
-    "counts. With card: the exact text and data for widget_send { chat_id, app: 'kanban', view: 'fleet', text, data } — " +
+    "counts. With card: the exact text and data for widget_send { chat_id, app: 'kanban', view: 'board', text, data } — " +
     "the message card that opens the board's 团队 (team) view.",
   inputSchema: { type: 'object', properties: { chat: chatArg, board: boardArg, card: { type: 'boolean', description: 'Return the widget_send text and data.' } } },
   annotations: { readOnlyHint: true },

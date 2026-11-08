@@ -41,7 +41,10 @@
             "id": "new",
             "title": "新建卡片"
           }
-        ]
+        ],
+        "widget": {
+          "height": 120
+        }
       },
       {
         "name": "file",
@@ -59,14 +62,6 @@
             "title": "新建卡片"
           }
         ]
-      },
-      {
-        "name": "fleet",
-        "title": "舰队",
-        "entry": "fleet.html",
-        "widget": {
-          "height": 120
-        }
       }
     ],
     "mcpServers": [
@@ -99,9 +94,6 @@
           "toolbar": {
             "new": "New card"
           }
-        },
-        "fleet": {
-          "title": "Fleet"
         }
       }
     }

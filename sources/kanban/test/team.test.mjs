@@ -7,7 +7,7 @@ import { emptyBoard, applyOp } from '../app/lib/core.js'
 const settled = () => new Promise(setImmediate)
 const pages = {
   board: await readFile(new URL('../app/board.html', import.meta.url), 'utf8'),
-  fleet: await readFile(new URL('../app/fleet.html', import.meta.url), 'utf8'),
+  fleet: await readFile(new URL('../app/board.html', import.meta.url), 'utf8'),
 }
 
 /** A chat's board and the person's agents on two machines, as the host gives them to a page. */
@@ -234,7 +234,7 @@ test('the message card counts the fleet when shown and opens the board it names 
     assert.doesNotMatch(document.getElementById('machines').textContent, /null/, 'no machine is offline: nothing is written in its place')
     click(document.getElementById('card'))
     await settled()
-    assert.deepEqual(links, [{ link: { kind: 'app', tab: 'file', chat: 'chat', query: { view: 'team', board: 'board-1' } } }])
+    assert.deepEqual(links, [{ link: { kind: 'app', tab: 'board', chat: 'chat', query: { view: 'team', board: 'board-1' } } }])
   } finally { done() }
 })
 
@@ -259,5 +259,25 @@ test('a question no card holds still waits on the person: counted on the card, a
     const d = Object.values(fx.board.decisions).find((x) => x.question === 'Ship on Friday?')
     assert.deepEqual([d.status, d.answer, d.decidedBy], ['decided', 'Yes', 'user:owner'])
     assert.deepEqual(sent.map(([, opts]) => opts.to.agent), ['user:chief'], 'the answer goes back to whoever asked')
+  } finally { done() }
+})
+
+test("one page, one item in a task's「+」: the board tab is also the message card", async () => {
+  const manifest = JSON.parse(await readFile(new URL('../app/manifest.json', import.meta.url), 'utf8'))
+  const own = manifest.contributes.tabs.filter((tab) => !tab.opensFiles)
+  assert.deepEqual(own.map((tab) => tab.name), ['board'], 'every tab that opens no file is an item of that menu')
+  assert.ok(own[0].widget, 'widget_send sends view "board"')
+  const fx = fixture()
+  const { window, document } = parseHTML(pages.board)
+  assert.equal(document.querySelector('script[type=module]').getAttribute('src'), 'page.js')
+  window.gugu = { getContext: async () => ({ locale: 'zh-CN', chat: { id: 'chat', name: 'Fleet' }, widget: { data: {}, messageId: 'msg:1' } }), listAgents: async () => fx.report, onContextChanged() {}, onAgentsChanged() {}, files: { list: async () => [] } }
+  globalThis.window = window
+  globalThis.document = document
+  try {
+    await import('../app/page.js')
+    await settled()
+    assert.equal(document.getElementById('shell'), null, 'in a message: the card, not the board')
+    assert.ok(document.getElementById('nums'))
+    assert.equal(document.querySelector('link[href="board.css"]'), null)
   } finally { done() }
 })

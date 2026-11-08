@@ -65,4 +65,4 @@ across computers, each with the cards it claimed. What it shows of a lane comes 
   GitHub, not on the card). Move: both sessions are on your machine and the new parent is not under it. Then
   `session_archive` / `session_set_parent`, and say what you did on the card with `comment`.
 - **The message card**: `fleet` with `card: true` returns `text` and `data`; send them with
-  `widget_send { chat_id, app: "kanban", view: "fleet", text, data }`. The card reads the fleet live when shown; a click opens the board on its 团队 view.
+  `widget_send { chat_id, app: "kanban", view: "board", text, data }`. The card reads the fleet live when shown; a click opens the board on its 团队 view.

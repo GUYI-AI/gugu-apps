@@ -21,6 +21,14 @@ function h(tag, props = {}, ...kids) {
   return el
 }
 
+// The tab's page is the board's (page.js): the card takes it over.
+document.querySelector('link[href="board.css"]')?.remove()
+document.head.append(h('link', { rel: 'stylesheet', href: 'fleet.css' }))
+document.body.className = 'fleet-card'
+document.body.replaceChildren(h('button', { id: 'card', type: 'button', 'aria-describedby': 'nums' },
+  h('span', { class: 'top' }, h('strong', { id: 'title' }), h('small', { id: 'sub', class: 'muted' }), h('small', { id: 'when', class: 'muted' })),
+  h('span', { id: 'nums' }), h('span', { id: 'machines' })))
+
 // Anyone in the chat can send a card with any data: only a file id is taken from it, and only to open it.
 const named = typeof ctx.widget?.data?.board === 'string' && /^[\w-]{1,80}$/.test(ctx.widget.data.board) ? ctx.widget.data.board : null
 let boardId = named
@@ -61,7 +69,7 @@ function draw() {
 
 $('card').addEventListener('click', async () => {
   try {
-    const link = await g.linkTo({ kind: 'app', tab: ctx.chat ? 'file' : 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: { view: 'team', ...(boardId ? { board: boardId } : {}) } })
+    const link = await g.linkTo({ kind: 'app', tab: 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: { view: 'team', ...(boardId ? { board: boardId } : {}) } })
     await g.openLink(link)
   } catch (error) {
     g.reportError?.(error?.message ?? String(error))
