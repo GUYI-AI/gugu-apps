@@ -133,12 +133,14 @@ function resetTown(x) {
         const have = Object.values(w.things).filter((t) => t.id === key && t.home === room).reduce((s, t) => s + (t.n ?? 1), 0)
         const lacking = n - have
         if (lacking > 0) {
-          if (ITEMS[key].baseUnit) makeThing(x, key, room, lacking, { home: room }, resetId(x, room, key))
-          else for (let i = 0; i < lacking; i++) makeThing(x, key, room, 1, { home: room }, resetId(x, room, key, i))
+          if (ITEMS[key].baseUnit) makeThing(x, key, room, lacking, { home: room }, resetId(x, 'r:' + room, key))
+          else for (let i = 0; i < lacking; i++) makeThing(x, key, room, 1, { home: room }, resetId(x, 'r:' + room, key, i))
         }
       }
     }
   }
+  // Coins handed to townspeople arrive as heaps of their own; gathered here, alike on every page.
+  for (const id of Object.keys(w.npcs)) for (const key of ['stock/coin', 'stock/silver', 'stock/gold']) heap(x, id, key)
   HOOKS.reset?.(x)
   delete x.reset
 }
@@ -542,12 +544,19 @@ function command(x, line) {
         for (const tid of all) take(x, tid, from)
         return
       }
-      const { n, rest: what2 } = amount(what)
+      const { rest: what2 } = amount(what)
       const money = moneyOf(what2)
-      const t = money ? { key: heap(x, from, money) } : lead(things(w, from), what2)
-      if (!t?.key) return reply(from === room ? '这里没有这样东西。' : '那里面没有这样东西。')
+      const none = () => reply(from === room ? '这里没有这样东西。' : '那里面没有这样东西。')
+      if (money) {
+        const heaps = thingsAt(w, from).filter((tid) => w.things[tid].id === money)
+        if (!heaps.length) return none()
+        for (const tid of heaps) take(x, tid, from)
+        return
+      }
+      const t = lead(things(w, from), what2)
+      if (!t?.key) return none()
       if (HOOKS.item[w.things[t.key].id]?.get?.(x, t.key) === true) return
-      return take(x, t.key, from, n)
+      return take(x, t.key, from)
     }
     case 'drop': {
       const { n, rest: what } = amount(rest)
@@ -675,16 +684,17 @@ function command(x, line) {
 
 // ── things in hand ───────────────────────────────────────────────────────────────────────────────────────────────
 
-function take(x, tid, from, n) {
+/** A heap not on you is taken whole: others may be taking from it at this moment (see moveThing). */
+function take(x, tid, from) {
   const w = x.w
   const me = x.me
   const it = itemOf(w, tid)
   if (it?.noGet || w.things[tid].id === 'corpse') return x.out.push('这个东西拿不起来。')
   if (thingsAt(w, me).length >= 20) return x.out.push('你身上已经没有空位再携带其他东西了。')
-  if (load(w, me) + weightOf(w, tid) * (n ? n / (w.things[tid].n ?? 1) : 1) > carriage(w, me)) return x.out.push(`${thingName(w, tid)}现在对你来说太重了。`)
-  const name = n ? `${cn(n)}${it.baseUnit}${thingName(w, tid)}` : thingShort(w, tid)
+  if (load(w, me) + weightOf(w, tid) > carriage(w, me)) return x.out.push(`${thingName(w, tid)}现在对你来说太重了。`)
+  const name = thingShort(w, tid)
   const fromName = from === ch(w, me).room ? '' : thingName(w, from)
-  moveThing(x, tid, me, n)
+  moveThing(x, tid, me)
   vision(x, ch(w, me).room, fromName ? `$N从${fromName}中拿出${name}。` : `$N捡起${name}。`, me)
 }
 
@@ -813,7 +823,7 @@ function buy(x, rest) {
   if (Object.keys(w.sold).filter((k) => k.startsWith(shelf)).length >= sells[key]) return x.out.push(`${ITEMS[key].name}已经卖完了，待会儿再来吧。`)
   const it = ITEMS[key]
   const price = it.baseValue ?? it.value ?? 0
-  const paid = pay(x, me, price, v)
+  const paid = pay(x, me, price)
   if (paid === 0) return x.out.push('你身上的钱不够。')
   if (paid === 2) return x.out.push('你没有足够的零钱，而对方也找不开...。')
   const tid = makeThing(x, key, me, 1)
@@ -970,15 +980,16 @@ function steal(x, rest) {
   if (!t) return x.out.push('你想行窃的对象不在这里。')
   if (!skillLv(w, me, 'stealing', true)) return x.out.push('你必须学会妙手空空之技才能行窃!')
   const money = moneyOf(m[1])
-  const tid = money ? heap(x, t.key, money) : lead(things(w, t.key).filter((c) => !w.things[c.key].eq), m[1])?.key
+  // Money is taken a whole heap at a time, never gathered or split: the heap is theirs to write (see moveThing).
+  const tid = money ? thingsAt(w, t.key).find((c) => w.things[c].id === money) : lead(things(w, t.key).filter((c) => !w.things[c.key].eq), m[1])?.key
   if (!tid) return x.out.push(`${nameOf(w, t.key)}身上看起来没有什么值钱的东西好偷。`)
   const mine = skillLv(w, me, 'stealing') * 2 + attr(w, me, 'dex')
   const theirs = Math.floor(attr(w, t.key, 'cps') * attr(w, t.key, 'spi') / 10) + levelOf(w, t.key)
   x.out.push(`你不动声色地慢慢靠近${nameOf(w, t.key)}，等待机会下手 ...`)
   if (rnd(x, mine + theirs) < mine) {
-    const n = money ? Math.max(1, Math.floor((w.things[tid].n ?? 1) * (1 + rnd(x, 3)) / 10)) : undefined
+    const n = money ? w.things[tid].n ?? 1 : undefined
     const what = `${n ? cn(n) + itemOf(w, tid).baseUnit : '一' + (itemOf(w, tid)?.unit ?? '个')}${thingName(w, tid)}`
-    moveThing(x, tid, me, n)
+    moveThing(x, tid, me)
     improve(x, me, 'stealing', 1)
     // A player robbed is told (and an agent woken): nothing of theirs goes without a word.
     if (!isNpc(t.key)) tell(x, t.key, `你忽然觉得身上一轻，发现${what}不见了 —— ${nameOf(w, me)}刚刚从你身边走开。`, { k: 'steal', to: t.key })

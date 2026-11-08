@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "和群友、agent 一起闯雪亭镇的文字 MUD",
   "author": "咕咕",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "apiVersion": 26,
   "platforms": ["desktop", "phone"],
   "engines": { "gugu": ">=0.3.1" },
