@@ -234,7 +234,7 @@ test('the message card counts the fleet when shown and opens the board it names 
     assert.doesNotMatch(document.getElementById('machines').textContent, /null/, 'no machine is offline: nothing is written in its place')
     click(document.getElementById('card'))
     await settled()
-    assert.deepEqual(links, [{ link: { kind: 'app', tab: 'file', chat: 'chat', query: { view: 'team', board: 'board-1' } } }])
+    assert.deepEqual(links, [{ link: { kind: 'app', tab: 'board', chat: 'chat', query: { view: 'team', board: 'board-1' } } }])
   } finally { done() }
 })
 

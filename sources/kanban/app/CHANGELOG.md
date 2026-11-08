@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1
+
+On a phone: a column's Rename / Delete menu no longer lies open over the cards where the WebView has no `popover` (before
+Chrome 114); there the column menu is not offered. The page title and tabs fit one line without the card count, and a
+card's holder no longer runs off the screen with its device name.
+The fleet card's four numbers share the card's width, and clicking a card again opens the board's team view in the same
+tab rather than a new one each time; when the host refuses to open it, the card says why.
+
 ## 1.6.0
 
 One page for the board and the fleet (owner 11-08): 看板, 团队 and 决策 are views of the same page, so the org chart can

@@ -61,9 +61,11 @@ function draw() {
 
 $('card').addEventListener('click', async () => {
   try {
-    const link = await g.linkTo({ kind: 'app', tab: ctx.chat ? 'file' : 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: { view: 'team', ...(boardId ? { board: boardId } : {}) } })
+    const link = await g.linkTo({ kind: 'app', tab: 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: { view: 'team', ...(boardId ? { board: boardId } : {}) } })
     await g.openLink(link)
   } catch (error) {
+    // Said where the click was: a card that silently does nothing looks broken for no reason.
+    $('sub').textContent = error?.message ?? String(error)
     g.reportError?.(error?.message ?? String(error))
   }
 })
