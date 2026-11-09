@@ -38,7 +38,7 @@ function world(seed = 7) {
 
 test('the road west goes on: 嘉峪关 to 宝象国 and 平顶山, every exit to a room of this world', () => {
   const xyj = Object.entries(ROOMS).filter(([, r]) => r.area === 'xyj')
-  assert.equal(xyj.length, 224)
+  assert.equal(xyj.length, 409)
   for (const [id, r] of xyj) for (const to of Object.values(r.exits)) assert.equal(ROOMS[to]?.area, 'xyj', `${id} → ${to}`)
   assert.equal(ROOMS['x/westway/jiayu'].exits['西'], BX + 'yelu8')
   assert.equal(ROOMS[BX + 'yelu1'].exits['西南'], PD + 'shan11')
@@ -159,6 +159,18 @@ test('平顶山\'s 小妖 fall on whoever comes in, in every room they stand in'
   const r = say('user:a', '南')
   assert.equal(s.players['user:a'].room, PD + 'nandong')
   assert.match(r, /哪里来的毛贼/)
+})
+
+test('宝象国\'s 宫兵 fall on the 山妖 among them a second after anyone comes in', () => {
+  const { s, say, enter } = world(5)
+  const [dir, from] = Object.entries(ROOMS[BX + 'bei1'].exits).find(([, to]) => !to.endsWith('yedu'))
+  const back = Object.entries(ROOMS[from].exits).find(([, to]) => to === BX + 'bei1')[0]
+  enter('user:a', '阿青', 'X', from)
+  say('user:a', back, '看', '看')
+  assert.equal(s.players['user:a'].room, BX + 'bei1', dir)
+  const yao = Object.keys(s.npcs).filter((k) => k.includes('npc/shanyao') && s.npcs[k].room === BX + 'bei1')
+  assert.ok(yao.length && yao.every((k) => s.npcs[k].dead || s.npcs[k].out > 0), yao.join())
+  assert.ok(Object.values(s.log).some((e) => e.k === 'fight' && /老匹夫！今日不是你死就是我活/.test(JSON.stringify(e.lines))))
 })
 
 test('the 腥风 of 碗子山 knocks the untried down; the 野渡 once a crossing, half the time', () => {

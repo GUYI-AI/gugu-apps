@@ -7,11 +7,11 @@
 //   镇元大仙's 人参果 meeting (renshenguo-yuan.c, npc/zhenyuan.c); the fruit eaten marks it done (renshen-guo.c).
 import {
   HOOKS, ROOMS, ITEMS, NPCS, ch, isNpc, baseOf, npcData, awake, nameOf, attr, thingsAt, makeThing, destroy, vision, tell,
-  npcSay, peopleIn, playersIn, npcsIn, spawnNpc, consume, START, online, isMoney,
+  npcSay, peopleIn, playersIn, npcsIn, spawnNpc, consume, START, online, isMoney, thingName,
 } from './world.js'
 import { SKILL_NAMES, DIRS, cn, gameTime } from './text.js'
 import { knockOut, brawl } from './fight.js'
-import { move, setDoor, lookText, lead } from './game.js'
+import { move, setDoor, lookText, lead, personNames } from './game.js'
 
 const N = HOOKS.npc
 const R = HOOKS.room
@@ -48,6 +48,33 @@ function stomach(p, food, water) {
   for (const [k, m] of [['food', food], ['water', water]]) if (p[k]) { p[k].max = m; p[k].cur = Math.min(p[k].cur, m); if ('eff' in p[k]) p[k].eff = Math.min(p[k].eff, m) }
 }
 const full = (n) => ({ cur: n, eff: n, max: n })
+
+// ── call_outs ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** What a call_out runs, by name (kept in the world as a name and its argument, so a saved world keeps them). */
+export const TIMERS = {}
+/** call_out: `kind` with `arg`, `ms` from now; run as the world catches up (HOOKS.beat). */
+export function later(x, ms, kind, arg = null) {
+  // From when the call_out running now was due, so a chain of them keeps its pace through a catch-up.
+  ;(x.w.timers ??= []).push({ at: (x.due ?? x.now) + ms, kind, arg })
+}
+/** remove_call_out: those of `kind` whose argument matches. */
+export function cancel(x, kind, match = () => true) {
+  if (x.w.timers) x.w.timers = x.w.timers.filter((t) => t.kind !== kind || !match(t.arg))
+}
+const prevTimers = HOOKS.beat
+HOOKS.beat = (x) => {
+  prevTimers?.(x)
+  const w = x.w
+  for (let guard = 0; guard < 100 && w.timers?.some((t) => t.at <= x.now); guard++) {
+    const i = w.timers.reduce((b, t, j) => (t.at < w.timers[b].at ? j : b), 0)
+    const [t] = w.timers.splice(i, 1)
+    if (t.at > x.now) { w.timers.push(t); break }
+    x.due = t.at
+    try { TIMERS[t.kind]?.(x, t.arg) } finally { delete x.due }
+  }
+  if (w.timers && !w.timers.length) delete w.timers
+}
 
 /** skill.c query_skill: half the basic skill and all of the special one enabled for it. */
 export function skillOf(p, s) {
@@ -99,8 +126,7 @@ function daoxing(exp) {
 function personHere(x, text) {
   const w = x.w
   if (!text.trim()) return null
-  const names = (id) => (isNpc(id) ? [npcData(id).name, ...npcData(id).ids] : [w.players[id].name])
-  const t = lead(peopleIn(w, ch(w, x.me).room).filter((id) => id !== x.me).map((id) => ({ key: id, names: names(id) })), text.trim())
+  const t = lead(peopleIn(w, ch(w, x.me).room).filter((id) => id !== x.me).map((id) => ({ key: id, names: personNames(w, id) })), text.trim())
   return t && { id: t.key, rest: t.rest }
 }
 
@@ -165,6 +191,7 @@ C.obstacles = (x) => {
   const row = ([, n], i) => `  ${String(i + 1).padStart(2, ' ')}. ${n}`
   const done = OBSTACLES.map((o, i) => [o, i]).filter(([[k]]) => y.obstacle[k] === 'done')
   const left = OBSTACLES.map((o, i) => [o, i]).filter(([[k]]) => y.obstacle[k] !== 'done')
+  y.number = done.length
   const out = [done.length ? `你西行求取真经已过了${cn(done.length)}关：\n${done.map(([o, i]) => row(o, i)).join('\n')}` : '你尚未西行求取真经。']
   out.push(left.length ? `你西行求取真经还须过${cn(left.length)}关：\n${left.map(([o, i]) => row(o, i)).join('\n')}` : '你西行求取真经已历尽了所有的难关。')
   x.out.push(out.join('\n'))
@@ -361,6 +388,73 @@ HOOKS.gain = (x, id, course, n) => {
   y.exp += n
   if (y.pot - y.spent < 100) y.pot += 1
 }
+
+// ── 变化 (cmds/std/bian.c) ─────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 「变 <谁>」: to look like someone or something here — name and ids — while 法力 lasts. Its gates scale as the road's
+ * do (道行 3000, 法力 15 and 10 of it spent; XYJ 30000, 150 and 100), and so does the drain every 5 s:
+ * (15 + 400 ÷ (法术 − 20)) ÷ 10, until no more than 5 would be left (XYJ 50). 「变 我」 is oneself again.
+ */
+C.bian = (x, rest) => {
+  const w = x.w
+  const p = w.players[x.me]
+  const y = self(p)
+  if (fighting(w, x.me, x.now)) return x.out.push('你正在战斗，无暇变身。')
+  if (busy(x, p)) return x.out.push('你正忙着呢，没工夫变身。')
+  const want = rest.trim()
+  const t = p.temp ?? {}
+  // present() finds oneself first: 变 into whom one looks like already is to be oneself again (bian.c:24).
+  if (!want || want === '我' || want === 'me' || want === p.name || (t.bian && lead([{ key: x.me, names: [t.bian.name, ...t.bian.ids] }], want))) {
+    if (!t.bian) return x.out.push('你想变成谁？')
+    delete t.bian
+    return vision(x, p.room, '$N口念咒语，身形一晃，现了真身。', x.me)
+  }
+  const room = p.room
+  const cands = [
+    ...peopleIn(w, room).filter((id) => id !== x.me).map((id) => ({ key: id, names: personNames(w, id) })),
+    ...thingsAt(w, room).map((tid) => ({ key: tid, names: [thingName(w, tid), ...(ITEMS[w.things[tid].id]?.ids ?? [])] })),
+  ]
+  const who = lead(cands, want)
+  if (!who) return x.out.push('你想变成谁？')
+  const spells = skillOf(p, 'spells')
+  if (y.exp < 3000) return x.out.push('你的道行还不够。')
+  if (spells < 25) return x.out.push('你的法术不够。')
+  if (y.mana < 15) return x.out.push('你的法力不足。')
+  const k = who.key
+  const name = isNpc(k) || w.players[k] ? nameOf(w, k) : thingName(w, k)
+  const ids = isNpc(k) ? npcData(k).ids : w.players[k] ? w.players[k].temp?.bian?.ids ?? [] : ITEMS[w.things[k].id]?.ids ?? []
+  vision(x, room, '$N手捻口诀，念动真言，摇身一变，变得和$n一模一样！', x.me, k)
+  y.mana -= 10
+  const was = t.bian
+  ;(p.temp ??= {}).bian = { name, ids, key: isNpc(k) ? baseOf(k) : w.things[k]?.id ?? k, drain: Math.max(1, Math.round((15 + 400 / (spells - 20)) / 10)) }
+  if (!was) later(x, 5000, 'bian', x.me)
+}
+TIMERS.bian = (x, pid) => {
+  const p = x.w.players[pid]
+  const b = p?.temp?.bian
+  if (!b) return
+  const y = self(p)
+  if (y.mana - b.drain > 5) { y.mana -= b.drain; return later(x, 5000, 'bian', pid) }
+  y.mana = Math.max(2, y.mana - b.drain)
+  delete p.temp.bian
+  vision(x, p.room, '只见$N面色苍白，一个恍惚之间，已经现了原形。', pid)
+}
+/**
+ * attack.c is_fighting: someone here one fights, awake, or out cold but one is killing them. The App's fights are fought
+ * out at once, so it is whoever holds a grudge (hate, killing) either way.
+ */
+export function fighting(w, id, now) {
+  const me = ch(w, id)
+  return peopleIn(w, me.room).some((o) => {
+    const c = ch(w, o)
+    if (o === id || !c || c.dead || c.ghost) return false
+    if (me.killing?.[o]) return true
+    return !(c.out > now) && Boolean(c.hate?.[id] || c.killing?.[id] || me.hate?.[o])
+  })
+}
+/** Whom a player looks like now (the base key of the NPC or thing), or null. */
+export const bianAs = (p) => p?.temp?.bian?.key ?? null
 
 /** fly.c: 腾云 needs 道行 ten years and 法力 200, outdoors; only 长安 and 五庄观 are in this world. */
 export const FLY = { changan: 'x/city/center', 长安: 'x/city/center', wuzhuang: WZ + 'gate', 五庄观: WZ + 'gate' }
@@ -796,12 +890,14 @@ R['x/westway/yunti'] = {
 }
 
 // ── 饮马峪's 马盗 (westway/yinma.c, npc/madao.c) ─────────────────────────────────────────────────────────────────────
-// Money or your life, unless you are of 五庄观 or past two obstacles: worth 200 文 buys two passes; three warnings and
-// he attacks (call_outs 5–30 s on; here at their means).
+// Money or your life, unless you are of 五庄观 or past two obstacles (obstacle/number: 五庄观 not counted until 取经
+// counts again): worth 200 文 buys two passes; three warnings and he attacks (call_outs 5–30 s on; here at their means).
 const YINMA = 'x/westway/yinma'
 const MADAO = 'x/westway/npc/madao'
 const worth = (w, tid) => (ITEMS[w.things[tid]?.id]?.baseValue ?? ITEMS[w.things[tid]?.id]?.value ?? 0) * (w.things[tid]?.n ?? 1)
-const passes = (p) => self(p).family?.name === '五庄观' || Object.values(self(p).obstacle).filter((v) => v === 'done').length >= 2
+// A body from before 0.7.0 has no count yet: the obstacles past it but 五庄观, as the obstacles themselves would have added.
+const number = (y) => y.number ?? Object.entries(y.obstacle).filter(([k, v]) => v === 'done' && k !== 'wuzhuang').length
+const passes = (p) => self(p).family?.name === '五庄观' || number(self(p)) >= 2
 const paid = (p) => p.temp?.hasPaid > 0
 const WARN = [[7_000, '$N大声喝道：快给钱！'], [12_000, '$N又喊叫几声：拿钱来买命！'], [17_000, '$N急了：你到底给不给钱？']]
 N[MADAO] = {

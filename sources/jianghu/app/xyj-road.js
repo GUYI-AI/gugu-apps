@@ -13,7 +13,7 @@ import {
 import { cn } from './text.js'
 import { brawl, knockOut } from './fight.js'
 import { setDoor, move } from './game.js'
-import { self, skillOf, PLACES, NO_WAY, FLY } from './xyj-story.js'
+import { self, skillOf, later, cancel, TIMERS, PLACES, NO_WAY, FLY } from './xyj-story.js'
 
 const N = HOOKS.npc
 const R = HOOKS.room
@@ -44,41 +44,49 @@ const TUNE = {
   [BX + 'npc/zipao']: [0.15, 150],
   [PD + 'npc/hu']: [0.15, 60], [PD + 'npc/long']: [0.15, 60], [PD + 'npc/chong']: [0.15, 60], [PD + 'npc/gui']: [0.15, 60],
 }
-for (const [key, d] of Object.entries(NPCS)) {
-  const t = TUNE[key.split('@')[0]]
-  if (!t) continue
-  const [k, pool] = t
-  d.skills = Object.fromEntries(Object.entries(d.skills ?? {}).map(([s, v]) => [s, Math.max(1, Math.round(v * k))]))
-  d.max = { kee: pool, sen: pool, gin: pool }
-  d.exp = Math.round((d.exp ?? 0) * k / 10)
-  // The real 法宝 or the fake one (jinjiao.c: whichever is not yet in the world): here always the real one.
-  if (d.carry) d.carry = d.carry.filter(([c]) => !/fake$/.test(c))
-}
+tune(TUNE)
+// The real 法宝 or the fake one (jinjiao.c: whichever is not yet in the world): here always the real one.
+for (const [k, d] of Object.entries(NPCS)) if (d.carry && TUNE[k.split('@')[0]]) d.carry = d.carry.filter(([c]) => !/fake$/.test(c))
 
 // ── what counts, and for whom ───────────────────────────────────────────────────────────────────────────────────
 
 /** Who a deed counts for: the player who did it and their team here with them (XYJ: the one with the last blow). */
-function party(w, id) {
+export function party(w, id) {
   if (!id || isNpc(id) || !w.players[id]) return []
   const p = w.players[id]
   const mates = p.team ? playersIn(w, p.room).filter((q) => q !== id && w.players[q].team === p.team && !w.players[q].ghost) : []
   return [id, ...mates]
 }
-const flags = (p) => (self(p).qj ??= {})
+export const flags = (p) => (self(p).qj ??= {})
 const announce = (x, who, text) => vision(x, ch(x.w, who)?.room, `【闲聊】${nameOf(x.w, who)}：${text}`, null, null, { k: 'chat' })
 
-/** An obstacle passed (king.c / taishang.c announce_success): 3000 道行 and some (king.c random(800), taishang.c 700). */
-function pass(x, pid, key, say, by, some = 800) {
+/**
+ * An obstacle passed (announce_success): `base` 道行 and random(`some`) (king.c 3000 + random(800); taishang.c 700;
+ * wuji's kingreal.c 4000 + random(600)), told as years, days and 时辰; `lines`, the chat said by `by`.
+ */
+export function pass(x, pid, key, say, by, some = 800, { base = 3000, lines = null } = {}) {
   const w = x.w
   const p = w.players[pid]
   const y = self(p)
-  if (y.obstacle[key] === 'done') return
+  if (y.obstacle[key] === 'done') return false
   y.obstacle[key] = 'done'
+  y.number = (y.number ?? 0) + 1 // obstacle/number: what 马盗 go by; 五庄观 adds none, 取经 counts it again
   const i = rnd(x, some)
-  y.exp += 3000 + i
-  announce(x, by, `${p.name}${say}`)
-  announce(x, by, `${p.name}顺利闯过西行又一关！`)
-  tell(x, pid, `你赢得了三年${cn(Math.floor(i / 4))}天${cn((i % 4) * 3)}时辰的道行！`)
+  y.exp += base + i
+  for (const l of lines ?? [`${p.name}${say}`, `${p.name}顺利闯过西行又一关！`]) announce(x, by, l)
+  tell(x, pid, `你赢得了${cn(base / 1000)}年${cn(Math.floor(i / 4))}天${cn((i % 4) * 3)}时辰的道行！`)
+  return true
+}
+/** The monsters' numbers set to this game's fights: skills ×k, 气血/精神/精 to `pool`, 道行 ×k÷10. */
+export function tune(table) {
+  for (const [key, d] of Object.entries(NPCS)) {
+    const t = table[key.split('@')[0].split('#')[0]]
+    if (!t) continue
+    const [k, pool] = t
+    d.skills = Object.fromEntries(Object.entries(d.skills ?? {}).map(([s, v]) => [s, Math.max(1, Math.round(v * k))]))
+    d.max = { kee: pool, sen: pool, gin: pool }
+    d.exp = Math.round((d.exp ?? 0) * k / 10)
+  }
 }
 
 // ── 宝象国: 白骨精 on the 野路 ────────────────────────────────────────────────────────────────────────────────────
@@ -478,5 +486,26 @@ HOOKS.beat = (x) => {
       }
       w.rooms[SHIZHAN].done = x.now + 300_000
     }
+  }
+}
+
+// ── 宝象国's 宫兵 (npc/bing.c check_kill) ────────────────────────────────────────────────────────────────────────────
+
+// A second after anyone comes in, a 宫兵 falls on every 山妖 there, with a shout the first time (kill shan yao).
+const BING = BX + 'npc/bing'
+for (const key of Object.keys(NPCS)) {
+  if (key.split('@')[0] !== BING) continue
+  N[key] = { ...N[key], init(x, id) { cancel(x, 'baoxiang_bing', (a) => a === id); later(x, 1000, 'baoxiang_bing', id) } }
+}
+TIMERS.baoxiang_bing = (x, id) => {
+  const w = x.w
+  if (!awake(w, id, x.now)) return
+  const room = ch(w, id).room
+  const yao = npcsIn(w, room).filter((n) => baseOf(n).startsWith(BX + 'npc/shanyao') && awake(w, n, x.now))
+  for (const [i, n] of yao.entries()) {
+    if (!awake(w, id, x.now)) return
+    const shout = i === 0 && !w.npcs[id].shouted ? [['$N对着$n喝道：「老匹夫！今日不是你死就是我活！」', id, n]] : []
+    w.npcs[id].shouted = 1
+    brawl(x, id, n, 'kill', shout)
   }
 }
