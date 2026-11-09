@@ -5,13 +5,13 @@
 import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText, statBars, START } from './game.js'
 import { ROOMS, peopleIn, thingGroups, nameOf, isNpc, npcData } from './world.js'
 import { gameTime, phaseOf } from './text.js'
+import { hud } from './pixel.js'
 
 // One page, two widths (style.css): a phone gets one column with a small compass by the line to type; a wide window
-// gets a side column with the compass, who and what is here, and who is in the town.
+// gets a side column with the compass, who and what is here, and who is on the road. A pixel look (pixel.js, style.css).
 const ROOM_TITLES = new Set(Object.values(ROOMS).map((r) => `【${r.name}】`))
 const SHICHEN = '子丑寅卯辰巳午未申酉戌亥'
 const COMPASS = ['西北', '北', '东北', '西', null, '东', '西南', '南', '东南']
-const EXTRA = ['上', '下', '出去']
 
 const $ = (sel) => document.querySelector(sel)
 const ctx = await window.gugu.getContext()
@@ -61,6 +61,7 @@ if (!ctx.file) {
     joined = true
     shown = '\uffff' // the join's own change shows nothing: the room and its recent lines follow below
     const name = f.presence.self.name || members.get(me) || null
+    const born = !f.data.players?.[me]
     const ops = join(f.toJSON(), me, { name })
     // An agent renamed since it last played shows under its new name.
     for (const [id, p] of Object.entries(f.data.players ?? {})) if (id !== me && members.get(id) && members.get(id) !== p.name) ops.push([['players', id, 'name'], members.get(id)])
@@ -76,6 +77,20 @@ if (!ctx.file) {
     shown = lastKey(s)
     markHere()
     draw()
+    if (born) opening()
+  }
+
+  /** A new player's first sight: the title over 长安 at dusk and two lines, gone on any tap. Once, and no tutorial. */
+  function opening() {
+    const go = h('button', { type: 'button', className: 'primary' }, '入长安')
+    const o = h('section', { id: 'opening', role: 'dialog', ariaLabel: '西游' },
+      h('div', { className: 'name' }, h('b', {}, '西游'), h('span', { className: 'splash' }, '取经路上，同行者众！')),
+      h('p', {}, '大唐贞观年间，长安城里都在传：', h('br'), '西天有真经，路上有妖魔。'), go, h('small', {}, '点任意处继续'))
+    // Focus only where there is a keyboard to type with: on a phone it would raise the soft keyboard and a focus ring.
+    const keys = matchMedia('(hover: hover) and (pointer: fine)').matches
+    o.onclick = () => { o.remove(); if (keys) $('#line').focus() }
+    document.body.append(o)
+    if (keys) go.focus()
   }
 
   /** What others did since this page last looked, where I stand. */
@@ -111,19 +126,9 @@ if (!ctx.file) {
   const fill = (text) => () => { $('#line').value = text; $('#line').focus() }
   const button = (text, onclick, className = '') => h('button', { type: 'button', className, onclick }, text)
 
-  /** 精气神, body, food and water: each a short bar, green, then yellow below 60%, red below 30%. */
-  const bar = ([label, { cur, max }]) => {
-    const r = max ? cur / max : 0
-    return h('span', { className: `bar ${r > 0.6 ? 'ok' : r > 0.3 ? 'warn' : 'bad'}`, title: `${label} ${cur}/${max}` },
-      h('b', {}, label), h('i', {}, h('u', { style: `width:${Math.round(Math.min(1, r) * 100)}%` })), h('small', {}, `${cur}`))
-  }
-  /** The exits as a compass around 看 (the names of where they lead when there is room), up, down and out below. */
-  const compass = (r, named) => [
-    ...COMPASS.map((d) => d === null ? button('看', go('看'), 'center')
-      : r.exits[d] ? h('button', { type: 'button', className: 'dir', onclick: go(d), title: ROOMS[r.exits[d]].name }, h('b', {}, d), named ? h('small', {}, ROOMS[r.exits[d]].name) : null)
-        : h('span', { className: 'dir off' }, d)),
-    ...EXTRA.filter((d) => r.exits[d]).map((d) => h('button', { type: 'button', className: 'dir extra', onclick: go(d) }, h('b', {}, d), named ? h('small', {}, ROOMS[r.exits[d]].name) : null)),
-  ]
+  /** The eight ways around 看, always there; the ways this room has no exit to are disabled. Up, down, in and out are typed. */
+  const compass = (r) => COMPASS.map((d) => d === null ? button('看', go('看'), 'center')
+    : h('button', { type: 'button', className: d.length > 1 ? 'dir two' : 'dir', onclick: go(d), disabled: !r.exits[d], title: r.exits[d] ? ROOMS[r.exits[d]].name : '' }, d))
   /** What one can do with someone or something here, by a click. */
   const actions = (s, id) => isNpc(id)
     ? [['看', go(`看 ${npcData(id).name}`)], ['说话', fill(`对 ${npcData(id).name} 说 `)], ...(npcData(id).sells ? [['买', go('清单')]] : [])]
@@ -145,9 +150,9 @@ if (!ctx.file) {
     const now = Date.now()
     $('#room').textContent = r.name
     $('#clock').textContent = `${SHICHEN[Math.floor(((gameTime(now).hour + 1) % 24) / 2)]}时 · ${phaseOf(now)[2]}`
-    $('#stats').replaceChildren(...(p ? statBars(p).map(bar) : []), ...(p?.ghost ? [h('strong', {}, '鬼魂')] : []))
-    $('#pad').replaceChildren(...compass(r, false))
-    $('#compass').replaceChildren(...compass(r, true))
+    $('#stats').replaceChildren(...(p ? hud(statBars(p)) : []), ...(p?.ghost ? [h('strong', {}, '鬼魂')] : []))
+    $('#pad').replaceChildren(...compass(r))
+    $('#compass').replaceChildren(...compass(r))
     const others = peopleIn(s, room).filter((id) => id !== me)
     const things = thingGroups(s, room)
     const thingActs = (tid) => [['看', go(`看 ${nameOf(s, tid)}`)], ['拿', go(`拿 ${nameOf(s, tid)}`)]]
@@ -167,7 +172,7 @@ if (!ctx.file) {
     const online = new Set([me, ...f.presence.others.map((q) => q.userId)])
     const players = Object.entries(s.players ?? {})
       .sort(([a, pa], [b, pb]) => Number(online.has(b) || !!pb.agent) - Number(online.has(a) || !!pa.agent) || (pb.at ?? 0) - (pa.at ?? 0))
-    $('#crowd').replaceChildren(...players.slice(0, 3).map(([id]) => h('gugu-avatar', { user: id, size: 'xs' })), `${players.length} 人在江湖`)
+    $('#crowd').replaceChildren(...players.slice(0, 3).map(([id]) => h('gugu-avatar', { user: id, size: 'xs' })), `${players.length} 人同行`)
     $('#people').replaceChildren(...players.map(([id, q]) => h('li', {},
       h('gugu-avatar', { user: id, size: 'xs' }),
       h('span', { className: 'who' }, id === me ? `${q.name}（你）` : q.name, tag(s, id)),
@@ -197,7 +202,7 @@ if (!ctx.file) {
   setInterval(() => { markHere(); draw() }, 60_000) // the clock in the header moves too
   f.onStatus(() => {
     document.body.dataset.file = f.status
-    if (f.status === 'gone') $('#status').textContent = '江湖的文件不在了'
+    if (f.status === 'gone') $('#status').textContent = '这个世界的文件不在了'
   })
   window.gugu.setTabTitle('西游').catch(() => {}) // only the tab's name
   enter()

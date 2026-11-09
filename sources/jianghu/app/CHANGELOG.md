@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0
+
+A pixel look, drawn by hand (nothing taken from any game's files). The status is a HUD over the controls: ten hearts
+for 气血 and ten bolts for 精神 on the left, ten drumsticks for food and ten drops for water from the right, in halves;
+内力 and 法力 (雪亭镇's 精 and 体) as thin bars once begun. Buttons are square blocks with a bevel; titles, buttons and
+the HUD are set in 精品点阵体 9×9 (OFL, `px-OFL.txt`), cut to the page's own words, the world's names and GB2312's
+first level; the story keeps its book face. The compass is a fixed three by three around 看, the ways with no exit
+disabled; 上, 下, 进去 and 出去 are typed. A new character opens on one title screen (西游 over 长安 at dusk, two lines,
+「入长安」 or a tap anywhere), then stands in 长安. A new icon, the 金箍棒 across a 筋斗云. 「N 人同行」 in the header.
+像素风界面：红心、闪电、鸡腿、水滴各十格显示气血、精神、食物和水，内力法力是细条；方块按钮，标题按钮用像素字体，故事保留书宋；方向键固定九格，走不通的灰掉，上下进出靠打字；新角色一屏开场后落在长安；新图标。
+
 ## 0.5.0
 
 The road west goes on to its second and third obstacles, as XYJ tells them: 宝象国 (白骨精's three shapes on the 野路,
