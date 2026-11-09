@@ -44,7 +44,7 @@ export interface CuaClient {
 }
 
 type Log = { info(fields: Record<string, unknown>, msg: string): void; warn(fields: Record<string, unknown>, msg: string): void }
-type Spawn = (command: string, args: readonly string[], options: { env: NodeJS.ProcessEnv; stdio: ['pipe', 'pipe', 'pipe'] }) => ChildProcess
+type Spawn = (command: string, args: readonly string[], options: { cwd: string; env: NodeJS.ProcessEnv; stdio: ['pipe', 'pipe', 'pipe'] }) => ChildProcess
 
 const IDLE_MS = 10 * 60_000
 const READY_MS = 15_000
@@ -264,6 +264,10 @@ export function createCuaClient(options: {
     throw new NativeCallError('execution_failed', START_FAILED)
   }
 
+  // Apps the driver launches inherit its working directory. Left to inherit the program's, that is the App's
+  // session folder: on Windows an app still open from an earlier run then keeps it from being rebuilt, and the
+  // program no longer starts. Start where a person's own launch would, in their home folder.
+  const driverCwd = () => os.homedir()
   const environment = () => cuaEnvironment({ home: options.home, ...(options.hostBundleId ? { hostBundleId: options.hostBundleId } : {}) })
 
   /** 守护进程:正在起 / 已经起好就是同一代。它退出、出错、stop 都会清掉 daemonReady(连同所有的道),下一次才重起。 */
@@ -275,7 +279,7 @@ export function createCuaClient(options: {
     const serveArgs = ['serve', '--embedded', '--socket', socket, ...(platform === 'win32' ? [] : ['--pid-file', `${socket}.pid`])]
     // CUA_DRIVER_PARENT_LIVENESS_STDIN:守护进程把 stdin 当作咕咕还活着的凭据,咕咕一没(含崩溃、被强杀)它就 EOF 自己退
     // (它的 EMBEDDING.md「host death closes the daemon」)。没有它,咕咕走 reallyExit 那条关停路时守护进程留成孤儿。
-    const d = spawn(options.binary!, serveArgs, { env: { ...environment(), CUA_DRIVER_PARENT_LIVENESS_STDIN: '1' }, stdio: ['pipe', 'pipe', 'pipe'] })
+    const d = spawn(options.binary!, serveArgs, { cwd: driverCwd(), env: { ...environment(), CUA_DRIVER_PARENT_LIVENESS_STDIN: '1' }, stdio: ['pipe', 'pipe', 'pipe'] })
     daemon = d
     // 它的 stdin 只是「咕咕还活着」的凭据:它先退了再关这一头时的 EPIPE 由 exit 那边报,❌ 成了主进程的未捕获异常。
     d.stdin?.on('error', () => undefined)
@@ -369,7 +373,7 @@ export function createCuaClient(options: {
         // control lease, never its stdin. A preview can sample that same owner.
         return daemon!
       }
-      const p = spawn(options.binary!, ['mcp', '--embedded', '--socket', socket], { env: environment(), stdio: ['pipe', 'pipe', 'pipe'] })
+      const p = spawn(options.binary!, ['mcp', '--embedded', '--socket', socket], { cwd: driverCwd(), env: environment(), stdio: ['pipe', 'pipe', 'pipe'] })
       lane.proc = p
       // 代理先退了、这边还在写(请求、取消通知)的 EPIPE:在途请求由 exit 那边一并拒掉,❌ 成了主进程的未捕获异常。
       p.stdin?.on('error', (error) => options.log?.info({ err: error.message, lane: key }, 'cua-driver mcp stdin closed'))

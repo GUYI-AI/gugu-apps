@@ -579,13 +579,14 @@ function createCuaClient(options) {
     options.log?.warn({ timeoutMs: options.readyTimeoutMs ?? READY_MS }, "cua-driver serve did not open its socket in time");
     throw new NativeCallError("execution_failed", START_FAILED);
   };
+  const driverCwd = () => os.homedir();
   const environment2 = () => cuaEnvironment({ home: options.home, ...options.hostBundleId ? { hostBundleId: options.hostBundleId } : {} });
   const startDaemon = () => {
     if (daemonReady) return daemonReady;
     shutdown("\u7535\u8111\u63A7\u5236\u91CD\u65B0\u542F\u52A8\u4E86");
     fs2.mkdirSync(options.home, { recursive: true });
     const serveArgs = ["serve", "--embedded", "--socket", socket, ...platform === "win32" ? [] : ["--pid-file", `${socket}.pid`]];
-    const d = spawn(options.binary, serveArgs, { env: { ...environment2(), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" }, stdio: ["pipe", "pipe", "pipe"] });
+    const d = spawn(options.binary, serveArgs, { cwd: driverCwd(), env: { ...environment2(), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" }, stdio: ["pipe", "pipe", "pipe"] });
     daemon = d;
     d.stdin?.on("error", () => void 0);
     d.stdout?.on("data", () => void 0);
@@ -671,7 +672,7 @@ function createCuaClient(options) {
         lane.starting = false;
         return daemon;
       }
-      const p = spawn(options.binary, ["mcp", "--embedded", "--socket", socket], { env: environment2(), stdio: ["pipe", "pipe", "pipe"] });
+      const p = spawn(options.binary, ["mcp", "--embedded", "--socket", socket], { cwd: driverCwd(), env: environment2(), stdio: ["pipe", "pipe", "pipe"] });
       lane.proc = p;
       p.stdin?.on("error", (error) => options.log?.info({ err: error.message, lane: key }, "cua-driver mcp stdin closed"));
       const pending = /* @__PURE__ */ new Map();

@@ -40,11 +40,11 @@ afterEach(() => {
 
 /** Driver fixture: serve creates its socket; mcp serves JSON-RPC via answer (undefined leaves a call unanswered). */
 function fakeDriver(answer: (name: string, args: Record<string, unknown>) => unknown) {
-  const spawned: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv; proc: FakeProc }> = []
+  const spawned: Array<{ args: readonly string[]; env: NodeJS.ProcessEnv; cwd?: string; proc: FakeProc }> = []
   const received: Array<Record<string, unknown>> = []
-  const spawn = (_command: string, args: readonly string[], options: { env: NodeJS.ProcessEnv }) => {
+  const spawn = (_command: string, args: readonly string[], options: { env: NodeJS.ProcessEnv; cwd?: string }) => {
     const proc = new FakeProc()
-    spawned.push({ args, env: options.env, proc })
+    spawned.push({ args, env: options.env, cwd: options.cwd, proc })
     if (args[0] === 'serve') {
       const socket = args[args.indexOf('--socket') + 1]!
       setTimeout(() => fs.writeFileSync(socket, ''), 20)
@@ -270,6 +270,9 @@ describe('start, call and stop', () => {
     // #7317: the daemon treats stdin as Gugu's lifetime and exits on EOF; the proxy's stdin carries JSON-RPC.
     expect(driver.spawned[0]!.env.CUA_DRIVER_PARENT_LIVENESS_STDIN).toBe('1')
     expect(driver.spawned[1]!.env.CUA_DRIVER_PARENT_LIVENESS_STDIN).toBeUndefined()
+    // Apps the driver launches inherit its working directory: never the App's session folder, which Windows
+    // then cannot rebuild while such an app stays open.
+    expect(driver.spawned.map((s) => s.cwd)).toEqual([os.homedir(), os.homedir()])
     // The next call reuses this generation.
     await client.callTool('list_apps', {})
     expect(driver.spawned).toHaveLength(2)
