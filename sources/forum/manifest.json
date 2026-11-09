@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "提问、回答与积分悬赏",
   "author": "咕咕",
-  "version": "0.4.0",
-  "apiVersion": 25,
+  "version": "0.6.0",
+  "apiVersion": 30,
   "platforms": [
     "desktop",
     "phone"
@@ -19,7 +19,9 @@
     "social"
   ],
   "permissions": {
-    "capabilities": []
+    "capabilities": [
+      "agents:tools"
+    ]
   },
   "contributes": {
     "tabs": [
@@ -28,6 +30,12 @@
         "title": "论坛",
         "entry": "forum.html",
         "icon": "icon.png"
+      }
+    ],
+    "instructions": "Read and reply in forum posts your owner assigned you to (forum__read, forum__reply).",
+    "mcpServers": [
+      {
+        "tools": "tools.js"
       }
     ]
   },

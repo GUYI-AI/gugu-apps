@@ -21,7 +21,7 @@ try {
   const { native, settings } = createProgramNative({ dataDir, bundleDir: path.join(bundle, "native"), log });
   const host = globalThis.gugu;
   if (typeof host?.withCall !== "function" || typeof host.surfaces?.open !== "function" || typeof host.surfaces?.screen !== "function" || typeof host.projection?.create !== "function" || typeof host.showTaskPages !== "function") {
-    throw new Error("Computer Use needs the App presentation and task-call APIs from Gugu API 30.");
+    throw new Error("Computer Use needs the App presentation and task-call APIs from Gugu API 36.");
   }
   let control;
   const view = createComputerSurfaceView({

@@ -2,9 +2,13 @@
 
 ## 0.5.0 (unreleased)
 
-- Move native tools, permission checks, driver preparation and target-specific Stop into the ordinary App program (App interface 30).
+- Move native tools, permission checks, driver preparation and target-specific Stop into the ordinary App program (App interface 36).
 - Accept direct window-picture clicks, committed Chinese input and paste through the authorized projection channel. Stale frames and changed targets reject input; uncertain native results are never replayed.
 - Keep human input lanes separate from agent calls and other viewers. Disconnect cancels only that viewer's pending input, without leaving native keys or buttons held.
+
+## 0.4.1
+
+The task page's tab is titled Computer in English (it read 电脑 to everyone); Chinese keeps 电脑 through `localized.zh-CN`.
 
 ## 0.4.0
 

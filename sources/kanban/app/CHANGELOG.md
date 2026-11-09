@@ -1,5 +1,70 @@
 # Changelog
 
+## 1.6.1
+
+On a phone: a column's Rename / Delete menu no longer lies open over the cards where the WebView has no `popover` (before
+Chrome 114); there the column menu is not offered. The page title and tabs fit one line without the card count, and a
+card's holder no longer runs off the screen with its device name.
+The fleet card's four numbers share the card's width, and clicking a card again opens the board's team view in the same
+tab rather than a new one each time; when the host refuses to open it, the card says why.
+
+## 1.6.0
+
+One page for the board and the fleet (owner 11-08): 看板, 团队 and 决策 are views of the same page, so the org chart can
+no longer strand the person in a tab with no way back.
+
+- The org chart was a second tab (`org`) the board opened with `openLink`; it had no toolbar and no link back, and in
+  the Dock and on a phone it replaced the board. The tab is gone: the views switch in the page, and the fleet message
+  card opens the board on its 团队 view (`?view=team`).
+- Who holds what: a card's holder (the newest task linked to it) shows with its face, name and state on the card; a
+  row of faces narrows every view to one holder or to the unclaimed cards, and holds across views. The 团队 view lists
+  each lane's cards beside it and the unclaimed cards in a column of their own.
+- One panel for a card or an agent, each leading to the other. An agent's panel keeps the chart's actions (message,
+  transcript, PR, move under, hand over, archive, supervisor mark). An unclaimed card can be given to an agent
+  (派给…), which is told to claim it with the tools.
+- What waits on the person shows above every view, in its card and under 决策, and is answered there; a plain wait on
+  the person (no question) is answered with a line that goes to the holder and clears the wait. Messages to agents name
+  the board and card so they can act on them with the tools.
+- Agents: `list` starts with `yours`, `waitingOnOwner` and `unclaimed`, and gives each card its `holder` and question;
+  the tool descriptions and the skill describe the one page and the answer coming back as a message.
+
+## 1.5.2
+
+- A question asked on a card no lane holds (a supervisor's own card, a card whose task ended) now waits on the person
+  like the others: counted in 等你拍板 on the message card, listed first on the chart, and the answer goes back to the
+  agent that asked. Before, the chart said nothing waited while the ledger held the question.
+- The message card no longer writes "null" after the machines when every machine answers.
+
+## 1.5.1
+
+- The agents' one-line instructions are back under 160 characters: gugu 0.3.1 refused the 1.5.0 manifest, which
+  hid Teamboard from its market. The fleet tools are described in the kanban skill.
+
+## 1.5.0
+
+舰队 (Fleet): the fleet's org chart on a chat's board (App interface 26).
+
+- A new tab draws the person, each machine's supervisor and the lanes under it, across every computer the person
+  uses (`listAgents({ report: true })`), joined with the cards the lanes claimed. In layers: first what waits on the
+  person (questions with their answers as buttons), then the others' waits by kind (review, merge, CI, another lane,
+  quota), then the chart; a lane opens to its wait, progress, destination and pull request, with message, transcript
+  and PR one click away, and everything else under More.
+- Lane fields on a card: `waitKind` (with `waitWho`, `waitSince`), `dest`, `head`; a pull request link carries CI,
+  review, merged and head from `sync_prs`. Old pages ignore them; the board's version stays 1.
+- A decision ledger in the same board file (`decisions`): `ask` (a lane's question), `decisions` (what is in force for
+  a lane, its machine, the fleet and its release). Only the person decides, on the chart: no tool answers or records
+  a decision, and whoever asked a question cannot answer it.
+- Handoffs (`handoff.offer` from the chart, `handoff_accept` by the new lane), supervisors (`supervisor`: agents only
+  add the mark, the person removes it), and archive / move-under requests that the page sends to the machine's
+  supervisor. The page pre-checks (not a supervisor or a root, the supervisor named, an accepted handoff or a synced
+  PR, nothing under it on any machine, the lane's name typed); the supervisor checks again itself and refuses what
+  does not hold (skill kanban).
+- A message card (`fleet` tab, `widget`): four numbers and the machines, read when shown; a click opens the chart.
+- `agents:control` becomes `agents:control:all-machines`: `agents:control` tells only agents this App started, and the
+  chart's messages, answers and requests go to lanes and supervisors the person started, on any computer. Every
+  such message is sent from a person's click (`dispatch` with a gesture); the App sends nothing on its own.
+
+
 ## 1.4.0
 
 App interface 25: a task's or project's files are picked a folder at a time (`files.list({ workspace, folder })`); file links open as `{ workspace: 'session:<id>' | 'project:<id>', id }`; a task's tab (which now also has its private chat) keeps this computer's board; `ctx.workspace` replaces `ctx.session`. English tab and toolbar titles (`localized.en.tabs`): Teamboard, New card.

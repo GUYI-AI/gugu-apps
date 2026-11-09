@@ -3,6 +3,7 @@ import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { exists } from './discovery.js'
 import { slug, lines } from './markdown.js'
+import { ZH, ALL } from '../words.js'
 
 const sha = (data) => createHash('sha256').update(data).digest('hex')
 const validId = (id) => { if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error('Invalid preview id'); return id }
@@ -13,15 +14,15 @@ async function state(p) {
   const real = await fs.realpath(p), stat = await fs.stat(p), data = await fs.readFile(p)
   return { path: p, exists: true, real, sha: sha(data), mtimeMs: stat.mtimeMs, mode: stat.mode, data: data.toString('base64') }
 }
-async function same(expected) {
+async function same(expected, words = ZH) {
   const actual = await state(expected.path)
-  if (actual.exists !== expected.exists || (expected.exists ? actual.real !== expected.real || actual.sha !== expected.sha || actual.mtimeMs !== expected.mtimeMs : actual.parent !== expected.parent)) throw new Error(`文件已改变，请重新诊断并预览：${expected.path}`)
+  if (actual.exists !== expected.exists || (expected.exists ? actual.real !== expected.real || actual.sha !== expected.sha || actual.mtimeMs !== expected.mtimeMs : actual.parent !== expected.parent)) throw new Error(words.fileChanged(expected.path))
 }
 
 function editedLines(text, transform) { return lines(text).flatMap((line, i) => transform(line, i + 1)).join('\n') }
 
-export async function makePreview(report, ruleId, dataDir) {
-  if (!dataDir) throw new Error('App 数据夹不可用，无法保存预览和快照')
+export async function makePreview(report, ruleId, dataDir, words = ZH) {
+  if (!dataDir) throw new Error(words.noDataDir)
   const rule = report.rules.find((r) => r.id === ruleId)
   if (!rule) throw new Error('Unknown rule')
   const originals = new Map([...report._memories.flatMap((m) => m.files), ...report._instructions].map((f) => [f.path, f]))
@@ -29,7 +30,7 @@ export async function makePreview(report, ruleId, dataDir) {
   const source = async (p) => {
     if (!dependencies.has(p)) {
       const s = await state(p), prior = originals.get(p)
-      if (prior?.raw !== undefined && p.endsWith('.md') && (!s.exists || sha(Buffer.from(prior.raw)) !== s.sha)) throw new Error(`诊断后文件已改变：${p}`)
+      if (prior?.raw !== undefined && p.endsWith('.md') && (!s.exists || sha(Buffer.from(prior.raw)) !== s.sha)) throw new Error(words.changedSince(p))
       dependencies.set(p, s)
     }
     return dependencies.get(p)
@@ -45,22 +46,22 @@ export async function makePreview(report, ruleId, dataDir) {
       if (!before.includes(`](${file.file})`)) await write(main, `${before.trimEnd()}\n- [${file.fields.name || slug(file.file)}](${file.file}) — ${file.fields.description}\n`)
       return
     }
-    if (!/^[a-z][a-z0-9_-]*$/i.test(file.fields.type || '')) throw new Error(`记忆类型需要判断，无法确定索引：${filePath}`)
+    if (!/^[a-z][a-z0-9_-]*$/i.test(file.fields.type || '')) throw new Error(words.typeNeeded(filePath))
     const hubName = `${file.fields.type}-hub.md`
     const index = path.join(path.dirname(filePath), hubName)
     const before = await read(index)
-    const heading = before || `---\nname: ${slug(hubName)}\ndescription: ${file.fields.type} 类型的记忆索引\ntype: reference\n---\n`
+    const heading = before || `---\nname: ${slug(hubName)}\ndescription: ${words.hubDescription(file.fields.type)}\ntype: reference\n---\n`
     if (!before.includes(`](${file.file})`)) await write(index, `${heading.trimEnd()}\n- [${file.fields.name || slug(file.file)}](${file.file}) — ${file.fields.description.replace(/\r?\n/g, ' ')}\n`)
     const memoryIndex = path.join(path.dirname(filePath), 'MEMORY.md')
     const main = await read(memoryIndex)
-    if (!main.includes(`](${hubName})`)) await write(memoryIndex, `${main.trimEnd()}\n- [${slug(hubName)}](${hubName}) — ${file.fields.type} 类型的记忆索引\n`)
+    if (!main.includes(`](${hubName})`)) await write(memoryIndex, `${main.trimEnd()}\n- [${slug(hubName)}](${hubName}) — ${words.hubDescription(file.fields.type)}\n`)
   }
   const archive = async (p) => {
     const from = await source(p)
     const archiveDir = path.join(path.dirname(p), 'archive')
     // Directory creation belongs to apply, after confirmation; record its existing parent now.
     const dest = path.join(archiveDir, path.basename(p))
-    if (await exists(dest)) throw new Error(`归档目标已存在：${dest}`)
+    if (await exists(dest)) throw new Error(words.archiveExists(dest))
     createdParents.add(archiveDir)
     dependencies.set(dest, { path: dest, exists: false, parent: await fs.realpath(path.dirname(archiveDir)), newParent: archiveDir })
     edits.set(dest, { base64: from.data })
@@ -99,7 +100,7 @@ export async function makePreview(report, ruleId, dataDir) {
       await write(row.path, editedLines(await read(row.path), (line) => line === row.text ? line.slice(0, line.length - row.description.length) + row.actual.replace(/\r?\n/g, ' ') : line))
     } else if (row.repair === 'supersede') {
       for (const entry of row.indexedBy) await rewriteEntry(path.join(path.dirname(row.path), entry.file), path.basename(row.path), () => [])
-      const before = await read(row.path), note = `> 已被 [[${slug(row.current)}]] 取代。\n\n`
+      const before = await read(row.path), note = words.supersededNote(slug(row.current))
       const boundary = before.startsWith('---') ? before.indexOf('\n---', 4) : -1
       const insertion = boundary < 0 ? 0 : boundary + 5
       await write(row.path, before.slice(0, insertion) + '\n' + note + before.slice(insertion))
@@ -116,8 +117,8 @@ export async function makePreview(report, ruleId, dataDir) {
     } else if (row.repair === 'snapshot-note') {
       const notePath = path.join(row.directory, 'CLAUDE.md')
       const before = await read(notePath)
-      const note = '\n此目录是只读历史快照，不作当前规则依据。请返回主项目读取当前规矩。\n'
-      if (!before.includes(note.trim())) await write(notePath, before.trimEnd() + note)
+      // A note already there in any language counts; the person's language is used for a new one.
+      if (!ALL.some((w) => before.includes(w.snapshotNote.trim()))) await write(notePath, before.trimEnd() + words.snapshotNote)
     } else if (row.repair === 'config-section') {
       const before = await read(row.path)
       const { projectSections } = await import('./discovery.js')
@@ -132,7 +133,7 @@ export async function makePreview(report, ruleId, dataDir) {
     const before = dependencies.get(p)
     return after === null ? before.exists : typeof after === 'string' ? after !== Buffer.from(before.data || '', 'base64').toString('utf8') : true
   }).map(([p, after]) => ({ path: p, before: dependencies.get(p), after: after === null ? null : typeof after === 'string' ? Buffer.from(after).toString('base64') : after.base64 }))
-  if (!changes.length) throw new Error('这条规则没有确定的文件改法，请复制提示给 agent 判断')
+  if (!changes.length) throw new Error(words.noFix)
   const id = randomUUID()
   const preview = { id, rule: ruleId, project: report.project.root, createdAt: new Date().toISOString(), changes, dependencies: [...dependencies.values()], createdParents: [...createdParents], status: 'preview' }
   preview.digest = sha(JSON.stringify(preview))
@@ -141,36 +142,36 @@ export async function makePreview(report, ruleId, dataDir) {
   return { id, digest: preview.digest, changes: changes.length }
 }
 
-export async function readPreview(dataDir, id, offset = 0, limit = 6000) {
+export async function readPreview(dataDir, id, offset = 0, limit = 6000, words = ZH) {
   const preview = JSON.parse(await fs.readFile(path.join(dataDir, 'previews', `${validId(id)}.json`), 'utf8'))
   const text = preview.changes.map((c) => {
     const before = c.before.exists ? Buffer.from(c.before.data, 'base64').toString('utf8') : ''
     const after = c.after === null ? '' : Buffer.from(c.after, 'base64').toString('utf8')
-    if (!c.path.endsWith('.md') && !c.path.endsWith('.toml') && !c.path.endsWith('.json')) return `${c.path}\n移动到 archive/（${Buffer.from(c.before.data || '', 'base64').length} 字节）`
+    if (!c.path.endsWith('.md') && !c.path.endsWith('.toml') && !c.path.endsWith('.json')) return words.moveToArchive(c.path, Buffer.from(c.before.data || '', 'base64').length)
     const a = lines(before), b = lines(after)
     let start = 0
     while (start < Math.min(a.length, b.length) && a[start] === b[start]) start++
     let endA = a.length, endB = b.length
     while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) { endA--; endB-- }
-    return `--- ${c.path}${c.before.exists ? '' : '（新建）'}\n+++ ${c.after === null ? '（归档移走）' : c.path}\n@@ ${start + 1} @@\n${a.slice(start, endA).map((s) => '- ' + s).join('\n')}\n${b.slice(start, endB).map((s) => '+ ' + s).join('\n')}`
+    return `--- ${c.path}${c.before.exists ? '' : words.newFile}\n+++ ${c.after === null ? words.archivedAway : c.path}\n@@ ${start + 1} @@\n${a.slice(start, endA).map((s) => '- ' + s).join('\n')}\n${b.slice(start, endB).map((s) => '+ ' + s).join('\n')}`
   }).join('\n\n')
   const end = Math.min(text.length, offset + limit)
   return { id, digest: preview.digest, changes: preview.changes.length, text: text.slice(offset, end), nextOffset: end < text.length ? end : null, totalChars: text.length, status: preview.status }
 }
 
-export async function applyPreview(dataDir, id, digest, confirmed) {
-  if (confirmed !== true) throw new Error('请先查看改动并确认')
+export async function applyPreview(dataDir, id, digest, confirmed, words = ZH) {
+  if (confirmed !== true) throw new Error(words.confirmFirst)
   const file = path.join(dataDir, 'previews', `${validId(id)}.json`)
   // The host runs one tools.js process per App. Serialize its writes without a persistent lock that can outlive it.
-  if (applying) throw new Error('另一项修复正在写入，请稍后重试')
+  if (applying) throw new Error(words.busy)
   applying = true
   const applied = []
   try {
     const preview = JSON.parse(await fs.readFile(file, 'utf8'))
-    if (preview.status !== 'preview' || digest !== preview.digest) throw new Error('预览已使用或确认信息不匹配，请重新预览')
+    if (preview.status !== 'preview' || digest !== preview.digest) throw new Error(words.used)
     for (const expected of preview.dependencies) {
-      if (expected.newParent) { if (await exists(expected.path) || await fs.realpath(path.dirname(expected.newParent)) !== expected.parent) throw new Error(`归档目标已改变：${expected.path}`) }
-      else await same(expected)
+      if (expected.newParent) { if (await exists(expected.path) || await fs.realpath(path.dirname(expected.newParent)) !== expected.parent) throw new Error(words.archiveChanged(expected.path)) }
+      else await same(expected, words)
     }
     const snapshotDir = path.join(dataDir, 'snapshots', id)
     await fs.mkdir(snapshotDir, { recursive: true, mode: 0o700 })
@@ -182,15 +183,15 @@ export async function applyPreview(dataDir, id, digest, confirmed) {
     const ordered = preview.changes.toSorted((a, b) => Number(a.after === null) - Number(b.after === null))
     for (const change of ordered) {
       if (change.before.newParent) {
-        if (await exists(change.path)) throw new Error(`归档目标已存在：${change.path}`)
-        if (await fs.realpath(path.dirname(change.path)) !== path.join(change.before.parent, path.basename(change.before.newParent))) throw new Error('归档目录已改变')
-      } else await same(change.before)
+        if (await exists(change.path)) throw new Error(words.archiveExists(change.path))
+        if (await fs.realpath(path.dirname(change.path)) !== path.join(change.before.parent, path.basename(change.before.newParent))) throw new Error(words.archiveDirChanged)
+      } else await same(change.before, words)
       if (change.after === null) await fs.unlink(change.path)
       else {
         const staged = path.join(path.dirname(change.path), `.context-${id}-${randomUUID()}.tmp`)
         try {
           await fs.writeFile(staged, Buffer.from(change.after, 'base64'), { flag: 'wx', mode: change.before.mode || 0o600 })
-          if (!change.before.newParent) await same(change.before)
+          if (!change.before.newParent) await same(change.before, words)
           await fs.rename(staged, change.path)
         } finally { await fs.unlink(staged).catch((e) => { if (e.code !== 'ENOENT') throw e }) }
       }
@@ -199,6 +200,6 @@ export async function applyPreview(dataDir, id, digest, confirmed) {
     preview.status = 'applied'
     await fs.writeFile(file, JSON.stringify(preview), { mode: 0o600 })
     return { applied, snapshot: path.join(snapshotDir, 'snapshot.json') }
-  } catch (e) { throw new Error(`${e.message}${applied.length ? `；已改动：${applied.join(', ')}。改前快照在 App 数据夹 snapshots/${id}` : ''}`) }
+  } catch (e) { throw new Error(`${e.message}${applied.length ? words.partial(applied.join(', '), id) : ''}`) }
   finally { applying = false }
 }

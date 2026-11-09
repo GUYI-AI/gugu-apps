@@ -1,1 +1,1 @@
-Computer tools, target-specific Stop, native driver and task picture run in the App. Click, type Chinese, and paste directly in the window picture; the App checks the actual target and system permissions. Settings reads the running driver's permissions. Requires Gugu App interface 30.
+Computer tools, target-specific Stop, native driver and task picture run in the App. Click, type Chinese, and paste directly in the window picture; the App checks the actual target and system permissions. Settings reads the running driver's permissions. Requires Gugu App interface 36.

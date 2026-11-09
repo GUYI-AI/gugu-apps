@@ -7,6 +7,7 @@ import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { extname, join, relative, resolve, sep } from 'node:path';
 import JSZip from 'jszip';
+import { inspectReleaseDirectory } from './release-directory.mjs';
 
 // 与咕咕客户端同值(apps/desktop/src/session/shared/extensions/market.ts):客户端装的时候还会再判一遍。
 export const MAX_BUNDLE_BYTES = 25 * 1024 * 1024;
@@ -61,7 +62,13 @@ export function validateApp(app, fileName) {
   const seen = new Set();
   for (const version of app.versions) {
     const at = `${where} ${version?.version ?? '?'}`;
-    exactKeys(version, ['version', 'repo', 'path', 'commit', 'sha256', 'bytes', 'yanked'], at);
+    const { release, ...versionFields } = version;
+    exactKeys(versionFields, ['version', 'repo', 'path', 'commit', 'sha256', 'bytes', 'yanked'], at);
+    if (release !== undefined) {
+      exactKeys(release, ['keyId'], `${at} release`);
+      if (typeof release.keyId !== 'string' || !APP_ID.test(release.keyId) || version.repo !== 'GUYI-AI/gugu-apps'
+        || version.path !== `releases/${app.id}/${version.version}`) fail(`${at}: invalid compiled release source`);
+    }
     if (!SEMVER.test(version.version)) fail(`${at}: version 要是 x.y.z`);
     if (seen.has(version.version)) fail(`${at}: 同一个版本号写了两次`);
     seen.add(version.version);
@@ -215,7 +222,14 @@ export function inspectAppDir(dir, id, version, contract) {
     .map((name) => ({ name, bytes: readFileSync(bundleFile(shotsDir, name)) }));
   const whatsNew = storeFile(dir, 'whats-new.md')?.toString('utf8').trim() ?? null;
   const icon = manifest.icon ? readFileSync(bundleFile(dir, manifest.icon)) : null;
-  const problems = [...contract.appListingProblems({ manifest, about, screenshots, whatsNew, icon }), ...contract.appPlatformProblems(manifest)];
+  // The client parses every market manifest with this schema and leaves an App it refuses out of the market.
+  const parsed = contract.safeParseExtensionManifest(manifest);
+  const problems = [
+    ...(parsed.ok ? [] : parsed.issues.map((issue) => `manifest.json ${issue}${issue.startsWith('apiVersion:')
+      ? ` — the pinned client (.github/gugu-app-contract.json) runs apiVersion ${contract.EXTENSION_API_VERSION_MIN_SUPPORTED}–${contract.EXTENSION_API_VERSION}: move the pin to a released client that runs it, or update the App` : ''}`)),
+    ...contract.appListingProblems({ manifest, about, screenshots, whatsNew, icon }),
+    ...contract.appPlatformProblems(manifest),
+  ];
   if (problems.length) fail(problems.join('; '));
   return {
     manifest,
@@ -235,9 +249,19 @@ export function inspectAppDir(dir, id, version, contract) {
  * 照记录把这一版重新打一遍,核 sha256 与字节数;给了 `contract` 就再从源码目录里取市场要的东西,照它判过(新登记的版本)。
  * 已发布的版本只核字节:它们的 meta 早已写好、❌ 改写,新规矩只管新登记的。回 { bytes, inspected };对不上就抛,写出期望值与实际值。
  */
-export async function rebuildVersion(app, version, contract = null) {
+export async function rebuildVersion(app, version, contract = null, { releaseKeys } = {}) {
   const source = fetchSource(version);
   try {
+    if (version.release) {
+      let ancestor = source.root;
+      for (const part of relative(source.root, source.dir).split(sep)) {
+        ancestor = join(ancestor, part);
+        if (lstatSync(ancestor).isSymbolicLink()) fail('Compiled release path cannot traverse a symbolic link');
+      }
+      const trust = JSON.parse(readFileSync(new URL('../.github/release-keys.json', import.meta.url), 'utf8'));
+      if (trust.schemaVersion !== 1 || !Array.isArray(trust.keys)) fail('Invalid release trust configuration');
+      return await inspectReleaseDirectory(source.dir, app, version, releaseKeys ?? trust.keys, packDir, inspectAppDir, contract);
+    }
     const bytes = await packDir(source.dir);
     const actual = { sha256: sha256(bytes), bytes: bytes.byteLength };
     if (actual.sha256 !== version.sha256 || actual.bytes !== version.bytes) {

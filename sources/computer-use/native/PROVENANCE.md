@@ -12,7 +12,7 @@ Migrated from OpenDCAI/gugu commit `1f8cd5f3a81df091d25a81f6838f186c33504a95`:
 
 The driver remains cua-driver 0.36.0, with macOS maintained revision 0.36.0-gugu.1. Windows retains the original 0.36.0 release. Do not silently substitute an unpatched macOS driver or enable native telemetry/updates.
 
-The native layer is now connected to the App-owned 0.5.0 command manifest through Gugu API 30. This worktree is not a published or installed market release. Shared projection, generic surfaces and program revocation come from the #1607 foundation; App installation acceptance precedes host removal. Tools that need a person return immediately with the blocker; the agent uses its existing conversation or AskUserQuestion. No additional human-request/wait interface is introduced. The old native-host implementation is removed from the client once the App is connected; it is not a fallback for the migrated App.
+The native layer is now connected to the App-owned 0.5.0 command manifest through Gugu API 36. This worktree is not a published or installed market release. Shared projection, generic surfaces and program revocation come from the #1607 foundation; App installation acceptance precedes host removal. Tools that need a person return immediately with the blocker; the agent uses its existing conversation or AskUserQuestion. No additional human-request/wait interface is introduced. The old native-host implementation is removed from the client once the App is connected; it is not a fallback for the migrated App.
 
 Permission attribution must be observed through the actual App launch chain and operating-system UI. The former direct-child comments are historical evidence, not proof of the App's independent TCC identity.
 

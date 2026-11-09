@@ -5,7 +5,7 @@
   "subtitle": "Native app control for agents",
   "version": "0.5.0",
   "icon": "icon.png",
-  "apiVersion": 30,
+  "apiVersion": 36,
   "platforms": [
     "desktop"
   ],
@@ -32,7 +32,7 @@
       },
       {
         "name": "preview",
-        "title": "电脑",
+        "title": "Computer",
         "entry": "preview.html",
         "icon": "icon.png",
         "perSession": true
@@ -59,7 +59,12 @@
       "examples": [
         "查看当前打开的原生应用",
         "帮我在这个应用里完成操作"
-      ]
+      ],
+      "tabs": {
+        "preview": {
+          "title": "电脑"
+        }
+      }
     }
   }
 }

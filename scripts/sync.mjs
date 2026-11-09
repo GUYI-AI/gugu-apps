@@ -81,16 +81,24 @@ export function ossClient() {
  * 一版:没有 meta 就重打、核 sha、写文件、最后写 meta;回 meta。meta 带上产品页内容(客户端 marketListing 读它):
  * about(各语言)与截图地址;这一版改了什么是 releaseNotes(目录里也有一份,版本历史由它拼)。
  */
-async function syncVersion(client, app, version, dryRun, log, contract) {
+async function syncVersion(client, app, version, dryRun, log, contract, rebuild) {
   const key = MARKET_PREFIX + metaKey(app.id, version);
   const existing = await readJson(client, key);
   if (existing) return existing;
-  const { bytes, inspected } = await rebuildVersion(app, version, await contract());
+  const { bytes, inspected, release, raw, signature, artifacts } = await rebuild(app, version, await contract());
   const counts = { written: 0, same: 0 };
   const put = async (relativeKey, body, type) => {
     counts[await putObject(client, MARKET_PREFIX + relativeKey, body, type, dryRun)] += 1;
   };
   await put(bundleKey(app.id, version), bytes, 'application/zip');
+  let releaseProof;
+  if (release) {
+    const prefix = `releases/${app.id}/${version.version}-${version.sha256}`;
+    releaseProof = { keyId: release.keyId, manifest: `${prefix}/release.json`, signature: `${prefix}/release.sig` };
+    for (const artifact of artifacts) await put(`${prefix}/${artifact.path}`, artifact.content, artifact.role === 'app' ? 'application/zip' : 'application/octet-stream');
+    await put(releaseProof.manifest, raw, 'application/json; charset=utf-8');
+    await put(releaseProof.signature, signature, 'application/octet-stream');
+  }
   if (inspected.icon) await put(inspected.icon.key, inspected.icon.bytes, 'image/png');
   for (const shot of inspected.screenshots) await put(shot.key, shot.bytes, shot.contentType);
   const meta = {
@@ -102,6 +110,7 @@ async function syncVersion(client, app, version, dryRun, log, contract) {
     icon: inspected.icon?.key ?? null,
     about: inspected.about,
     screenshots: inspected.screenshots.map((shot) => shot.key),
+    ...(releaseProof ? { release: releaseProof } : {}),
   };
   await put(metaKey(app.id, version), Buffer.from(JSON.stringify(meta)), 'application/json; charset=utf-8');
   log(`synced ${app.id}@${version.version}: ${counts.written} written, ${counts.same} already there`);
@@ -134,6 +143,7 @@ export function buildIndex(apps, metas) {
             // 读不懂产品页内容的老客户端仍要这一键(它们的目录 schema 要它):老版本的 meta 里有,新登记的没有 README。
             readme: meta.readme ?? null,
             source: { repo: version.repo, path: version.path, commit: version.commit },
+            ...(meta.release ? { release: meta.release } : {}),
             yanked: version.yanked,
           };
         }),
@@ -141,7 +151,7 @@ export function buildIndex(apps, metas) {
   };
 }
 
-export async function sync({ client, dir = 'apps', dryRun = false, log = console.log, loadContract = loadClientContract }) {
+export async function sync({ client, dir = 'apps', dryRun = false, log = console.log, loadContract = loadClientContract, rebuild = rebuildVersion }) {
   const apps = readApps(dir);
   const metas = new Map();
   // 只有要写新 meta 时才取钉住的客户端规矩:一趟全是已发布版本的 sync 不碰网络。
@@ -149,7 +159,7 @@ export async function sync({ client, dir = 'apps', dryRun = false, log = console
   const contractOnce = async () => (contract ??= await loadContract());
   for (const app of apps) {
     for (const version of app.versions) {
-      metas.set(`${app.id}@${version.version}`, await syncVersion(client, app, version, dryRun, log, contractOnce));
+      metas.set(`${app.id}@${version.version}`, await syncVersion(client, app, version, dryRun, log, contractOnce, rebuild));
     }
   }
   const index = buildIndex(apps, metas);

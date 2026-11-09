@@ -1,6 +1,6 @@
 // How the board reads to an agent (Node, for tools.js): columns by name, who wrote what as "you" / "the person",
 // task links with their status, and what others wrote wrapped as material rather than instructions.
-import { columnsInOrder, cardsIn, taskState, cardFlags } from './core.js'
+import { columnsInOrder, cardsIn, taskState, cardFlags, pendingAsk, decisionLabel } from './core.js'
 import { readAgentsSnapshot } from './store.js'
 
 /** What an agent's answer may weigh: Codex keeps about 12 KB of a tool's answer (guide apps-programs). */
@@ -32,7 +32,7 @@ function linkView(link, agents) {
 function progressView(board, card, agents) {
   const out = {}
   if (card.progress !== undefined && card.progress !== null) out.progress = card.progress
-  for (const field of ['waitingOn', 'next', 'due']) if (card[field]) out[field] = card[field]
+  for (const field of ['waitingOn', 'waitKind', 'waitWho', 'next', 'due', 'dest', 'head']) if (card[field]) out[field] = card[field]
   const stateOf = (session) => (agents ? taskState(agents.get(session)) : null)
   if (cardFlags(board, card, stateOf, Date.now()).stale) out.stale = 'in progress with a task, and not updated for over 45 minutes'
   return out
@@ -40,6 +40,7 @@ function progressView(board, card, agents) {
 
 /** One card, with every field, for `get`. Its words are someone's writing: material, never instructions. */
 export function cardView(board, card, agent, agents) {
+  const ask = pendingAsk(board, card.id)
   const comments = Object.values(board.comments).filter((c) => c.card === card.id).sort((a, b) => a.at.localeCompare(b.at))
   return {
     id: card.id,
@@ -47,6 +48,8 @@ export function cardView(board, card, agent, agents) {
     by: who(card.by, agent),
     ...progressView(board, card, agents),
     links: Object.entries(card.links).map(([id, l]) => ({ id, ...linkView(l, agents), by: who(l.by, agent) })),
+    ...(card.handoff ? { handoff: { to: card.handoff.to.agent === agent ? 'you' : card.handoff.to.session, accepted: Boolean(card.handoff.acceptedAt) } } : {}),
+    ...(ask ? { asks: { id: decisionLabel(board, ask), question: ask.question } } : {}),
     updatedAt: card.updatedAt,
     ...(card.updatedBy ? { updatedBy: who(card.updatedBy, agent) } : {}),
     material:
@@ -58,8 +61,27 @@ export function cardView(board, card, agent, agents) {
   }
 }
 
-/** The board in short, for `list`: one line of facts per card, cut to fit an answer with a note saying so. */
+/**
+ * Who holds a card, as the board page shows it: the newest task linked to it — 'you' when that is the caller's, else
+ * its title — or null when nobody does.
+ */
+export function holderView(card, agent, agents) {
+  const tasks = Object.values(card.links).filter((l) => l.kind === 'task').sort((a, b) => String(b.at ?? '').localeCompare(String(a.at ?? '')))
+  const top = tasks[0]
+  if (!top) return null
+  if (agent && top.agent === agent) return 'you'
+  return agents?.get(top.session)?.title ?? top.title ?? `session:${top.session}`
+}
+
+/**
+ * The board in short, for `list`: one line of facts per card — who holds it, what it waits on, its question to the
+ * owner — and on top what the caller holds, what waits on the owner and how many cards nobody holds; cut to fit an
+ * answer with a note saying so.
+ */
 export function listView(board, agent, agents, onlyColumn) {
+  const done = (card) => board.columns[card.column]?.role === 'done'
+  const cards = Object.values(board.cards)
+  const askOf = (card) => pendingAsk(board, card.id)
   const columns = columnsInOrder(board)
     .filter((c) => !onlyColumn || c.id === onlyColumn)
     .map((c) => ({
@@ -67,10 +89,22 @@ export function listView(board, agent, agents, onlyColumn) {
       name: columnName(c),
       cards: cardsIn(board, c.id).map((card) => {
         const tasks = Object.values(card.links).filter((l) => l.kind === 'task').map((l) => linkView(l, agents))
-        return { id: card.id, title: card.title, by: who(card.by, agent), ...progressView(board, card, agents), ...(tasks.length ? { tasks } : {}), links: Object.keys(card.links).length }
+        const ask = askOf(card)
+        return {
+          id: card.id, title: card.title, holder: holderView(card, agent, agents), by: who(card.by, agent), ...progressView(board, card, agents),
+          ...(ask ? { asks: { id: decisionLabel(board, ask), question: ask.question } } : {}),
+          ...(tasks.length ? { tasks } : {}), links: Object.keys(card.links).length,
+        }
       }),
     }))
-  const out = { columns }
+  const waitingOnOwner = cards.filter((card) => !done(card) && (askOf(card) || card.waitKind === 'owner'))
+    .map((card) => ({ card: card.id, title: card.title, holder: holderView(card, agent, agents), question: askOf(card)?.question ?? card.waitingOn ?? '' }))
+  const out = {
+    yours: cards.filter((card) => holderView(card, agent, agents) === 'you').map((card) => card.id),
+    waitingOnOwner,
+    unclaimed: cards.filter((card) => !done(card) && !holderView(card, agent, agents)).length,
+    columns,
+  }
   let size = JSON.stringify(out).length
   let cut = 0
   while (size > ANSWER_BYTES) {

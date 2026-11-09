@@ -8,4 +8,4 @@ The picture and the agent’s cursor are per task; the machine’s desktop, apps
 
 On macOS the running native driver checks Accessibility and Screen Recording permission. The App’s Settings page shows that actual state and opens the corresponding System Settings pane. Opening settings grants nothing; refresh the state after changing access. A missing permission is reported in the operation’s tool result.
 
-Needs Gugu App interface 30. Native operation is supported on macOS and Windows. The Computer tab’s cursor comes from trycua’s cursor-motion (MIT).
+Needs Gugu App interface 36. Native operation is supported on macOS and Windows. The Computer tab’s cursor comes from trycua’s cursor-motion (MIT).

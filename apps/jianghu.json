@@ -1,0 +1,79 @@
+{
+  "id": "jianghu",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "3047b29cbd075a85e520e902293754e472b348b9",
+      "sha256": "d96b7dc3e4b32bc8cd59179201566386bf6739a95b13acc9dc5ee1e6a818a4dc",
+      "bytes": 37326,
+      "yanked": null
+    },
+    {
+      "version": "0.2.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "9e0db3b451ed5d1ab04db2915ef42607bbf6f437",
+      "sha256": "e1d91df6d56b2d3b0d1636ad73144351e7d1109baba457aa1483edfe7a01f9a4",
+      "bytes": 92682,
+      "yanked": null
+    },
+    {
+      "version": "0.2.1",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "44ae4ca748fd0624fe5bb982e47671a5084c4dd0",
+      "sha256": "e04f67955725e2c22d10fbc1e982271a6d8780ad0b211a1f1f873e9fdcd73ec5",
+      "bytes": 93453,
+      "yanked": null
+    },
+    {
+      "version": "0.3.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "6b2dc10c9359de8c535f5ddae487ff81b2fdbdf1",
+      "sha256": "499f18b4bfc0a5ba521ee25ccc40bab4e5c1fb9ec12de70d950a45cffa605d88",
+      "bytes": 98112,
+      "yanked": null
+    },
+    {
+      "version": "0.4.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "a3988ad5e5d95b4455b0f90fd355fa21f828a8dd",
+      "sha256": "09ef970cea5c50b860be1e6cf81e7c03f94e2350cb697a5501af5500528257f2",
+      "bytes": 155217,
+      "yanked": null
+    },
+    {
+      "version": "0.5.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "7571f0da1eed8c3ebd49a7c9125f726d9be51307",
+      "sha256": "35c94efb17858f1aa44f632d2259ff28218343dff08fad2fc1757bdc8bff1744",
+      "bytes": 182431,
+      "yanked": null
+    },
+    {
+      "version": "0.6.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "f2b697f4199a6f955939897d326792cb7332e01d",
+      "sha256": "eb14fc3fae2d203ba7c566a18bbafaeaa3798b930e38a4fd51c3ea8e23ffc0c4",
+      "bytes": 301198,
+      "yanked": null
+    },
+    {
+      "version": "0.6.1",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "758856a3acfab4452f6078967db6bbf8d94a9277",
+      "sha256": "eb4a135215869c4c3ebeb97487a43bb45e2f0058739392725279330a61387296",
+      "bytes": 270679,
+      "yanked": null
+    }
+  ]
+}

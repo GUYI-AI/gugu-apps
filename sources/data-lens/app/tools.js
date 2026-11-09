@@ -7,6 +7,7 @@ globalThis.require ??= createRequire(import.meta.url)
 const { load, query, DataError } = await import('./lib/engine.js')
 const { cardOf, checkView, dataBytes, DATA_BYTES, viewOf } = await import('./lib/spec.js')
 const { contentOf } = await import('./lib/bytes.js')
+const { profile } = await import('./lib/profile.js')
 
 /** The last few files opened, by id@version: a schema, then a query, then a card read the file once. */
 const opened = new Map()
@@ -79,8 +80,20 @@ export const data_query = {
   },
 }
 
+export const data_profile = {
+  description: 'Overview of one whole table, for a first look or "what stands out": row count; per column missing and distinct counts; numbers get min, quartiles, max, mean, sd and the count of outliers (beyond 1.5 IQR); repeated text gets its 5 commonest values; and the strongest correlations (Pearson r) between numeric columns. Exact, over every row.',
+  inputSchema: { type: 'object', required: ['file'], properties: {
+    file: fileParam, sheet: sheetParam, version: versionParam,
+    table: { type: 'string', description: 'Table name (default t, otherwise the first table)' },
+  } },
+  async run({ file, sheet, version, table }) {
+    const { entry, version: v, db, tables } = await open(file, version, sheet)
+    return JSON.stringify({ file: `gugu-file://${entry.id}?v=${v}`, ...profile(db, tables, table) })
+  },
+}
+
 export const data_card = {
-  description: 'Check a Data Lens card before sending it: runs the query, checks the view against its columns, pins the file version, and returns the exact `data` for widget_send { chat_id, app: "data-lens", view: "card", text, data }. view.kind: table | bar | line | scatter (x, y, optional color) | heatmap (x, y, value) | kpi (first row); optional view.title.',
+  description: 'Check a Data Lens card before sending it: runs the query, checks the view against its columns, pins the file version, and returns the exact `data` for widget_send { chat_id, app: "data-lens", view: "card", text, data }. view.kind: table | bar | line | scatter (x, y, optional color) | heatmap (x, y, value) | kpi (first row); optional view.title. For bar, color stacks series within each category; side-by-side grouped bars are not supported. Describe the actual stacked chart.',
   inputSchema: { type: 'object', required: ['file', 'sql'], properties: {
     file: fileParam, sql: { type: 'string' }, sheet: sheetParam, version: versionParam,
     view: { type: 'object', description: '{ kind, x?, y?, color?, value?, title? } — x/y/color/value are column names of the query result' },

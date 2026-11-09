@@ -41,11 +41,14 @@ async function readAgents() {
   try {
     // This computer's tasks and the person's other online computers' (agents:read:all-machines): a chat's board has
     // cards whose tasks run anywhere.
-    const agents = await g.listAgents()
     // The App's program has no listAgents (a program's gugu has only a page's own verbs): its tools read this snapshot,
     // written here whenever the tasks move. It is not the board — board.json still has one writer, the program.
-    const rows = agents.map(({ agentId, sessionId, deviceLabel, title, status, detail, failure: f }) => ({ agentId, sessionId, deviceLabel, title, status, detail, failure: f ? { kind: f.kind } : null }))
-    await g.writeData('agents.json', JSON.stringify({ at: new Date().toISOString(), agents: rows }))
+    const answer = await g.listAgents({ report: true })
+    const { agents, devices = [], unreached = [] } = Array.isArray(answer) ? { agents: answer } : answer
+    // With what the fleet's tools read too: who is under whom, on which computer, on which engine.
+    const rows = agents.map(({ agentId, sessionId, deviceId, deviceLabel, parentAgentId, providerId, title, status, detail, failure: f, rateLimit, pendingPermissionCount }) =>
+      ({ agentId, sessionId, deviceId, deviceLabel, parentAgentId, providerId, title, status, detail, failure: f ? { kind: f.kind } : null, rateLimit: rateLimit ? { status: rateLimit.status, resetsAt: rateLimit.resetsAt } : null, pendingPermissionCount }))
+    await g.writeData('agents.json', JSON.stringify({ at: new Date().toISOString(), agents: rows, devices, unreached }))
   } catch (error) {
     g.reportError(`协作看板 could not read this computer's tasks: ${error?.message ?? String(error)}`)
   }

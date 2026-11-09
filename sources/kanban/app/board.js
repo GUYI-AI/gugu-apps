@@ -2,24 +2,37 @@
 // one of two homes of a board: this computer's (from the background page; every change goes back through it to the
 // App's program, its only writer) or a chat's (its board file, opened here live; a change is applied to the file).
 // Everything below the home — cards, columns, the open card — is one page for both.
+// Three views of that one board (owner 11-08): 看板 (the columns), 团队 (who holds what, under which supervisor, on which
+// machine) and 决策 (what waits on the person, and the ledger). The "who" filter, the "waiting on you" strip and the
+// panel beside them — a card, or an agent — are shared by all three, and kept when the view changes.
 import { columnsInOrder, cardsIn, taskState, cardFlags } from './lib/core.js'
 import { openChatBoard, applyToFile, filled, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
+import { fleetOf } from './lib/fleet.js'
+import { holderOf, nameOf, waitOfCard, waitWords, asksOf, face, shownBy, peopleRow, asksStrip, answerRow, teamView, decisionsView, memberPanel } from './people.js'
+import { wordsFor } from './lib/fleet-text.js'
 
 const g = window.gugu
 
 const WORDS = {
   zh: {
+    views: { board: '看板', team: '团队', decisions: '决策' }, everyone: '所有人', unclaimed: '没人认领', noneUnclaimed: '每张卡都有人认领',
+    teamEmpty: '这块看板上还没有 agent', teamEmptyHint: 'agent 认领卡片（kanban__claim）、主管标记自己（kanban__supervisor）后，会按机器和主管排在这里。在群里打开群的看板，派卡给 agent 即可。',
+    noAgents: '正在读取 agent 列表…', noAgentList: '这里读不到 agent 列表：在电脑上打开看板查看团队。', noDispatch: '这里不能给 agent 发消息', asks: (n) => `${n} 件事等你拍板`, allAsks: '全部', holds: '手上的卡片', onlyTheirs: '只看它的卡片', ledgerTitle: '账本', noHolder: '还没人认领', assign: '派给…',
+    toDecision: (d, label, ref) => `Owner 拍板 ${label}：${d.question} → ${d.answer}。按这个继续${d.card ? `；进展用 kanban__update { ${ref.arg}card: "${d.card}" } 汇报` : ''}。`,
+    toReply: (card, text, ref) => `Owner 回复${card ? `（看板卡「${card.title}」）` : ''}：${text}${card ? `\n\n这张卡不再等你拍板。按这个继续，进展用 kanban__update { ${ref.arg}card: "${card.id}" } 汇报。` : ''}`,
+    toAssign: (card, ref) => `请接手看板卡「${card.title}」：先 kanban__claim { ${ref.arg}card: "${card.id}" } 认领，再按卡上的说明做，进展用 kanban__update 汇报；要 owner 拍板的事用 kanban__ask 问。`,
     newCard: '新建卡片', cardTitle: '标题', title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
     roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
     states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务不可用', none: '无状态' },
     all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
     addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
-    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
+    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', dest: '去向', owner: '负责人', props: '属性', unset: '未填写',
     addNote: '添加说明…', editNote: '编辑说明', addLink: '添加', noLinks: '暂无关联', messageLink: '群消息', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
     updated: '更新时间', toggle: '展开或收起',
     renameColumn: '重命名列', deleteColumn: '删除列', deleteColumnHint: '先移走或删除这一列的卡片', noCards: '暂无卡片', dropToDone: '拖到这里标记完成',
     emptyBoard: '这块看板还是空的', emptyBoardHint: '新建一张卡片，或在群里让 agent 用看板工具添加', undo: '撤销', doneNote: (title) => `「${title}」已完成`,
     tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
+    waitKinds: { owner: 'Owner 拍板', review: '研发审', ci: 'CI', merge: '合并', lane: '别的车道', quota: '额度', other: '其它' },
     noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
     attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
     pickFile: '关联任务文件…', pickChatFile: '关联群文件…', addUrl: '添加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
@@ -34,17 +47,24 @@ const WORDS = {
       '开始时用 claim 认领，进展用 update 更新，完成后用 move 移到「待验收」，并用 link 关联产出。',
   },
   en: {
+    views: { board: 'Board', team: 'Team', decisions: 'Decisions' }, everyone: 'Everyone', unclaimed: 'Unclaimed', noneUnclaimed: 'Every card is claimed',
+    teamEmpty: 'No agents on this board yet', teamEmptyHint: 'Agents show here, by machine and supervisor, once they claim a card (kanban__claim) or a supervisor marks itself (kanban__supervisor). Open a chat’s board there and give a card to an agent.',
+    noAgents: 'Reading the agents…', noAgentList: 'The agent list is not available here: open the board on a computer to see the team.', noDispatch: 'Messages to agents are not available here', asks: (n) => `${n} waiting on you`, allAsks: 'All', holds: 'Holds', onlyTheirs: 'Only their cards', ledgerTitle: 'Ledger', noHolder: 'Unclaimed', assign: 'Assign to…',
+    toDecision: (d, label, ref) => `The owner decided ${label}: ${d.question} → ${d.answer}. Carry on with that${d.card ? `; report with kanban__update { ${ref.arg}card: "${d.card}" }` : ''}.`,
+    toReply: (card, text, ref) => `The owner replied${card ? ` (card “${card.title}”)` : ''}: ${text}${card ? `\n\nThe card no longer waits on the owner. Carry on, and report with kanban__update { ${ref.arg}card: "${card.id}" }.` : ''}`,
+    toAssign: (card, ref) => `Please take the card “${card.title}”: claim it first with kanban__claim { ${ref.arg}card: "${card.id}" }, do what the card says, report with kanban__update, and ask the owner with kanban__ask when something needs deciding.`,
     newCard: 'New card', cardTitle: 'Title', title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
     roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
     states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task unavailable', none: 'No status' },
     all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
     addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
-    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
+    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', dest: 'Going to', owner: 'Assignee', props: 'Properties', unset: 'Not set',
     addNote: 'Add a note…', editNote: 'Edit note', addLink: 'Add', noLinks: 'Nothing linked yet', messageLink: 'Chat message', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
     updated: 'Updated', toggle: 'Expand or collapse',
     renameColumn: 'Rename column', deleteColumn: 'Delete column', deleteColumnHint: 'Move or delete the cards in this column first', noCards: 'No cards', dropToDone: 'Drop here to mark done',
     emptyBoard: 'This board is empty', emptyBoardHint: 'Create a card, or ask an agent in the chat to add one with the board tools', undo: 'Undo', doneNote: (title) => `“${title}” is done`,
     tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
+    waitKinds: { owner: 'the owner', review: 'review', ci: 'CI', merge: 'merge', lane: 'another lane', quota: 'quota', other: 'something' },
     noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
     attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
     pickFile: 'Link task file…', pickChatFile: 'Link chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
@@ -80,8 +100,13 @@ let localBoard = null
 let pendingNewCards = 0
 let agents = []
 let agentsKnown = false // no status is drawn until this page has read the host's agent list
+let report = null // listAgents({ report: true }): every computer's agents, its devices, the ones that did not answer
+let fleet = null // the agents laid out by machine and supervisor, joined with this board's cards (lib/fleet.js)
 let filter = 'all'
-let selected = null
+let view = 'board' // which view of the board: 'board' | 'team' | 'decisions'
+let who = null // the "who" filter, kept across views: an agentId, 'none' (nobody's cards) or null (everyone)
+let selected = null // the open card
+let member = null // the agent open in the panel, when no card is
 let drag = null // a card being carried (wide only)
 let landed = null // the card just dropped into a done column: drawn once with .landed
 let carried = false // the press under way carried a card: the click that ends it is not a click on the card
@@ -148,6 +173,33 @@ function change(op) {
 
 // A change refused is already said in #alert; the click that asked for it has nothing more to do.
 const quietly = (promise) => promise.catch(() => {})
+
+/** Tell an agent something, from the person's click. Resolves true once sent; a refusal is said in #alert. */
+async function tell(agentId, text) {
+  try {
+    if (!canDispatch) throw new Error(t.noDispatch)
+    await g.dispatch(text, { to: { agent: agentId } })
+    return true
+  } catch (error) {
+    showAlert(error?.message ?? String(error))
+    return false
+  }
+}
+
+/** What people.js (the team and decisions views, an agent's panel) reads and does: this page's state and actions. */
+const page = {
+  g, h, icon, ring: (role) => ring(role),
+  get t() { return t }, get locale() { return ctx.locale },
+  get board() { return board }, get agents() { return agents }, get fleet() { return fleet },
+  get who() { return who }, setWho: (id) => { who = id; render() },
+  setView: (next) => setView(next),
+  get opened() { return selected ? { kind: 'card', id: selected } : member ? { kind: 'member', agentId: member } : null },
+  openCard: (id) => openCard(id), openMember: (id) => openMember(id), closePanel: () => closeCard(),
+  change, quietly, tell, showAlert, note: (text) => note(text), said: (error) => showAlert(error?.message ?? String(error)), render: () => render(),
+  /** How the agent tools name this board in a message: a chat's board by its file id; this computer's by nothing. */
+  boardRef: () => (home?.kind === 'chat' ? { id: home.f.entry.id, arg: `board: "${home.f.entry.id}", ` } : { id: null, arg: '' }),
+  more: false, pane: null, unfolded: new Set(), ledgerFilter: 'live',
+}
 
 if (desktop) g.onBackgroundMessage((message) => {
   if (message?.type === 'refused') {
@@ -216,6 +268,30 @@ function render() {
       h('button', { role: 'tab', class: key === 'attention' && n ? 'attn' : null, 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } },
         label, n ? h('small', { text: String(n) }) : null)),
   )
+  $('filters').hidden = view !== 'board'
+
+  // The views, the "who" filter and what waits on the person: the same over every view.
+  fleet = report ? fleetOf(report, board) : null
+  const asks = asksOf(page)
+  $('views').replaceChildren(...['board', 'team', 'decisions'].map((key) => h('button', { role: 'tab', 'aria-selected': view === key ? 'true' : 'false', onclick: () => setView(key) },
+    t.views[key], key === 'decisions' && asks.length ? h('small', { class: 'attn', text: String(asks.length) }) : null)))
+  $('people').replaceChildren(...peopleRow(page))
+  $('people').hidden = !cards.length
+  // The question shows once: in the open card or agent when that is the one asking, else on the strip.
+  const strip = view === 'decisions' ? [] : asks.filter((x) => !(selected && x.card?.id === selected) && !(member && x.agent?.agentId === member))
+  $('asks').replaceChildren(...(strip.length ? asksStrip(page, strip) : []))
+  $('asks').hidden = !strip.length
+  for (const key of ['board', 'team', 'ledger']) $(key).hidden = key !== (view === 'decisions' ? 'ledger' : view)
+  while (pendingNewCards > 0) { pendingNewCards--; newCard() }
+  if (view !== 'board') {
+    $('empty-board')?.remove()
+    const scroll = $(view === 'team' ? 'team' : 'ledger').scrollTop
+    if (view === 'team') $('team').replaceChildren(fleet ? teamView(page) : h('p', { class: 'muted', text: typeof g.listAgents !== 'function' ? t.noAgentList : failure.agents ? t.noStatus(failure.agents) : t.noAgents }))
+    else $('ledger').replaceChildren(decisionsView(page))
+    $(view === 'team' ? 'team' : 'ledger').scrollTop = scroll
+    drawPanel()
+    return
+  }
 
   // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
   $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
@@ -230,17 +306,15 @@ function render() {
     h('button', { class: 'primary', onclick: newCard }, icon('plus'), t.newCard)))
   if (landed && board.columns[board.cards[landed]?.column]?.role === 'done') landed = null
   if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
-  if (selected && !board.cards[selected]) closeCard()
-  else if (selected) updateDrawer()
-  while (pendingNewCards > 0) { pendingNewCards--; newCard() }
+  drawPanel()
 }
 
 /** A column's status ring: empty, half, three quarters by its role; done is gugu's check. */
-const ring = (role) => (role === 'done' ? icon('circle-check') : h('span', { class: 'ring', 'aria-hidden': 'true' }))
+const ring = (role) => (role === 'done' ? icon('circle-check') : h('span', { class: `ring r-${role ?? 'x'}`, 'aria-hidden': 'true' }))
 
 function columnView(column, flags) {
   const all = cardsIn(board, column.id)
-  const cards = filter === 'attention' ? all.filter((c) => flags.get(c.id).attention) : all
+  const cards = (filter === 'attention' ? all.filter((c) => flags.get(c.id).attention) : all).filter((c) => shownBy(page, c))
   if (!collapsed.has(column.id)) collapsed.set(column.id, column.role === 'todo' || column.role === 'done')
   const list = h('ul', { class: 'cards', 'data-col': column.id })
   list.append(...cards.map((card) => h('li', {}, cardView(card, flags.get(card.id), column))))
@@ -267,28 +341,45 @@ function columnView(column, flags) {
   )
 }
 
+/**
+ * A card on the board: its title, what it waits on, where it goes, then who holds it (their face, with a dot for
+ * waiting on you / running) and how far along it is. The task's own status shows only when it waits on the person.
+ */
 function cardView(card, flags, column) {
   const tasks = taskLinks(card)
-  const others = otherLinks(card).length
-  const owners = [...new Set(tasks.map(([, l]) => l.agent).filter(Boolean))]
+  const holder = holderOf(page, card)
   const titleId = `c-${card.id}`
   const done = column.role === 'done'
+  const wait = done ? null : waitOfCard(page, card)
+  const F = wordsFor(ctx.locale)
+  const asking = tasks.map(([, l]) => stateOf(l.session)).find((s) => s?.waiting)
   const el = h('button', { class: `card${flags.stale ? ' stale' : ''}${landed === card.id ? ' landed' : ''}`, 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => { if (carried) carried = false; else openCard(card.id) } },
-    h('span', { class: 'top' },
-      done ? icon('check-circle-2') : null,
-      h('strong', { id: titleId, text: card.title }),
-      owners.length ? h('span', { class: 'who' }, owners.map((agent) => h('gugu-avatar', { user: agent, size: 'xs', label: agentById(agent)?.title ?? undefined }))) : null),
-    card.waitingOn ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn) })) : null,
+    h('span', { class: 'top' }, done ? icon('check-circle-2') : null, h('strong', { id: titleId, text: card.title })),
+    wait ? h('span', { class: `waiting tone-${wait.kind}` }, h('i', { class: 'dot' }), h('span', { text: waitWords(F, wait) })) : null,
+    card.dest && !done ? h('span', { class: 'dest', text: card.dest }) : null,
     h('span', { class: 'meta' },
-      tasks.map(([, l]) => stateBadge(l)),
+      holder ? h('span', { class: 'holder' }, face(page, holder), h('span', { class: 'name', text: nameOf(holder) })) : h('span', { class: 'holder none' }, icon('user-plus'), h('span', { class: 'name', text: t.noHolder })),
+      asking ? h('span', { class: `state ${asking.key}`, text: t.states[asking.key] }) : null,
       card.due ? h('span', { class: 'chip', title: t.due }, icon('calendar-clock'), card.due) : null,
-      others ? h('span', { class: 'chip', title: t.links }, icon('paperclip'), String(others)) : null,
-      h('span', { class: 'spacer' }),
-      typeof card.progress === 'number' && card.progress < 100 ? h('span', { class: 'bar', role: 'img', title: `${t.progress} ${card.progress}%`, 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
-      card.updatedAt ? h('gugu-time', { datetime: card.updatedAt, title: flags.stale ? t.stale : undefined }) : null),
+      typeof card.progress === 'number' && card.progress < 100 && !done ? h('span', { class: 'pct', role: 'img', title: `${t.progress} ${card.progress}%`, 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}` }, `${card.progress}%`) : null,
+      // Quiet for 45 minutes while at work: when it last moved says why it is dimmed. Links and times are in the card.
+      flags.stale && card.updatedAt ? h('gugu-time', { datetime: card.updatedAt, title: t.stale }) : null),
   )
   el.addEventListener('pointerdown', (event) => pickUp(event, el, card))
   return el
+}
+
+/** Nobody holds the card: give it to an agent, which claims it with the board's tools (the click is the person's). */
+function assignPicker(card) {
+  const choices = agents.filter((a) => a.agentId).sort((x, y) => String(y.updatedAt ?? '').localeCompare(String(x.updatedAt ?? '')))
+  if (!canDispatch || !choices.length) return h('span', { class: 'muted', text: t.noHolder })
+  // The same menu as the card's 添加: a button per agent, newest first, with its machine.
+  const menu = h('details', { class: 'add-menu assign' }, h('summary', {}, icon('user-plus'), ` ${t.assign}`),
+    h('div', { class: 'menu' }, ...choices.map((a) => h('button', { class: 'plain', onclick: async () => {
+      menu.open = false
+      if (await tell(a.agentId, t.toAssign(card, page.boardRef()))) note(wordsFor(ctx.locale).asked(nameOf(a)))
+    } }, face(page, a), h('span', { text: nameOf(a) }), a.deviceLabel ? h('small', { class: 'muted', text: a.deviceLabel }) : null))))
+  return menu
 }
 
 // ── carrying a card ──────────────────────────────────────────────────────────
@@ -378,19 +469,24 @@ function drop() {
 }
 
 /** "… done · Undo", for a few seconds: undo moves the card back to its column and place, if they are still there. */
-let doneNote = null
 function showDone(card, was) {
-  clearTimeout(doneNote?.timer)
-  doneNote?.el.remove()
-  const undo = h('button', { text: t.undo, onclick: () => {
-    close()
+  note(t.doneNote(card.title), h('button', { text: t.undo, onclick: () => {
+    note(null)
     if (!board.cards[card.id] || !board.columns[was.column]) return
     const before = was.before && board.cards[was.before]?.column === was.column ? { before: was.before } : {}
     quietly(change({ type: 'card.move', card: card.id, column: was.column, ...before }))
-  } })
-  const el = h('p', { class: 'done-note', role: 'status' }, icon('check-circle-2'), h('span', { text: t.doneNote(card.title) }), undo)
-  const close = () => { clearTimeout(doneNote?.timer); el.remove(); doneNote = null }
-  doneNote = { el, timer: setTimeout(close, 6000) }
+  } }))
+}
+
+/** A short note of what just happened (done, sent, recorded), for a few seconds; a failure goes to #alert instead. */
+let shownNote = null
+function note(text, action = null) {
+  clearTimeout(shownNote?.timer)
+  shownNote?.el.remove()
+  shownNote = null
+  if (!text) return
+  const el = h('p', { class: 'done-note', role: 'status' }, icon('check-circle-2'), h('span', { text }), action)
+  shownNote = { el, timer: setTimeout(() => note(null), 6000) }
   $('main').append(el)
 }
 
@@ -467,7 +563,9 @@ function newCard() {
   // Narrow, the first column that is open; wide, the first.
   openAdd((narrow() && columns.find((c) => !collapsed.get(c.id))?.id) || columns[0].id)
 }
-g.onCommand((id) => { if (id === 'new') newCard() })
+g.onCommand((id) => {
+  if (id === 'new') newCard()
+})
 
 // ── a card, opened ───────────────────────────────────────────────────────────
 
@@ -475,6 +573,7 @@ let drawer = null // the open card's live parts: { card, title, fields, noteView
 
 function openCard(id) {
   selected = id
+  member = null
   closeView()
   drawer = buildDrawer(id)
   $('drawer').replaceChildren($('alert'), drawer.root)
@@ -486,6 +585,7 @@ function openCard(id) {
 function closeCard() {
   closeView()
   selected = null
+  member = null
   drawer = null
   $('board').before($('alert'))
   $('drawer').hidden = true
@@ -495,8 +595,38 @@ function closeCard() {
 }
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && selected && !event.target.closest?.('input, textarea, .cm-editor')) closeCard()
+  if (event.key === 'Escape' && (selected || member) && !event.target.closest?.('input, textarea, select, .cm-editor')) closeCard()
 })
+
+/** An agent, opened beside the view: what it holds and waits on, a message to it, and the fleet's actions on it. */
+function openMember(agentId) {
+  closeView()
+  selected = null
+  drawer = null
+  if (member !== agentId) { page.more = false; page.pane = null }
+  member = agentId
+  $('drawer').hidden = false
+  $('shell').classList.add('open')
+  render()
+}
+
+/** The panel beside the view, drawn again with the board: the open card, or the open agent (its draft kept). */
+function drawPanel() {
+  if (selected && !board.cards[selected]) return closeCard()
+  if (selected) return updateDrawer()
+  if (!member) return
+  const kids = memberPanel(page, member)
+  if (!kids) return closeCard()
+  const draft = $('drawer').querySelector('textarea')?.value
+  $('drawer').replaceChildren($('alert'), h('div', { class: 'detail member-panel' }, ...kids))
+  if (draft) $('drawer').querySelector('textarea').value = draft
+}
+
+function setView(next) {
+  if (view === next) return
+  view = next
+  render()
+}
 
 /**
  * The open card reads as a page, and changes one thing at a time (owner 10-22, after Linear's issue view): the title and
@@ -526,7 +656,7 @@ function inlineEditor(d, key, start, make, save) {
   if (editor.select && editor.tagName === 'INPUT') editor.select()
 }
 
-const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due']
+const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due', 'dest']
 
 /** A property's value as text, or null when it has none. */
 function propText(card, key) {
@@ -546,6 +676,7 @@ function buildDrawer(id) {
   const crumb = h('small', { class: 'muted crumb' })
 
   const title = h('div', { class: 'title-slot' })
+  const ask = h('div', { class: 'ask-slot' })
   const props = h('dl', { class: 'props', 'aria-label': t.props })
   const note = h('div', { class: 'note-slot' })
   const links = h('ul', { class: 'links' })
@@ -562,12 +693,13 @@ function buildDrawer(id) {
   const root = h('div', { class: 'detail' },
     h('div', { class: 'head' }, back, crumb, h('span', { class: 'spacer' }), more),
     title,
+    ask,
     props,
     h('section', {}, h('h5', { text: t.noteH }), note),
     h('section', {}, h('div', { class: 'section-head' }, h('h5', { text: t.links }), addMenu), links, picker, view),
     h('section', {}, h('h5', { text: t.comments }), comments, h('div', { class: 'comment-box' }, commentBox, h('div', {}, commentSend))),
   )
-  return { id, root, crumb, title, props, note, links, addMenu, picker, view, comments, editing: null, finish: null, viewing: null, file: null, shownNote: null }
+  return { id, root, crumb, title, ask, props, note, links, addMenu, picker, view, comments, editing: null, finish: null, viewing: null, file: null, shownNote: null }
 }
 
 async function updateDrawer(force = false) {
@@ -584,6 +716,17 @@ async function updateDrawer(force = false) {
     heading.addEventListener('click', edit)
     heading.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit() })
     d.title.replaceChildren(heading)
+  }
+
+  // What the card waits on, first: a question for the person is answered here, as on the strip.
+  if (!d.ask.contains(document.activeElement)) {
+    const wait = columnsInOrder(board).find((c) => c.id === card.column)?.role === 'done' ? null : waitOfCard(page, card)
+    const asked = wait?.kind === 'owner' ? asksOf(page).find((x) => x.card?.id === card.id) : null
+    const F = wordsFor(ctx.locale)
+    d.ask.replaceChildren(...(wait ? [h('div', { class: `callout tone-${wait.kind}` },
+      h('strong', {}, h('i', { class: 'dot' }), F.waits[wait.kind], wait.since ? h('gugu-time', { datetime: wait.since }) : null),
+      (asked?.decision?.question ?? wait.text) ? h('p', { text: asked?.decision?.question ?? wait.text }) : null,
+      asked ? answerRow(page, asked, F) : null)] : []))
   }
 
   // The properties: values; one of them an editor while it is being changed.
@@ -611,11 +754,16 @@ async function updateDrawer(force = false) {
       text ?? t.unset)
   }
   propRow('column', valueButton('column'), true)
-  propRow('owner', h('div', { class: 'owners' }, ...(tasks.length ? tasks.map(([, l]) => h('span', { class: 'owner' },
-    l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null,
-    stateBadge(l),
-    h('span', { class: 'muted', text: agentBySession(l.session)?.deviceLabel ?? '' }))) : [h('span', { class: 'muted', text: t.unset })])), false)
-  for (const key of ['progress', 'waitingOn', 'next', 'due']) propRow(key, valueButton(key), true)
+  // Who holds it: each linked task opens its agent beside the board (what else it holds, where it sits, a message to
+  // it); nobody yet, the card can be given to an agent, which claims it with the tools.
+  propRow('owner', h('div', { class: 'owners' }, ...(tasks.length ? tasks.map(([, l]) => {
+    const row = agentBySession(l.session)
+    const a = row ?? (l.agent ? { agentId: l.agent, sessionId: l.session, title: l.title ?? null, gone: true } : null)
+    return h('button', { class: 'owner', disabled: !row, onclick: () => openMember(row.agentId) },
+      a ? face(page, a) : null, h('span', { text: nameOf(a) || l.session.slice(0, 8) }), stateBadge(l),
+      h('span', { class: 'muted', text: row?.deviceLabel ?? '' }), row ? icon('chevron-right') : null)
+  }) : [assignPicker(card)])), false)
+  for (const key of ['progress', 'waitingOn', 'next', 'due', 'dest']) propRow(key, valueButton(key), true)
   if (card.updatedAt) rows.push(h('div', { class: 'prop' }, h('dt', { text: t.updated }), h('dd', { class: 'muted' }, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? h('div', { class: 'stale-note', text: t.stale }) : null)))
   // A property being edited keeps its editor (and its half-typed value): the properties are drawn again after it.
   if (!PROPS.includes(d.editing)) d.props.replaceChildren(...rows)
@@ -691,7 +839,7 @@ function linkRow(card, lid, link) {
     case 'file':
     case 'project':
     case 'chatfile': {
-      const name = nameOf(link)
+      const name = fileNameOf(link)
       // Drawn in the card when the App can (md, text, images, video); every file also opens beside the board, in the
       // App that opens it or gugu's own preview.
       return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }),
@@ -717,7 +865,7 @@ const MARKDOWN = /\.(md|markdown|mdx)$/i
 const TEXT = /\.(txt|json|jsonc|ya?ml|toml|csv|tsv|log|ini|env|xml|js|mjs|cjs|ts|tsx|jsx|css|scss|py|rb|go|rs|java|kt|swift|c|h|cc|cpp|hpp|sh|zsh|bash|sql|vue|svelte)$/i
 
 const drawable = (name) => IMAGE.test(name) || VIDEO.test(name) || MARKDOWN.test(name) || TEXT.test(name)
-const nameOf = (link) => (link.kind === 'chatfile' ? (link.name ?? link.file) : link.path)
+const fileNameOf = (link) => (link.kind === 'chatfile' ? (link.name ?? link.file) : link.path)
 function refOf(link) {
   if (link.kind === 'file') return { workspace: `session:${link.session}`, id: link.path }
   if (link.kind === 'project') return { workspace: `project:${link.project}`, id: link.path }
@@ -740,7 +888,7 @@ async function showFile(lid, link) {
   d.viewing = lid
   updateDrawer()
   const ref = refOf(link)
-  const name = nameOf(link)
+  const name = fileNameOf(link)
   const box = h('div', { class: 'view' })
   d.view.replaceChildren(box)
   try {
@@ -981,12 +1129,16 @@ let asking = null
 function askAgents() {
   if (typeof g.listAgents !== 'function') return
   if (asking) return asking
-  asking = g.listAgents().then((rows) => {
-    agents = rows
+  // Every computer's agents (agents:read:all-machines): the team view lays them out by machine, and a card's holder may
+  // run on another computer.
+  asking = g.listAgents({ report: true }).then((answer) => {
+    report = Array.isArray(answer) ? { agents: answer, devices: [], unreached: [] } : answer
+    agents = report.agents ?? []
     agentsKnown = true
     failure.agents = null
   }).catch((error) => {
     agents = []
+    report = null
     agentsKnown = false
     failure.agents = error?.message ?? String(error)
   }).finally(() => {
@@ -998,6 +1150,21 @@ function askAgents() {
 }
 
 if (typeof g.onAgentsChanged === 'function') g.onAgentsChanged(() => askAgents())
+// Other computers' agents are not pushed (onAgentsChanged is this computer's): read them again while the page is seen.
+setInterval(() => { if (visible) askAgents() }, 60_000).unref?.()
+
+/**
+ * Opened by a link (the fleet message card, an old link to the org chart): `board` names the board file, `view` the
+ * view, `card` / `lane` what to open beside it.
+ */
+g.onLink?.(async ({ query } = {}) => {
+  if (!query) return
+  if (query.board && !(home?.kind === 'chat' && home.f.entry.id === query.board)) await showChatBoard(() => g.files.open({ id: query.board, ...(ctx.chat ? { chat: ctx.chat.id } : {}) }))
+  if (['board', 'team', 'decisions'].includes(query.view)) view = query.view
+  if (query.card && board?.cards[query.card]) openCard(query.card)
+  else if (query.lane) openMember(query.lane)
+  else render()
+})
 
 /**
  * Opened in a chat (its panel, or one of its board files): that chat's board, nothing to pick. Anywhere else (the dock,

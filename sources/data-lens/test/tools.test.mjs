@@ -46,6 +46,17 @@ test('data_query reads a kept version when asked', async () => {
   assert.deepEqual([now.rows, then.rows], [[[9]], [[3]]])
 })
 
+test('data_profile summarizes a whole table at the asked version', async () => {
+  const out = JSON.parse(await tools.data_profile.run({ file: 'db1', table: 'orders', version: 1 }))
+  assert.equal(out.file, 'gugu-file://db1?v=1')
+  assert.equal(out.rows, 3)
+  const amount = out.columns.find((c) => c.name === 'amount')
+  assert.deepEqual([amount.min, amount.median, amount.max, amount.mean], [1, 11, 21, 11])
+  const csv = JSON.parse(await tools.data_profile.run({ file: 'csv1' }))
+  assert.deepEqual(csv.columns.find((c) => c.name === '区域').top, [['华东', 2], ['华北', 2]])
+  assert.equal(csv.columns.find((c) => c.name === '金额').missing, 1)
+})
+
 test('data_card returns widget_send data pinned to the version, checked against the columns', async () => {
   const out = JSON.parse(await tools.data_card.run({ file: 'csv1', sql: 'SELECT 区域 AS region, sum(金额) AS total FROM t GROUP BY 1', view: { kind: 'bar', x: 'region', y: 'total', title: '各区' } }))
   assert.deepEqual(out.data, { file: 'gugu-file://csv1?v=1', sql: 'SELECT 区域 AS region, sum(金额) AS total FROM t GROUP BY 1', view: { kind: 'bar', x: 'region', y: 'total', title: '各区' } })

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+Right click on a slide or a sheet opens the host's menu (`gugu.showContextMenu`) with what the pick bar does: 放进输入框 / 交给 agent / 全部取消. What is under the pointer is picked first, unless a pick already covers it, as a spreadsheet does. A finger's long press stays the view's own.
+
 ## 0.4.0
 
 App interface 25: a task's tab now has its private chat (`ctx.chat`), so the home page offers that chat's files there too.

@@ -1,6 +1,6 @@
 # Computer Use program adapter
 
-This App uses a normal stdio MCP program and Gugu API 30 task-call, surface and projection capabilities. Its 0.5.0 manifest activates the App-owned command; it requires the #1607 foundation before installation. The App and host-removal PRs are one migration unit: publish and install a working market version before merging host removal. The host has no native-executor fallback for this App. This branch is not a published or accepted market version.
+This App uses a normal stdio MCP program and Gugu API 36 task-call, surface and projection capabilities. Its 0.5.0 manifest activates the App-owned command; it requires the #1607 foundation before installation. The App and host-removal PRs are one migration unit: publish and install a working market version before merging host removal. The host has no native-executor fallback for this App. This branch is not a published or accepted market version.
 
 The private host-owned transport stamps `gugu/agent` and `gugu/sessionId`. The adapter rejects missing identities and never accepts them as tool arguments. These are trust assertions from Gugu's gateway, not signatures that a standalone pipe can independently authenticate. Each task retains its native owner. Native image blocks remain MCP image blocks; results are not JSON-encoded into text.
 

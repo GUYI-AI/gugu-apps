@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "1.4.1",
-  "apiVersion": 25,
+  "version": "1.6.1",
+  "apiVersion": 26,
   "platforms": [
     "desktop",
     "phone"
@@ -26,7 +26,7 @@
       "files:read",
       "files:write",
       "agents:read:all-machines",
-      "agents:control",
+      "agents:control:all-machines",
       "agents:tools"
     ]
   },
@@ -59,6 +59,14 @@
             "title": "新建卡片"
           }
         ]
+      },
+      {
+        "name": "fleet",
+        "title": "舰队",
+        "entry": "fleet.html",
+        "widget": {
+          "height": 120
+        }
       }
     ],
     "mcpServers": [
@@ -67,11 +75,12 @@
       }
     ],
     "skills": "skills",
-    "instructions": "Read skill kanban first. kanban__list, claim, update, move and comment work cards on this computer's board or a chat's .board.json."
+    "instructions": "Read skill kanban first. kanban__list shows who holds each card and what waits on the owner; claim, update, ask, move, comment cards. Fleets: see the skill."
   },
   "examples": [
     "把这件事添加到我的看板",
-    "群看板上有哪些卡片在等人处理？"
+    "群看板上有哪些卡片在等人处理？",
+    "舰队现在有哪些车道在等我拍板？"
   ],
   "license": "MIT",
   "localized": {
@@ -90,6 +99,9 @@
           "toolbar": {
             "new": "New card"
           }
+        },
+        "fleet": {
+          "title": "Fleet"
         }
       }
     }

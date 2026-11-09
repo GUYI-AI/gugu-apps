@@ -1,5 +1,46 @@
 # gugu-apps —— 咕咕 App 市场的索引仓
 
+## Reviewed compiled releases (pending host integration)
+
+A private product may publish a compiled release directory in this public repository at
+`releases/<app-id>/<version>/`. This is a distribution copy, not access to the private source repository.
+It contains compiled `app/`, the original deterministic `app.zip`, and `release.json` / `release.sig` sidecars.
+Listing materials stay in `app/store/` and remain outside the install ZIP. Optional compiled product artifacts
+are outside `app.zip`, declared in the same signed inventory. Hosted service source/secrets never belong here.
+
+Register the directory with `node scripts/add-release.mjs <app-id> <version> <public-distribution-commit> <key-id>`.
+As with source-based Apps, the distribution commit must already be in the public repository's default-branch
+history. The registration command validates before writing; no release entry is added by the tooling change.
+The version keeps the existing `repo`, `path`, `commit`, `sha256`, `bytes`, `yanked` fields and adds
+`release: { keyId }`. `repo` is `GUYI-AI/gugu-apps`; `path` is the compiled directory above; the ZIP hash still
+means the exact bytes installed by the client. Old source entries and package bytes are unchanged.
+
+The public contract is `scripts/release-contract.mjs`. Verification rejects unknown schemas, untrusted/revoked or
+wrong-scope keys, self-review declarations, missing notices, changed/unsigned files, TS/TSX/JSX, source maps
+(including inline maps), key files, symlinks, incompatible manifest metadata and ZIP bytes different from the
+compiled directory. Existing pinned client listing/platform checks still apply. No private checkout or App code
+execution occurs. The signature authenticates the release maintainer's build/review declaration; it does not let
+community CI independently rebuild private source or establish legal ownership.
+
+Trust is configured only in `.github/release-keys.json`, initially empty. A non-author-reviewed maintainer change
+must scope an Ed25519 public key by `id`, `appId`, `sourceRepo`, `publicKey` and optional `revoked`. A key from a
+package is never trusted. Do not add a real listing until host trust/compatibility consumption and distribution
+terms are approved. No production private key is placed in this repository or workflow.
+An omitted `revoked` field or literal boolean `false` is active; boolean `true` and every non-boolean value are
+invalid for authorization. String or numeric lookalikes never restore trust.
+
+Sync writes the original ZIP plus all declared runtime artifacts, raw signed manifest and signature before meta
+and index. Proof URLs use immutable `market/releases/<id>/<version>-<app-zip-sha>/` paths, and artifact paths in
+the signed manifest resolve relative to that proof directory. Existing bundle URLs remain compatible. This does
+not introduce a second download service. A valid official compiled release can be marked `firstRun` once the
+client recognizes this official source; no such live entry is included here. Installations use ordinary market
+source, never `preinstalled`, preserving normal permissions and user choices.
+
+Withdraw by adding `yanked`; never mutate or reuse an existing version. Withdrawal is not remote disable or an
+automatic downgrade. Rollback explicitly selects a previously verified compatible product version, preserving
+current data and the existing per-App auto-update rules. Every change to release tooling and trust requires
+non-author review. Companion specifications and producer live in GUYI-AI/gugu-dev and GUYI-AI/gugu-assistant.
+
 市场的**唯一真相**。每个 App 一个 `apps/<id>.json`;合并到 `main` 后,CI 把它同步到下载站
 `https://download.gugu.nextmind.space/market/`,咕咕客户端只读那里(`market/index.json`)。
 

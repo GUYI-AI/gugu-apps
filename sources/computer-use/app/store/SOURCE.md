@@ -4,4 +4,4 @@
 
 The image is a native window capture cropped to the App content rectangle and encoded as JPEG; the interface was not redrawn.
 
-The 0.5.0 migration draft still retains this historical image. Replace it with an installed API 30 Settings capture before publishing the market version; it is not acceptance evidence for the new App-owned page.
+The 0.5.0 migration draft still retains this historical image. Replace it with an installed API 36 Settings capture before publishing the market version; it is not acceptance evidence for the new App-owned page.

@@ -8,4 +8,4 @@
 
 在 macOS 上，实际运行的原生驱动会检查辅助功能和屏幕录制权限。App 的设置页显示真实状态，并能打开对应的系统设置。打开设置不等于授权，更改后请刷新状态。权限缺失时，对应步骤的工具结果会说明原因。
 
-需要咕咕 App 接口 30。原生操作支持 macOS 和 Windows。电脑页的光标来自 trycua 的 cursor-motion（MIT）。
+需要咕咕 App 接口 36。原生操作支持 macOS 和 Windows。电脑页的光标来自 trycua 的 cursor-motion（MIT）。

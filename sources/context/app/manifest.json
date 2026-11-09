@@ -2,7 +2,7 @@
   "id": "context",
   "name": "上下文",
   "defaultLocale": "zh-CN",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "apiVersion": 25,
   "platforms": [
     "desktop"
@@ -96,6 +96,10 @@
     "en": {
       "name": "Context",
       "subtitle": "Context health and capacity",
+      "examples": [
+        "Check this project's context health",
+        "Which memories have dangling links?"
+      ],
       "tabs": {
         "main": {
           "title": "Context"
