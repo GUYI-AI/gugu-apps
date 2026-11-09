@@ -19171,7 +19171,8 @@ var pictureCoordinateKey = (width, height, bounds) => JSON.stringify([
   Number.isFinite(bounds?.width) && bounds.width > 0 ? bounds.width : null,
   Number.isFinite(bounds?.height) && bounds.height > 0 ? bounds.height : null
 ]);
-function createPreviewInput({ state: readState, valid, tools, control, refresh, now = Date.now }) {
+function createPreviewInput({ state: readState, valid, tools, control, refresh, now = Date.now, platform = process.platform }) {
+  const delivery = platform === "linux" ? { delivery_mode: "foreground", confirmed: true } : { delivery_mode: "background" };
   const gestures = /* @__PURE__ */ new Map(), operations = /* @__PURE__ */ new Map();
   let closed = false;
   function disconnect(viewer) {
@@ -19214,7 +19215,7 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
         x: Math.min(frame.width - 1, Math.round(input.x * frame.width)),
         y: Math.min(frame.height - 1, Math.round(input.y * frame.height))
       });
-      let name, args = { target, delivery_mode: "background" };
+      let name, args = { target, ...delivery };
       if (input?.kind === "pointer") {
         if (!point(input.x) || !point(input.y) || !["left", "middle", "right"].includes(input.button)) return rejected("Invalid pointer coordinates.");
         if (input.action === "down") {
@@ -19341,7 +19342,7 @@ function projectionPng(base642) {
   throw new Error("The window capture could not fit the preview transport.");
 }
 function createComputerPreview({ projection, native, tools, control, showTaskPages, notify = async () => {
-}, log = console, now = Date.now }) {
+}, log = console, now = Date.now, platform = process.platform }) {
   const tasks = /* @__PURE__ */ new Map();
   const shown = /* @__PURE__ */ new Set(), showing = /* @__PURE__ */ new Set(), failedAt = /* @__PURE__ */ new Map();
   const background = new AsyncResource("ComputerUsePreview");
@@ -19404,6 +19405,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       tools,
       control,
       now,
+      platform,
       refresh: () => detached(async () => {
         await state.capture;
         if (!valid(state)) return;
@@ -19665,7 +19667,7 @@ function createComputerProgram({ specs, native, platform = process.platform, pro
     control,
     observed: (value) => preview?.observed(value)
   });
-  if (projection) preview = createComputerPreview({ projection, native, tools, control, showTaskPages, notify, log });
+  if (projection) preview = createComputerPreview({ projection, native, tools, control, showTaskPages, notify, log, platform });
   const definitions = tools.list().map((tool) => ({ ...tool, _meta: { ui: { visibility: ["model"] } } }));
   return {
     list: () => [...definitions, ...pageTools],

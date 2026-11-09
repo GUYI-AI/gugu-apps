@@ -21,7 +21,7 @@ export function createComputerProgram({ specs, native, platform = process.platfo
   let preview;
   const tools = createComputerTools({ cua: native, specs, platform, protectedHost, control,
     observed: value => preview?.observed(value) });
-  if (projection) preview = createComputerPreview({ projection, native, tools, control, showTaskPages, notify, log });
+  if (projection) preview = createComputerPreview({ projection, native, tools, control, showTaskPages, notify, log, platform });
   const definitions = tools.list().map(tool => ({ ...tool, _meta: { ui: { visibility: ['model'] } } }));
   return {
     list: () => [...definitions, ...pageTools],

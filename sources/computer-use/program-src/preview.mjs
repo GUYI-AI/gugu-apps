@@ -34,7 +34,7 @@ export function projectionPng(base64) {
 }
 
 /** Task-private metadata and resources; pixels only enter the host's authorized projection transport. */
-export function createComputerPreview({ projection, native, tools, control, showTaskPages, notify = async () => {}, log = console, now = Date.now }) {
+export function createComputerPreview({ projection, native, tools, control, showTaskPages, notify = async () => {}, log = console, now = Date.now, platform = process.platform }) {
   const tasks = new Map();
   const shown = new Set(), showing = new Set(), failedAt = new Map();
   const background = new AsyncResource('ComputerUsePreview');
@@ -65,7 +65,7 @@ export function createComputerPreview({ projection, native, tools, control, show
       abort: new AbortController(), actions: [], frames: [], target: null, epoch: 0,
       coordinateRevision: 0, coordinateKey: null,
       lastAt: -Infinity, took: 0, capture: null, publishing: Promise.resolve(), source: null, opening: true, problem: null };
-    state.input = createPreviewInput({ state: () => state, valid, tools, control, now,
+    state.input = createPreviewInput({ state: () => state, valid, tools, control, now, platform,
       refresh: () => detached(async () => {
         await state.capture;
         if (!valid(state)) return;

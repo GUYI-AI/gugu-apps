@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createPreviewInput } from '../program-src/preview-input.mjs';
 
 const caller = { agent: 'user:33333333-3333-4333-8333-333333333333', session: '11111111-1111-4111-8111-111111111111' };
-function fixture() {
+function fixture(platform = 'darwin') {
   const calls = [], refreshed = [], lifetime = new AbortController();
   const state = { caller, abort: lifetime, epoch: 1, target: { pid: 44, window_id: 77 },
     frames: [{ sequence: 1, width: 800, height: 400, epoch: 1, at: new Date(1000).toISOString(),
@@ -13,7 +13,7 @@ function fixture() {
     tools: { async call(name, args, who) { calls.push({ name, args, who });
       if (name === 'get_window_state') return { structuredContent: { pid: 44, window_id: 77, screenshot_width: 800, screenshot_height: 400, capture_id: 'viewer-capture' } };
       return typeof result === 'function' ? result(who) : result; } },
-    control: { stoppedFor: () => stopped }, refresh: () => refreshed.push(true), now: () => 1000 });
+    control: { stoppedFor: () => stopped }, refresh: () => refreshed.push(true), now: () => 1000, platform });
   const context = (viewer = 'viewer-a', sequence = 1) => ({ viewer, frame: { sequence, width: 800, height: 400 }, signal: new AbortController().signal });
   const pointer = (action, x = .25, y = .5, button = 'left') => ({ kind: 'pointer', action, x, y, button });
   return { state, calls, refreshed, lifetime, handler, context, pointer,
@@ -208,4 +208,13 @@ test('an invalidated gesture keeps rejecting remaining moves and its release unt
   assert.equal(f.calls.length, 0);
   await f.handler.input(f.pointer('down'), f.context());
   assert.equal((await f.handler.input(f.pointer('up'), f.context())).status, 'applied');
+});
+test('on Linux the person typing or clicking in the picture brings that window forward there; their gesture is the approval', async () => {
+  const f = fixture('linux'), ctx = f.context();
+  await f.handler.input({ kind: 'text', text: '你好', source: 'typing' }, ctx);
+  await f.handler.input(f.pointer('down'), ctx);
+  await f.handler.input(f.pointer('up'), ctx);
+  const sent = f.calls.filter(call => call.name !== 'get_window_state');
+  assert.deepEqual(sent.map(call => [call.name, call.args.delivery_mode, call.args.confirmed]), [['type_text', 'foreground', true], ['click', 'foreground', true]]);
+  assert(sent.every(call => call.who.humanViewer === 'viewer-a'));
 });

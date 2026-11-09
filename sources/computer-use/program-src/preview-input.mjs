@@ -19,7 +19,10 @@ export const pictureCoordinateKey = (width, height, bounds) => JSON.stringify([w
  * Gestures become atomic click/drag/key operations: no native key/button stays held across packets.
  * Identity and target come from the source's task and its actually published frame, never page arguments.
  */
-export function createPreviewInput({ state: readState, valid, tools, control, refresh, now = Date.now }) {
+export function createPreviewInput({ state: readState, valid, tools, control, refresh, now = Date.now, platform = process.platform }) {
+  // X11 has no focus-free route for keys and for many toolkits' clicks (the driver says so: input goes only to the
+  // focused window). The person's own gesture in the picture is their consent to bring that window forward there.
+  const delivery = platform === 'linux' ? { delivery_mode: 'foreground', confirmed: true } : { delivery_mode: 'background' };
   const gestures = new Map(), operations = new Map();
   let closed = false;
   function disconnect(viewer) {
@@ -61,7 +64,7 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
       const target = { kind: 'window', pid: frame.target.pid, window_id: frame.target.window_id };
       const at = () => ({ x: Math.min(frame.width - 1, Math.round(input.x * frame.width)),
         y: Math.min(frame.height - 1, Math.round(input.y * frame.height)) });
-      let name, args = { target, delivery_mode: 'background' };
+      let name, args = { target, ...delivery };
       if (input?.kind === 'pointer') {
         if (!point(input.x) || !point(input.y) || !['left', 'middle', 'right'].includes(input.button)) return rejected('Invalid pointer coordinates.');
         if (input.action === 'down') {
