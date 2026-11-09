@@ -1,7 +1,6 @@
-// 西游记 4.5's 长安城, the road west and 五庄观 (xyj.js): the second world, beside 雪亭镇 and joined to it by no exit.
-// 「西游」 takes a player to 长安's 南城客栈 and 「东归」 back to 饮风客栈. What is here is XYJ's, carried over from the
-// LPC of the files named (see SOURCE.md):
-// - XYJ's growth beside ES2's: 内力 and 法力 (exercise.c, meditate.c), 潜能 spent to learn from a master (learn.c,
+// 西游记 4.5's 长安城, the road west and 五庄观 (xyj.js). A newcomer arrives at 长安's 南城客栈. What is here is
+// XYJ's, carried over from the LPC of the files named (see SOURCE.md):
+// - XYJ's growth: 内力 and 法力 (exercise.c, meditate.c), 潜能 spent to learn from a master (learn.c,
 //   enable.c), 道行 from fighting (combatd.c), the body's 气血 and 精神 by them (race/human.c), 腾云 (fly.c).
 // - The first obstacle of the road west, 五庄观's 人参果 (d/qujing/wuzhuang): over the 八卦桥 with every bridge crossed
 //   once (wzgmaze*.c), a key felt for under 牡丹亭 (anshi.c), the gate of the orchard opened with it (xiguadi.c), and
@@ -18,17 +17,14 @@ const N = HOOKS.npc
 const R = HOOKS.room
 const C = HOOKS.cmd
 const WZ = 'x/qujing/wuzhuang/'
-const KEZHAN = 'x/city/kezhan'
 const GARDEN = WZ + 'renshenguo-yuan'
 const ZHENYUAN = WZ + 'npc/zhenyuan'
 const MEET = `n:${ZHENYUAN}.2` // the one who comes out in the orchard; the other sits in 乘云阁
 const rnd = (x, n) => (n > 0 ? Math.floor(x.rand() * n) : 0)
 
-export const inXyj = (w, id) => ROOMS[ch(w, id)?.room]?.area === 'xyj'
-
 // ── the character in this world ────────────────────────────────────────────────────────────────────────────────
 
-/** A player's XYJ self (logind.c: 潜能 99, nothing else yet), made on the first visit. */
+/** A player's XYJ self (logind.c: 潜能 99, nothing else yet), made when they arrive. */
 export function self(p) {
   return (p.xyj ??= { force: 0, maxForce: 0, mana: 0, maxMana: 0, exp: 0, pot: 99, spent: 0, obstacle: {} })
 }
@@ -47,7 +43,7 @@ export function bodyMax(p) {
   // damage.c max_food_capacity / max_water_capacity: the body's weight ÷ 200 (human.c: 40 kg and 2 kg a point of 膂力).
   stomach(p, Math.max(100, 200 + (p.attrs.str - 10) * 10), Math.max(100, 200 + (p.attrs.str - 10) * 10))
 }
-/** Food and water to hold at most these (雪亭镇's and this world's bodies count them apart; what is in them stays). */
+/** Food and water to hold at most these (what is in them stays). */
 function stomach(p, food, water) {
   for (const [k, m] of [['food', food], ['water', water]]) if (p[k]) { p[k].max = m; p[k].cur = Math.min(p[k].cur, m); if ('eff' in p[k]) p[k].eff = Math.min(p[k].eff, m) }
 }
@@ -60,7 +56,7 @@ export function skillOf(p, s) {
   return Math.floor(basic / 2) + special
 }
 
-// XYJ's names of the skills one meets here (data/chinese.o), beside ES2's.
+// XYJ's names of the skills one meets here (data/chinese.o).
 const XYJ_SKILLS = {
   spells: '基本法术', taiyi: '太乙仙法', 'zhenyuan-force': '镇元神功', 'wuxing-quan': '五行拳', baguazhen: '八卦阵法',
   'sanqing-jian': '三清剑法', hammer: '基本锤法', 'kaishan-chui': '开山锤', 'fumo-zhang': '伏魔杖', 'yange-blade': '雁歌刀法',
@@ -111,79 +107,42 @@ function personHere(x, text) {
 const busy = (x, p) => (self(p).busy ?? 0) > x.now
 const setBusy = (x, p, s) => { self(p).busy = x.now + s * 1000 }
 
-// ── between the worlds ─────────────────────────────────────────────────────────────────────────────────────────
+// ── arriving ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-const INTRO = '你一路向西，来到了大唐的京城长安。\n（这里是《西游记》的世界：拜师「拜师 张果老」，学艺「学 法术 从 张果老」，查看「状态」「取经」，赶路「去 五庄观」。「东归」去雪亭镇。）'
-/** 西游: to 长安 with the body one had there (or a new one of 100); 雪亭镇's is kept for coming back. */
-C.xiyou = (x) => {
-  const p = x.w.players[x.me]
-  if (inXyj(x.w, x.me)) return x.out.push('你已经在西游记的世界里了。「东归」回雪亭镇。')
-  if (p.ghost) return x.out.push('做了鬼了，就老实点吧！')
-  const y = self(p)
-  p.es2body = { gin: p.gin, kee: p.kee, sen: p.sen }
-  const b = y.body ?? { gin: full(100), kee: full(100), sen: full(100) }
-  Object.assign(p, structuredClone(b))
-  delete y.body
-  bodyMax(p)
-  delete p.follow
-  vision(x, p.room, '$N收拾行装，往西方去了。', x.me)
-  x.out.push(INTRO)
-  move(x, x.me, '', KEZHAN, { how: { leave: '', arrive: '$N风尘仆仆地走了进来。' }, quiet: true })
-  vision(x, KEZHAN, '$N风尘仆仆地走了进来。', x.me, null, { k: 'move' })
-}
-
-/** A newcomer starts here, in 长安's inn, with 雪亭镇's body kept for 「东归」. */
+const INTRO = '你一路向西，来到了大唐的京城长安。\n（拜师「拜师 张果老」，学艺「学 法术 从 张果老」，查看「状态」「取经」，赶路「去 五庄观」。）'
+/** A newcomer starts in 长安's inn with a body of 100 (race/human.c), fed and watered to the full (logind.c). */
 HOOKS.born = (x, me) => {
   const p = x.w.players[me]
-  p.es2body = { gin: p.gin, kee: p.kee, sen: p.sen }
   Object.assign(p, { gin: full(100), kee: full(100), sen: full(100) })
   self(p)
   bodyMax(p)
-  // logind.c: a new body is fed and watered to the full.
   for (const k of ['food', 'water']) if (p[k]) { p[k].cur = p[k].max; if ('eff' in p[k]) p[k].eff = p[k].max }
-  p.room = KEZHAN
-  vision(x, KEZHAN, '$N风尘仆仆地走了进来。', me, null, { k: 'move' })
+  vision(x, START, '$N风尘仆仆地走了进来。', me, null, { k: 'move' })
   tell(x, me, INTRO)
-  return true
-}
-
-/** 东归: back to 饮风客栈 with 雪亭镇's body; this world's is kept for next time. */
-C.donggui = (x) => {
-  const p = x.w.players[x.me]
-  if (!inXyj(x.w, x.me)) return x.out.push('你本来就在雪亭镇。「西游」去长安。')
-  if (p.ghost) return x.out.push('做了鬼了，就老实点吧！')
-  const y = self(p)
-  y.body = { gin: p.gin, kee: p.kee, sen: p.sen }
-  Object.assign(p, p.es2body ?? { gin: full(30), kee: full(30), sen: full(30) })
-  delete p.es2body
-  const a = p.attrs
-  stomach(p, a.con * 10 + a.str * 5, a.cps * 10 + a.dex * 5) // world.js
-  delete p.follow
-  vision(x, p.room, '$N收拾行装，往东方去了。', x.me)
-  move(x, x.me, '', START, { quiet: true })
-  vision(x, START, '$N风尘仆仆地走进了饮风客栈。', x.me, null, { k: 'move' })
-  x.out.unshift('你一路东归，回到了雪亭镇。')
 }
 
 // ── status ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** hp.c */
 C.hp = (x) => {
-  if (!inXyj(x.w, x.me)) return false
-  const p = x.w.players[x.me]
+  bodyMax(x.w.players[x.me])
+  x.out.push(statusText(x.w, x.me))
+}
+/** What hp.c shows: 气血, 精神, 魂魄, 内力 and 法力, food, water, 潜能 and 道行. */
+export function statusText(w, id) {
+  const p = w.players[id]
   const y = self(p)
-  bodyMax(p)
   const pct = (s) => Math.floor(s.eff * 100 / s.max)
-  x.out.push([
+  return [
     ` 气血：${p.kee.cur}/${p.kee.eff}（${pct(p.kee)}%）　内力：${y.force}/${y.maxForce}`,
     ` 精神：${p.sen.cur}/${p.sen.eff}（${pct(p.sen)}%）　法力：${y.mana}/${y.maxMana}`,
     ` 魂魄：${p.gin.cur}/${p.gin.eff}（${pct(p.gin)}%）`,
     ` 食物：${p.food.cur}/${p.food.max}　潜能：${y.pot - y.spent}`,
     ` 饮水：${p.water.cur}/${p.water.max}　道行：${daoxing(y.exp)}`,
-  ].join('\n'))
+    ...(p.ghost ? [' 你现在是鬼魂。'] : []),
+  ].join('\n')
 }
 C.score = (x) => {
-  if (!inXyj(x.w, x.me)) return false
   const p = x.w.players[x.me]
   const y = self(p)
   const fam = y.family ? `${y.family.name}第${cn(y.family.gen)}代弟子，师父${npcData('n:' + y.family.master)?.name ?? ''}` : '普通百姓'
@@ -327,7 +286,6 @@ function gainSkill(x, p, s, n) {
 
 /** enable.c: 「激发 内功 镇元神功」; alone, what is enabled. */
 C.enable = (x, rest) => {
-  if (!inXyj(x.w, x.me)) return false
   const p = x.w.players[x.me]
   p.map ??= {}
   const parts = rest.trim().split(/\s+/).filter(Boolean)
@@ -346,7 +304,6 @@ C.enable = (x, rest) => {
 
 /** exercise.c: 「打坐 <气>」 turns 气血 into 内力; past twice the most, the most grows by one, up to 10× 内功. */
 C.exercise = (x, rest) => {
-  if (!inXyj(x.w, x.me)) return false
   const p = x.w.players[x.me]
   const y = self(p)
   if (ROOMS[p.room].noFight || ROOMS[p.room].noMagic) return x.out.push('安全区内禁止练功。')
@@ -372,7 +329,6 @@ C.exercise = (x, rest) => {
 
 /** meditate.c: 「冥想 <神>」 turns 精神 into 法力; past twice the most, the most grows by one, up to 10× 法术. */
 C.meditate = (x, rest) => {
-  if (!inXyj(x.w, x.me)) return false
   const p = x.w.players[x.me]
   const y = self(p)
   if (ROOMS[p.room].noFight || ROOMS[p.room].noMagic) return x.out.push('安全区内禁止练功。')
@@ -400,7 +356,7 @@ C.meditate = (x, rest) => {
 const prevGain = HOOKS.gain
 HOOKS.gain = (x, id, course, n) => {
   prevGain?.(x, id, course, n)
-  if (course !== 'combat' || !inXyj(x.w, id)) return
+  if (course !== 'combat') return
   const y = self(x.w.players[id])
   y.exp += n
   if (y.pot - y.spent < 100) y.pot += 1
@@ -409,7 +365,6 @@ HOOKS.gain = (x, id, course, n) => {
 /** fly.c: 腾云 needs 道行 ten years and 法力 200, outdoors; only 长安 and 五庄观 are in this world. */
 export const FLY = { changan: 'x/city/center', 长安: 'x/city/center', wuzhuang: WZ + 'gate', 五庄观: WZ + 'gate' }
 C.fly = (x, rest) => {
-  if (!inXyj(x.w, x.me)) return false
   const p = x.w.players[x.me]
   const y = self(p)
   if (busy(x, p)) return x.out.push('你正忙着呢，没工夫腾云驾雾。')
@@ -538,11 +493,9 @@ R[XIGUA] = {
 }
 // mo and jump are the rooms' own (anshi.c, wzgmaze*.c): elsewhere there is no such command.
 C.mo = (x, rest) => {
-  if (!inXyj(x.w, x.me)) return false
   if (!R[ch(x.w, x.me).room]?.mo?.(x, rest)) x.out.push('什么？')
 }
 C.jump = (x, rest) => {
-  if (!inXyj(x.w, x.me)) return false
   if (!R[ch(x.w, x.me).room]?.jump?.(x, rest)) x.out.push('什么？')
 }
 /** inpool.c init: in the pond, the bridges crossed are forgotten. */
@@ -552,7 +505,6 @@ R[WZ + 'inpool'] = { init(x, id) { delete x.w.players[id].temp?.wzgmaze } }
 for (const verb of ['open', 'close']) {
   C[verb] = (x, rest) => {
     const w = x.w
-    if (!inXyj(w, x.me)) return false
     const room = ch(w, x.me).room
     if (R[room]?.[verb]) return false
     const what = verb === 'open' ? '你要打开什么？' : '你要关上什么？'
@@ -658,7 +610,6 @@ N[ZHENYUAN].ask = {
 C.accept = (x, rest) => {
   const w = x.w
   const p = w.players[x.me]
-  if (!inXyj(w, x.me)) return x.out.push('五庄观远在西游记的世界里，先「西游」吧。')
   if (rest && !/镇元|zhenyuan/.test(rest)) return x.out.push('没有这个人。')
   if (p.ghost) return x.out.push('做了鬼了，就老实点吧！')
   const m = meeting(w)
@@ -691,8 +642,8 @@ C.back = (x) => {
   if (!z) return x.out.push('这里没有人能送你回去。')
   vision(x, ch(w, x.me).room, '$N请求$n送$N回返。', x.me, z)
   vision(x, ch(w, x.me).room, '$N的大袖朝着$n轻轻一罩…', z, x.me)
-  move(x, x.me, '', KEZHAN, { quiet: true })
-  vision(x, KEZHAN, '…云中伸出一只巨大的衣袖轻轻一抖，只见$N从里面滑了出来。', x.me)
+  move(x, x.me, '', START, { quiet: true })
+  vision(x, START, '…云中伸出一只巨大的衣袖轻轻一抖，只见$N从里面滑了出来。', x.me)
 }
 
 /** renshen-guo.c: food to the full, 内力 and 法力 +20 each (below 10× the skill), the obstacle done, and out cold. */
@@ -721,7 +672,6 @@ HOOKS.item['x/obj/drug/renshen-guo'] = {
 C.sleep = (x) => {
   const w = x.w
   const p = w.players[x.me]
-  if (!inXyj(w, x.me)) return false
   if (!ROOMS[p.room].sleep) return x.out.push('这里不是睡觉的地方。（长安客栈东边有睡房。）')
   const y = self(p)
   if (x.now - (y.slept ?? 0) < 90_000) return x.out.push('你刚睡过一觉, 先活动活动吧。')
@@ -740,7 +690,7 @@ for (const id of Object.keys(N)) {
 }
 
 /** Places 「去 <地点>」 knows besides room names: the town and the temples (xyj-road.js adds the road west's). */
-export const PLACES = { 长安: KEZHAN, 客栈: KEZHAN, 五庄观: WZ + 'gate', 十字街头: 'x/city/center' }
+export const PLACES = { 长安: START, 客栈: START, 五庄观: WZ + 'gate', 十字街头: 'x/city/center' }
 /** Rooms 「去」 never walks into or through: the 八卦桥 (a puzzle walked by hand) and the rooms behind a puzzle. */
 export const NO_WAY = [/wzgmaze|inpool|anshi|renshenguo-yuan/]
 const noWay = (id) => NO_WAY.some((re) => re.test(id))
@@ -749,7 +699,7 @@ const noWay = (id) => NO_WAY.some((re) => re.test(id))
 C.go = (x, rest) => {
   const w = x.w
   const want = rest.trim()
-  if (!want || !inXyj(w, x.me) || Object.values(DIRS).some((ws) => ws.includes(want))) return false
+  if (!want || Object.values(DIRS).some((ws) => ws.includes(want))) return false
   const p = w.players[x.me]
   const from = p.room
   const prev = new Map([[from, null]])
@@ -792,7 +742,6 @@ C.go = (x, rest) => {
 
 /** The status bars of this world: 气血, 精神, 内力 and 法力 (those not yet begun left out), food and water. */
 HOOKS.bars = (p) => {
-  if (ROOMS[p.room]?.area !== 'xyj' || !p.xyj) return undefined
   const y = self(p)
   return [['气血', p.kee, 'hp'], ['精神', p.sen, 'sen'], ['内力', { cur: y.force, max: y.maxForce }, 'force'],
     ['法力', { cur: y.mana, max: y.maxMana }, 'mana'], ['食', p.food, 'food'], ['水', p.water, 'water']].filter(([, v]) => v && v.max > 0)
@@ -814,7 +763,7 @@ N['x/city/npc/xiaoer'] = {
     return true
   },
 }
-R[KEZHAN] = {
+R[START] = {
   leave(x, d) {
     if (d === '东' && !x.w.players[x.me].temp?.rentPaid) return '店小二满脸堆笑地挡住了你：对不起，后面是客人的卧房，不是本店的客人，不便打扰。（给小二三两银子住店。）'
     return null
@@ -920,7 +869,7 @@ HOOKS.beat = (x) => {
   if (hour !== 12 || x.w.noon === `${month}-${day}`) return
   x.w.noon = `${month}-${day}`
   for (const [id, p] of Object.entries(x.w.players)) {
-    if (!inXyj(x.w, id) || !online(x.w, id, x.now) || !ROOMS[p.room]?.outdoors || !self(p).mana) continue
+    if (!online(x.w, id, x.now) || !ROOMS[p.room]?.outdoors || !self(p).mana) continue
     const sk = p.skills?.spells ?? 0
     if (!sk) {
       tell(x, id, '你觉得一阵晕眩，好像有一股能量从身上被人吸走了。')

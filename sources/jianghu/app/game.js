@@ -1,30 +1,32 @@
 // 西游's engine: one text command in, what the player reads and what changes in the world file out. The page and
 // the agents' tools (tools.js) both run it, so a person typing 「拿 木剑」 and an agent calling act with the same words
-// do the same thing. The world is ES2's 雪亭镇 (es2.js, story.js); the rules are ES2's (world.js, fight.js).
+// do the same thing. The world is 西游记's 长安 and the road west (xyj.js, xyj-story.js, xyj-road.js); the rules are
+// the mudlib's (world.js, fight.js).
 //
 // No server clock: time moves when someone types. Each command first lets the town catch up (advance): the people
-// in the rooms where players stand say and do what they would have in the meantime (a few beats at most), the inn
-// opens and closes by the game's clock, and every half hour the town resets.
+// in the rooms where players stand say and do what they would have in the meantime (a few beats at most), and every
+// half hour the town resets.
 import {
   ROOMS, NPCS, ITEMS, HOOKS, START, BEAT, RESET, LOG_MAX, ch, isNpc, isThing, baseOf, npcData, alive, awake, nameOf, who,
   thingName, thingShort, thingGroups, itemOf, attr, skillLv, levelOf, clsOf, newPlayer, spawnNpc, peopleIn, npcsIn, playersIn,
-  thingsAt, makeThing, moveThing, heap, resetId, destroy, weightOf, carriage, load, isMoney, purse, wealth, pay, vision, tell, npcSay,
+  thingsAt, makeThing, moveThing, heap, resetId, destroy, weightOf, carriage, load, isMoney, purse, pay, vision, tell, npcSay,
   emote, render, regen, supplement, consume, heal, passed, online,
 } from './world.js'
-import { DIRS, BACK, ATTR_NAMES, SCORE_NAMES, CLASS_NAMES, EMOTES, HUNT_MSG, woundMsg, phaseOf, timeText, priceText, cn } from './text.js'
+import { DIRS, BACK, CLASS_NAMES, EMOTES, HUNT_MSG, woundMsg, phaseOf, timeText, priceText, cn } from './text.js'
 import { brawl, improve, skillName, weaponOf } from './fight.js'
-import './story.js'
 import './xyj-story.js'
 import './xyj-road.js'
 
-export const FILE_NAME = '文字江湖.jianghu.json'
-export const VERSION = 3
+export const FILE_NAME = '西游.jianghu.json'
+export const VERSION = 4
 export const MAX_SAY = 200
 export { START }
+/** 长安's 城隍庙, where a ghost walks into the swirl and lives again. */
+const TEMPLE = 'x/city/chenghuang'
 
 // ── the file ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** What a new world's file starts as: 雪亭镇 with its people and things where ES2 puts them. */
+/** What a new world's file starts as: 长安 and the road west with their people and things where XYJ puts them. */
 export function fresh({ now = Date.now(), rand = Math.random } = {}) {
   const x = ctx({ version: VERSION, t: now, reset: now, players: {}, npcs: {}, things: {}, rooms: {}, sold: {}, log: {} }, null, now, rand)
   resetTown(x)
@@ -276,7 +278,7 @@ export function lookText(w, me, now = Date.now()) {
   const room = p?.room in ROOMS ? p.room : START
   const r = ROOMS[room]
   const lines = [`【${r.name}】`, r.long + (r.outdoors ? `${phaseOf(now)[2]}。` : '')]
-  if (room === 'small_temple' && p?.ghost) lines.push('你看见地面上有一个红色的漩涡(swirl)在不断旋转 ...')
+  if (room === TEMPLE && p?.ghost) lines.push('你看见地面上有一个红色的漩涡(swirl)在不断旋转 ...')
   lines.push(exitsLine(w, room))
   const things = thingGroups(w, room).map(([, text]) => text)
   if (things.length) lines.push(`这里有：${things.join('、')}。`)
@@ -333,9 +335,9 @@ export const HELP = [
   '穿 / 脱 <衣物>　装备 / 卸下 <兵器>　吃 <东西>　喝 <水缸等>',
   '清单（看店里卖什么）　买 <东西>　兑换 <数量> <钱> 成 <钱>',
   '比武 <人>（点到为止）　杀 <人>　跟随 <人>|无　组队 <人>　离队　队伍',
-  '状态 / 属性 / 技能　拜师 <人>　请教 <人> <技能>　偷 <东西> 从 <人>',
-  '爬 / 钻 / 进 / 搜 / 坐 / 装车 / 开门 / 关门（看地方）　时间　谁',
-  '西游（去《西游记》的长安）/ 东归　那边还有：去 <地点>　问 <人> 关于 <事>　学 <技能> 从 <人>　睡觉　激发　打坐 / 冥想 <数>　取经　腾云',
+  '状态 / 属性 / 技能　拜师 <人>　偷 <东西> 从 <人>',
+  '开门 / 关门　时间　谁　去 <地点>　问 <人> 关于 <事>　学 <技能> 从 <人>',
+  '睡觉　激发　打坐 / 冥想 <数>　取经　腾云',
 ].join('\n')
 
 const VERBS = [
@@ -369,25 +371,16 @@ const VERBS = [
   [['属性', '分数', 'score'], 'score'],
   [['技能', '武功', 'skills'], 'skills'],
   [['拜师', '拜', 'apprentice'], 'apprentice'],
-  [['请教', '求教', 'acquire'], 'acquire'],
   [['偷', 'steal'], 'steal'],
   [['开门', 'open'], 'open'],
   [['关门', 'close'], 'close'],
   [['时间', 'time'], 'time'],
   [['谁', 'who'], 'who'],
   [['帮助', 'help', '?', '？'], 'help'],
-  // Room actions (story.js): the verb goes to the room.
-  [['爬上', '爬', '翻', 'climb'], 'climb'],
-  [['钻进', '钻', '进去', '进', '走进', 'enter'], 'enter'],
-  [['搜', '找', '搜索', 'search'], 'search'],
-  [['坐下', '坐', 'sit'], 'sit'],
-  [['装车', '装上车', '装', 'load'], 'load'],
-  [['领信札', '领', 'request'], 'request'],
+  [['钻进', '钻', '进', '走进', 'enter'], 'enter'],
   // 西游记's commands (xyj-story.js, HOOKS.cmd).
-  [['西游', '去长安', 'xiyou'], 'xiyou'],
   [['睡觉', '睡', 'sleep'], 'sleep'],
   [['撞', '破', '扳', 'break'], 'break'],
-  [['东归', '回雪亭', 'donggui'], 'donggui'],
   [['学习', '学', 'learn'], 'learn'],
   [['激发', 'enable'], 'enable'],
   [['打坐', '练内力', 'exercise'], 'exercise'],
@@ -511,7 +504,7 @@ function command(x, line) {
   const room = p.room
   const { verb, rest } = parse(line)
   const reply = (t) => x.out.push(t)
-  const ghostNo = () => { reply('你现在是鬼魂，做不了这件事。快去土地公庙找城隍复活吧！'); return true }
+  const ghostNo = () => { reply('你现在是鬼魂，做不了这件事。快去长安的城隍庙复活吧！'); return true }
   const roomHook = (v) => HOOKS.room[room]?.[v]?.(x, rest)
   // A world's own command, or its own way with a common one (false: not here).
   if (HOOKS.cmd[verb] && HOOKS.cmd[verb](x, rest) !== false) return
@@ -527,13 +520,11 @@ function command(x, line) {
       if (!rest) return reply(lookText(w, me, x.now))
       const t = lead([...people(w, me, room), ...things(w, me), ...things(w, room), ...Object.keys(ROOMS[room].details ?? {}).map((d) => ({ key: d, kind: 'detail', names: [d] }))], rest)
       if (t) return reply(lookAt(x, t))
-      if (roomHook('look')) return
       return reply(`你看了半天，没看到「${rest}」。`)
     }
     case 'go': {
       const d = dirOf(rest)
       if (!d) return reply(rest ? `「${rest}」是哪个方向？${exitsLine(w, room)}` : `往哪走？${exitsLine(w, room)}`)
-      if (d === '进去' && !ROOMS[room].exits[d] && roomHook('enter')) return
       for (const n of npcsIn(w, room)) if (awake(w, n, x.now) && !p.ghost && HOOKS.npc[baseOf(n)]?.go?.(x, n, d)) return
       const to = ROOMS[room].exits[d]
       if (!to) return reply('这个方向没有出路。')
@@ -628,12 +619,11 @@ function command(x, line) {
       if (!t) return reply(rest ? '这里没有这样东西 ...。' : '你要吃什么？')
       return eat(x, t.key)
     }
-    case 'drink': case 'fill': {
+    case 'drink': {
       if (p.ghost) return reply('你没有形体，喝不了东西。')
-      if (roomHook(verb)) return
       const t = lead([...things(w, me), ...things(w, room)], rest.replace(/^(从|from)\s*/, ''))
       if (!t) return reply(rest ? '这里没有这样东西 ...。' : '你要喝什么？')
-      return verb === 'drink' ? drink(x, t.key) : fill(x, t.key)
+      return drink(x, t.key)
     }
     case 'list': {
       const v = npcsIn(w, room).find((n) => npcData(n).sells && awake(w, n, x.now))
@@ -678,21 +668,18 @@ function command(x, line) {
       vision(x, room, `【队伍】$N：${rest.slice(0, MAX_SAY)}`, me, null, { k: 'team', team: p.team })
       return
     }
-    case 'hp': return reply(hpText(w, me))
-    case 'score': return reply(scoreText(w, me))
     case 'skills': {
       const sk = Object.entries(p.skills).filter(([, v]) => v > 0)
       const learning = Object.entries(p.learned).filter(([k, v]) => v > 0 && !p.skills[k])
       if (!sk.length && !learning.length) return reply('你目前并没有学会任何技能。')
       return reply(['你目前学过的技能：', ...sk.map(([k, v]) => `  ${skillName(k)}(${k})　${v} 级`), ...learning.map(([k]) => `  ${skillName(k)}(${k})　刚入门`)].join('\n'))
     }
-    case 'apprentice': case 'acquire': {
+    case 'apprentice': {
       if (p.ghost) return ghostNo()
       const t = lead(people(w, me, room).filter((c) => isNpc(c.key)), rest)
-      if (!t) return reply(verb === 'apprentice' ? '你要拜谁为师？' : '你要向谁请教？')
-      const hook = HOOKS.npc[baseOf(t.key)]?.[verb]
-      if (verb === 'apprentice') vision(x, room, '$N想要拜$n为师。', me, t.key)
-      if (!hook || !hook(x, t.key, t.rest)) reply(verb === 'apprentice' ? `${nameOf(w, t.key)}似乎没有收你为徒的打算。` : `${nameOf(w, t.key)}似乎不愿意教你这个。`)
+      if (!t) return reply('你要拜谁为师？')
+      vision(x, room, '$N想要拜$n为师。', me, t.key)
+      if (!HOOKS.npc[baseOf(t.key)]?.apprentice?.(x, t.key, t.rest)) reply(`${nameOf(w, t.key)}似乎没有收你为徒的打算。`)
       return
     }
     case 'steal': return steal(x, rest)
@@ -710,13 +697,8 @@ function command(x, line) {
       const rows = Object.entries(w.players).map(([id, q]) => `${who(w, id, me)}${q.agent ? '（agent）' : ''}：${ROOMS[q.room]?.name ?? ''}`)
       return reply(rows.length ? rows.join('\n') : '江湖上还没有人。')
     }
-    case 'climb': case 'enter': case 'search': case 'sit': case 'load': case 'request': {
-      if (verb === 'enter' && room === 'small_temple' && /漩涡|swirl/.test(rest)) return revive(x)
-      if (p.ghost && verb !== 'enter') return ghostNo()
-      if (roomHook(verb)) return
-      if (verb === 'search') return reply(rest ? `你仔细找了找 ${rest}，但是啥特别的东西也没找到。` : '你仔细四处翻翻找找，但没看到啥特别的东西。')
-      return reply('什么？')
-    }
+    case 'enter':
+      return room === TEMPLE && /漩涡|swirl/.test(rest) ? revive(x) : reply('什么？')
   }
   return reply(HELP)
 }
@@ -792,27 +774,15 @@ function equip(x, tid, verb) {
   x.out.push(str > need + 6 ? `这${it.unit}${thingName(w, tid)}拿在手里轻飘飘的，不是十分趁手。` : str >= need ? `这${it.unit}${thingName(w, tid)}的重量对你来说刚刚好，相当趁手。` : `这${it.unit}${thingName(w, tid)}的份量重了点，不过你勉强使得动。`)
 }
 
-/** feature/food.c, and the medicines' own stuff_ob (obj/medication). */
-const MEDICINE = {
-  'stock/black_pill': { room: 5, msg: '$N吞下一粒黑黑的药丸。', fx: (c) => { consume(c, 'water', 30); c.food.cur += 5; c.sen.eff = Math.max(0, c.sen.eff - 1); consume(c, 'sen', 4); supplement(c, 'gin', 15); supplement(c, 'kee', 15) } },
-  'stock/boar_berry': { room: 20, msg: '$N吃下一颗发着恶臭的山猪果 ... 天啊，$N竟然吞得下去 .... 。', fx: (c) => { c.food.cur += 10; consume(c, 'water', 20); heal(c, 'sen', 15); supplement(c, 'sen', 10) } },
-  'stock/dragon_saliva': { room: 10, msg: '$N拿出一株龙涎草放入口中嚼了嚼吞了下去。', fx: (c) => { consume(c, 'water', 10); c.food.cur += 10; consume(c, 'sen', 3); heal(c, 'kee', 30) } },
-  'stock/wild_ginseng': { room: 50, msg: '$N拿出一株野山参放入口中嚼了嚼吞了下去。', fx: (c) => { c.food.cur += 50; heal(c, 'gin', 5); heal(c, 'kee', 5); heal(c, 'sen', 5) } },
-}
+/** feature/food.c */
 function eat(x, tid) {
   const w = x.w
   const me = x.me
   const c = w.players[me]
   const t = w.things[tid]
   const it = itemOf(w, tid) ?? {}
-  const med = MEDICINE[t.id]
   if (HOOKS.item[t.id]?.eat?.(x, tid)) return
-  if (med) {
-    if (c.food.max - c.food.cur < med.room) return x.out.push('你的肚子已经撑得什么东西也吞不下去了。')
-    vision(x, c.room, med.msg, me)
-    med.fx(c)
-    c.food.cur = Math.min(c.food.max, c.food.cur)
-  } else if (it.foodStuff) {
+  if (it.foodStuff) {
     if (c.food.cur + it.foodStuff > c.food.max) return x.out.push(`你的肚子已经装不下这${it.baseUnit ?? it.unit}${thingName(w, tid)}了。`)
     vision(x, c.room, `$N吃下一${it.baseUnit ?? it.unit}${thingName(w, tid)}。`, me)
     c.food.cur += it.foodStuff
@@ -837,18 +807,6 @@ function drink(x, tid) {
   if (t.water !== undefined) t.water -= 1
   vision(x, c.room, `$N从${thingName(w, tid)}喝了几口${it.liquid ?? '水'}。`, x.me)
 }
-/** fill: a bottle from the water vat (or the river). */
-function fill(x, tid) {
-  const w = x.w
-  const room = w.players[x.me].room
-  const t = w.things[tid]
-  if (t.id !== 'stock/bottle') return x.out.push(`${thingName(w, tid)}不能装水。`)
-  const src = thingsAt(w, room).find((o) => itemOf(w, o)?.liquidContainer) ?? (ROOMS[room].water ? 'river' : null)
-  if (!src) return x.out.push('这附近没有水可以装。')
-  t.water = 5
-  vision(x, room, `$N将${thingName(w, tid)}装满了水。`, x.me)
-}
-
 function buy(x, rest) {
   const w = x.w
   const me = x.me
@@ -870,17 +828,16 @@ function buy(x, rest) {
   if (paid === 2) return x.out.push('你没有足够的零钱，而对方也找不开...。')
   const tid = makeThing(x, key, me, 1)
   w.sold[shelf + tid] = 1
-  if (key === 'stock/bottle') w.things[tid].water = 0
   vision(x, room, `$N向$n买下一${it.baseUnit ?? it.unit ?? '个'}${it.name}。`, me, v)
   HOOKS.npc[baseOf(v)]?.sold?.(x, v, me, tid)
 }
 
-/** std/room/bank.c convert, at 鱼记小铺: coins, silver and gold at 1, 100, 10000. */
+/** std/room/bank.c convert, at 长安's 钱庄: coins, silver and gold at 1, 100, 10000. */
 function convert(x, rest) {
   const w = x.w
   const me = x.me
   const room = w.players[me].room
-  if (room !== 'bazar') return x.out.push('这里没有钱庄。')
+  if (room !== 'x/city/bank') return x.out.push('这里没有钱庄。')
   const m = rest.match(/^(.+?)\s*(?:成|换成|to)\s*(.+)$/)
   if (!m) return x.out.push('这样兑换：兑换 <数量> <钱币> 成 <钱币>，比如：兑换 100 文钱 成 银子')
   const { n, rest: what } = amount(m[1])
@@ -932,7 +889,7 @@ function attackCmd(x, t, verb) {
     if (HOOKS.npc[baseOf(t)]?.kill?.(x, t, me, lead) === false) return // the fight never began
     if (npcData(t).kind.includes('villager') && !HOOKS.npc[baseOf(t)]?.kill) lead.push([`${nameOf(w, t)}说道：咦？怎么动起粗来了？救命哪 ...`])
   } else {
-    // Players kill players as in ES2, but only someone here now: never an agent, never someone away.
+    // Players kill players as the mudlib has it, but only someone here now: never an agent, never someone away.
     if (c.agent) return x.out.push(`${nameOf(w, t)}是 agent，玩家之间不能对 agent 下杀手；想较量就找它「比武」。`)
     if (!online(w, t, x.now)) return x.out.push(`${nameOf(w, t)}现在不在线，不能对不在线的人下杀手。`)
     ;(w.players[me].killing ??= {})[t] = true
@@ -1042,7 +999,7 @@ function steal(x, rest) {
   if (isNpc(t.key) && !npcData(t.key).kind.includes('villager')) brawl(x, t.key, me, 'kill')
 }
 
-/** 土地公庙's swirl (std/room/temple.c, chard.c make_living): alive again; if the corpse is gone, 气 −10%. */
+/** 城隍庙's swirl (std/room/temple.c, chard.c make_living): alive again; if the corpse is gone, 气 −10%. */
 function revive(x) {
   const w = x.w
   const p = w.players[x.me]
@@ -1059,30 +1016,6 @@ function revive(x) {
 
 // ── status ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** hp.c */
-export function hpText(w, id) {
-  const c = ch(w, id)
-  const f = (k) => `${c[k].cur}/${c[k].eff}${c[k].max !== undefined && c[k].eff !== c[k].max ? `(${c[k].max})` : ''}`
-  return [
-    `形体 ${c.hp.cur}/${c.hp.max}　精 ${f('gin')}　气 ${f('kee')}　神 ${f('sen')}`,
-    `食物 ${c.food.cur}/${c.food.max}　饮水 ${c.water.cur}/${c.water.max}`,
-    ...(c.ghost ? ['你现在是鬼魂。'] : []),
-  ].join('\n')
-}
-/** score.lpc */
-export function scoreText(w, id) {
-  const p = w.players[id]
-  const money = wealth(w, id)
-  return [
-    `【${CLASS_NAMES[p.cls] ?? p.cls}】${p.title ? p.title + ' ' : ''}${p.name}　${p.level} 级`,
-    Object.entries(ATTR_NAMES).map(([k, n]) => `${n} ${attr(w, id, k)}`).join('　'),
-    hpText(w, id),
-    `身上的钱：${money ? priceParts(money) : '没有'}`,
-    ...Object.entries(p.score).filter(([, v]) => v).map(([k, v]) => `${SCORE_NAMES[k] ?? k}：${v}`),
-  ].join('\n')
-}
-const priceParts = (v) => [[10000, '两黄金'], [100, '两银子'], [1, '文钱']].map(([u, n]) => { const k = Math.floor(v / u); v %= u; return k ? `${cn(k)}${n}` : '' }).join('')
-
 /**
  * The changes that bring `me` into the world, or update their name: a new player starts in 客栈大堂.
  * `agent`: they play through the App's tools (the page wakes them when spoken to).
@@ -1098,8 +1031,7 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
   const w = structuredClone(s)
   const x = ctx(w, me, now, rand)
   w.players[me] = newPlayer(x, name, agent)
-  // A newcomer is born where another world says (西游记: 长安); START is 雪亭镇's, for old saves and the way back.
-  if (!HOOKS.born?.(x, me)) vision(x, START, '$N走进了饮风客栈。', me)
+  HOOKS.born(x, me)
   arrive(x, me)
   const ops = diff(s, w)
   let t = now
@@ -1107,9 +1039,7 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
   return ops
 }
 
-export { hpText as statusText }
+export { statusText } from './xyj-story.js'
 
-/** Each bar's label, the player's field, and the page's icon for it (hp, sen, force, mana, food, water). */
-const BARS = [['精', 'gin', 'mana'], ['气', 'kee', 'hp'], ['神', 'sen', 'sen'], ['体', 'hp', 'force'], ['食', 'food', 'food'], ['水', 'water', 'water']]
-/** The page's status bars, [label, {cur, max}, icon]: 精气神, body, food and water, or another world's own; one missing is left out. */
-export const statBars = (p) => HOOKS.bars?.(p) ?? BARS.filter(([, k]) => p[k]).map(([label, k, icon]) => [label, p[k], icon])
+/** The page's status bars, [label, {cur, max}, icon] (xyj-story.js). */
+export const statBars = (p) => HOOKS.bars(p)

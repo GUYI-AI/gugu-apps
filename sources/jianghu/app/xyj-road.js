@@ -32,7 +32,7 @@ Object.assign(FLY, { baoxiang: BX + 'bei1', 宝象国: BX + 'bei1', pingding: PD
 // ── the monsters' numbers ──────────────────────────────────────────────────────────────────────────────────────────
 
 // XYJ sets these monsters against characters of hundreds of thousands of 道行, in fights of 气血 by the thousand. Here
-// (fight.js, ES2's fights) a blow takes a few: each keeps its skills in proportion and its 气血 in absolute terms, so
+// (fight.js, the mudlib's fights) a blow takes a few: each keeps its skills in proportion and its 气血 in absolute terms, so
 // 宝象国 is beaten by one who has been through 五庄观 and trained a little, best with a friend (a newcomer will do), and
 // 平顶山 by two such together. Played out in test/xyj-road.test.mjs.
 const TUNE = {

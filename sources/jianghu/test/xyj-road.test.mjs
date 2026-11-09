@@ -22,7 +22,7 @@ function world(seed = 7) {
   /** A player in 长安 as one of: N a newcomer, V back from 五庄观 with a little training, W a while longer. */
   const enter = (id, name, a = 'V', room = 'x/westway/jiayu') => {
     apply(s, join(s, id, { name, ...o() }))
-    say(id, '西游')
+    say(id, '看')
     const p = s.players[id]
     const A = ARCH[a]
     Object.assign(p.skills, A.skills)
@@ -119,7 +119,7 @@ test('宝象国 whole: the slab, the cave, the letter over the bridge to the kin
 })
 
 test('平顶山: a 法宝 takes the attacker out, a teammate fights on; four killed is done for the team', () => {
-  const { s, say, enter, clock } = world(5)
+  const { s, say, enter, clock } = world()
   enter('user:a', '阿青', 'X', PD + 'nandong')
   enter('user:b', '大壮', 'X', PD + 'nandong')
   for (const id of ['user:a', 'user:b']) { s.players[id].team = 'T'; s.players[id].last = clock.now }

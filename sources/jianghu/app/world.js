@@ -2,34 +2,36 @@
 //
 // The chat's world file holds everything that changes: each player and each townsperson as a character (stats, room,
 // skills), each thing and where it is (a room, someone's hands, a corpse, the wagon), and the last lines said and done
-// (`log`). Rooms, people and things as ES2 made them are in es2.js. A command runs on a copy of the file (`x.w`); what
+// (`log`). Rooms, people and things as 西游记 made them are in xyj.js. A command runs on a copy of the file (`x.w`); what
 // differs afterwards is written back (game.js diff), so the rules below just change `x.w` in place.
-import { ROOMS, NPCS, ITEMS } from './es2.js'
-import * as XYJ from './xyj.js'
+import { ROOMS, NPCS, ITEMS } from './xyj.js'
 import { gameTime, cn } from './text.js'
 
-export const START = 'inn_hall'
-/** ES2's heart beat: an NPC may say something or wander once per beat. */
+/** 长安's 南城客栈, where a newcomer arrives. */
+export const START = 'x/city/kezhan'
+/** The mudlib's heart beat: an NPC may say something or wander once per beat. */
 export const BEAT = 2000
-/** How often stats regenerate, food runs down (ES2: every 5–14 beats). */
+/** How often stats regenerate, food runs down (every 5–14 beats). */
 export const TICK = 20_000
-/** How often the town resets: the dead come back, shops restock, lost things lie where they were (ES2 reset). */
+/** How often the town resets: the dead come back, shops restock, lost things lie where they were. */
 export const RESET = 30 * 60_000
 export const LOG_MAX = 60
 
-/** Hooks of particular people and rooms (story.js fills them): what they do beyond the general rules. */
+/** Hooks of particular people and rooms (xyj-story.js, xyj-road.js fill them): what they do beyond the general rules. */
 export const HOOKS = { npc: {}, room: {}, chat: {}, item: {}, cmd: {} }
 
-// 西游记's 长安 and 五庄观 (xyj.js) are a second world beside 雪亭镇: no exit joins them (xyj-story.js 西游 / 东归).
-Object.assign(ROOMS, XYJ.ROOMS)
-Object.assign(NPCS, XYJ.NPCS)
-Object.assign(ITEMS, XYJ.ITEMS)
+// Money (obj/money): coins, silver and gold at 1, 100 and 10000.
+Object.assign(ITEMS, {
+  'stock/coin': { name: '钱', ids: ['coin', 'coins', 'coin_money'], unit: '些', baseUnit: '文', baseValue: 1, moneyId: 'coin', baseWeight: 3, long: '这是流通中单位最小的货币，约要一百文钱才值得一两银子。' },
+  'stock/silver': { name: '碎银', ids: ['silver', 'silver_money'], unit: '些', baseUnit: '两', baseValue: 100, moneyId: 'silver', baseWeight: 37, long: '白花花的银子，人见人爱的银子。' },
+  'stock/gold': { name: '黄金', ids: ['gold', 'ingot', 'gold_money'], unit: '些', baseUnit: '两', baseValue: 10000, moneyId: 'gold', baseWeight: 37, long: '黄澄澄的金子，人见人爱的金子，啊～～金子！' },
+})
 
 // ── ids ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 export const isNpc = (id) => typeof id === 'string' && id.startsWith('n:')
 export const isThing = (id) => typeof id === 'string' && id.startsWith('t:')
-/** n:child3.2 → child3: the person in es2.js an NPC is one of. */
+/** n:x/city/npc/xiaoer.2 → x/city/npc/xiaoer: the person in xyj.js an NPC is one of. */
 export const baseOf = (id) => id.slice(2).split('.')[0]
 export const npcData = (id) => NPCS[baseOf(id)]
 /**
@@ -121,7 +123,7 @@ export function skillLv(w, id, s, raw = false) {
 export const levelOf = (w, id) => (isNpc(id) ? npcData(id)?.level ?? 1 : w.players[id]?.level ?? 1)
 export const clsOf = (w, id) => (isNpc(id) ? npcData(id)?.cls ?? 'commoner' : w.players[id]?.cls ?? 'commoner')
 
-/** A new character's stats: ES2's human (daemon/race/human.c): 精气神 30, 形体 根骨×5, food and water by attributes. */
+/** A character's stats (daemon/race/human.c): 精气神 30, 形体 根骨×5, food and water by attributes. */
 export function newStats(attrs, more = {}) {
   // Named keys, never arrays: two pages writing one character at once merge leaf by leaf.
   const stat = (k) => { const m = more.max?.[k] ?? 30 + (more.advance?.[k] ?? 0); return { cur: m, eff: m, max: m } }
@@ -283,7 +285,7 @@ export function purse(w, id) {
 export const wealth = (w, id) => Object.entries(purse(w, id)).reduce((s, [k, n]) => s + COIN_VALUE[k] * n, 0)
 
 /**
- * Pay `price` exactly, coins being 1, silver 100, gold 10000: 1 paid, 0 too little, 2 enough but no change (ES2 gives none).
+ * Pay `price` exactly, coins being 1, silver 100, gold 10000: 1 paid, 0 too little, 2 enough but no change (none is given).
  * What is paid leaves the world: a shopkeeper's till would only grow the file, a new heap each sale.
  */
 export function pay(x, id, price) {
@@ -347,7 +349,7 @@ export function fill(w, t, a, b, viewer) {
 
 // ── time ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** Whether the game clock passed `hhmm` (as ES2 schedules say it: 700, 2200) between two moments. */
+/** Whether the game clock passed `hhmm` (as the schedules say it: 700, 2200) between two moments. */
 export function passed(since, now, hhmm) {
   if (now - since >= 24 * 60_000) return true
   const mins = (t) => { const g = gameTime(t); return g.hour * 60 + g.minute }

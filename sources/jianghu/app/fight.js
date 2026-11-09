@@ -1,9 +1,9 @@
-// Combat as ES2 has it (feature/char/attack.c, feature/char/combat.c, adm/daemons/combatd.c), played out at once:
+// Combat as the mudlib has it (feature/char/attack.c, feature/char/combat.c, adm/daemons/combatd.c), played out at once:
 // a fight runs its rounds when it starts, and what was seen goes into the log as one passage. `fight` (比武) is a
 // spar that only tires; `kill` (杀) wounds, knocks out and kills.
 //
-// Where ES2 as published cannot work, the smallest fix is made (see SOURCE.md): every weapon attacks (ES2 has
-// moves only for swords and fists), fists do damage (ES2's unmapped 内功 zeroes it), 纵跃闪躲之法 counts in defence,
+// Where the mudlib as published cannot work, the smallest fix is made (see SOURCE.md): every weapon attacks (it has
+// moves only for swords and fists), fists do damage (its unmapped 内功 zeroes it), 纵跃闪躲之法 counts in defence,
 // and skills and levels rise with use.
 import { ACTIONS, IDLE, LIMBS, SKILL_NAMES, ATTR_NAMES, damageMsg, woundMsg, tiredMsg, DEAD_MSG } from './text.js'
 import {
@@ -33,7 +33,7 @@ const ability = {
 }
 const strength = (w, id, c) => attr(w, id, 'str') * attr(w, id, 'cor') * 150 + c.kee.cur * 30
 
-/** Learned points into a skill; a level comes when they reach (level+1)² (ES2 leaves this to skill files it lacks). */
+/** Learned points into a skill; a level comes when they reach (level+1)² (the mudlib leaves this to skill files it lacks). */
 export function improve(x, id, s, n) {
   if (isNpc(id) || n <= 0) return
   const p = x.w.players[id]
@@ -49,7 +49,7 @@ export function improve(x, id, s, n) {
 export const skillName = (s) => SKILL_NAMES[s] ?? s
 
 /**
- * Experience (`score`). A level when 实战经验 reaches 50·L·(L+1) — ES2 sets no targets, so nobody levels there —
+ * Experience (`score`). A level when 实战经验 reaches 50·L·(L+1) — the mudlib sets no targets, so nobody levels there —
  * with a 30% chance of +1 to an attribute, by human.c's odds.
  */
 export function gainScore(x, id, course, n) {
@@ -210,7 +210,7 @@ function attack(x, id, t, killing, say) {
     const max = Math.floor(xm * y * z / 100)
     dmg = xm * (1 + rnd(x, y)) + (r ?? 0) + Math.min(rnd(x, Math.floor(str / 20000)), max) + applied(w, id, 'damage') - rnd(x, applied(w, t, 'armor') + 1)
   } else {
-    // Armor takes a random part of the blow, as it does of a weapon's (ES2 takes all of it from fists).
+    // Armor takes a random part of the blow, as it does of a weapon's (the mudlib takes all of it from fists).
     dmg = 1 + Math.floor(str / 10000) + rnd(x, Math.floor(str / 10000)) + applied(w, id, 'damage') - rnd(x, applied(w, t, 'armor') + 1)
   }
   dmg = Math.max(0, dmg)
@@ -285,7 +285,7 @@ export function flee(x, id, say) {
 
 /**
  * Death (std/char.c die, adm/daemons/chard.c): a corpse with all they carried, the killer's scores. A player becomes
- * a ghost who comes back to life in 土地公庙; a townsperson is gone until the town resets.
+ * a ghost who comes back to life in 长安's 城隍庙; a townsperson is gone until the town resets.
  */
 export function die(x, id, killer, say = null) {
   const w = x.w
@@ -309,7 +309,7 @@ export function die(x, id, killer, say = null) {
     HOOKS.npc[baseOf(id)]?.die?.(x, id, killer) // die(): what a death sets off
     return
   }
-  // A ghost: no 气, no fights, until 土地公庙.
+  // A ghost: no 气, no fights, until 城隍庙.
   c.ghost = true
   c.diedAt = x.now
   c.hp.cur = 0
