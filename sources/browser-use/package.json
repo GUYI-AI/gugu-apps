@@ -1,0 +1,15 @@
+{
+  "name": "browser-use-app-source",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:program": "node program-src/build.mjs",
+    "test": "node program-src/build.mjs --check && node --test --test-concurrency=1 tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@playwright/mcp": "0.0.83",
+    "esbuild": "0.25.12",
+    "playwright-core": "1.64.0-alpha-1790635538000"
+  }
+}

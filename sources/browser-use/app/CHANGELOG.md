@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (unreleased)
+
+- The App runs its own browser program (App interface 36): Playwright MCP drives the task's page through a host lease of that one page, instead of a Gugu-provided host program (GUYI-AI/gugu#1607).
+- Tools that reach beyond the page stay withheld (`browser_run_code_unsafe`, `browser_tabs`); `browser_close` keeps the person's page open.
+- Files an agent names for upload, snapshots or screenshots stay inside the task's working folder or this App's own folder for the task.
+
 ## 0.3.0
 
 App interface 25: nothing else changes.
