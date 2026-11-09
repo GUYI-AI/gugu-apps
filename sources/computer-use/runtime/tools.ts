@@ -41,6 +41,8 @@ export function createComputerTools(input: {
   cua: CuaClient
   specs: NativeSpec[]
   platform: NodeJS.Platform
+  /** Display variables seen by the driver; defaults to this process environment. */
+  display?: { DISPLAY?: string; WAYLAND_DISPLAY?: string }
   protectedHost(): Promise<SelfApp> | SelfApp
   control?: ComputerControl
   observed?(value: { caller: ToolCaller; owner: string; name: string; args: Args; pid?: number; windowId?: number; result: CuaToolResult }): void
@@ -64,7 +66,8 @@ export function createComputerTools(input: {
       const definition = definitions.get(name)
       if (!definition) return failure('not_found', 'This App does not expose that native tool.')
       if (!caller.agent || !caller.session) return failure('not_granted', 'An agent and its bound task are required.')
-      if (input.platform !== 'darwin' && input.platform !== 'win32') return failure('unsupported', 'This platform has no supported Computer Use driver.')
+      if (input.platform !== 'darwin' && input.platform !== 'win32' && input.platform !== 'linux') return failure('unsupported', 'This platform has no supported Computer Use driver.')
+      if (input.platform === 'linux' && !(input.display ?? process.env).DISPLAY && !(input.display ?? process.env).WAYLAND_DISPLAY) return failure('unavailable', 'This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.')
       if (['session', 'device', 'device_id', 'agent'].some(key => key in args)) return failure('invalid_args', 'Caller and machine identity cannot be supplied as tool arguments.')
       const { confirmed, ...forwardArgs } = args
       if (caller.signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')

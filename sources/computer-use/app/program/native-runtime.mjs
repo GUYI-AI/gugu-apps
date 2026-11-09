@@ -372,7 +372,34 @@ var INPUTS = /* @__PURE__ */ new Set(["click", "double_click", "right_click", "d
 var START_FAILED = "\u7535\u8111\u63A7\u5236\u6CA1\u80FD\u542F\u52A8\uFF1A\u8BF7\u91CD\u542F Computer Use App\uFF1B\u8FD8\u4E0D\u884C\u5C31\u91CD\u65B0\u5B89\u88C5\u8FD9\u4E2A App";
 var CRASHED = "\u7535\u8111\u63A7\u5236\u610F\u5916\u505C\u4E86\uFF1A\u518D\u8C03\u4E00\u6B21\u4F1A\u81EA\u52A8\u91CD\u65B0\u542F\u52A8";
 var DISCONNECTED = "\u7535\u8111\u63A7\u5236\u7684\u8FDE\u63A5\u65AD\u4E86\uFF1A\u518D\u8C03\u4E00\u6B21\u4F1A\u81EA\u52A8\u91CD\u65B0\u8FDE\u4E0A";
-var PASS_THROUGH = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "CUA_LOG", "SystemRoot", "windir", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP", "ComSpec", "PATHEXT", "SystemDrive", "ProgramData"];
+var PASS_THROUGH = [
+  "PATH",
+  "HOME",
+  "USER",
+  "LOGNAME",
+  "TMPDIR",
+  "LANG",
+  "LC_ALL",
+  "CUA_LOG",
+  "SystemRoot",
+  "windir",
+  "USERPROFILE",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "TEMP",
+  "TMP",
+  "ComSpec",
+  "PATHEXT",
+  "SystemDrive",
+  "ProgramData",
+  // Linux: the display and accessibility bus the driver observes and drives.
+  "DISPLAY",
+  "XAUTHORITY",
+  "WAYLAND_DISPLAY",
+  "XDG_RUNTIME_DIR",
+  "XDG_SESSION_TYPE",
+  "DBUS_SESSION_BUS_ADDRESS"
+];
 function cuaEnvironment(input) {
   const source = input.source ?? process.env;
   const env = {};
@@ -1166,7 +1193,9 @@ var DRIVER_RELEASES = Object.freeze({
   "darwin-arm64": { platform: "darwin", arch: "arm64", version: "0.36.0", revision: "0.36.0-gugu.1", format: "tar.gz", member: "cua-driver", sha256: "3a9e5ddfc3078bdc09ab1eb708d8bc49964a306b31f0251689fda8da69fae9c6", url: "https://github.com/OpenDCAI/gugu/releases/download/assets/cua-driver-rs-0.36.0-gugu.1-darwin-universal-binary.tar.gz" },
   "darwin-x64": { platform: "darwin", arch: "x64", version: "0.36.0", revision: "0.36.0-gugu.1", format: "tar.gz", member: "cua-driver", sha256: "3a9e5ddfc3078bdc09ab1eb708d8bc49964a306b31f0251689fda8da69fae9c6", url: "https://github.com/OpenDCAI/gugu/releases/download/assets/cua-driver-rs-0.36.0-gugu.1-darwin-universal-binary.tar.gz" },
   "win32-x64": { platform: "win32", arch: "x64", version: "0.36.0", revision: "0.36.0", format: "zip", member: "cua-driver.exe", sha256: "f8c47024b626f4e0e70f8428d2998df39e4879110c5722a29d5fd03e367353ad", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-windows-x86_64-binary.zip" },
-  "win32-arm64": { platform: "win32", arch: "arm64", version: "0.36.0", revision: "0.36.0", format: "zip", member: "cua-driver.exe", sha256: "520ea584cf11c074bccc4fd2328e8f2b34ec43de9328d97afb7fd03f761b55ee", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-windows-arm64-binary.zip" }
+  "win32-arm64": { platform: "win32", arch: "arm64", version: "0.36.0", revision: "0.36.0", format: "zip", member: "cua-driver.exe", sha256: "520ea584cf11c074bccc4fd2328e8f2b34ec43de9328d97afb7fd03f761b55ee", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-windows-arm64-binary.zip" },
+  "linux-x64": { platform: "linux", arch: "x64", version: "0.36.0", revision: "0.36.0", format: "tar.gz", member: "cua-driver", sha256: "05dae2160c86bdf4855c279d30898213d7a150edb1992b7470afdd69f0df4064", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-linux-x86_64-binary.tar.gz" },
+  "linux-arm64": { platform: "linux", arch: "arm64", version: "0.36.0", revision: "0.36.0", format: "tar.gz", member: "cua-driver", sha256: "f64a33889605944a4e5af0e6036496137a25d6375f041d7c56e65c3be456aab2", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-linux-arm64-binary.tar.gz" }
 });
 function safeName(name) {
   const normalized = name.replace(/^\.\//, "").replace(/\/$/, "");
@@ -1275,6 +1304,11 @@ function assertNativeArchitecture(bytes, platform, arch) {
     if (!expected2 || offset < 64 || offset + 6 > bytes.length || bytes.toString("latin1", offset, offset + 4) !== "PE\0\0" || bytes.readUInt16LE(offset + 4) !== expected2) throw new Error("Incorrect native PE architecture.");
     return;
   }
+  if (platform === "linux") {
+    const expected2 = { arm64: 183, x64: 62 }[arch];
+    if (!expected2 || bytes.length < 20 || bytes.readUInt32BE(0) !== 2135247942 || bytes[4] !== 2 || bytes[5] !== 1 || bytes.readUInt16LE(18) !== expected2) throw new Error("Incorrect native ELF architecture.");
+    return;
+  }
   if (platform !== "darwin" || bytes.length < 8) throw new Error("This platform has no supported native driver.");
   const expected = { arm64: 16777228, x64: 16777223 }[arch];
   const magic = bytes.readUInt32BE(0);
@@ -1308,7 +1342,7 @@ async function regular(file) {
   }
 }
 function environment(home) {
-  const names = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "SystemRoot", "windir", "USERPROFILE", "TEMP", "TMP"];
+  const names = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "SystemRoot", "windir", "USERPROFILE", "TEMP", "TMP", "DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "XDG_SESSION_TYPE", "DBUS_SESSION_BUS_ADDRESS"];
   return { ...Object.fromEntries(names.filter((key) => process.env[key] !== void 0).map((key) => [key, process.env[key]])), CUA_DRIVER_EMBEDDED: "1", CUA_DRIVER_RS_TELEMETRY_ENABLED: "false", CUA_DRIVER_RS_UPDATE_CHECK: "false", CUA_DRIVER_RS_HOME: home };
 }
 async function verifyExecutable(file, release, dataDir, signal) {
@@ -1662,7 +1696,8 @@ function createComputerTools(input) {
       const definition = definitions.get(name);
       if (!definition) return failure("not_found", "This App does not expose that native tool.");
       if (!caller.agent || !caller.session) return failure("not_granted", "An agent and its bound task are required.");
-      if (input.platform !== "darwin" && input.platform !== "win32") return failure("unsupported", "This platform has no supported Computer Use driver.");
+      if (input.platform !== "darwin" && input.platform !== "win32" && input.platform !== "linux") return failure("unsupported", "This platform has no supported Computer Use driver.");
+      if (input.platform === "linux" && !(input.display ?? process.env).DISPLAY && !(input.display ?? process.env).WAYLAND_DISPLAY) return failure("unavailable", "This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.");
       if (["session", "device", "device_id", "agent"].some((key) => key in args)) return failure("invalid_args", "Caller and machine identity cannot be supplied as tool arguments.");
       const { confirmed, ...forwardArgs } = args;
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");

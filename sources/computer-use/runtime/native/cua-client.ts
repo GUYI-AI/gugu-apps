@@ -61,7 +61,9 @@ const CRASHED = '电脑控制意外停了：再调一次会自动重新启动'
 const DISCONNECTED = '电脑控制的连接断了：再调一次会自动重新连上'
 
 /** 交给 cua-driver 的环境:系统要的几样 + 它自己的开关。 */
-const PASS_THROUGH = ['PATH', 'HOME', 'USER', 'LOGNAME', 'TMPDIR', 'LANG', 'LC_ALL', 'CUA_LOG', 'SystemRoot', 'windir', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP', 'ComSpec', 'PATHEXT', 'SystemDrive', 'ProgramData']
+const PASS_THROUGH = ['PATH', 'HOME', 'USER', 'LOGNAME', 'TMPDIR', 'LANG', 'LC_ALL', 'CUA_LOG', 'SystemRoot', 'windir', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP', 'ComSpec', 'PATHEXT', 'SystemDrive', 'ProgramData',
+  // Linux: the display and accessibility bus the driver observes and drives.
+  'DISPLAY', 'XAUTHORITY', 'WAYLAND_DISPLAY', 'XDG_RUNTIME_DIR', 'XDG_SESSION_TYPE', 'DBUS_SESSION_BUS_ADDRESS']
 
 export function cuaEnvironment(input: { home: string; hostBundleId?: string; source?: NodeJS.ProcessEnv }): NodeJS.ProcessEnv {
   const source = input.source ?? process.env
