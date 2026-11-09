@@ -1,8 +1,8 @@
-// 文字江湖's page: the chat's world (its chatFile) as a MUD screen — where you stand, what was said and done here, a
+// 西游's page: the chat's world (its chatFile) as a MUD screen — where you stand, what was said and done here, a
 // line to type in. Every command goes through game.js, as the agents' do through tools.js; what lasts goes into the
 // file, presence only says who has the page open. A person speaking to an agent, naming it, handing it something or
 // attacking it wakes it with a whisper (game.js wakes); nothing else does.
-import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText, hintFor, hintStep, wayTo, statBars, START } from './game.js'
+import { missing, apply, join, run, parse, lookText, linesSince, lastKey, wakes, wakeText, statBars, START } from './game.js'
 import { ROOMS, peopleIn, thingGroups, nameOf, isNpc, npcData } from './world.js'
 import { gameTime, phaseOf } from './text.js'
 
@@ -32,7 +32,7 @@ function fail(what, e) {
 }
 
 if (!ctx.file) {
-  $('#world').replaceChildren(h('gugu-empty', { icon: 'compass' }, h('strong', {}, '在群里打开'), h('small', {}, '群聊 → 应用 → 文字江湖：群里的人和 agent 一起在东方故事 2 的雪亭镇闯荡。')))
+  $('#world').replaceChildren(h('gugu-empty', { icon: 'compass' }, h('strong', {}, '在群里打开'), h('small', {}, '群聊 → 应用 → 西游：群里的人和 agent 从长安出发走西行路。')))
 } else {
   const f = await window.gugu.files.open(ctx.file)
   // Names as the chat shows them now (the context's copy can be older: a task renamed since).
@@ -131,28 +131,9 @@ if (!ctx.file) {
   const mark = (s, id) => (isNpc(id) ? h('gugu-icon', { name: 'user' }) : h('gugu-avatar', { user: id, size: 'xs' }))
   const tag = (s, id) => (s.players[id]?.agent ? h('em', {}, 'agent') : null)
 
-  /** The 下一步 line, tapped: its step done. */
-  const step = () => { const c = hintStep(f.toJSON(), me); if (c) go(c)() }
-  $('#next').onclick = step
   // On a phone, a tapped chip shows what one can do with it, in a row under the chips.
   let picked = null
   const pick = (id) => () => { picked = picked === id ? null : id; draw() }
-
-  /** A newcomer's card on top of the log, until they put it away (theirs to keep, in the file). */
-  function guide(p, hint) {
-    // Only while the starting errand is still ahead: a player from before this card has no use for it.
-    if (!p || p.agent || p.guided || !hint) return null
-    const done = () => f.transact(() => { f.data.players[me].guided = true })
-    const first = wayTo(p.room, 'store')
-    return h('section', { className: 'guide' },
-      h('h4', {}, '初到雪亭镇'),
-      h('p', {}, '这是群里大家一起玩的文字江湖，群友和 agent 都是江湖中人。'),
-      h('ol', {}, h('li', {}, '点方向键走动，点「看」看看四周。'), h('li', {}, '点人物：看看他、跟他说话；有钱了可以买东西。'), h('li', {}, '直接打字就是说话；指令见「帮助」。')),
-      h('div', { className: 'row' },
-        first ? button('去货栈打工', () => { done(); step() }, 'primary') : null,
-        button('看看四周', () => { done(); go('看')() }),
-        button('知道了', done)))
-  }
 
   function draw() {
     // The hint and the chips change height under the log; a log read to its end stays at its end.
@@ -165,13 +146,6 @@ if (!ctx.file) {
     $('#room').textContent = r.name
     $('#clock').textContent = `${SHICHEN[Math.floor(((gameTime(now).hour + 1) % 24) / 2)]}时 · ${phaseOf(now)[2]}`
     $('#stats').replaceChildren(...(p ? statBars(p).map(bar) : []), ...(p?.ghost ? [h('strong', {}, '鬼魂')] : []))
-    const hint = p ? hintFor(s, me) : null
-    // Above the log, not in it: the log scrolls to its newest line, and the card must stay in sight.
-    const card = guide(p, hint)
-    if (!card) $('#guide').replaceChildren()
-    else if (!$('#guide').firstChild) $('#guide').replaceChildren(card)
-    $('#next').hidden = !hint
-    $('#next').replaceChildren(...(hint ? [h('gugu-icon', { name: 'compass' }), h('span', {}, `下一步：${hint}`)] : []))
     $('#pad').replaceChildren(...compass(r, false))
     $('#compass').replaceChildren(...compass(r, true))
     const others = peopleIn(s, room).filter((id) => id !== me)
@@ -225,7 +199,7 @@ if (!ctx.file) {
     document.body.dataset.file = f.status
     if (f.status === 'gone') $('#status').textContent = '江湖的文件不在了'
   })
-  window.gugu.setTabTitle('文字江湖').catch(() => {}) // only the tab's name
+  window.gugu.setTabTitle('西游').catch(() => {}) // only the tab's name
   enter()
   draw()
 }

@@ -1,4 +1,4 @@
-// 文字江湖's engine: one text command in, what the player reads and what changes in the world file out. The page and
+// 西游's engine: one text command in, what the player reads and what changes in the world file out. The page and
 // the agents' tools (tools.js) both run it, so a person typing 「拿 木剑」 and an agent calling act with the same words
 // do the same thing. The world is ES2's 雪亭镇 (es2.js, story.js); the rules are ES2's (world.js, fight.js).
 //
@@ -15,6 +15,7 @@ import { DIRS, BACK, ATTR_NAMES, SCORE_NAMES, CLASS_NAMES, EMOTES, HUNT_MSG, wou
 import { brawl, improve, skillName, weaponOf } from './fight.js'
 import './story.js'
 import './xyj-story.js'
+import './xyj-road.js'
 
 export const FILE_NAME = '文字江湖.jianghu.json'
 export const VERSION = 3
@@ -107,7 +108,7 @@ export function wakes(s, ev) {
   if (ev.k === 'say') return agents.filter((id) => ev.text.includes(s.players[id].name))
   return []
 }
-export const wakeText = (s, ev, agent) => `文字江湖（${ROOMS[ev.room]?.name ?? ''}）：${render(s, ev, agent)}`
+export const wakeText = (s, ev, agent) => `西游（${ROOMS[ev.room]?.name ?? ''}）：${render(s, ev, agent)}`
 
 // ── the clock ────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -385,6 +386,7 @@ const VERBS = [
   // 西游记's commands (xyj-story.js, HOOKS.cmd).
   [['西游', '去长安', 'xiyou'], 'xiyou'],
   [['睡觉', '睡', 'sleep'], 'sleep'],
+  [['撞', '破', '扳', 'break'], 'break'],
   [['东归', '回雪亭', 'donggui'], 'donggui'],
   [['学习', '学', 'learn'], 'learn'],
   [['激发', 'enable'], 'enable'],
@@ -408,6 +410,7 @@ export function parse(line) {
   if (dirOf(text)) return { verb: 'go', rest: dirOf(text) }
   const ba = text.match(/^把\s*(.+?)\s*(?:交给|给)\s*(.+)$/)
   if (ba) return { verb: 'give', rest: `${ba[2]} ${ba[1]}` }
+  if (text === '开门' || text === '关门') return { verb: text === '开门' ? 'open' : 'close', rest: '门' }
   const lower = text.toLowerCase()
   let best = null
   for (const [words, verb] of VERBS) {
@@ -421,17 +424,27 @@ export function parse(line) {
   return { verb: best.verb, rest: text.slice(best.w.length).trim() }
 }
 
+let IDS = null
+/** Whether `t` starts with an English id of someone or something anywhere, longer than `n`. */
+function longerId(t, n) {
+  IDS ??= [...Object.values(NPCS), ...Object.values(ITEMS)].flatMap((d) => d.ids ?? []).map((i) => String(i).toLowerCase()).filter((i) => i.includes(' '))
+  return IDS.some((i) => i.length > n.length && i.startsWith(n) && t.startsWith(i) && !/[a-z]/.test(t[i.length] ?? ''))
+}
+
 /** The thing `text` starts with among `cands` (`{ key, kind, names }`), longest name first, and what follows. */
-function lead(cands, text) {
+export function lead(cands, text) {
   let best = null
   const t = text.toLowerCase()
   for (const c of cands) for (const n of c.names) {
-    if (n && t.startsWith(n.toLowerCase()) && (!best || n.length > best.n.length)) best = { c, n }
+    // An English id is a whole word: `gua` is not `guazi`.
+    if (n && t.startsWith(n.toLowerCase()) && !(/^[ -~]+$/.test(n) && /[a-z]/i.test(t[n.length] ?? '')) && (!best || n.length > best.n.length)) best = { c, n }
   }
+  // `han` (韩湘子's) is not `han zhongli`, someone else's whole id, though he is not here.
+  if (best && /^[ -~]+$/.test(best.n) && longerId(t, best.n.toLowerCase())) return null
   if (best) return { key: best.c.key, kind: best.c.kind, rest: text.slice(best.n.length).trim() }
-  // A part of a name will do: 「掌柜」 for 药铺掌柜.
+  // A part of a Chinese name will do: 「掌柜」 for 药铺掌柜 (not of an English id: `han` is not in `zhang`).
   const [word, ...more] = text.split(' ')
-  const part = word && cands.find((c) => c.names.some((n) => n.length > word.length && n.includes(word)))
+  const part = word && !ascii(word) && cands.find((c) => c.names.some((n) => n.length > word.length && n.includes(word)))
   return part ? { key: part.key, kind: part.kind, rest: more.join(' ') } : null
 }
 const personNames = (w, id) => (isNpc(id) ? [npcData(id).name, ...npcData(id).ids] : [w.players[id].name, nameOf(w, id)])
@@ -524,7 +537,9 @@ function command(x, line) {
       for (const n of npcsIn(w, room)) if (awake(w, n, x.now) && !p.ghost && HOOKS.npc[baseOf(n)]?.go?.(x, n, d)) return
       const to = ROOMS[room].exits[d]
       if (!to) return reply('这个方向没有出路。')
-      if (closed(w, room, d)) return reply(`你必须先把${ROOMS[room].doors[d].name}打开。`)
+      if (closed(w, room, d)) { const door = ROOMS[room].doors[d]; return reply(door.locked ? `${door.name}关着。${door.locked}` : `你必须先把${door.name}打开。`) }
+      const block = HOOKS.room[room]?.leave?.(x, d) // valid_leave: someone or something keeps the way
+      if (block) return reply(block)
       return move(x, me, d, to)
     }
     case 'say': {
@@ -914,7 +929,7 @@ function attackCmd(x, t, verb) {
   const rude = pick(x, ['今日不是你死就是我活', '纳命来', '明年的今天就是你的忌日'])
   const lead = [[`$N对着$n喝道：「家伙！${rude}！」`, me, t]]
   if (isNpc(t)) {
-    HOOKS.npc[baseOf(t)]?.kill?.(x, t, me, lead)
+    if (HOOKS.npc[baseOf(t)]?.kill?.(x, t, me, lead) === false) return // the fight never began
     if (npcData(t).kind.includes('villager') && !HOOKS.npc[baseOf(t)]?.kill) lead.push([`${nameOf(w, t)}说道：咦？怎么动起粗来了？救命哪 ...`])
   } else {
     // Players kill players as in ES2, but only someone here now: never an agent, never someone away.
@@ -923,6 +938,7 @@ function attackCmd(x, t, verb) {
     ;(w.players[me].killing ??= {})[t] = true
   }
   brawl(x, me, t, 'kill', lead)
+  if (isNpc(t)) HOOKS.npc[baseOf(t)]?.attacked?.(x, t, me) // what they do once the fight is over (huangpao.c kill_ob)
   if (!isNpc(t)) vision(x, room, '', me, t, { k: 'attack', to: t, t: '看起来$N想杀死$n！' })
 }
 
@@ -1082,7 +1098,8 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
   const w = structuredClone(s)
   const x = ctx(w, me, now, rand)
   w.players[me] = newPlayer(x, name, agent)
-  vision(x, START, '$N走进了饮风客栈。', me)
+  // A newcomer is born where another world says (西游记: 长安); START is 雪亭镇's, for old saves and the way back.
+  if (!HOOKS.born?.(x, me)) vision(x, START, '$N走进了饮风客栈。', me)
   arrive(x, me)
   const ops = diff(s, w)
   let t = now
@@ -1092,42 +1109,7 @@ export function join(s, me, { name, agent = false, now = Date.now(), rand = Math
 
 export { hpText as statusText }
 
-const BARS = [['精', 'gin'], ['气', 'kee'], ['神', 'sen'], ['体', 'hp'], ['食', 'food'], ['水', 'water']]
-/** The page's status bars, [label, {cur, max}]: 精气神, body, food and water, or another world's own; one missing is left out. */
-export const statBars = (p) => HOOKS.bars?.(p) ?? BARS.filter(([, k]) => p[k]).map(([label, k]) => [label, p[k]])
-
-// ── the first steps (the page's 下一步 line): the starting errand only, nothing of the town's stories ──────────────
-
-/** The first direction of the shortest way from room `from` to room `to`, or null. */
-export function wayTo(from, to) {
-  const first = new Map([[from, null]])
-  const queue = [from]
-  while (queue.length && !first.has(to)) {
-    const r = queue.shift()
-    for (const [d, n] of Object.entries(ROOMS[r]?.exits ?? {})) if (ROOMS[n] && !first.has(n)) { first.set(n, first.get(r) ?? d); queue.push(n) }
-  }
-  return first.get(to) ?? null
-}
-
-/** What a newcomer might do next, [words, the command that does it]: earn wages at the warehouse, then eat. */
-function nextStep(w, me) {
-  const p = w.players?.[me]
-  if (!p || p.ghost || p.agent) return null
-  const other = HOOKS.hint?.(w, me) // another world's first steps
-  if (other !== undefined) return other
-  const go = (to, what) => {
-    if (p.room === to) return null
-    const d = wayTo(p.room, to)
-    if (!d) return [what, null]
-    return closed(w, p.room, d) ? [`${what}（先「开门」，再往${d}）`, '开门'] : [`${what}（往${d}）`, d]
-  }
-  if (p.temp?.wage) return go('store', '回货栈对工头说「工钱」') ?? ['对工头说「工钱」领钱，或者再扛一箱', '对 工头 说 工钱']
-  if (thingsAt(w, me).some((t) => w.things[t].id === 'crate')) return go('store', '把木箱扛回货栈') ?? ['装车 木箱', '装车 木箱']
-  if (!wealth(w, me)) return go('store', '身上还没钱：先去货栈帮工头装货挣工钱') ?? ['拿 木箱，再 装车 木箱；装完对工头说「工钱」', '拿 木箱']
-  if (p.food.cur < p.food.max * 0.6) return go('inn_hall', '有钱了：回客栈买点吃的') ?? ['买 包子，再 吃 包子', '买 包子']
-  return null
-}
-/** The 下一步 line's words, null once a newcomer is on their way. */
-export const hintFor = (w, me) => nextStep(w, me)?.[0] ?? null
-/** What tapping the 下一步 line does. */
-export const hintStep = (w, me) => nextStep(w, me)?.[1] ?? null
+/** Each bar's label, the player's field, and the page's icon for it (hp, sen, force, mana, food, water). */
+const BARS = [['精', 'gin', 'mana'], ['气', 'kee', 'hp'], ['神', 'sen', 'sen'], ['体', 'hp', 'force'], ['食', 'food', 'food'], ['水', 'water', 'water']]
+/** The page's status bars, [label, {cur, max}, icon]: 精气神, body, food and water, or another world's own; one missing is left out. */
+export const statBars = (p) => HOOKS.bars?.(p) ?? BARS.filter(([, k]) => p[k]).map(([label, k, icon]) => [label, p[k], icon])

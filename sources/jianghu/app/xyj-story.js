@@ -8,11 +8,11 @@
 //   镇元大仙's 人参果 meeting (renshenguo-yuan.c, npc/zhenyuan.c); the fruit eaten marks it done (renshen-guo.c).
 import {
   HOOKS, ROOMS, ITEMS, NPCS, ch, isNpc, baseOf, npcData, awake, nameOf, attr, thingsAt, makeThing, destroy, vision, tell,
-  npcSay, peopleIn, playersIn, npcsIn, spawnNpc, consume, START,
+  npcSay, peopleIn, playersIn, npcsIn, spawnNpc, consume, START, online, isMoney,
 } from './world.js'
-import { SKILL_NAMES, DIRS, cn } from './text.js'
-import { knockOut } from './fight.js'
-import { move, setDoor, lookText } from './game.js'
+import { SKILL_NAMES, DIRS, cn, gameTime } from './text.js'
+import { knockOut, brawl } from './fight.js'
+import { move, setDoor, lookText, lead } from './game.js'
 
 const N = HOOKS.npc
 const R = HOOKS.room
@@ -29,11 +29,11 @@ export const inXyj = (w, id) => ROOMS[ch(w, id)?.room]?.area === 'xyj'
 // ── the character in this world ────────────────────────────────────────────────────────────────────────────────
 
 /** A player's XYJ self (logind.c: 潜能 99, nothing else yet), made on the first visit. */
-function self(p) {
+export function self(p) {
   return (p.xyj ??= { force: 0, maxForce: 0, mana: 0, maxMana: 0, exp: 0, pot: 99, spent: 0, obstacle: {} })
 }
 /** race/human.c: 气血 and 精神 start at 100 (age 14) and grow with 内力 (÷4) and 法力 (×2÷5). */
-function bodyMax(p) {
+export function bodyMax(p) {
   const y = self(p)
   const m = { gin: 100, kee: 100 + Math.floor(y.maxForce / 4), sen: 100 + Math.floor(y.maxMana * 2 / 5) }
   for (const k of ['gin', 'kee', 'sen']) {
@@ -44,11 +44,17 @@ function bodyMax(p) {
     s.eff = Math.min(s.eff, s.max)
     s.cur = Math.min(s.cur, s.eff)
   }
+  // damage.c max_food_capacity / max_water_capacity: the body's weight ÷ 200 (human.c: 40 kg and 2 kg a point of 膂力).
+  stomach(p, Math.max(100, 200 + (p.attrs.str - 10) * 10), Math.max(100, 200 + (p.attrs.str - 10) * 10))
+}
+/** Food and water to hold at most these (雪亭镇's and this world's bodies count them apart; what is in them stays). */
+function stomach(p, food, water) {
+  for (const [k, m] of [['food', food], ['water', water]]) if (p[k]) { p[k].max = m; p[k].cur = Math.min(p[k].cur, m); if ('eff' in p[k]) p[k].eff = Math.min(p[k].eff, m) }
 }
 const full = (n) => ({ cur: n, eff: n, max: n })
 
 /** skill.c query_skill: half the basic skill and all of the special one enabled for it. */
-function skillOf(p, s) {
+export function skillOf(p, s) {
   const basic = p.skills?.[s] ?? 0
   const special = p.map?.[s] ? p.skills?.[p.map[s]] ?? 0 : 0
   return Math.floor(basic / 2) + special
@@ -93,22 +99,13 @@ function daoxing(exp) {
   return t || '你还没有道行。'
 }
 
-/** The people here a name means (their name, an id, or the start of either). */
+/** The person here a name means, read as the engine reads one (game.js lead). */
 function personHere(x, text) {
   const w = x.w
-  const t = text.trim().toLowerCase()
-  if (!t) return null
+  if (!text.trim()) return null
   const names = (id) => (isNpc(id) ? [npcData(id).name, ...npcData(id).ids] : [w.players[id].name])
-  const cands = peopleIn(w, ch(w, x.me).room).filter((id) => id !== x.me)
-  let best = null
-  for (const id of cands) for (const n of names(id)) {
-    const l = n.toLowerCase()
-    if (t.startsWith(l) && (!best || l.length > best.n)) best = { id, n: l.length, rest: text.trim().slice(n.length).trim() }
-  }
-  if (best) return best
-  const [word, ...more] = text.trim().split(/\s+/)
-  const id = cands.find((c) => names(c).some((n) => n.includes(word)))
-  return id ? { id, rest: more.join(' ') } : null
+  const t = lead(peopleIn(w, ch(w, x.me).room).filter((id) => id !== x.me).map((id) => ({ key: id, names: names(id) })), text.trim())
+  return t && { id: t.key, rest: t.rest }
 }
 
 const busy = (x, p) => (self(p).busy ?? 0) > x.now
@@ -116,6 +113,7 @@ const setBusy = (x, p, s) => { self(p).busy = x.now + s * 1000 }
 
 // ── between the worlds ─────────────────────────────────────────────────────────────────────────────────────────
 
+const INTRO = '你一路向西，来到了大唐的京城长安。\n（这里是《西游记》的世界：拜师「拜师 张果老」，学艺「学 法术 从 张果老」，查看「状态」「取经」，赶路「去 五庄观」。「东归」去雪亭镇。）'
 /** 西游: to 长安 with the body one had there (or a new one of 100); 雪亭镇's is kept for coming back. */
 C.xiyou = (x) => {
   const p = x.w.players[x.me]
@@ -128,11 +126,25 @@ C.xiyou = (x) => {
   delete y.body
   bodyMax(p)
   delete p.follow
-  p.guided = true // 雪亭镇's newcomer card is for 雪亭镇; here the 下一步 line leads
   vision(x, p.room, '$N收拾行装，往西方去了。', x.me)
-  x.out.push('你一路向西，来到了大唐的京城长安。\n（这里是《西游记》的世界：拜师「拜师 张果老」，学艺「学 法术 从 张果老」，查看「状态」「取经」，赶路「去 五庄观」。）')
+  x.out.push(INTRO)
   move(x, x.me, '', KEZHAN, { how: { leave: '', arrive: '$N风尘仆仆地走了进来。' }, quiet: true })
   vision(x, KEZHAN, '$N风尘仆仆地走了进来。', x.me, null, { k: 'move' })
+}
+
+/** A newcomer starts here, in 长安's inn, with 雪亭镇's body kept for 「东归」. */
+HOOKS.born = (x, me) => {
+  const p = x.w.players[me]
+  p.es2body = { gin: p.gin, kee: p.kee, sen: p.sen }
+  Object.assign(p, { gin: full(100), kee: full(100), sen: full(100) })
+  self(p)
+  bodyMax(p)
+  // logind.c: a new body is fed and watered to the full.
+  for (const k of ['food', 'water']) if (p[k]) { p[k].cur = p[k].max; if ('eff' in p[k]) p[k].eff = p[k].max }
+  p.room = KEZHAN
+  vision(x, KEZHAN, '$N风尘仆仆地走了进来。', me, null, { k: 'move' })
+  tell(x, me, INTRO)
+  return true
 }
 
 /** 东归: back to 饮风客栈 with 雪亭镇's body; this world's is kept for next time. */
@@ -144,6 +156,8 @@ C.donggui = (x) => {
   y.body = { gin: p.gin, kee: p.kee, sen: p.sen }
   Object.assign(p, p.es2body ?? { gin: full(30), kee: full(30), sen: full(30) })
   delete p.es2body
+  const a = p.attrs
+  stomach(p, a.con * 10 + a.str * 5, a.cps * 10 + a.dex * 5) // world.js
   delete p.follow
   vision(x, p.room, '$N收拾行装，往东方去了。', x.me)
   move(x, x.me, '', START, { quiet: true })
@@ -393,7 +407,7 @@ HOOKS.gain = (x, id, course, n) => {
 }
 
 /** fly.c: 腾云 needs 道行 ten years and 法力 200, outdoors; only 长安 and 五庄观 are in this world. */
-const FLY = { changan: 'x/city/center', 长安: 'x/city/center', wuzhuang: WZ + 'gate', 五庄观: WZ + 'gate' }
+export const FLY = { changan: 'x/city/center', 长安: 'x/city/center', wuzhuang: WZ + 'gate', 五庄观: WZ + 'gate' }
 C.fly = (x, rest) => {
   if (!inXyj(x.w, x.me)) return false
   const p = x.w.players[x.me]
@@ -508,11 +522,10 @@ ROOMS[XIGUA].doors = { 北: { name: '杏木门', closed: true, locked: '你没�
 ROOMS[GARDEN].exits['南'] = XIGUA
 ROOMS[GARDEN].doors = { 南: { name: '杏木门', closed: true } }
 R[XIGUA] = {
+  /** do_open: `open door` and the key, every time (a second key breaks too, the gate already open). */
   open(x, arg) {
-    if (arg && !/门|door/.test(arg)) { x.out.push('你要打开什么？'); return true }
+    if (!/^(门|杏木门|door)$/.test(arg ?? '')) { x.out.push('你要打开什么？'); return true }
     const key = thingsAt(x.w, x.me).find((tid) => x.w.things[tid].id === KEY)
-    const r = x.w.rooms[XIGUA]?.doors?.['北'] ?? true
-    if (!r) return false // already open
     if (!key) { x.out.push('你没有开这道门的钥匙。'); return true }
     setDoor(x, XIGUA, '北', false)
     vision(x, XIGUA, '只听喀嚓！一声，钥匙断了。好在门已经开了。')
@@ -520,18 +533,35 @@ R[XIGUA] = {
     destroy(x, key)
     return true
   },
+  // XYJ adds an exit and has no door to shut: there is none to close (a gate shut here would need a key again).
+  close(x) { x.out.push('什么？'); return true },
 }
-const mo = C.mo = (x, rest) => {
-  const room = ch(x.w, x.me).room
-  if (R[room]?.mo?.(x, rest)) return
-  x.out.push('你四处摸了摸，什么也没摸着。')
+// mo and jump are the rooms' own (anshi.c, wzgmaze*.c): elsewhere there is no such command.
+C.mo = (x, rest) => {
+  if (!inXyj(x.w, x.me)) return false
+  if (!R[ch(x.w, x.me).room]?.mo?.(x, rest)) x.out.push('什么？')
 }
 C.jump = (x, rest) => {
-  const room = ch(x.w, x.me).room
-  if (R[room]?.jump?.(x, rest)) return
-  x.out.push('你要往哪跳？')
+  if (!inXyj(x.w, x.me)) return false
+  if (!R[ch(x.w, x.me).room]?.jump?.(x, rest)) x.out.push('什么？')
 }
-void mo
+/** inpool.c init: in the pond, the bridges crossed are forgotten. */
+R[WZ + 'inpool'] = { init(x, id) { delete x.w.players[id].temp?.wzgmaze } }
+
+/** open.c, close.c: a door is named, by its way, its name or `door`. */
+for (const verb of ['open', 'close']) {
+  C[verb] = (x, rest) => {
+    const w = x.w
+    if (!inXyj(w, x.me)) return false
+    const room = ch(w, x.me).room
+    if (R[room]?.[verb]) return false
+    const what = verb === 'open' ? '你要打开什么？' : '你要关上什么？'
+    if (!rest) return x.out.push(what)
+    const doors = Object.entries(ROOMS[room].doors ?? {})
+    if (doors.length && !doors.some(([d, o]) => DIRS[d]?.includes(rest.toLowerCase()) || d === rest || o.name === rest || /^(门|door)$/.test(rest))) return x.out.push(what)
+    return false
+  }
+}
 
 // ── 五庄观: 镇元大仙's 人参果 meeting ─────────────────────────────────────────────────────────────────────────
 
@@ -554,6 +584,8 @@ R[GARDEN] = {
     announce(x, MEET, '五庄观人参果品尝大会即将开始！')
     announce(x, MEET, '诸位仙贤如愿观礼，「观礼」便可！')
   },
+  open(x) { x.out.push('什么？'); return true },
+  close: R[XIGUA].close,
 }
 /** zhenyuan.c ready1 / ready2 (3 and 6 minutes there; here 30 s and a minute, so nobody stands about) and finishing
  * (here 90 s after the fruit, not 5 s: whoever ate one wakes in time to be sent home with 「回去」). */
@@ -565,6 +597,7 @@ HOOKS.beat = (x) => {
   prevBeat?.(x)
   const m = meeting(x.w)
   if (!m || !x.w.npcs[MEET]) return
+  for (m.pulse ??= m.at + 1000; m.pulse <= x.now; m.pulse += 5500) inviting(x)
   if (m.done) {
     if (x.now - m.done >= STAY) {
       vision(x, x.w.npcs[MEET].room, '$N哈哈大笑几声，顿时无影无踪了。', MEET)
@@ -621,20 +654,35 @@ N[ZHENYUAN].ask = {
   },
 }
 
-/** accept zhenyuan daxian: while the meeting is called, his sleeve brings one to the orchard from anywhere. */
-C.accept = (x) => {
+/** accept.c: 「观礼」 (accept zhenyuan daxian) takes up his open invitation, outdoors; his sleeve does the rest. */
+C.accept = (x, rest) => {
   const w = x.w
   const p = w.players[x.me]
-  const m = meeting(w)
-  if (!m || m.done || !w.npcs[MEET]) return x.out.push('现在并没有人邀请你。')
   if (!inXyj(w, x.me)) return x.out.push('五庄观远在西游记的世界里，先「西游」吧。')
-  if (p.room === GARDEN) return x.out.push('你已经在人参果园里了。')
+  if (rest && !/镇元|zhenyuan/.test(rest)) return x.out.push('没有这个人。')
   if (p.ghost) return x.out.push('做了鬼了，就老实点吧！')
-  ;(p.temp ??= {}).wzgFrom = p.room
-  vision(x, GARDEN, '$N的大袖往外一罩…', MEET)
-  vision(x, p.room, '一团祥云飘来，云中伸出一只巨大的衣袖将$N轻轻一罩，消失在天空。', x.me)
-  move(x, x.me, '', GARDEN, { quiet: true })
-  vision(x, GARDEN, '…$N大袖轻轻一抖，$n滑了出来。', MEET, x.me)
+  const m = meeting(w)
+  if (!m || !w.npcs[MEET]) return x.out.push('镇元大仙现在并没有公开邀请别人。')
+  if (!ROOMS[p.room]?.outdoors) return x.out.push('你还是到外面去接受镇元大仙的邀请吧！')
+  const t = (p.temp ??= {})
+  if (t.accept) return x.out.push('你已经接受镇元大仙的公开邀请了。')
+  t.accept = true
+  x.out.push('你接受镇元大仙的公开邀请。')
+}
+/** zhenyuan.c inviting, every 4–7 s (here 5½) while he invites: his sleeve brings one who accepted to the orchard. */
+function inviting(x) {
+  const w = x.w
+  for (const [pid, p] of Object.entries(w.players)) {
+    if (!p.temp?.accept || !awake(w, pid, x.now)) continue
+    delete p.temp.accept
+    if (p.room === GARDEN) continue
+    p.temp.wzgFrom = p.room
+    vision(x, GARDEN, '$N的大袖往外一罩…', MEET)
+    vision(x, p.room, '一团祥云飘来，云中伸出一只巨大的衣袖将$N轻轻一罩，消失在天空。', pid)
+    move(x, pid, '', GARDEN, { quiet: true })
+    vision(x, GARDEN, '…$N大袖轻轻一抖，$n滑了出来。', MEET, pid)
+    return
+  }
 }
 /** zhenyuan.c do_back: the sleeve takes one back to 长安's inn. */
 C.back = (x) => {
@@ -691,10 +739,11 @@ for (const id of Object.keys(N)) {
   if (d?.chatMsg) d.chatMsg = d.chatMsg.filter((m) => m?.fn !== 'random_move')
 }
 
-/** Places 「去 <地点>」 knows besides room names: the town and the temple. */
-const PLACES = { 长安: KEZHAN, 客栈: KEZHAN, 五庄观: WZ + 'gate', 十字街头: 'x/city/center' }
+/** Places 「去 <地点>」 knows besides room names: the town and the temples (xyj-road.js adds the road west's). */
+export const PLACES = { 长安: KEZHAN, 客栈: KEZHAN, 五庄观: WZ + 'gate', 十字街头: 'x/city/center' }
 /** Rooms 「去」 never walks into or through: the 八卦桥 (a puzzle walked by hand) and the rooms behind a puzzle. */
-const NO_WAY = (id) => /wzgmaze|inpool|anshi|renshenguo-yuan/.test(id)
+export const NO_WAY = [/wzgmaze|inpool|anshi|renshenguo-yuan/]
+const noWay = (id) => NO_WAY.some((re) => re.test(id))
 
 /** 「去 <地点>」 in this world: the shortest way there walked in one go, stopping at a shut door; never over the 八卦桥. */
 C.go = (x, rest) => {
@@ -709,7 +758,7 @@ C.go = (x, rest) => {
   while (queue.length && !to) {
     const r = queue.shift()
     for (const [d, n] of Object.entries(ROOMS[r].exits)) {
-      if (prev.has(n) || !ROOMS[n] || NO_WAY(n)) continue
+      if (prev.has(n) || !ROOMS[n] || noWay(n)) continue
       prev.set(n, [r, d])
       if (n === PLACES[want] || ROOMS[n].name === want) { to = n; break }
       queue.push(n)
@@ -722,35 +771,31 @@ C.go = (x, rest) => {
   }
   const path = []
   for (let r = to; prev.get(r); r = prev.get(r)[0]) path.unshift([prev.get(r)[0], prev.get(r)[1], r])
+  // The way stops at a shut door, or where a room keeps one from going on (HOOKS.room[…].leave: who stands in it).
   let at = from
   let steps = 0
+  let stop = null
   for (const [r, d, n] of path) {
-    if (ROOMS[r].doors?.[d] && (w.rooms[r]?.doors?.[d] ?? ROOMS[r].doors[d].closed)) break
+    if (ROOMS[r].doors?.[d] && (w.rooms[r]?.doors?.[d] ?? ROOMS[r].doors[d].closed)) { stop = `你必须先把${ROOMS[r].doors[d].name}打开。`; break }
+    // A room that keeps the way is stood in first, so whoever keeps it meets the one who came.
+    if (R[r]?.leave && ch(w, x.me).room !== r) { const mark = x.out.length; move(x, x.me, '', r, { quiet: true }); x.out.length = mark }
+    const block = R[r]?.leave?.(x, d)
+    if (block) { stop = block; if (ch(w, x.me).room !== r) at = ch(w, x.me).room; break }
     at = n
     steps++
   }
-  if (!steps) return x.out.push(`你必须先把${ROOMS[from].doors[path[0][1]].name}打开。`)
-  x.out.push(`你一路${path[0][1]}行，走了${cn(steps)}段路。`)
-  move(x, x.me, '', at, { how: { leave: '$N匆匆上路了。', arrive: '$N风尘仆仆地走了过来。' } })
-  if (at !== to) x.out.push(`你必须先把${ROOMS[at].doors[path[steps][1]].name}打开。`)
-}
-
-/** The page's 下一步 line in this world: a master, then the road to 五庄观; the temple's puzzles are the player's own. */
-HOOKS.hint = (w, me) => {
-  const p = w.players[me]
-  if (!inXyj(w, me)) return undefined
-  const y = self(p)
-  if (y.obstacle.wuzhuang === 'done' || p.room.startsWith(WZ)) return null
-  if (!y.family) return p.room === 'x/city/center' ? ['拜张果老为师', '拜师 张果老'] : ['去十字街头拜张果老为师', '去 十字街头']
-  return ['西去五庄观，人参果就在观里', '去 五庄观']
+  if (!steps) return x.out.push(stop)
+  x.out.unshift(`你一路${path[0][1]}行，走了${cn(steps)}段路。`)
+  if (ch(w, x.me).room !== at) move(x, x.me, '', at, { how: { leave: '$N匆匆上路了。', arrive: '$N风尘仆仆地走了过来。' } })
+  if (stop) x.out.push(stop)
 }
 
 /** The status bars of this world: 气血, 精神, 内力 and 法力 (those not yet begun left out), food and water. */
 HOOKS.bars = (p) => {
   if (ROOMS[p.room]?.area !== 'xyj' || !p.xyj) return undefined
   const y = self(p)
-  return [['气血', p.kee], ['精神', p.sen], ['内力', { cur: y.force, max: y.maxForce }], ['法力', { cur: y.mana, max: y.maxMana }],
-    ['食', p.food], ['水', p.water]].filter(([, v]) => v && v.max > 0)
+  return [['气血', p.kee, 'hp'], ['精神', p.sen, 'sen'], ['内力', { cur: y.force, max: y.maxForce }, 'force'],
+    ['法力', { cur: y.mana, max: y.maxMana }, 'mana'], ['食', p.food, 'food'], ['水', p.water, 'water']].filter(([, v]) => v && v.max > 0)
 }
 
 // ── 长安 ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -761,6 +806,128 @@ N['x/city/npc/xiaoer'] = {
     if (isNpc(pid) || rnd(x, 3)) return
     npcSay(x, id, '这位客官，进来歇歇脚，喝两盅吧。')
   },
+  /** accept_object: 300 文 or more, and the room behind is yours till you leave it (kezhan.c, sleep.c rent_paid). */
+  accept(x, id, tid) {
+    if (!isMoney(x.w.things[tid]?.id) || worth(x.w, tid) < 300) return false
+    tell(x, x.me, '小二一哈腰，说道：多谢您老，客官请上楼歇息。')
+    ;(x.w.players[x.me].temp ??= {}).rentPaid = true
+    return true
+  },
+}
+R[KEZHAN] = {
+  leave(x, d) {
+    if (d === '东' && !x.w.players[x.me].temp?.rentPaid) return '店小二满脸堆笑地挡住了你：对不起，后面是客人的卧房，不是本店的客人，不便打扰。（给小二三两银子住店。）'
+    return null
+  },
+}
+R['x/city/sleep'] = {
+  leave(x) {
+    delete x.w.players[x.me].temp?.rentPaid
+    return null
+  },
+}
+
+/** 总督衙门 (zhongdu.c valid_leave): the 衙役 let nobody into the hall without a 状子 (there is none in the mud). */
+R['x/city/zhongdu'] = {
+  leave(x, d) {
+    if (d !== '北' || !npcsIn(x.w, 'x/city/zhongdu').some((n) => baseOf(n).split('#')[0] === 'x/city/npc/yayi' && awake(x.w, n, x.now))) return null
+    return '衙役喝道：公堂岂可乱闯，还不退下！'
+  },
+}
+
+/** yunti.c valid_leave: half the time the way into the cave slides one down to 酒泉 instead. */
+R['x/westway/yunti'] = {
+  leave(x, d) {
+    if (d !== '进去' || rnd(x, 2)) return null
+    vision(x, 'x/westway/yunti', '哗啦啦一阵碎石头响，$N从山壁上斜滑了下来！', x.me)
+    move(x, x.me, '', 'x/westway/jiuquan', { quiet: true })
+    vision(x, 'x/westway/jiuquan', '$N滚到一个坡底才停下来！', x.me)
+    return '你在地上呆坐了几秒钟，慢慢站起来。' // fall_back, 2 s on in XYJ
+  },
+}
+
+// ── 饮马峪's 马盗 (westway/yinma.c, npc/madao.c) ─────────────────────────────────────────────────────────────────────
+// Money or your life, unless you are of 五庄观 or past two obstacles: worth 200 文 buys two passes; three warnings and
+// he attacks (call_outs 5–30 s on; here at their means).
+const YINMA = 'x/westway/yinma'
+const MADAO = 'x/westway/npc/madao'
+const worth = (w, tid) => (ITEMS[w.things[tid]?.id]?.baseValue ?? ITEMS[w.things[tid]?.id]?.value ?? 0) * (w.things[tid]?.n ?? 1)
+const passes = (p) => self(p).family?.name === '五庄观' || Object.values(self(p).obstacle).filter((v) => v === 'done').length >= 2
+const paid = (p) => p.temp?.hasPaid > 0
+const WARN = [[7_000, '$N大声喝道：快给钱！'], [12_000, '$N又喊叫几声：拿钱来买命！'], [17_000, '$N急了：你到底给不给钱？']]
+N[MADAO] = {
+  init(x, id, pid) {
+    const p = x.w.players[pid]
+    if (!p || isNpc(pid)) return
+    if (paid(p) || self(p).family?.name === '五庄观') {
+      vision(x, YINMA, '$N对$n一拱手，闪身让道。', id, pid)
+      if (ch(x.w, id).hate) delete ch(x.w, id).hate[pid]
+      return
+    }
+    vision(x, YINMA, '$N冲过来，对$n大喝一声：要钱还是要命？', id, pid)
+    ;(x.w.npcs[id].rob ??= {})[pid] = { at: x.now, said: 0 }
+  },
+  accept(x, id, tid) {
+    if (worth(x.w, tid) < 200) {
+      vision(x, YINMA, '$N一瞪眼：就这点东西？不想活了？？？', id)
+      return true
+    }
+    ;(x.w.players[x.me].temp ??= {}).hasPaid = 2
+    delete x.w.npcs[id].rob?.[x.me]
+    if (ch(x.w, id).hate) delete ch(x.w, id).hate[x.me]
+    vision(x, YINMA, '$N嘿嘿嘿几声怪笑，闪身让道。', id)
+    return true
+  },
+}
+R[YINMA] = {
+  leave(x, d) {
+    const w = x.w
+    const p = w.players[x.me]
+    const madao = npcsIn(w, YINMA).find((n) => baseOf(n) === MADAO && awake(w, n, x.now))
+    if (d === '西北' && madao && !paid(p) && !passes(p)) {
+      if (!rnd(x, 3)) vision(x, YINMA, '$N恶狠狠地劈胸一把揪住$n：往哪儿跑！给钱！', madao, x.me)
+      return '马盗喊叫着：不给钱我要杀人啦！（给他二两银子，或者打倒他。）'
+    }
+    if (paid(p)) p.temp.hasPaid -= 1
+    return null
+  },
+}
+const prevRob = HOOKS.beat
+HOOKS.beat = (x) => {
+  prevRob?.(x)
+  const w = x.w
+  for (const id of npcsIn(w, YINMA)) {
+    const rob = w.npcs[id].rob
+    if (!rob || baseOf(id) !== MADAO) continue
+    for (const [pid, r] of Object.entries(rob)) {
+      const p = w.players[pid]
+      if (!p || p.room !== YINMA || paid(p) || !awake(w, id, x.now)) { delete rob[pid]; continue }
+      for (; r.said < WARN.length && r.at + WARN[r.said][0] <= x.now; r.said++) vision(x, YINMA, WARN[r.said][1], id, pid)
+      if (r.at + 27_000 <= x.now) {
+        delete rob[pid]
+        brawl(x, id, pid, 'kill')
+      }
+    }
+  }
 }
 void ITEMS
-void tell
+
+/** natured.c event_noon: at noon whoever is outdoors with 法力 and no 法术 has it drawn off; under 法术 25, in part. */
+const prevNoon = HOOKS.beat
+HOOKS.beat = (x) => {
+  prevNoon?.(x)
+  const { hour, day, month } = gameTime(x.now)
+  if (hour !== 12 || x.w.noon === `${month}-${day}`) return
+  x.w.noon = `${month}-${day}`
+  for (const [id, p] of Object.entries(x.w.players)) {
+    if (!inXyj(x.w, id) || !online(x.w, id, x.now) || !ROOMS[p.room]?.outdoors || !self(p).mana) continue
+    const sk = p.skills?.spells ?? 0
+    if (!sk) {
+      tell(x, id, '你觉得一阵晕眩，好像有一股能量从身上被人吸走了。')
+      self(p).mana = 0
+    } else if (sk < 25) {
+      tell(x, id, '随着太阳升到天空的正中央，你觉得你的法力开始消失了。')
+      self(p).mana = Math.floor(self(p).mana * sk / 25)
+    }
+  }
+}

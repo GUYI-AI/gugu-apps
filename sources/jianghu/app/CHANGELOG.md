@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0
+
+The road west goes on to its second and third obstacles, as XYJ tells them: 宝象国 (白骨精's three shapes on the 野路,
+the slab of the 金塔 broken with 内力 and 法力, 黄袍怪 and his 山妖, 百花羞's letter over a pontoon bridge that comes and
+goes, the king's 军令牌, the princess led home) and 平顶山 (金角, 银角, 狐阿七大王 and 老奶奶, whose gourd, vase and rope
+take a fighter out for half a minute). The monsters' numbers are set to this game's fights, so that one back from
+五庄观 beats 宝象国 best with a friend, and a newcomer will do as that friend; 平顶山 wants two. A deed counts for the
+whole team in the room. A newcomer now starts in 长安 (雪亭镇 is a 「东归」 away), and the 「下一步」 line and the
+newcomer's card are gone. The status bars name an icon each. Checked against the original mudlib run side by side,
+more of XYJ's rules are in: the 腥风 of 碗子山 and the 野渡, the robes of its mire, the cage under the 石栈, 黄袍怪
+turning on his wife, noon drawing off 法力, the inn's room for paying guests, the 衙役 and the 马盗 of 饮马峪 (money
+or your life), 「进去」 into 五庄观's main hall, 镇元大仙's sleeve taking up who accepted, the pond forgetting the
+bridges, the orchard gate that cannot be shut, and XYJ's food and water limits. See `SOURCE.md`.
+西行路第二、三关：宝象国（白骨精三变、撞开金塔石板、黄袍怪、百花羞的信、浮桥、军令牌、领公主回宫）和平顶山（金角、银角、狐阿七、老奶奶和他们的法宝），剧情照原版；数值按本游戏重标，过了五庄观的人带一个新人组队就能过宝象国；功劳全队一起算。新角色直接出生在长安，「下一步」和新手卡去掉。
+
 ## 0.4.0
 
 A second world beside 雪亭镇, which stays the place to begin: 西游记 4.5's 长安城, the road west and 五庄观 (141
