@@ -19280,7 +19280,8 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
         if (signal.aborted || !valid(state) || !currentSpace()) return rejected("Input was cancelled or its picture coordinates changed before dispatch.");
         {
           const fresh = await tools.call("get_window_state", {
-            target,
+            pid: target.pid,
+            window_id: target.window_id,
             include_screenshot: true,
             include_accessibility_tree: false,
             display_only: true,

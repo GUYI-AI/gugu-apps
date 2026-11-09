@@ -114,11 +114,12 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
       try {
         if (signal.aborted || !valid(state) || !currentSpace()) return rejected('Input was cancelled or its picture coordinates changed before dispatch.');
         {
-          // The displayed picture may have come from another native lane. Calibrate this
+          // The displayed picture may have come from another native lane. Addressed by pid + window_id, as the capture
+          // is: the original Linux/Windows drivers' get_window_state takes no per-call target. Calibrate this
           // viewer lane and obtain its own capture token; never borrow another session's token.
           // Keys and text too: a driver addresses only windows this lane has read itself (Linux refuses an unread
           // window as stale), and the window must still be the one in the picture.
-          const fresh = await tools.call('get_window_state', { target, include_screenshot: true, include_accessibility_tree: false,
+          const fresh = await tools.call('get_window_state', { pid: target.pid, window_id: target.window_id, include_screenshot: true, include_accessibility_tree: false,
             display_only: true, max_dimension: 1280 }, who);
           const raw = fresh?.structuredContent, actual = raw?.target ?? raw;
           // A refusal before anything is sent (missing permission, revoked access) is said as itself.

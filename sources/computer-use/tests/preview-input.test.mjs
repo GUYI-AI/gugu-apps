@@ -27,6 +27,8 @@ test('a click uses the acknowledged frame pixels and exact window; down/move nev
   assert.equal((await f.handler.input(f.pointer('up'), ctx)).status, 'applied');
   assert.equal(f.calls.length, 2);
   assert.equal(f.calls[0].name, 'get_window_state');
+  // Every driver reads a window by pid + window_id; only the maintained macOS build takes a per-call target there.
+  assert.deepEqual([f.calls[0].args.pid, f.calls[0].args.window_id, 'target' in f.calls[0].args], [44, 77, false]);
   assert.equal(f.calls[1].name, 'click');
   assert.deepEqual(f.calls[1].args, { target: { kind: 'window', pid: 44, window_id: 77 }, delivery_mode: 'background',
     x: 200, y: 200, button: 'left', capture_id: 'viewer-capture' });
