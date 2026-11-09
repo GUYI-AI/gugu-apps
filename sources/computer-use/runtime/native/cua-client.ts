@@ -13,6 +13,7 @@ import { stripVTControlCharacters } from 'node:util'
 import { NativeCallError } from './errors'
 import { CUA_CANCEL_UNCONFIRMED, cuaMutates, openCuaDaemonLease, type CuaDaemonLease } from './cua-daemon-lease'
 import { batchObservation, batchObservationArgs, createObservationGate, displayOnlyObservation, replaceBatchObservation, settleCuaWindow, transientObservationError } from './cua-observation'
+import { linuxScreen } from './linux-display'
 
 export interface CuaContentBlock {
   type: string
@@ -66,7 +67,8 @@ const PASS_THROUGH = ['PATH', 'HOME', 'USER', 'LOGNAME', 'TMPDIR', 'LANG', 'LC_A
   'DISPLAY', 'XAUTHORITY', 'WAYLAND_DISPLAY', 'XDG_RUNTIME_DIR', 'XDG_SESSION_TYPE', 'DBUS_SESSION_BUS_ADDRESS']
 
 export function cuaEnvironment(input: { home: string; hostBundleId?: string; source?: NodeJS.ProcessEnv }): NodeJS.ProcessEnv {
-  const source = input.source ?? process.env
+  // An explicit source is the caller's whole environment; only the live process looks for its account's screen.
+  const source = input.source ?? (process.platform === 'linux' ? { ...process.env, ...linuxScreen(process.env) } : process.env)
   const env: NodeJS.ProcessEnv = {}
   for (const key of PASS_THROUGH) if (source[key] !== undefined) env[key] = source[key]
   return {

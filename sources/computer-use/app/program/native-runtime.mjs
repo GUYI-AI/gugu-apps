@@ -3,10 +3,10 @@
 // runtime/native/cua-client.ts
 import { spawn as nodeSpawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
+import fs2 from "node:fs";
 import net2 from "node:net";
 import os from "node:os";
-import path from "node:path";
+import path2 from "node:path";
 import readline2 from "node:readline";
 import { stripVTControlCharacters } from "node:util";
 
@@ -362,6 +362,39 @@ function replaceBatchObservation(result, fresh) {
   };
 }
 
+// runtime/native/linux-display.ts
+import fs from "node:fs";
+import path from "node:path";
+function linuxScreen(source, deps = {}) {
+  if (source.DISPLAY || source.WAYLAND_DISPLAY) return {};
+  const uid = deps.uid ?? process.getuid?.();
+  if (uid === void 0) return {};
+  const files = deps.fs ?? fs;
+  const owned = (file) => {
+    try {
+      const stat = files.statSync(file);
+      return stat.uid === uid && stat.isSocket();
+    } catch {
+      return false;
+    }
+  };
+  const list = (dir) => {
+    try {
+      return files.readdirSync(dir);
+    } catch {
+      return [];
+    }
+  };
+  const runtime = source.XDG_RUNTIME_DIR || `/run/user/${uid}`;
+  const bus = path.join(runtime, "bus");
+  const session = source.DBUS_SESSION_BUS_ADDRESS || !owned(bus) ? {} : { DBUS_SESSION_BUS_ADDRESS: `unix:path=${bus}` };
+  const x = list("/tmp/.X11-unix").map((name) => /^X(\d+)$/.exec(name)?.[1]).filter((n) => n !== void 0).map(Number).sort((a, b) => a - b).find((n) => owned(`/tmp/.X11-unix/X${n}`));
+  if (x !== void 0) return { DISPLAY: `:${x}`, ...session };
+  const wayland = list(runtime).filter((name) => /^wayland-\d+$/.test(name)).sort().find((name) => owned(path.join(runtime, name)));
+  if (wayland) return { WAYLAND_DISPLAY: wayland, XDG_RUNTIME_DIR: runtime, ...session };
+  return {};
+}
+
 // runtime/native/cua-client.ts
 var IDLE_MS = 10 * 6e4;
 var READY_MS = 15e3;
@@ -401,7 +434,7 @@ var PASS_THROUGH = [
   "DBUS_SESSION_BUS_ADDRESS"
 ];
 function cuaEnvironment(input) {
-  const source = input.source ?? process.env;
+  const source = input.source ?? (process.platform === "linux" ? { ...process.env, ...linuxScreen(process.env) } : process.env);
   const env = {};
   for (const key of PASS_THROUGH) if (source[key] !== void 0) env[key] = source[key];
   return {
@@ -416,7 +449,7 @@ function cuaEnvironment(input) {
   };
 }
 function cuaSocketPath(platform = process.platform, pid = process.pid) {
-  return platform === "win32" ? `\\\\.\\pipe\\gugu-cua-${pid}` : path.join(os.tmpdir(), `gugu-cua-${pid}.sock`);
+  return platform === "win32" ? `\\\\.\\pipe\\gugu-cua-${pid}` : path2.join(os.tmpdir(), `gugu-cua-${pid}.sock`);
 }
 var pipeAccepting = (pipe) => new Promise((resolve) => {
   const socket = net2.connect(pipe);
@@ -523,7 +556,7 @@ function createCuaClient(options) {
     oldDaemon?.kill();
     if (platform !== "win32") {
       try {
-        fs.rmSync(socket, { force: true });
+        fs2.rmSync(socket, { force: true });
       } catch (error) {
         options.log?.warn({ err: String(error) }, "cua-driver socket could not be removed");
       }
@@ -540,7 +573,7 @@ function createCuaClient(options) {
         options.log?.warn({ code: child.exitCode, signal: child.signalCode }, "cua-driver serve exited before its socket was ready");
         throw new NativeCallError("execution_failed", START_FAILED);
       }
-      if (platform === "win32" ? await pipeAccepting(socket) : fs.existsSync(socket)) return;
+      if (platform === "win32" ? await pipeAccepting(socket) : fs2.existsSync(socket)) return;
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     options.log?.warn({ timeoutMs: options.readyTimeoutMs ?? READY_MS }, "cua-driver serve did not open its socket in time");
@@ -550,7 +583,7 @@ function createCuaClient(options) {
   const startDaemon = () => {
     if (daemonReady) return daemonReady;
     shutdown("\u7535\u8111\u63A7\u5236\u91CD\u65B0\u542F\u52A8\u4E86");
-    fs.mkdirSync(options.home, { recursive: true });
+    fs2.mkdirSync(options.home, { recursive: true });
     const serveArgs = ["serve", "--embedded", "--socket", socket, ...platform === "win32" ? [] : ["--pid-file", `${socket}.pid`]];
     const d = spawn(options.binary, serveArgs, { env: { ...environment2(), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" }, stdio: ["pipe", "pipe", "pipe"] });
     daemon = d;
@@ -775,7 +808,7 @@ function createCuaClient(options) {
     },
     available() {
       if (!options.binary) return { ok: false, message: options.missingMessage };
-      if (!fs.existsSync(options.binary)) return { ok: false, message: `${options.missingMessage}(\u627E\u4E0D\u5230 ${options.binary})` };
+      if (!fs2.existsSync(options.binary)) return { ok: false, message: `${options.missingMessage}(\u627E\u4E0D\u5230 ${options.binary})` };
       return { ok: true };
     },
     async callTool(name, args, callOptions = {}) {
@@ -1021,7 +1054,7 @@ function createComputerControl(input) {
 }
 
 // runtime/policy.ts
-import path2 from "node:path";
+import path3 from "node:path";
 
 // runtime/types.ts
 var str = (args, key) => typeof args[key] === "string" ? args[key].trim() : "";
@@ -1141,7 +1174,7 @@ function stepsOf(args) {
   });
 }
 function launchQuestion(args) {
-  const target = str(args, "name") || path2.win32.basename(str(args, "path") || str(args, "launch_path")) || str(args, "bundle_id") || str(args, "aumid") || "\u8FD9\u4E2A App";
+  const target = str(args, "name") || path3.win32.basename(str(args, "path") || str(args, "launch_path")) || str(args, "bundle_id") || str(args, "aumid") || "\u8FD9\u4E2A App";
   return `\u8981\u6253\u5F00\u300C${target}\u300D\u5417\uFF1F\u5728 Windows \u4E0A\u5B83\u6253\u5F00\u65F6\u53EF\u80FD\u4F1A\u8DF3\u5230\u6700\u524D\u9762\uFF0C\u6253\u65AD\u4F60\u6B63\u5728\u7528\u7684\u7A97\u53E3\u3002`;
 }
 function checkCall(tool, args, self, platform) {
@@ -1181,7 +1214,7 @@ function descriptionOf(tool, spec) {
 import { createHash as createHash2, randomUUID as randomUUID2 } from "node:crypto";
 import { execFile } from "node:child_process";
 import { chmod, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import path3 from "node:path";
+import path4 from "node:path";
 import { promisify } from "node:util";
 import { gunzipSync, inflateRawSync } from "node:zlib";
 var execute = promisify(execFile);
@@ -1347,15 +1380,15 @@ function environment(home) {
 }
 async function verifyExecutable(file, release, dataDir, signal) {
   if (release.platform === "darwin") await execute("/usr/bin/codesign", ["--verify", "--strict", file], { signal, timeout: 15e3 });
-  const { stdout } = await execute(file, ["--version"], { signal, timeout: 15e3, maxBuffer: 8192, env: environment(path3.join(dataDir, "driver-home")) });
+  const { stdout } = await execute(file, ["--version"], { signal, timeout: 15e3, maxBuffer: 8192, env: environment(path4.join(dataDir, "driver-home")) });
   if (stdout.trim() !== `cua-driver ${release.version}`) throw new Error("Incorrect native driver version.");
 }
 async function prepareDriver({ dataDir, platform = process.platform, arch = process.arch, signal, fetchArchive = download, verify = verifyExecutable, releases = DRIVER_RELEASES }) {
-  if (!dataDir || !path3.isAbsolute(dataDir)) throw new Error("The App data directory is required.");
+  if (!dataDir || !path4.isAbsolute(dataDir)) throw new Error("The App data directory is required.");
   const release = releases[`${platform}-${arch}`];
   if (!release || release.platform !== platform || release.arch !== arch) throw new Error("This platform has no supported native driver.");
   if (signal?.aborted) throw signal.reason;
-  const key = path3.join(dataDir, "native", release.sha256);
+  const key = path4.join(dataDir, "native", release.sha256);
   const identity = key + "\0" + platform + "\0" + arch;
   let job = active.get(identity);
   if (!job) {
@@ -1394,7 +1427,7 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
   async function prepare(signal2) {
     await mkdir(key, { recursive: true, mode: 448 });
     signal2.throwIfAborted();
-    const archive = path3.join(key, "archive");
+    const archive = path4.join(key, "archive");
     let bytes = await regular(archive);
     signal2.throwIfAborted();
     if (!bytes || digest(bytes) !== release.sha256) {
@@ -1412,7 +1445,7 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
     if (signal2?.aborted) throw signal2.reason;
     const executableBytes = unpackDriver(bytes, release);
     assertNativeArchitecture(executableBytes, platform, arch);
-    const file = path3.join(key, release.member);
+    const file = path4.join(key, release.member);
     const cached = await regular(file);
     signal2.throwIfAborted();
     if (!cached || digest(cached) !== digest(executableBytes)) {
@@ -1437,25 +1470,25 @@ import { execFile as execFile2 } from "node:child_process";
 import { createHash as createHash3, randomUUID as randomUUID3 } from "node:crypto";
 import { chmod as chmod2, mkdir as mkdir2, readFile as readFile2, rename as rename2, rm as rm2 } from "node:fs/promises";
 import { writeFile as writeFile2 } from "node:fs/promises";
-import path4 from "node:path";
+import path5 from "node:path";
 import { promisify as promisify2 } from "node:util";
 var execute2 = promisify2(execFile2);
 var digest2 = (bytes) => createHash3("sha256").update(bytes).digest("hex");
 var choices = /* @__PURE__ */ new Set(["accessibility", "screen"]);
 function createPermissionClient({ bundleDir, dataDir, platform = process.platform, arch = process.arch, run = execute2 }) {
-  if (!bundleDir || !dataDir || !path4.isAbsolute(bundleDir) || !path4.isAbsolute(dataDir)) throw new Error("App bundle and data directories are required.");
+  if (!bundleDir || !dataDir || !path5.isAbsolute(bundleDir) || !path5.isAbsolute(dataDir)) throw new Error("App bundle and data directories are required.");
   let ready;
   async function prepare() {
     if (platform !== "darwin") throw new Error("macOS system settings are not available on this platform.");
     ready ??= (async () => {
-      const meta = JSON.parse(await readFile2(path4.join(bundleDir, "permissions.json"), "utf8"));
+      const meta = JSON.parse(await readFile2(path5.join(bundleDir, "permissions.json"), "utf8"));
       if (meta.platform !== platform || !meta.architectures.includes(arch) || !/^[a-f0-9]{64}$/.test(meta.sha256)) throw new Error("The permission helper does not match this computer.");
-      const bytes = await readFile2(path4.join(bundleDir, "mac-permissions"));
+      const bytes = await readFile2(path5.join(bundleDir, "mac-permissions"));
       if (digest2(bytes) !== meta.sha256) throw new Error("The permission helper failed its integrity check.");
       assertNativeArchitecture(bytes, platform, arch);
-      const directory = path4.join(dataDir, "native", "permissions", meta.sha256);
+      const directory = path5.join(dataDir, "native", "permissions", meta.sha256);
       await mkdir2(directory, { recursive: true, mode: 448 });
-      const file = path4.join(directory, "mac-permissions");
+      const file = path5.join(directory, "mac-permissions");
       const temporary = file + "." + randomUUID3() + ".part";
       try {
         await writeFile2(temporary, bytes, { mode: 448, flag: "wx" });
@@ -1676,6 +1709,7 @@ function fileCapture(args) {
 function needsScreen(name, args) {
   return fileCapture(args) || name === "get_desktop_state" || name === "zoom" || name === "get_window_state" && args.include_screenshot !== false || name === "verify_state" && args.include_screenshot === true || name === "run_steps" && (fileCapture(args.observe) || object2(args.observe) && args.observe.include_screenshot === true || Array.isArray(args.steps) && args.steps.some((step) => object2(step) && Object.values(step).some(fileCapture)));
 }
+var hasScreen = (env) => Boolean(env.DISPLAY || env.WAYLAND_DISPLAY);
 function createComputerTools(input) {
   const specs = new Map(input.specs.map((spec) => [spec.name, spec]));
   const definitions = new Map(TOOLS.map((tool) => {
@@ -1697,7 +1731,7 @@ function createComputerTools(input) {
       if (!definition) return failure("not_found", "This App does not expose that native tool.");
       if (!caller.agent || !caller.session) return failure("not_granted", "An agent and its bound task are required.");
       if (input.platform !== "darwin" && input.platform !== "win32" && input.platform !== "linux") return failure("unsupported", "This platform has no supported Computer Use driver.");
-      if (input.platform === "linux" && !(input.display ?? process.env).DISPLAY && !(input.display ?? process.env).WAYLAND_DISPLAY) return failure("unavailable", "This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.");
+      if (input.platform === "linux" && !hasScreen(input.display ?? { ...process.env, ...linuxScreen(process.env) })) return failure("unavailable", "This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.");
       if (["session", "device", "device_id", "agent"].some((key) => key in args)) return failure("invalid_args", "Caller and machine identity cannot be supplied as tool arguments.");
       const { confirmed, ...forwardArgs } = args;
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
@@ -1797,6 +1831,7 @@ export {
   cuaSocketPath,
   cursorOnWindow,
   displayOnlyObservation,
+  linuxScreen,
   openCuaDaemonLease,
   prepareDriver,
   resolveComputerWindow,

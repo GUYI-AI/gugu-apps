@@ -6,6 +6,7 @@ import type { CuaClient, CuaToolResult } from './native/cua-client'
 import type { Args, SelfApp } from './types'
 import { resolveCallTargets } from './targets'
 import { resolveComputerWindow } from './placement'
+import { linuxScreen } from './native/linux-display'
 
 type NativeSpec = { name: string; description?: string; input_schema?: Args; inputSchema?: Args }
 export type ToolCaller = { agent: string; session: string; name?: string; taskTitle?: string; signal?: AbortSignal; remainingMs?: () => number; preview?: boolean; humanViewer?: string }
@@ -37,6 +38,8 @@ function needsScreen(name: string, args: Args): boolean {
 }
 
 /** Called by the App's MCP adapter with gateway-stamped caller identity, never tool arguments. */
+const hasScreen = (env: { DISPLAY?: string; WAYLAND_DISPLAY?: string }) => Boolean(env.DISPLAY || env.WAYLAND_DISPLAY)
+
 export function createComputerTools(input: {
   cua: CuaClient
   specs: NativeSpec[]
@@ -67,7 +70,7 @@ export function createComputerTools(input: {
       if (!definition) return failure('not_found', 'This App does not expose that native tool.')
       if (!caller.agent || !caller.session) return failure('not_granted', 'An agent and its bound task are required.')
       if (input.platform !== 'darwin' && input.platform !== 'win32' && input.platform !== 'linux') return failure('unsupported', 'This platform has no supported Computer Use driver.')
-      if (input.platform === 'linux' && !(input.display ?? process.env).DISPLAY && !(input.display ?? process.env).WAYLAND_DISPLAY) return failure('unavailable', 'This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.')
+      if (input.platform === 'linux' && !hasScreen(input.display ?? { ...process.env, ...linuxScreen(process.env) })) return failure('unavailable', 'This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.')
       if (['session', 'device', 'device_id', 'agent'].some(key => key in args)) return failure('invalid_args', 'Caller and machine identity cannot be supplied as tool arguments.')
       const { confirmed, ...forwardArgs } = args
       if (caller.signal?.aborted) return failure('cancelled', 'This operation was cancelled before it was sent.')
