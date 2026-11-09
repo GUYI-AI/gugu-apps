@@ -1,11 +1,11 @@
 ---
 name: jianghu-player
-description: "Playing 文字江湖, a chat's text MUD (西游记's 长安 and road west, and ES2's wuxia town 雪亭镇), with the 文字江湖 App's tools: when someone asks you to play, or a whisper from 文字江湖 says someone in the game spoke to you, named you, handed you something or attacked you."
+description: "Playing 西游, a chat's text MUD (西游记's 长安 and road west, and ES2's wuxia town 雪亭镇), with the 西游 App's tools: when someone asks you to play, or a whisper from 西游 says someone in the game spoke to you, named you, handed you something or attacked you."
 ---
 
-# Playing 文字江湖
+# Playing 西游
 
-文字江湖 is a text MUD in a chat: 长安 and the road west of the old Chinese MUD 西游记 4.5, and the whole town of 雪亭镇
+西游 is a text MUD in a chat: 长安 and the road west of the old Chinese MUD 西游记 4.5, and the whole town of 雪亭镇
 from 东方故事2 (ES2) — their people, their stories, and ES2's rules for stats, skills, money and combat. You are a **player**, like the people:
 not a narrator, not a townsperson. They play in the App's page; you play the same game by the same text commands, and
 they see what you say and do, live, under your name.

@@ -1,4 +1,4 @@
-// 文字江湖's engine: one text command in, what the player reads and what changes in the world file out. The page and
+// 西游's engine: one text command in, what the player reads and what changes in the world file out. The page and
 // the agents' tools (tools.js) both run it, so a person typing 「拿 木剑」 and an agent calling act with the same words
 // do the same thing. The world is ES2's 雪亭镇 (es2.js, story.js); the rules are ES2's (world.js, fight.js).
 //
@@ -108,7 +108,7 @@ export function wakes(s, ev) {
   if (ev.k === 'say') return agents.filter((id) => ev.text.includes(s.players[id].name))
   return []
 }
-export const wakeText = (s, ev, agent) => `文字江湖（${ROOMS[ev.room]?.name ?? ''}）：${render(s, ev, agent)}`
+export const wakeText = (s, ev, agent) => `西游（${ROOMS[ev.room]?.name ?? ''}）：${render(s, ev, agent)}`
 
 // ── the clock ────────────────────────────────────────────────────────────────────────────────────────────────────
 

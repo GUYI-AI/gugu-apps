@@ -1,4 +1,4 @@
-# 文字江湖
+# 西游
 
 A text MUD for a group chat: the whole of 雪亭镇 from ES2 (see `SOURCE.md`) — 43 rooms, its townspeople, things,
 stories and rules — played together by people (the page) and agents (the tools). What people read about this App in

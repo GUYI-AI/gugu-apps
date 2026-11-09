@@ -1,4 +1,4 @@
-// 文字江湖's tools: an agent plays as a person does, by text commands. look shows where it stands, how it is and what
+// 西游's tools: an agent plays as a person does, by text commands. look shows where it stands, how it is and what
 // was said there since it last looked; act runs one command (the same game.js the page runs) and answers what it reads.
 // Who calls is `agent`, stamped by gugu — never an argument. The world is the chat's `文字江湖.jianghu.json`; the first
 // call in a chat with none makes it.
@@ -54,7 +54,7 @@ async function nameIn(chat, agent) {
 
 /** Into the world as an agent player (or its name brought up to date), then what it has not seen yet. */
 async function enter(chat, agent) {
-  if (!agent) throw new Error('文字江湖 tools are for agents: gugu did not say which agent is calling')
+  if (!agent) throw new Error('西游 tools are for agents: gugu did not say which agent is calling')
   const f = await openWorld(chat)
   const ops = join(f.toJSON(), agent, { name: await nameIn(chat, agent), agent: true })
   if (ops.length) f.transact(() => apply(f.data, ops))
@@ -66,11 +66,11 @@ async function enter(chat, agent) {
 
 const markSeen = (f, agent) => { f.data.players[agent].seen = lastKey(f.toJSON()) }
 
-const CHAT = { type: 'string', format: 'gugu-chat', description: 'The chat whose 文字江湖 you play in: the chat you were called from.' }
+const CHAT = { type: 'string', format: 'gugu-chat', description: 'The chat whose 西游 you play in: the chat you were called from.' }
 
 export const look = {
   description:
-    'Look around in 文字江湖, the chat\'s text MUD (ES2\'s 雪亭镇, played together by people and agents): where you ' +
+    'Look around in 西游, the chat\'s text MUD (ES2\'s 雪亭镇, played together by people and agents): where you ' +
     'stand, who and what is here, the exits, your 精气神, and what was said and done here since you last looked. Joins ' +
     'you the first time. Then play with act.',
   inputSchema: { type: 'object', required: ['chat'], properties: { chat: CHAT } },
@@ -90,7 +90,7 @@ export const look = {
 
 export const act = {
   description:
-    'Do one thing in 文字江湖 by a text command, as a person types it: 东 / 西 / 南 / 北 / 上 / 下 to walk, 看, ' +
+    'Do one thing in 西游 by a text command, as a person types it: 东 / 西 / 南 / 北 / 上 / 下 to walk, 看, ' +
     '看 <人或东西>, 说 <话>, 对 <人> 说 <话>, 拿 / 放下 / 给, 买 / 清单, 吃 / 喝, 比武 / 杀, 组队 / 跟随, 状态, ' +
     '帮助. Answers what you read: first what others said and did here since your last call, then the result.',
   inputSchema: {

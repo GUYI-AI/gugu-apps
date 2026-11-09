@@ -1,4 +1,4 @@
-// 文字江湖's page: the chat's world (its chatFile) as a MUD screen — where you stand, what was said and done here, a
+// 西游's page: the chat's world (its chatFile) as a MUD screen — where you stand, what was said and done here, a
 // line to type in. Every command goes through game.js, as the agents' do through tools.js; what lasts goes into the
 // file, presence only says who has the page open. A person speaking to an agent, naming it, handing it something or
 // attacking it wakes it with a whisper (game.js wakes); nothing else does.
@@ -32,7 +32,7 @@ function fail(what, e) {
 }
 
 if (!ctx.file) {
-  $('#world').replaceChildren(h('gugu-empty', { icon: 'compass' }, h('strong', {}, '在群里打开'), h('small', {}, '群聊 → 应用 → 文字江湖：群里的人和 agent 一起在东方故事 2 的雪亭镇闯荡。')))
+  $('#world').replaceChildren(h('gugu-empty', { icon: 'compass' }, h('strong', {}, '在群里打开'), h('small', {}, '群聊 → 应用 → 西游：群里的人和 agent 从长安出发走西行路。')))
 } else {
   const f = await window.gugu.files.open(ctx.file)
   // Names as the chat shows them now (the context's copy can be older: a task renamed since).
@@ -199,7 +199,7 @@ if (!ctx.file) {
     document.body.dataset.file = f.status
     if (f.status === 'gone') $('#status').textContent = '江湖的文件不在了'
   })
-  window.gugu.setTabTitle('文字江湖').catch(() => {}) // only the tab's name
+  window.gugu.setTabTitle('西游').catch(() => {}) // only the tab's name
   enter()
   draw()
 }
