@@ -153,3 +153,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## The pixel face — 精品点阵体 9×9 (BoutiqueBitmap9x9)
+
+`px.woff2` is 精品点阵体 9×9 1.93 by 字言字語 (Luke Liu), from its author's release
+(github.com/scott0107000/BoutiqueBitmap9x9, release 1.93), under the licence in `px-OFL.txt`: free to use, copy and
+change, the changed font under the same licence. It is cut down (`../mkpx.mjs`) to the page's own words, the names
+of rooms, townspeople and things, digits, Latin and GB2312's first level; nothing else in it is changed. The icons,
+the HUD's pictures and the opening's 长安 are drawn by hand for this App (`../icon.svg`, `pixel.js`, `opening.svg`).
