@@ -134,5 +134,5 @@ test('the file stays small: the log keeps its last lines', () => {
   enter('user:a', '阿青')
   for (let i = 0; i < 120; i++) say('user:a', `说 第${i}句`)
   assert.ok(Object.keys(s.log).length <= 60)
-  assert.ok(JSON.stringify(s).length < 140_000, `${JSON.stringify(s).length}`) // a fresh world is ~122 kB: 西游记 4.5 as far as 平顶山
+  assert.ok(JSON.stringify(s).length < 240_000, `${JSON.stringify(s).length}`) // a fresh world is ~200 kB: 西游记 4.5 as far as 通天河
 })

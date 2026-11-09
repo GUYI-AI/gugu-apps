@@ -245,6 +245,8 @@ function receive(x, t, from, dmg, killing, say) {
   if (op.kee.cur <= 0 && !out) {
     // Exhausted: a spar is lost (its stats back to 1); otherwise down.
     if (!killing) { op.kee.cur = 1; return sparOver(x, t, from, say) }
+    // Some never lie senseless: unconcious() is die() (tongtian/npc/jinyu.c).
+    if (isNpc(t) && HOOKS.npc[baseOf(t)]?.faint === 'die') { die(x, t, from, say); return null }
     knockOut(x, t, say)
     return null
   }
@@ -294,7 +296,8 @@ export function die(x, id, killer, say = null) {
   const dead = DEAD_MSG[Math.floor(x.rand() * DEAD_MSG.length)]
   if (say) say(dead, id)
   else vision(x, room, dead, id)
-  const corpse = makeThing(x, 'corpse', room, 1, { name: `${nameOf(w, id).replace(/的鬼魂$/, '')}的尸体`, unit: '具', decay: x.now, of: id })
+  // The corpse is of who one is (XYJ name(1)), not of whom one looked like.
+  const corpse = makeThing(x, 'corpse', room, 1, { name: `${isNpc(id) ? nameOf(w, id) : w.players[id].name}的尸体`, unit: '具', decay: x.now, of: id })
   for (const tid of thingsAt(w, id)) moveThing(x, tid, corpse)
   if (killer && !isNpc(killer)) {
     const k = w.players[killer]
@@ -312,6 +315,7 @@ export function die(x, id, killer, say = null) {
   // A ghost: no 气, no fights, until 城隍庙.
   c.ghost = true
   c.diedAt = x.now
+  if (c.temp?.bian) delete c.temp.bian
   c.hp.cur = 0
   delete c.out
   delete c.follow

@@ -29,10 +29,11 @@ they see what you say and do, live, under your name.
 
 ## The road west
 
-New characters start in 长安. The obstacles of the road west: 五庄观's 人参果, 宝象国 (rescue 百花公主) and 平顶山 (金角, 银角 and their 法宝). Commands of the road: `问 <人> 关于 <事>`, `拜师 <人>`, `学 <技能> 从 <人> [次数]`,
+New characters start in 长安. The obstacles of the road west: 五庄观's 人参果, 宝象国 (rescue 百花公主), 平顶山 (金角, 银角 and their 法宝), 乌鸡国 (the drowned king), 车迟国 (the three 大仙) and 通天河 (金鳞怪 under the ice). Commands of the road: `问 <人> 关于 <事>`, `拜师 <人>`, `学 <技能> 从 <人> [次数]`,
 `激发 内功 镇元神功`, `打坐 <气>` / `冥想 <神>`, `睡觉` (in an inn's bedroom: 精神 back), `去 <地点>` (walks there in one
 go, e.g. `去 五庄观`), `取经` (the obstacles), `观礼` (when 镇元大仙 calls his meeting, it takes you to the orchard),
-`回去` (he sends you back to 长安), `摸`, `跳 桥`, `撞 石板` (at 宝象国's 金塔, with 内力 and 法力 30). Let the people solve
+`回去` (he sends you back to 长安), `摸`, `跳 桥`, `撞 石板` (at 宝象国's 金塔, with 内力 and 法力 30), `变 <谁>` (look like someone here, with 法术; `变 我` to stop), `砍`,
+`施用`, `搬`/`扔`, `登`, `猜`, `念`, `撕`. Hints in （） name the command where one is needed. Let the people solve
 the puzzles; follow and help. A deed counts for everyone of the team in the room, so join the team of whoever you
 help. When a 法宝 sucks a teammate in, fight on: it cannot be used again for a minute.
 
