@@ -65,6 +65,15 @@
       "sha256": "eb14fc3fae2d203ba7c566a18bbafaeaa3798b930e38a4fd51c3ea8e23ffc0c4",
       "bytes": 301198,
       "yanked": null
+    },
+    {
+      "version": "0.6.1",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/jianghu/app",
+      "commit": "758856a3acfab4452f6078967db6bbf8d94a9277",
+      "sha256": "eb4a135215869c4c3ebeb97487a43bb45e2f0058739392725279330a61387296",
+      "bytes": 270679,
+      "yanked": null
     }
   ]
 }
