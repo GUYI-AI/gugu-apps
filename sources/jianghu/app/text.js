@@ -1,6 +1,6 @@
-// ES2's words for its rules (combat, the day, names of skills and stats), turned into simplified Chinese. Taken from
+// The mudlib's words for its rules (combat, the day, names of skills and stats), turned into simplified Chinese. Taken from
 // the files named at each table; see SOURCE.md. `$N` is who acts, `$n` the other one, `$w` a weapon, `$l` a limb,
-// `$p` the other one again (ES2's pronoun: here their name).
+// `$p` the other one again (its pronoun: here their name).
 
 export const DIRS = {
   北: ['北', 'n', 'north', '北边'], 南: ['南', 's', 'south', '南边'], 东: ['东', 'e', 'east', '东边'], 西: ['西', 'w', 'west', '西边'],
@@ -22,10 +22,8 @@ export const SKILL_NAMES = {
   'kee anatomy': '经脉穴道之学', 'alchemy-medication': '丹道【神农之术】', 'alchemy-wealth': '丹道【黄白之术】',
   'alchemy-magic': '丹道【仙异之术】', 'alchemy-immortality': '丹道【长生之术】',
 }
-export const SCORE_NAMES = { combat: '实战经验', survive: '江湖历练', kills: '杀业', 'martial art': '武术造诣', 'martial mastery': '武学之道', 'mortal sin': '重大恶行', alchemy: '丹道修养' }
-// daemon/class/commoner.c, fighter.c; the classes snow's people give (thief, scholar, alchemist) have no file in ES2:
-// their names are the words those people say when they give them.
-export const CLASS_NAMES = { commoner: '平民', fighter: '武者', thief: '盗贼', scholar: '书生', alchemist: '方士' }
+// daemon/class/commoner.c, fighter.c
+export const CLASS_NAMES = { commoner: '平民', fighter: '武者' }
 
 // daemon/skill/sword.c, daemon/skill/unarmed.c: [action, damage type]
 export const ACTIONS = {
@@ -40,7 +38,7 @@ export const ACTIONS = {
     ['$N放低身子，对准$n的$l一拳挥出', '瘀伤'], ['$N大叫一声，往$n的$l踢出一腿', '瘀伤'], ['$N跳了起来，往$n的$l飞踢过去', '瘀伤'],
     ['$N做了个闪避假动作，冷不防一拳往$n$l挥去', '瘀伤'], ['$N假装要后退，忽然蹲低身子向$n$l踢了一脚', '瘀伤'],
   ],
-  // ES2 has no file for the other weapons (their wielders never attack there): these few lines are this App's own.
+  // The mudlib has no file for the other weapons (their wielders never attack there): these few lines are this App's own.
   other: [['$N挥动$w往$n的$l砍去', '割伤'], ['$N手中$w一抖，戳向$n的$l', '刺伤'], ['$N抡起$w，往$n的$l砸下', '瘀伤']],
 }
 export const IDLE = {
@@ -147,7 +145,7 @@ export const phaseOf = (now) => {
 }
 
 const DIGITS = '零一二三四五六七八九'
-/** 0–9999 in Chinese numerals, as ES2's chinese_number says amounts. */
+/** 0–9999 in Chinese numerals, as the mudlib's chinese_number says amounts. */
 export function cn(n) {
   n = Math.floor(n)
   if (n < 10) return DIGITS[n]

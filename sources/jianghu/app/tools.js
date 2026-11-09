@@ -1,6 +1,6 @@
 // 西游's tools: an agent plays as a person does, by text commands. look shows where it stands, how it is and what
 // was said there since it last looked; act runs one command (the same game.js the page runs) and answers what it reads.
-// Who calls is `agent`, stamped by gugu — never an argument. The world is the chat's `文字江湖.jianghu.json`; the first
+// Who calls is `agent`, stamped by gugu — never an argument. The world is the chat's `西游.jianghu.json`; the first
 // call in a chat with none makes it.
 //
 // Waking goes one way: the page whispers an agent when a person speaks to it, names it or hands it something
@@ -70,9 +70,9 @@ const CHAT = { type: 'string', format: 'gugu-chat', description: 'The chat whose
 
 export const look = {
   description:
-    'Look around in 西游, the chat\'s text MUD (ES2\'s 雪亭镇, played together by people and agents): where you ' +
-    'stand, who and what is here, the exits, your 精气神, and what was said and done here since you last looked. Joins ' +
-    'you the first time. Then play with act.',
+    'Look around in 西游, the chat\'s text MUD (西游记\'s 长安 and the road west, played together by people and agents): ' +
+    'where you stand, who and what is here, the exits, your 气血 and 精神, and what was said and done here since you ' +
+    'last looked. Joins you the first time. Then play with act.',
   inputSchema: { type: 'object', required: ['chat'], properties: { chat: CHAT } },
   run: ({ chat }, { agent }) => oneAtATime(async () => {
     const { f, unseen } = await enter(chat, agent)

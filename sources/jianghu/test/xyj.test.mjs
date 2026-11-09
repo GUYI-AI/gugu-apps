@@ -15,7 +15,7 @@ function world(seed = 7) {
 }
 const WZ = 'x/qujing/wuzhuang/'
 
-test('西游记: 长安, the road west and 五庄观 are one place apart from 雪亭镇, every exit to a room of it', () => {
+test('西游记: 长安, the road west and 五庄观, every exit to a room of it', () => {
   const xyj = Object.entries(ROOMS).filter(([, r]) => r.area === 'xyj')
   assert.equal(xyj.length, 224)
   for (const [id, r] of xyj) for (const to of Object.values(r.exits)) assert.equal(ROOMS[to]?.area, 'xyj', `${id} → ${to}`)
@@ -24,24 +24,9 @@ test('西游记: 长安, the road west and 五庄观 are one place apart from �
   assert.ok(NPCS[WZ + 'npc/zhenyuan'].inquiry['人参果'])
 })
 
-test('西游 and 东归 swap bodies; 雪亭镇 keeps its own', () => {
-  const { s, enter, say } = world()
-  enter('user:a', '阿青')
-  assert.match(say('user:a', '状态'), /气血：100\/100.*内力：0\/0/s)
-  say('user:a', '东归')
-  assert.equal(s.players['user:a'].room, 'inn_hall')
-  const kee = s.players['user:a'].kee.max
-  assert.ok(kee < 100) // 雪亭镇's own body
-  assert.match(say('user:a', '西游'), /长安/)
-  assert.equal(s.players['user:a'].kee.max, 100)
-  say('user:a', '东归')
-  assert.equal(s.players['user:a'].kee.max, kee)
-})
-
 test('the 八卦桥: every bridge once leads through; a bridge twice starts it over', () => {
   const { s, enter, say } = world()
   enter('user:a', '阿青')
-  say('user:a', '西游')
   s.players['user:a'].room = WZ + 'southpool'
   say('user:a', '北', '东北', '西南') // 1 → 2 → 1 again: the count starts over from this bridge
   assert.deepEqual(s.players['user:a'].temp.wzgmaze, { 1: 1 })
@@ -56,7 +41,7 @@ test('人参果: the key under 牡丹亭 opens the orchard, the meeting gives fr
   const { s, enter, say, clock } = world()
   enter('user:a', '阿青')
   enter('user:b', '小灵', true)
-  say('user:a', '西游', '西', '北', '拜师 张果老', '学 内功 从 张果老 5', '学 法术 从 张果老 5')
+  say('user:a', '西', '北', '拜师 张果老', '学 内功 从 张果老 5', '学 法术 从 张果老 5')
   assert.equal(s.players['user:a'].xyj.family.name, '五庄观')
   assert.ok(s.players['user:a'].skills.force > 0 && s.players['user:a'].skills.spells > 0)
   s.players['user:a'].room = WZ + 'mudanting'
@@ -73,7 +58,6 @@ test('人参果: the key under 牡丹亭 opens the orchard, the meeting gives fr
   assert.match(say('user:a', '关门'), /什么？/) // an exit, not a door: it is not shut again
   assert.match(say('user:a', '北'), /镇元大仙走了出来/)
   assert.match(say('user:a', '问 镇元大仙 关于 人参果'), /再等等/)
-  say('user:b', '西游')
   assert.match(say('user:b', '观礼'), /到外面去/) // accept.c: outdoors
   s.players['user:b'].room = 'x/city/zhuque-s1'
   assert.match(say('user:b', '观礼'), /你接受镇元大仙的公开邀请/)
@@ -103,7 +87,6 @@ test('人参果: the key under 牡丹亭 opens the orchard, the meeting gives fr
 test('打坐 and 冥想 need 激发 and a skill; their most grows past twice', () => {
   const { s, enter, say } = world()
   enter('user:a', '阿青')
-  say('user:a', '西游')
   s.players['user:a'].room = 'x/city/center'
   assert.match(say('user:a', '打坐 30'), /激发/)
   const p = () => s.players['user:a'] // each command writes the player anew
@@ -118,7 +101,6 @@ test('打坐 and 冥想 need 激发 and a skill; their most grows past twice', (
 test('疥顶小僧 asked of 取经 hands over the guide: the 24 obstacles, 五庄观 first', () => {
   const { s, enter, say } = world()
   enter('user:a', '阿青')
-  say('user:a', '西游')
   s.npcs['n:x/city/npc/jieding'].room = s.players['user:a'].room
   const r = say('user:a', '问 疥顶小僧 关于 取经')
   assert.match(r, /1\. 五庄观／人参果/)
@@ -128,7 +110,6 @@ test('疥顶小僧 asked of 取经 hands over the guide: the 24 obstacles, 五�
 test('the pace: 去 walks a town and a road at once but not the 八卦桥, 睡觉 restores 精神, the rule of the bridges is told', () => {
   const { s, enter, say } = world()
   enter('user:a', '阿青')
-  say('user:a', '西游')
   s.players['user:a'].temp = { hasPaid: 2 } // the 马盗 of 饮马峪, paid (below)
   assert.match(say('user:a', '去 五庄观'), /观门/)
   assert.equal(s.players['user:a'].room, WZ + 'gate')
@@ -153,7 +134,7 @@ test('the pace: 去 walks a town and a road at once but not the 八卦桥, 睡�
   assert.match(say('user:a', '睡觉'), /刚睡过/)
 })
 
-test('a newcomer starts in 长安; 东归 to 雪亭镇 and back; the bars of each world, with their icons', () => {
+test('a newcomer starts in 长安, fed and watered; the bars, with their icons', () => {
   const { s, enter, say } = world()
   enter('user:a', '阿青')
   assert.equal(s.players['user:a'].room, 'x/city/kezhan')
@@ -163,13 +144,8 @@ test('a newcomer starts in 长安; 东归 to 雪亭镇 and back; the bars of eac
   s.players['user:a'].xyj.maxMana = 10
   assert.deepEqual(statBars(s.players['user:a']).map(([l]) => l), ['气血', '精神', '内力', '法力', '食', '水'])
   for (const [, v] of statBars(s.players['user:a'])) assert.ok(Number.isFinite(v.cur) && v.max > 0)
-  assert.match(say('user:a', '东归'), /雪亭镇/)
-  assert.equal(s.players['user:a'].room, 'inn_hall')
-  assert.deepEqual(statBars(s.players['user:a']).map(([l, , i]) => l + i), ['精mana', '气hp', '神sen', '体force', '食food', '水water'])
   const a = s.players['user:a'].attrs
-  assert.equal(s.players['user:a'].food.max, a.con * 10 + a.str * 5) // 雪亭镇's stomach
-  say('user:a', '西游')
-  assert.equal(s.players['user:a'].room, 'x/city/kezhan')
+  say('user:a', '状态')
   assert.equal(s.players['user:a'].kee.max, 102) // 100, and 内力 10 ÷ 4
   assert.equal(s.players['user:a'].food.max, Math.max(100, 200 + (a.str - 10) * 10)) // damage.c: weight ÷ 200
 })
@@ -177,7 +153,6 @@ test('a newcomer starts in 长安; 东归 to 雪亭镇 and back; the bars of eac
 test('who keeps a way in 长安 and on the road: 小二, the 衙役, the 马盗; 进去 into the main hall', () => {
   const { s, enter, say, clock } = world()
   enter('user:a', '阿青')
-  say('user:a', '西游')
   const a = () => s.players['user:a']
   // kezhan.c / xiaoer.c: the room behind is for who has paid, till they leave it.
   assert.match(say('user:a', '东'), /不是本店的客人/)
@@ -222,7 +197,6 @@ test('who keeps a way in 长安 and on the road: 小二, the 衙役, the 马盗;
   assert.deepEqual([...rooms].sort(), ['x/westway/jiuquan', 'x/westway/shandong'])
   // guangchang: 进去 (enter) is the way into the main hall.
   enter('user:b', '阿紫')
-  say('user:b', '西游')
   s.players['user:b'].room = WZ + 'guangchang'
   say('user:b', 'enter')
   assert.equal(s.players['user:b'].room, WZ + 'zhengdian')
@@ -231,7 +205,6 @@ test('who keeps a way in 长安 and on the road: 小二, the 衙役, the 马盗;
 test('an English id is the whole of it: `han zhongli` is not 韩湘子 (han) when 汉钟离 is away', () => {
   const { s, enter, say } = world()
   enter('user:a', '阿青')
-  say('user:a', '西游')
   s.players['user:a'].room = WZ + 'gate'
   s.npcs['n:x/qujing/wuzhuang/npc/hanxiangzi'].room = WZ + 'gate'
   assert.doesNotMatch(say('user:a', 'apprentice han zhongli'), /韩湘子/)

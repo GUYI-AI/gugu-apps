@@ -44,7 +44,7 @@ function row([label, { cur, max }, key]) {
   return r
 }
 
-/** A thin bar with its icon and number, for 内力 and 法力 (and 雪亭镇's 精 and 体). */
+/** A thin bar with its icon and number, for 内力 and 法力. */
 function thin([label, { cur, max }, key]) {
   const fill = el('u', '')
   fill.style.width = `${Math.round(Math.min(1, max ? cur / max : 0) * 100)}%`

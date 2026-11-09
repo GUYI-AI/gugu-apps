@@ -1,10 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { FILE_NAME, apply, join, run } from '../app/game.js'
-import { HOOKS } from '../app/world.js'
-
-// 雪亭镇's own tests: a newcomer starts at its inn, as before 西游记 took newcomers in.
-delete HOOKS.born
 
 // A stand-in for gugu: one chat's files, opened as live handles (saved at once), and its members.
 const files = new Map()
@@ -25,18 +21,18 @@ const call = { agent: 'user:bot' }
 
 test('an agent joins the town, hears a person speak to it and plays on', async () => {
   const first = await look.run({ chat: 'c1' }, call)
-  assert.match(first, /【客栈大堂】[\s\S]*精[\s\S]*指令/)
+  assert.match(first, /【南城客栈】[\s\S]*气血[\s\S]*指令/)
   const s = files.get(`c1/${FILE_NAME}`)
   assert.equal(s.players['user:bot'].name, 'Claude')
   assert.equal(s.players['user:bot'].agent, true)
   // A person comes in and speaks to it, as the page would.
   apply(s, join(s, 'user:a', { name: '阿青' }))
-  apply(s, run(structuredClone(s), 'user:a', '对 Claude 说 一起去厨房看看').ops)
+  apply(s, run(structuredClone(s), 'user:a', '对 Claude 说 一起去大街看看').ops)
   const r = await act.run({ chat: 'c1', command: '西' }, call)
-  assert.match(r, /阿青对你说道：一起去厨房看看[\s\S]*> 西\n[\s\S]*【厨房】/)
+  assert.match(r, /阿青对你说道：一起去大街看看[\s\S]*> 西\n[\s\S]*【朱雀大街】/)
   const again = await act.run({ chat: 'c1', command: '背包' }, call)
   assert.doesNotMatch(again, /刚才这里/, 'what it saw is not repeated')
-  assert.equal(files.get(`c1/${FILE_NAME}`).players['user:bot'].room, 'inn_kitchen')
+  assert.equal(files.get(`c1/${FILE_NAME}`).players['user:bot'].room, 'x/city/zhuque-s1')
 })
 
 test('without an agent stamp the tools refuse', async () => {

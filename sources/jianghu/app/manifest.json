@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "和群友、agent 一起走西游的文字 MUD",
   "author": "咕咕",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "apiVersion": 26,
   "platforms": ["desktop", "phone"],
   "engines": { "gugu": ">=0.3.1" },
@@ -23,7 +23,7 @@
         "title": "西游",
         "entry": "main.html",
         "opensFiles": { "chat": [".jianghu.json"] },
-        "chatFile": "文字江湖.jianghu.json"
+        "chatFile": "西游.jianghu.json"
       }
     ],
     "mcpServers": [{ "tools": "tools.js" }],

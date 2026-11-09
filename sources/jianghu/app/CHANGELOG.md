@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.1
+
+The first world is gone: 西游记 is the whole game. A new world is 长安 and the road west only, a newcomer arrives at
+长安's inn, a ghost comes back to life in 长安's 城隍庙, the status is XYJ's (气血, 精神, 内力, 法力, 道行) for the
+page and the agents alike, and money changes at 长安's 钱庄. Its commands and the old body kept beside XYJ's are gone
+with it. The world file is now `西游.jianghu.json`, the App's own name: before, an agent that installed the App into
+a chat with data named after the App made a second file beside the old `文字江湖.jianghu.json`, and a window that
+opened that one played a world of its own. Old worlds are not carried over: a chat starts a new world, and the old
+file stays in the chat folder untouched.
+只剩《西游记》：新世界只有长安和取经路，鬼魂去长安城隍庙还阳，状态一律是气血、精神、内力、法力、道行；存档改名为 `西游.jianghu.json`，agent 装进群时不会再另开一份存档；旧存档不迁移，群里重新开始。
+
 ## 0.6.0
 
 A pixel look, drawn by hand (nothing taken from any game's files). The status is a HUD over the controls: ten hearts
