@@ -113,12 +113,18 @@ export function createPreviewInput({ state: readState, valid, tools, control, re
       const who = { ...state.caller, preview: true, humanViewer: viewer, signal };
       try {
         if (signal.aborted || !valid(state) || !currentSpace()) return rejected('Input was cancelled or its picture coordinates changed before dispatch.');
-        if (input.kind === 'pointer' || input.kind === 'wheel') {
+        {
           // The displayed picture may have come from another native lane. Calibrate this
           // viewer lane and obtain its own capture token; never borrow another session's token.
+          // Keys and text too: a driver addresses only windows this lane has read itself (Linux refuses an unread
+          // window as stale), and the window must still be the one in the picture.
           const fresh = await tools.call('get_window_state', { target, include_screenshot: true, include_accessibility_tree: false,
             display_only: true, max_dimension: 1280 }, who);
           const raw = fresh?.structuredContent, actual = raw?.target ?? raw;
+          // A refusal before anything is sent (missing permission, revoked access) is said as itself.
+          if (fresh?.isError && preflightFailures.has(raw?.code)) {
+            return rejected(String(fresh.content?.find(block => block.type === 'text')?.text ?? 'The window could not be read.').slice(0, 1000));
+          }
           if (fresh?.isError || actual?.pid !== target.pid || actual?.window_id !== target.window_id
             || raw?.screenshot_width !== frame.width || raw?.screenshot_height !== frame.height
             || (frame.coordinateKey !== undefined && frame.coordinateKey !== pictureCoordinateKey(raw?.screenshot_width, raw?.screenshot_height, raw?.window_bounds))) {

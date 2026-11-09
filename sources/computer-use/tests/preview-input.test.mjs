@@ -41,7 +41,8 @@ test('Chinese IME commits and pasted Unicode use one text operation without clip
   for (const source of ['ime', 'paste', 'typing']) {
     assert.equal((await f.handler.input({ kind: 'text', text: '你好🌏\n世界', source }, f.context())).status, 'applied');
   }
-  assert.deepEqual(f.calls.map(c => [c.name, c.args.text]), Array(3).fill(['type_text', '你好🌏\n世界']));
+  // Each text first re-reads the exact window on this viewer's own lane, then types once.
+  assert.deepEqual(f.calls.map(c => [c.name, c.args.text]), Array(3).fill([['get_window_state', undefined], ['type_text', '你好🌏\n世界']]).flat());
 });
 test('special keys are atomic and modifier/up events cannot leave a key held', async () => {
   const f = fixture();
@@ -49,7 +50,7 @@ test('special keys are atomic and modifier/up events cannot leave a key held', a
   await f.handler.input({ kind: 'key', action: 'down', key: 'a', modifiers: ['control'] }, f.context());
   await f.handler.input({ kind: 'key', action: 'up', key: 'a', modifiers: ['control'] }, f.context());
   await f.handler.input({ kind: 'key', action: 'down', key: 'ArrowLeft' }, f.context());
-  assert.deepEqual(f.calls.map(c => [c.name, c.args.key, c.args.modifiers]), [['press_key', 'a', ['ctrl']], ['press_key', 'left', undefined]]);
+  assert.deepEqual(f.calls.filter(c => c.name !== 'get_window_state').map(c => [c.name, c.args.key, c.args.modifiers]), [['press_key', 'a', ['ctrl']], ['press_key', 'left', undefined]]);
 });
 test('drag and wheel stay window scoped, with encoded density independent coordinates', async () => {
   const f = fixture(), ctx = f.context();
@@ -112,10 +113,11 @@ test('an uncertain or throwing native operation is never automatically retried',
   assert.equal((await f.handler.input({ kind: 'text', text: 'once' }, f.context())).status, 'unknown');
   f.result(() => { throw new Error('socket closed'); });
   assert.equal((await f.handler.input({ kind: 'text', text: 'twice' }, f.context())).status, 'unknown');
-  assert.equal(f.calls.length, 2);
+  const sent = () => f.calls.filter(c => c.name !== 'get_window_state').length;
+  assert.equal(sent(), 2);
   f.result({ isError: true, structuredContent: { code: 'os_permission' }, content: [{ type: 'text', text: 'Missing Accessibility' }] });
   assert.equal((await f.handler.input({ kind: 'text', text: 'blocked' }, f.context())).status, 'rejected');
-  assert.equal(f.calls.length, 3);
+  assert.equal(sent(), 3);
 });
 
 test('move and release cannot reuse a down from a different picture coordinate space', async () => {
