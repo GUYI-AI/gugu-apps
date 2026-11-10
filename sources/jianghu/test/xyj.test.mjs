@@ -17,7 +17,7 @@ const WZ = 'x/qujing/wuzhuang/'
 
 test('西游记: 长安, the road west and 五庄观, every exit to a room of it', () => {
   const xyj = Object.entries(ROOMS).filter(([, r]) => r.area === 'xyj')
-  assert.equal(xyj.length, 224)
+  assert.equal(xyj.length, 409)
   for (const [id, r] of xyj) for (const to of Object.values(r.exits)) assert.equal(ROOMS[to]?.area, 'xyj', `${id} → ${to}`)
   const s = fresh({ now: 0, rand: () => 0.5 })
   assert.ok(s.npcs['n:x/qujing/wuzhuang/npc/zhangguolao'] && s.npcs['n:x/city/npc/xiaoer'])
@@ -210,4 +210,30 @@ test('an English id is the whole of it: `han zhongli` is not 韩湘子 (han) whe
   assert.doesNotMatch(say('user:a', 'apprentice han zhongli'), /韩湘子/)
   assert.doesNotMatch(say('user:a', 'ask han zhongli about 五庄观'), /韩湘子/)
   assert.match(say('user:a', 'ask han about 五庄观'), /韩湘子/)
+})
+
+test('变化 (bian.c): gates, a name and ids borrowed, 法力 drained every 5 s till one shows again', () => {
+  const { s, enter, say, clock } = world()
+  enter('user:a', '阿青')
+  const a = () => s.players['user:a']
+  const y = () => a().xyj
+  a().room = 'x/city/kezhan'
+  assert.match(say('user:a', '变 店小二'), /道行还不够/)
+  y().exp = 3000
+  assert.match(say('user:a', '变 店小二'), /法术不够/)
+  a().skills.spells = 50
+  assert.match(say('user:a', '变 店小二'), /法力不足/)
+  y().mana = 40
+  assert.match(say('user:a', '变 店小二'), /摇身一变/)
+  assert.equal(y().mana, 30)
+  enter('user:b', '阿紫')
+  s.players['user:b'].room = 'x/city/kezhan'
+  assert.match(say('user:b', '看'), /店小二[\s\S]*店小二/) // two of them now
+  clock.now += 60_000
+  const r = say('user:b', '看')
+  assert.match(r, /现了原形/)
+  assert.ok(!a().temp.bian && y().mana <= 7)
+  y().mana = 40
+  say('user:a', '变 店小二')
+  assert.match(say('user:a', '变 我'), /现了真身/)
 })

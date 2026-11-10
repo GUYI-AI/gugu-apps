@@ -1472,6 +1472,1237 @@ export const ROOMS = {
   },
   "area": "xyj"
  },
+ "x/qujing/chechi/banlu1": {
+  "name": "石板路",
+  "long": "南城的小丘上整整齐齐地铺着一条石板路，路边种有两排矮树，间有奇花异草。矮树绿枝碧叶，清风徐徐，恰是十分宜人。",
+  "exits": {
+   "南": "x/qujing/chechi/banlu2",
+   "北": "x/qujing/chechi/dianmen"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/banlu2": {
+  "name": "石板路",
+  "long": "南城的小丘上整整齐齐地铺着一条石板路，路边种有两排矮树，间有奇花异草。矮树绿枝碧叶，清风徐徐，恰是十分宜人。",
+  "exits": {
+   "南": "x/qujing/chechi/qiang7d",
+   "北": "x/qujing/chechi/banlu1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/beiyuan": {
+  "name": "北院",
+  "long": "北院里空荡荡，靠墙稀稀拉拉种了一些树，半死不活地长着。北边放有一见底的破水缸。再往北是间破门破窗的房子，往南是金刚殿。",
+  "exits": {
+   "北": "x/qujing/chechi/zhaifang",
+   "南": "x/qujing/chechi/jingang"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/caichang": {
+  "name": "西城菜场",
+  "long": "菜场是车迟国平民购买日常瓜果蔬菜肉类的地方。西边是满地一片瓜皮菜叶，东边有一地的碎骨鸡毛。不远处，有几辆破旧的空大车停在路边。",
+  "exits": {
+   "北": "x/qujing/chechi/jieshi2",
+   "东": "x/qujing/chechi/jieshi4",
+   "西": "x/qujing/chechi/jiuguan",
+   "南": "x/qujing/chechi/taiping"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/cangjing": {
+  "name": "藏经楼",
+  "long": "藏经楼里古色古香，门边有一落地铜炉，正在冒着袅袅香烟，门后墙头挂着一些铜铃，靠壁放有一排奇怪的檀香书柜。东南方面有长道通向后殿。",
+  "exits": {
+   "东南": "x/qujing/chechi/houdian"
+  },
+  "spawn": {
+   "x/obj/book/daode": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/da": {
+  "name": "大相府",
+  "long": "大相府由青垣石砌成。府外灯笼高挂，府内宽敞明亮富丽堂皇。一看就知是朝廷官人的住宅，朝西有两扇包铜厚门紧闭，大概是通向相府的内院。",
+  "exits": {
+   "东": "x/qujing/chechi/jieshi3"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/daguan": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/damo": {
+  "name": "达摩殿",
+  "long": "达摩殿里空空如也，几张供桌零乱地堆在屋角。墙面龟裂，门窗无存。地上胡乱地铺着干草，上面放着一些破旧蒲团。西北方向有一通道。",
+  "exits": {
+   "西北": "x/qujing/chechi/jingang"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/heshang#0": 1,
+   "x/qujing/chechi/npc/heshang#1": 1,
+   "x/qujing/chechi/npc/heshang#2": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/dianmen": {
+  "name": "殿门",
+  "long": "这里是三清观的殿门，殿门红木青檐翻修一新，门口织锦裹柱且绣有二十二个大字：“雨顺风调，愿祝天尊无量法；河清海晏，祈求万岁有余年。”",
+  "details": {},
+  "exits": {
+   "南": "x/qujing/chechi/banlu1",
+   "西": "x/qujing/chechi/zhai",
+   "东": "x/qujing/chechi/wugu",
+   "北": "x/qujing/chechi/sanqing"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/daozhang": 1
+  },
+  "doors": {
+   "东": {
+    "name": "小门",
+    "closed": true
+   }
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/dong": {
+  "name": "东场",
+  "long": "东场在皇宫的东南边，由大块石头东西向三排铺成。往西是相邻的中场，向北伸首可以见到高大的殿阁。这里路人不多且行色匆匆，不敢随便久留。",
+  "exits": {
+   "东": "x/qujing/chechi/jieshi7",
+   "西": "x/qujing/chechi/zhong"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/dongmen": {
+  "name": "东城门",
+  "long": "东城门大开，城楼高耸，车迟国旌旗迎风簌簌飘扬。楼两角筑有石墙箭楼，站有两列弓箭手。楼下护墙借备森严，内有一排穿甲戴盔的刀斧手严阵以待。",
+  "exits": {
+   "东": "x/qujing/chechi/shatan1",
+   "南": "x/qujing/chechi/qiang5g",
+   "北": "x/qujing/chechi/qiang3g",
+   "西": "x/qujing/chechi/ruizhao"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/fang": {
+  "name": "方丈楼",
+  "long": "方丈楼里简朴干净，只有一方木桌，上面有几本佛经，几个木鱼和木鱼锤。边上有一张长长的木床，叠有几方棉布薄被。南边是木梯，往下通向后殿。",
+  "exits": {
+   "南": "x/qujing/chechi/hou"
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/feng": {
+  "name": "凤阁",
+  "long": "凤阁里挤满了小姐少奶奶，阁檐上绘有两个银羽飞凤，展翅欲飞。阁内一排花莲长椅，配有紫花茶几。一些无事小姐少奶奶们饭后在此叽叽喳喳，品茶消食。",
+  "exits": {
+   "西": "x/qujing/chechi/jieshi10"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/feng#7": 1,
+   "x/qujing/chechi/npc/feng#8": 1,
+   "x/qujing/chechi/npc/feng#9": 1,
+   "x/qujing/chechi/npc/feng#10": 1,
+   "x/qujing/chechi/npc/feng#0": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/fengyun": {
+  "name": "风云殿",
+  "long": "殿里云霞缭绕，烟雾层叠，仙气十足。殿壁上绘满各种风神云神的画像，神态各异。殿心有一八角香桌，上面燃着九柱麝香，香气扑鼻。",
+  "exits": {
+   "南": "x/qujing/chechi/jishui",
+   "东": "x/qujing/chechi/jinluan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/taijian": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong1a": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "东": "x/qujing/chechi/gong1b",
+   "南": "x/qujing/chechi/gong2a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong1b": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "东": "x/qujing/chechi/gong1c",
+   "西": "x/qujing/chechi/gong1a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong1c": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "东": "x/qujing/chechi/gong1d",
+   "西": "x/qujing/chechi/gong1b"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong1d": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "东": "x/qujing/chechi/gong1e",
+   "西": "x/qujing/chechi/gong1c"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong1e": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong2e",
+   "西": "x/qujing/chechi/gong1d"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong2a": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong3a",
+   "北": "x/qujing/chechi/gong1a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong2e": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong3e",
+   "北": "x/qujing/chechi/gong1e"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong3a": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong4a",
+   "北": "x/qujing/chechi/gong2a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong3e": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong4e",
+   "北": "x/qujing/chechi/gong2e"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong4a": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong5a",
+   "北": "x/qujing/chechi/gong3a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong4e": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "南": "x/qujing/chechi/gong5e",
+   "北": "x/qujing/chechi/gong3e"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong5a": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "北": "x/qujing/chechi/gong4a",
+   "东": "x/qujing/chechi/gong5b"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/weishi": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong5b": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "西": "x/qujing/chechi/gong5a",
+   "东": "x/qujing/chechi/gongmen"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/weishi@gong5b": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong5d": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "西": "x/qujing/chechi/gongmen",
+   "东": "x/qujing/chechi/gong5e"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/weishi@gong5d": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gong5e": {
+  "name": "宫墙",
+  "long": "宫墙雄伟，用大石块堆砌而成，顶端飘着皇家旌旗。每隔一丈就设有一个哨楼，上面有哨兵持矛巡逻。墙下是一条石路，沿墙伸向远方。",
+  "exits": {
+   "西": "x/qujing/chechi/gong5d",
+   "北": "x/qujing/chechi/gong4e"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/weishi@gong5e": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/gongmen": {
+  "name": "宫门",
+  "long": "车迟国宫门南开，门边镶有赤金钉，门上嵌着白玉檐。庄严肃穆。门洞里可供皇家马车双行，门楼上雕砌玉麒麟金龙朱雀，祥云缥缈霞光万道。",
+  "exits": {
+   "西": "x/qujing/chechi/gong5b",
+   "东": "x/qujing/chechi/gong5d",
+   "南": "x/qujing/chechi/zhong",
+   "北": "x/qujing/chechi/zhaomen"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/hou": {
+  "name": "后殿",
+  "long": "后殿里气氛宁静，灵台高筑，依次摆列着八菩萨的佛象。这里香火也是不断，地上铺着一些旧蒲团。西边殿门通向正殿，往北向上通往方丈楼。",
+  "exits": {
+   "北": "x/qujing/chechi/fang",
+   "西": "x/qujing/chechi/zheng"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/heshang#5": 1,
+   "x/qujing/chechi/npc/heshang#0@hou": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/houdian": {
+  "name": "后殿",
+  "long": "后殿里香烟缭绕，笙竽声不绝，殿内设有一台，上放有铜壶玉简若干。此刻烛光闪闪，灯火通明。向南是三清殿，西北方向是藏经楼。",
+  "exits": {
+   "南": "x/qujing/chechi/sanqing",
+   "西北": "x/qujing/chechi/cangjing"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/daotong": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/hougong1": {
+  "name": "后宫",
+  "long": "后宫里四面宝镜高悬，宫殿的地面由赤铜一字铺开，华贵之极。宫内供着仙果仙花，案上的宝烛辉煌，馥郁真香，真是令人心旷神怡。",
+  "exits": {
+   "东": "x/qujing/chechi/hougong2"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/girl": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/hougong2": {
+  "name": "后宫",
+  "long": "后宫里四面宝镜高悬，宫殿的地面由赤铜一字铺开，华贵之极。宫内供着仙果仙花，案上的宝烛辉煌，馥郁真香，真是令人心旷神怡。",
+  "exits": {
+   "西": "x/qujing/chechi/hougong1",
+   "东": "x/qujing/chechi/hougong3",
+   "南": "x/qujing/chechi/jinluan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/girl@hougong2": 3
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/hougong3": {
+  "name": "后宫",
+  "long": "后宫里四面宝镜高悬，宫殿的地面由赤铜一字铺开，华贵之极。宫内供着仙果仙花，案上的宝烛辉煌，馥郁真香，真是令人心旷神怡。",
+  "exits": {
+   "西": "x/qujing/chechi/hougong2"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/girl@hougong3": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi1": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/xiao",
+   "南": "x/qujing/chechi/jieshi3"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#4": 1,
+   "x/qujing/chechi/npc/people#5": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi10": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "北": "x/qujing/chechi/jieshi9",
+   "东": "x/qujing/chechi/feng"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#4@jieshi10": 1,
+   "x/qujing/chechi/npc/people#5@jieshi10": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi2": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/tangchi",
+   "南": "x/qujing/chechi/caichang"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#5@jieshi2": 1,
+   "x/qujing/chechi/npc/people#6": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi3": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "北": "x/qujing/chechi/jieshi1",
+   "西": "x/qujing/chechi/da",
+   "南": "x/qujing/chechi/xinshi"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#6@jieshi3": 1,
+   "x/qujing/chechi/npc/people#7": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi4": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/caichang",
+   "东": "x/qujing/chechi/jieshi5"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#7@jieshi4": 1,
+   "x/qujing/chechi/npc/people#0": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi5": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/jieshi4",
+   "东": "x/qujing/chechi/xinshi"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#0@jieshi5": 1,
+   "x/qujing/chechi/npc/people#1": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi6": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/shutang",
+   "东": "x/qujing/chechi/xi",
+   "北": "x/qujing/chechi/taiping",
+   "南": "x/qujing/chechi/jieshi8"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#1@jieshi6": 1,
+   "x/qujing/chechi/npc/people#2": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi7": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/dong",
+   "北": "x/qujing/chechi/ruizhao",
+   "南": "x/qujing/chechi/jieshi9"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#2@jieshi7": 1,
+   "x/qujing/chechi/npc/people#3": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi8": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "西": "x/qujing/chechi/xitai",
+   "南": "x/qujing/chechi/yanhua",
+   "北": "x/qujing/chechi/jieshi6"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/people#3@jieshi8": 1,
+   "x/qujing/chechi/npc/people#4@jieshi8": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jieshi9": {
+  "name": "街市",
+  "long": "拥挤的车迟国街市，由碎砖石铺成。人声鼎沸，街景秀丽，令人目不暇己。两边有不少行人来回匆匆走过。偶尔有些小贩沿途边走叫边卖着什么。",
+  "exits": {
+   "北": "x/qujing/chechi/jieshi7",
+   "东": "x/qujing/chechi/long",
+   "南": "x/qujing/chechi/jieshi10"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jingang": {
+  "name": "金刚殿",
+  "long": "金刚殿里残破不堪，光线十分阴暗。几个泥胎已经因为年久失修颜色早就脱落了，台上放着旧香鼎，有气无力地燃着佛香。往东是正殿，东南方向有一通道。",
+  "exits": {
+   "西": "x/qujing/chechi/simen",
+   "东": "x/qujing/chechi/zheng",
+   "北": "x/qujing/chechi/beiyuan",
+   "东南": "x/qujing/chechi/damo"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jinluan": {
+  "name": "金銮殿",
+  "long": "大殿里灯火通明，金莲御座高高在上。御座前后各有一对玉麒麟守候，两边是缀珠紫红绒帘，华贵之极。殿顶龙飞凤舞，碎玉堆金，紫气浩荡。",
+  "exits": {
+   "北": "x/qujing/chechi/hougong2",
+   "南": "x/qujing/chechi/wufeng",
+   "西": "x/qujing/chechi/fengyun",
+   "东": "x/qujing/chechi/leiyu"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/taijian@jinluan": 1,
+   "x/qujing/chechi/npc/king": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jishui": {
+  "name": "祭水场",
+  "long": "场上供有一玳瑁镶边的石井，泉水自井中潺潺流出，井边翠竹密生。旱季时这里也是祭水的场所，仙香奇异无比。东边的五色拱门直通坛场。",
+  "exits": {
+   "北": "x/qujing/chechi/fengyun",
+   "东": "x/qujing/chechi/tan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/jz1": 1,
+   "x/qujing/chechi/obj/chantai": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/jiuguan": {
+  "name": "酒馆",
+  "long": "小酒馆里边酒柜齐胸高。后面可以看见三个大酒缸。墙上挂着一些酒葫芦酒袋，案桌上放着大块的熟牛肉。酒保一边招待客人，一边切着熟牛肉。",
+  "exits": {
+   "东": "x/qujing/chechi/caichang"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/jiubao": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/leiyu": {
+  "name": "雷雨殿",
+  "long": "殿里供着石像，分别为雷雨之神。殿心有一张嵌玉桌，上面插有祈牌祈签。桌边放置有四个绣花软面蒲团，以供王室贵族祈祷时使用。",
+  "exits": {
+   "南": "x/qujing/chechi/qiyu",
+   "西": "x/qujing/chechi/jinluan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/taijian@leiyu": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/long": {
+  "name": "龙楼",
+  "long": "龙楼是车迟国公子哥们聚合的场所，楼外门柱上雕有金鳞盘龙一对，楼内摆满八仙桌。这里常有衣着考究的公子王孙整日在此逍遥混日，花天酒地谈东道西。",
+  "exits": {
+   "西": "x/qujing/chechi/jieshi9"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/long#9": 1,
+   "x/qujing/chechi/npc/long#10": 1,
+   "x/qujing/chechi/npc/long#11": 1,
+   "x/qujing/chechi/npc/long#12": 1,
+   "x/qujing/chechi/npc/long#0": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/miyuan": {
+  "name": "秘院",
+  "long": "这里是一座秘密的四方庭院，四周是高墙。院内阴气习习，罂粟盛开。南边是藏经楼的后墙，墙下有一暗通道。",
+  "exits": {
+   "南": "x/qujing/chechi/cangjing"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/langli": 1,
+   "x/qujing/chechi/npc/chaili": 1,
+   "x/qujing/chechi/npc/beili": 1,
+   "x/qujing/chechi/npc/mali": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1a": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "南": "x/qujing/chechi/qiang2a",
+   "东": "x/qujing/chechi/qiang1b"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1b": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang1a",
+   "东": "x/qujing/chechi/qiang1c"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1c": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang1b",
+   "东": "x/qujing/chechi/qiang1d"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1d": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang1c",
+   "东": "x/qujing/chechi/qiang1e",
+   "南": "x/qujing/chechi/shanlu1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1e": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang1d",
+   "东": "x/qujing/chechi/qiang1f"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1f": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang1e",
+   "东": "x/qujing/chechi/qiang1g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang1g": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang1f",
+   "南": "x/qujing/chechi/qiang2g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang2a": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang1a",
+   "南": "x/qujing/chechi/qiang3a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang2g": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang1g",
+   "南": "x/qujing/chechi/qiang3g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang3a": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang2a",
+   "南": "x/qujing/chechi/ximen"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang3g": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "南": "x/qujing/chechi/dongmen",
+   "北": "x/qujing/chechi/qiang2g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang5a": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/ximen",
+   "南": "x/qujing/chechi/qiang6a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang5g": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/dongmen",
+   "南": "x/qujing/chechi/qiang6g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang6a": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang5a",
+   "南": "x/qujing/chechi/qiang7a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang6g": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang5g",
+   "南": "x/qujing/chechi/qiang7g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7a": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang6a",
+   "东": "x/qujing/chechi/qiang7b"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7b": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang7a",
+   "东": "x/qujing/chechi/qiang7c"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7c": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang7b",
+   "东": "x/qujing/chechi/qiang7d"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7d": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang7c",
+   "东": "x/qujing/chechi/qiang7e",
+   "北": "x/qujing/chechi/banlu2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7e": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang7d",
+   "东": "x/qujing/chechi/qiang7f"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7f": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "西": "x/qujing/chechi/qiang7e",
+   "东": "x/qujing/chechi/qiang7g"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiang7g": {
+  "name": "城墙",
+  "long": "高大的城墙，有三丈多高，由灰岩夹黄土筑成。城墙上斑斑驳驳，看起来已经有些年代了，沿着长长的墙铺有一条结实的土石路，可以行人走车。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang6g",
+   "西": "x/qujing/chechi/qiang7f"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/qiyu": {
+  "name": "祈雨场",
+  "long": "场上有一玉池，水波微荡，金莲朵朵在池里争艳。这里是旱季祈祷龙王降雨的场所，周围彩墙绘有雾峰云海。西边有一五色拱门通向坛场。",
+  "exits": {
+   "北": "x/qujing/chechi/leiyu",
+   "西": "x/qujing/chechi/tan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/jz3": 1,
+   "x/qujing/chechi/obj/youguo": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/ruizhao": {
+  "name": "瑞兆场",
+  "long": "一个以细砖铺就的小广场，场周围种了一圈苦椹树，由于缺水树木已经有些干枯了。这里是车迟国的闹市区之一，行人来来往往络绎不绝。",
+  "exits": {
+   "东": "x/qujing/chechi/dongmen",
+   "南": "x/qujing/chechi/jieshi7"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/sanqing": {
+  "name": "三清殿",
+  "long": "殿内左有大鼓右有铜钟，中间是一石案，上面是五色花瓶和青石烛台，供有不少丰盛斋宴。四壁功德悬挂，殿心分别是元始天尊，灵宝道君和太上老君。",
+  "exits": {
+   "南": "x/qujing/chechi/dianmen",
+   "北": "x/qujing/chechi/houdian",
+   "东北": "x/qujing/chechi/xiang1"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/yuanshi": 1,
+   "x/qujing/chechi/npc/lingbao": 1,
+   "x/qujing/chechi/npc/taishang": 1,
+   "x/qujing/chechi/obj/zhengsu": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shanlu1": {
+  "name": "山路",
+  "long": "城内的小山坡上斜斜地筑了一条土小路，弯弯曲曲盘旋而上。因年久失修的缘故，路面坎坷凸凹不平。路边早已是乱草丛生，杂石竖横。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang1d",
+   "东": "x/qujing/chechi/shanlu2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shanlu2": {
+  "name": "山路",
+  "long": "城内的小山坡上斜斜地筑了一条土小路，弯弯曲曲盘旋而上。因年久失修的缘故，路面坎坷凸凹不平。路边早已是乱草丛生，杂石竖横。",
+  "exits": {
+   "西": "x/qujing/chechi/shanlu1",
+   "西南": "x/qujing/chechi/shanlu3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shanlu3": {
+  "name": "山路",
+  "long": "城内的小山坡上斜斜地筑了一条土小路，弯弯曲曲盘旋而上。因年久失修的缘故，路面坎坷凸凹不平。路边早已是乱草丛生，杂石竖横。",
+  "exits": {
+   "东北": "x/qujing/chechi/shanlu2",
+   "南": "x/qujing/chechi/shanlu4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shanlu4": {
+  "name": "山路",
+  "long": "城内的小山坡上斜斜地筑了一条土小路，弯弯曲曲盘旋而上。因年久失修的缘故，路面坎坷凸凹不平。路边早已是乱草丛生，杂石竖横。",
+  "exits": {
+   "北": "x/qujing/chechi/shanlu3",
+   "东南": "x/qujing/chechi/simen"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shatan1": {
+  "name": "沙滩",
+  "long": "这里气候干燥，土地龟裂。中间是一片沙滩，被人踩出一条大路，路上压有几条大车轱辘碾出的深深痕迹，路边零星散有一些残破的砖石木料。这里气候干燥，土地龟裂。",
+  "exits": {
+   "东南": "x/qujing/chechi/shatan2",
+   "西": "x/qujing/chechi/dongmen"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shatan2": {
+  "name": "沙滩",
+  "long": "这里气候干燥，土地龟裂。中间是一片沙滩，被人踩出一条大路，路上压有几条大车轱辘碾出的深深痕迹，路边零星散有一些残破的砖石木料。这里气候干燥，土地龟裂。",
+  "exits": {
+   "西北": "x/qujing/chechi/shatan1",
+   "南": "x/qujing/chechi/shatan3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shatan3": {
+  "name": "沙滩",
+  "long": "这里气候干燥，土地龟裂。中间是一片沙滩，被人踩出一条大路，路上压有几条大车轱辘碾出的深深痕迹，路边零星散有一些残破的砖石木料。这里气候干燥，土地龟裂。",
+  "exits": {
+   "东南": "x/qujing/wuji/shandao5",
+   "北": "x/qujing/chechi/shatan2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shatan4": {
+  "name": "沙滩",
+  "long": "这里气候干燥，土地龟裂。中间是一片沙滩，被人踩出一条大路，路上压有几条大车轱辘碾出的深深痕迹，路边零星散有一些残破的砖石木料。这里气候干燥，土地龟裂。",
+  "exits": {
+   "东": "x/qujing/chechi/ximen",
+   "西南": "x/qujing/chechi/shatan5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shatan5": {
+  "name": "沙滩",
+  "long": "这里气候干燥，土地龟裂。中间是一片沙滩，被人踩出一条大路，路上压有几条大车轱辘碾出的深深痕迹，路边零星散有一些残破的砖石木料。这里气候干燥，土地龟裂。",
+  "exits": {
+   "东北": "x/qujing/chechi/shatan4",
+   "西南": "x/qujing/tongtian/xiaolu3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/shutang": {
+  "name": "书堂",
+  "long": "书堂中间有一方桌，上有两卷摊开的绢书。墙上贴有几幅长长的字画，灯龛里烛光闪闪。四周放满了布面毡底圆蒲团，供客人们闲座。地上隔不远就置一个矮脚几，放有铜壶陶碗。",
+  "exits": {
+   "东": "x/qujing/chechi/jieshi6"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/shulao": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/simen": {
+  "name": "寺门",
+  "long": "山前有一座破旧的寺庙，已经退色的门半掩半开，落满了蛛网灰尘。似乎这里很久已经没有什么香客光临了。门上的大匾隐隐约约可见“智渊寺”几个金字。",
+  "exits": {
+   "西北": "x/qujing/chechi/shanlu4",
+   "东": "x/qujing/chechi/jingang"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/heshang#3": 1,
+   "x/qujing/chechi/npc/heshang#4": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/taiping": {
+  "name": "太平场",
+  "long": "太平场以碎砖铺成，场子不太大。场心有破旧的泥土祭坛，上面稀稀拉拉地长了一些枯草。这里算是车迟国的比较热闹的地段，穿着朴素的行人在场上走过。",
+  "exits": {
+   "西": "x/qujing/chechi/ximen",
+   "北": "x/qujing/chechi/caichang",
+   "南": "x/qujing/chechi/jieshi6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/tan": {
+  "name": "坛场",
+  "long": "无数玉坛一线排开，中间有一黄铜大鼎。风摇青树，瑞草齐生，生气勃然。左右各有一五色拱门相通，西边是祭水场，东边是祈雨场。",
+  "exits": {
+   "南": "x/qujing/chechi/zhaomen",
+   "北": "x/qujing/chechi/wufeng",
+   "东": "x/qujing/chechi/qiyu",
+   "西": "x/qujing/chechi/jishui"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/jz2": 1,
+   "x/qujing/chechi/obj/guizi": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/tangchi": {
+  "name": "汤池",
+  "long": "屋子里散着热腾腾的蒸气，夹杂有柴烟的味道。四周的石墙已被熏得有点发黑，墙角架有一排大铁锅，锅边有木架子供人上下进出，上面搭着一些毛边干浴巾。",
+  "exits": {
+   "东": "x/qujing/chechi/jieshi2"
+  },
+  "spawn": {
+   "x/qujing/chechi/obj/yujin": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/wufeng": {
+  "name": "五凤楼",
+  "long": "楼里设有五凤，各为赤橙青绿紫色。神态栩栩如生，欲飞欲留。楼上传来丝竹之声，香云缭绕，气氛极为祥和无比。北面通往金銮殿，南面通向坛场。",
+  "exits": {
+   "北": "x/qujing/chechi/jinluan",
+   "南": "x/qujing/chechi/tan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/girl@wufeng": 5
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/wugu": {
+  "name": "五谷轮回",
+  "long": "屋子里光线阴暗，墙壁潮湿，里面似乎什么也看不清。门口有几大柱粗香冒着浓烟，边上有一小凳，上面放有一叠一叠的粗糙草纸。",
+  "details": {},
+  "exits": {
+   "西": "x/qujing/chechi/dianmen"
+  },
+  "doors": {
+   "西": {
+    "name": "小门",
+    "closed": true
+   }
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xi": {
+  "name": "西场",
+  "long": "西场用大块石头东西向三排铺成，位于车迟皇宫的西南边，往西是比较热闹的城区，往东则是中场，从这里往北看，可以见到皇宫的殿阁。",
+  "exits": {
+   "西": "x/qujing/chechi/jieshi6",
+   "东": "x/qujing/chechi/zhong"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xiang1": {
+  "name": "厢廊",
+  "long": "长长的厢廊，两边是镶花气窗，廊檐上挂有串串铜铃，随风叮当。地上铺有一条素色布毯，厢廊的西南方向是三清殿，东边通往厢房。",
+  "exits": {
+   "西南": "x/qujing/chechi/sanqing",
+   "东": "x/qujing/chechi/xiang2"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/daoshi": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xiang2": {
+  "name": "厢房",
+  "long": "厢房里整整齐齐，南北各有一红砖大炕，铺着锦花棉被。炕上有硬木炕桌，放有茶锺瓷碗。墙上有一些字画，写着：“一诚达上，寸敬虔归。”",
+  "exits": {
+   "西": "x/qujing/chechi/xiang1",
+   "东": "x/qujing/chechi/xiang3"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/daoshi@xiang2": 2
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xiang3": {
+  "name": "厢房",
+  "long": "厢房里整整齐齐，南北各有一红砖大炕，铺着锦花棉被。炕上有硬木炕桌，放有茶锺瓷碗。墙上有一些字画，写着：“罗天大醮，彻夜看经。”",
+  "exits": {
+   "西": "x/qujing/chechi/xiang2"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/daoshi@xiang3": 2
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xiao": {
+  "name": "小相府",
+  "long": "小相府门口放着一紫檀木武器架，朝南开有一排莲花窗，朝西靠墙设有仙桌仙椅，上面供有时鲜水果。北面是一排白底彩染绸缎面屏风，将堂屋隔开。",
+  "exits": {
+   "东": "x/qujing/chechi/jieshi1"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/xiaoguan": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/ximen": {
+  "name": "西城门",
+  "long": "西城门紧闭，城楼高耸，车迟国旌旗迎风簌簌飘扬。楼两角筑有石墙箭楼，站有两列弓箭手。楼下护墙借备森严，内有一排穿甲戴盔的刀斧手严阵以待。",
+  "exits": {
+   "北": "x/qujing/chechi/qiang3a",
+   "东": "x/qujing/chechi/taiping",
+   "西": "x/qujing/chechi/shatan4",
+   "南": "x/qujing/chechi/qiang5a"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xinshi": {
+  "name": "新市口",
+  "long": "新市口向北通往富贵人家的住宅区。街口宽敞，路面用石砖铺就，这里相对比较安静干净。路上行人略少一点，有时可以见到一两辆遮棚马车驶过。",
+  "exits": {
+   "西": "x/qujing/chechi/jieshi5",
+   "北": "x/qujing/chechi/jieshi3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/xitai": {
+  "name": "戏台",
+  "long": "这里屋深幽暗，屋子西端搭有一座精巧但已有点退色的戏台。戏台两边挂有数盏明亮的灯笼。前几排有些矮凳，后面是一些红油茶桌和宽背扶手椅。",
+  "exits": {
+   "东": "x/qujing/chechi/jieshi8"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/xizi": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/yanhua": {
+  "name": "烟花院",
+  "long": "烟花院已有些年头了，院门漆成大彩红色，里面香气扑鼻，各种摆设琳琅满目，桌上放有丝琴竹箫。从关闭的里屋门后隐隐传来女人笑唱的声音。",
+  "exits": {
+   "北": "x/qujing/chechi/jieshi8"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/jinchai": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/zhai": {
+  "name": "斋房",
+  "long": "三清观的斋房设在殿前，斋房宽大，设有一大红木斋桌。房内无灶无锅。因车迟国内文武官员爱道成风，大小男女前来拜请奉斋络绎不觉，这里善斋不断。",
+  "exits": {
+   "东": "x/qujing/chechi/dianmen"
+  },
+  "spawn": {
+   "x/qujing/chechi/obj/gongguo": 1,
+   "x/qujing/chechi/obj/guo": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/zhaifang": {
+  "name": "斋房",
+  "long": "斋房里砌了一大泥灶，上面支着一口大铁锅，灶边是两个水桶和一些干柴。木台上放着一些粗瓷碗，还有几只木凳。南边有一门通向院子。",
+  "exits": {
+   "南": "x/qujing/chechi/beiyuan"
+  },
+  "spawn": {
+   "x/qujing/chechi/obj/rice": 1,
+   "x/qujing/chechi/obj/kang": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/zhaomen": {
+  "name": "朝门",
+  "long": "朝门祥光笼罩，东边设有一只金钟，西边设有一面银鼓，门下百种奇花异草怒放。门上是透亮琉璃瓦，门道由黛色罗纹细密石条一路铺平。",
+  "exits": {
+   "南": "x/qujing/chechi/gongmen",
+   "北": "x/qujing/chechi/tan"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/weishi@zhaomen": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/chechi/zheng": {
+  "name": "正殿",
+  "long": "正殿雕梁画栋，佛祖在中间的宝座上高供，两边是无数阿罗，揭谛。香炉青烟袅袅，殿堂虽是旧了些，倒也打扫一净。往东便是后殿，西边通向金刚殿。",
+  "exits": {
+   "西": "x/qujing/chechi/jingang",
+   "东": "x/qujing/chechi/hou"
+  },
+  "spawn": {
+   "x/qujing/chechi/npc/heshang#3@zheng": 1,
+   "x/qujing/chechi/npc/heshang#4@zheng": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/chechi/zhong": {
+  "name": "中场",
+  "long": "中场在皇宫的南面，用大块石头铺成，向北是皇宫的入口，飘着车迟国的旌旗。每天钟鸣时分，有士兵出场演武操练。东面是东场，西面是西场。",
+  "exits": {
+   "西": "x/qujing/chechi/xi",
+   "北": "x/qujing/chechi/gongmen",
+   "东": "x/qujing/chechi/dong"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
  "x/qujing/pingding/beidong": {
   "name": "北洞",
   "long": "北洞里面靠墙的地方垒着几块大石头，石头已被熏得漆黑，上面吊着一口大铁锅，石头边放着山柴，干草等。西南方有一出口通向洞门。",
@@ -1688,7 +2919,8 @@ export const ROOMS = {
   "name": "山道",
   "long": "崎岖的山道在山坡上蜿蜒，四处是荒山野岭，云雾蒙蒙一片，远看林海郁郁苍苍。路边有不尽的古树和藤葛，西风阵阵，吹得满天的风沙。",
   "exits": {
-   "东北": "x/qujing/pingding/shan1"
+   "东北": "x/qujing/pingding/shan1",
+   "西南": "x/qujing/wuji/shandao1"
   },
   "outdoors": true,
   "area": "xyj"
@@ -1858,6 +3090,931 @@ export const ROOMS = {
    "西": "x/qujing/pingding/yalong2"
   },
   "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/bing1": {
+  "name": "冰道",
+  "long": "河面冻得结结实实，厚厚的一层冰已经被人走出一条长长的冰道，也有大冰撬滑过留下的痕迹。风呼呼地打在脸上，刺骨地寒冷。",
+  "exits": {
+   "西": "x/qujing/tongtian/hexi3",
+   "东": "x/qujing/tongtian/bing2",
+   "南": "x/qujing/tongtian/bing3"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/people#16": 1,
+   "x/qujing/tongtian/npc/people#17": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/bing2": {
+  "name": "冰道",
+  "long": "河面冻得结结实实，厚厚的一层冰已经被人走出一条长长的冰道，也有大冰撬滑过留下的痕迹。风呼呼地打在脸上，刺骨地寒冷。",
+  "exits": {
+   "西": "x/qujing/tongtian/bing1",
+   "东": "x/qujing/tongtian/hedong2",
+   "南": "x/qujing/tongtian/bing4"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/people#17@bing2": 1,
+   "x/qujing/tongtian/npc/people#18": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/bing3": {
+  "name": "冰道",
+  "long": "河面冻得结结实实，厚厚的一层冰已经被人走出一条长长的冰道，也有大冰撬滑过留下的痕迹。风呼呼地打在脸上，刺骨地寒冷。",
+  "exits": {
+   "西": "x/qujing/tongtian/hexi4",
+   "东": "x/qujing/tongtian/bing4",
+   "北": "x/qujing/tongtian/bing1"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/people#18@bing3": 1,
+   "x/qujing/tongtian/npc/people#19": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/bing4": {
+  "name": "冰道",
+  "long": "河面冻得结结实实，厚厚的一层冰已经被人走出一条长长的冰道，也有大冰撬滑过留下的痕迹。风呼呼地打在脸上，刺骨地寒冷。",
+  "exits": {
+   "西": "x/qujing/tongtian/bing3",
+   "东": "x/qujing/tongtian/hedong3",
+   "北": "x/qujing/tongtian/bing2"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/people#19@bing4": 1,
+   "x/qujing/tongtian/npc/people#20": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/chen1": {
+  "name": "陈家庄",
+  "long": "陈家庄里住着大大小小的人家，多姓陈故为陈家庄。庄子里不时可听见热闹的声音，夹杂着鸡鸣狗叫。一些人家的烟囱里冒出淡淡的烟，空气中散发着柴烟香。",
+  "exits": {
+   "北": "x/qujing/tongtian/minju1",
+   "西": "x/qujing/tongtian/minju4",
+   "东": "x/qujing/tongtian/chen2",
+   "南": "x/qujing/tongtian/chen3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/chen2": {
+  "name": "陈家庄",
+  "long": "陈家庄里住着大大小小的人家，多姓陈故为陈家庄。庄子里不时可听见热闹的声音，夹杂着鸡鸣狗叫。一些人家的烟囱里冒出淡淡的烟，空气中散发着柴烟香。",
+  "exits": {
+   "东北": "x/qujing/tongtian/minju3",
+   "西北": "x/qujing/tongtian/minju2",
+   "西": "x/qujing/tongtian/chen1",
+   "东南": "x/qujing/tongtian/xiaolu3"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/vendor": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/chen3": {
+  "name": "陈家庄",
+  "long": "陈家庄里住着大大小小的人家，多姓陈故为陈家庄。庄子里不时可听见热闹的声音，夹杂着鸡鸣狗叫。一些人家的烟囱里冒出淡淡的烟，空气中散发着柴烟香。",
+  "exits": {
+   "北": "x/qujing/tongtian/chen1",
+   "西": "x/qujing/tongtian/xiaolu2",
+   "东": "x/qujing/tongtian/minju5",
+   "东南": "x/qujing/tongtian/minju6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedi": {
+  "name": "河底",
+  "long": "……冰冷的河底……",
+  "exits": {
+   "上": "x/qujing/tongtian/bing2"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/jinyu": 1,
+   "x/qujing/tongtian/npc/yao#3": 1,
+   "x/qujing/tongtian/npc/yao#4": 1,
+   "x/qujing/tongtian/npc/yao#5": 1,
+   "x/qujing/tongtian/npc/yao#6": 1,
+   "x/qujing/tongtian/npc/yao#7": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedong1": {
+  "name": "河东",
+  "long": "一条很宽的大河横在面前，一眼望去，远远可以见到隐约的对岸。河堤的背面就是陈家庄，河面已结了厚厚的一层冰，偶然见到一些人行走在冰上。",
+  "exits": {
+   "南": "x/qujing/tongtian/hedong2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedong2": {
+  "name": "河东",
+  "long": "一条很宽的大河横在面前，一眼望去，远远可以见到隐约的对岸。河堤的背面就是陈家庄，河面已结了厚厚的一层冰，偶然见到一些人行走在冰上。",
+  "exits": {
+   "北": "x/qujing/tongtian/hedong1",
+   "西": "x/qujing/tongtian/bing2",
+   "南": "x/qujing/tongtian/hedong3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedong3": {
+  "name": "河东",
+  "long": "一条很宽的大河横在面前，一眼望去，远远可以见到隐约的对岸。河堤的背面就是陈家庄，河面已结了厚厚的一层冰，偶然见到一些人行走在冰上。",
+  "exits": {
+   "北": "x/qujing/tongtian/hedong2",
+   "西": "x/qujing/tongtian/bing4",
+   "南": "x/qujing/tongtian/hedong4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedong4": {
+  "name": "河东",
+  "long": "一条很宽的大河横在面前，一眼望去，远远可以见到隐约的对岸。河堤的背面就是陈家庄，河面已结了厚厚的一层冰，偶然见到一些人行走在冰上。",
+  "exits": {
+   "北": "x/qujing/tongtian/hedong3",
+   "东": "x/qujing/tongtian/xiaolu4",
+   "南": "x/qujing/tongtian/hedong5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedong5": {
+  "name": "河东",
+  "long": "一条很宽的大河横在面前，一眼望去，远远可以见到隐约的对岸。河堤的背面就是陈家庄，河面已结了厚厚的一层冰，偶然见到一些人行走在冰上。",
+  "exits": {
+   "北": "x/qujing/tongtian/hedong4",
+   "南": "x/qujing/tongtian/hedong6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hedong6": {
+  "name": "河东",
+  "long": "一条很宽的大河横在面前，一眼望去，远远可以见到隐约的对岸。河堤的背面就是陈家庄，河面已结了厚厚的一层冰，偶然见到一些人行走在冰上。",
+  "exits": {
+   "北": "x/qujing/tongtian/hedong5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hexi1": {
+  "name": "河西",
+  "long": "一条大河水面很宽，一眼望去，远远可以见到隐约的对岸。西边是岸上的树林，东面是河面，已结了厚厚的冰层，冷风呼呼地吹着，冰上偶然可见有人或车行走。",
+  "exits": {
+   "南": "x/qujing/tongtian/hexi2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hexi2": {
+  "name": "河西",
+  "long": "一条大河水面很宽，一眼望去，远远可以见到隐约的对岸。西边是岸上的树林，东面是河面，已结了厚厚的冰层，冷风呼呼地吹着，冰上偶然可见有人或车行走。",
+  "exits": {
+   "北": "x/qujing/tongtian/hexi1",
+   "南": "x/qujing/tongtian/hexi3",
+   "西北": "x/qujing/tongtian/xiaolu1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hexi3": {
+  "name": "河西",
+  "long": "一条大河水面很宽，一眼望去，远远可以见到隐约的对岸。西边是岸上的树林，东面是河面，已结了厚厚的冰层，冷风呼呼地吹着，冰上偶然可见有人或车行走。",
+  "exits": {
+   "北": "x/qujing/tongtian/hexi2",
+   "东": "x/qujing/tongtian/bing1",
+   "南": "x/qujing/tongtian/hexi4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hexi4": {
+  "name": "河西",
+  "long": "一条大河水面很宽，一眼望去，远远可以见到隐约的对岸。西边是岸上的树林，东面是河面，已结了厚厚的冰层，冷风呼呼地吹着，冰上偶然可见有人或车行走。",
+  "exits": {
+   "北": "x/qujing/tongtian/hexi3",
+   "东": "x/qujing/tongtian/bing3",
+   "南": "x/qujing/tongtian/hexi5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hexi5": {
+  "name": "河西",
+  "long": "一条大河水面很宽，一眼望去，远远可以见到隐约的对岸。西边是岸上的树林，东面是河面，已结了厚厚的冰层，冷风呼呼地吹着，冰上偶然可见有人或车行走。",
+  "exits": {
+   "北": "x/qujing/tongtian/hexi4",
+   "南": "x/qujing/tongtian/hexi6"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/hexi6": {
+  "name": "河西",
+  "long": "一条大河水面很宽，一眼望去，远远可以见到隐约的对岸。西边是岸上的树林，东面是河面，已结了厚厚的冰层，冷风呼呼地吹着，冰上偶然可见有人或车行走。",
+  "exits": {
+   "北": "x/qujing/tongtian/hexi5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/minju1": {
+  "name": "民居",
+  "long": "这是一户陈姓人家，屋子里摆设简单，设有一木桌两木椅，里面是一张床，上面的被褥叠得整整齐齐。北面有一个木窗子，窗外传来鸡叫。",
+  "exits": {
+   "出去": "x/qujing/tongtian/chen1"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/kid": 1,
+   "x/qujing/tongtian/npc/people#3": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/minju2": {
+  "name": "民居",
+  "long": "此户人家也是陈姓，堂屋里光线明亮，摆设颇为讲究，堂心有一八仙桌，上面放着净亮的铜茶具，屋边有几把宽背椅，中间有一小茶几。",
+  "exits": {
+   "出去": "x/qujing/tongtian/chen2"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/kid@minju2": 1,
+   "x/qujing/tongtian/npc/people#4": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/minju3": {
+  "name": "民居",
+  "long": "这也是一户陈姓人家，房子里面布置得非常舒适。屋子东边有一灶台，正烧着火，不知在做什么，散发出一股清香味。南边的门通向屋外。",
+  "exits": {
+   "出去": "x/qujing/tongtian/chen2"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/kid@minju3": 1,
+   "x/qujing/tongtian/npc/ji": 1,
+   "x/qujing/tongtian/npc/people#5": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/minju4": {
+  "name": "民居",
+  "long": "这家陈姓人家屋子里面空空的，一张木长条凳上放着一个空陶盆，长条凳边有几只小木凳。墙角放着一堆柴禾，边上是一个空的水缸。",
+  "exits": {
+   "出去": "x/qujing/tongtian/chen1"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/kid@minju4": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/minju5": {
+  "name": "民居",
+  "long": "民居里十分热闹，两张大木桌子拼在一起，周围放着椅子凳子，几个近邻凑在一起，围桌而坐，不知在谈什么。屋角的灶上烧着热水发出吱吱的水响。",
+  "exits": {
+   "出去": "x/qujing/tongtian/chen3"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/people#7": 1,
+   "x/qujing/tongtian/npc/people#8": 1,
+   "x/qujing/tongtian/npc/people#9": 1,
+   "x/qujing/tongtian/npc/people#10": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/minju6": {
+  "name": "民居",
+  "long": "这家人家也是陈姓，屋子里放着大小陶盆瓷罐，里面种着花草之类的东西。南边的两扇窗子大开，从外面飘来一股花草的清香味。",
+  "exits": {
+   "出去": "x/qujing/tongtian/chen3"
+  },
+  "spawn": {
+   "x/qujing/tongtian/npc/kid@minju6": 1,
+   "x/qujing/tongtian/npc/people#8@minju6": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/xiaolu1": {
+  "name": "小路",
+  "long": "小路长长弯弯，路上铺着碎石，已被过往的车轮压出两道槽印，路边有一棵棵青树，结着各种青果红果不记其数，路的两边是农田种着庄稼。",
+  "exits": {
+   "东南": "x/qujing/tongtian/hexi2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/xiaolu2": {
+  "name": "小路",
+  "long": "小路长长弯弯，路上铺着碎石，已被过往的车轮压出两道槽印，路边有一棵棵青树，结着各种青果红果不记其数，路的两边是农田种着庄稼。",
+  "exits": {
+   "西南": "x/qujing/tongtian/xiaolu4",
+   "东": "x/qujing/tongtian/chen3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/xiaolu3": {
+  "name": "小路",
+  "long": "小路长长弯弯，路上铺着碎石，已被过往的车轮压出两道槽印，路边有一棵棵青树，结着各种青果红果不记其数，路的两边是农田种着庄稼。",
+  "exits": {
+   "西北": "x/qujing/tongtian/chen2",
+   "东北": "x/qujing/chechi/shatan5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/tongtian/xiaolu4": {
+  "name": "小路",
+  "long": "小路长长弯弯，路上铺着碎石，已被过往的车轮压出两道槽印，路边有一棵棵青树，结着各种青果红果不记其数，路的两边是农田种着庄稼。",
+  "exits": {
+   "东北": "x/qujing/tongtian/xiaolu2",
+   "西": "x/qujing/tongtian/hedong4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/backyard": {
+  "name": "后院",
+  "long": "后院方方正正，院子里开了一块菜园子，种着各种蔬菜瓜果，绿油油一片。有一个藤架子，一些说不出名字的蔓藤爬在上面，开着黄色的小花。",
+  "exits": {
+   "南": "x/qujing/wuji/eastroom"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/bedroom": {
+  "name": "寝宫",
+  "long": "这里光线柔和，屋里装饰精美细腻。靠窗放有一长条桌，陈列着一些玉器瓷器。另一面是床，整齐地铺着锦罗花被。往北通向露天的小院子。",
+  "exits": {
+   "北": "x/qujing/wuji/garden"
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/eastgate": {
+  "name": "东门",
+  "long": "这是乌鸡国的东门城楼，青石筑成两层楼台坚固异常，巍峨宽阔的拱行城门上方镂着「乌鸡国」三个红漆大字。",
+  "exits": {
+   "东": "x/qujing/wuji/street2",
+   "西": "x/qujing/wuji/estreet"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/eastroom": {
+  "name": "东厢房",
+  "long": "这是宝林寺的禅房，以供游方僧人借宿一宿，房内陈设简陋，靠墙设有几张木床。",
+  "exits": {
+   "北": "x/qujing/wuji/backyard",
+   "西": "x/qujing/wuji/zheng"
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/estreet": {
+  "name": "坤元街",
+  "long": "坤元街是乌鸡国最繁华的一条街。人来人往，好不热闹。北边是一家茶馆，南边是一家水果店。",
+  "exits": {
+   "西": "x/qujing/wuji/estreet2",
+   "南": "x/qujing/wuji/fruit",
+   "东": "x/qujing/wuji/eastgate"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/people#2": 1,
+   "x/qujing/wuji/npc/people#3": 1,
+   "x/qujing/wuji/npc/people#4": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/estreet2": {
+  "name": "坤元街",
+  "long": "这里是坤元街中段，路两旁挤满了做生意的小贩。北边有一家裁衣店，南边是一家客店。",
+  "exits": {
+   "西": "x/qujing/wuji/square",
+   "南": "x/qujing/wuji/kezhan",
+   "东": "x/qujing/wuji/estreet"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/people#4@estreet2": 1,
+   "x/qujing/wuji/npc/people#5": 1,
+   "x/qujing/wuji/npc/people#0": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/fruit": {
+  "name": "四季水果店",
+  "long": "这家水果店店面虽然不大，但各色瓜果齐全，而且时令瓜果每日由城外运来，尤其新鲜。各色水果鲜红翠绿，十分诱人。",
+  "exits": {
+   "北": "x/qujing/wuji/estreet"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/vender": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/garden": {
+  "name": "后院",
+  "long": "后院中心有一个小池塘，养了几只鹤。四围房前种了不少松柏，郁郁葱葱。",
+  "exits": {
+   "西": "x/qujing/wuji/house",
+   "南": "x/qujing/wuji/bedroom",
+   "东": "x/qujing/wuji/stable",
+   "北": "x/qujing/wuji/shufang"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/hilltop": {
+  "name": "山顶",
+  "long": "山顶山磐石耸立，旁边有一片稀稀拉拉的树林。南边是陡峭的悬崖直壁，无路可行。此处山高风冷，空谷回音。",
+  "exits": {
+   "北": "x/qujing/wuji/road5"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/prince": 1,
+   "x/qujing/wuji/npc/siwei": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/house": {
+  "name": "太子府",
+  "long": "此处乃是太子的行宫。三年前，国王认为太子已经成人，故为其另造宫殿，习文练武，没有诏令，不得私自进宫，以免分心。",
+  "exits": {
+   "西": "x/qujing/wuji/nstreet2",
+   "东北": "x/qujing/wuji/shufang",
+   "东": "x/qujing/wuji/garden"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/siwei@house": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/huilang": {
+  "name": "白玉回廊",
+  "long": "回廊两侧皆由白云石雕成，花鸟虫鱼，莫不维妙维肖。回廊之外花开似锦，春意盎然。往西通往锦香亭，往北则是祈雨坛。",
+  "exits": {
+   "西": "x/qujing/wuji/jxt",
+   "南": "x/qujing/wuji/palace",
+   "北": "x/qujing/wuji/huilang2"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/girl": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/huilang2": {
+  "name": "白玉回廊",
+  "long": "廊两侧皆由白云石雕成，花鸟虫鱼，莫不维妙维肖。回廊之外花开似锦，春意盎然。往北是废弃的御花园。三年前国王与祈雨的道人在御花园玩赏时，道人化风而去，国王思慕那道人，再无心玩赏，遂命人将花园关闭。往西是王后的寝宫。",
+  "exits": {
+   "进去": "x/qujing/wuji/yuhua",
+   "南": "x/qujing/wuji/huilang",
+   "西": "x/qujing/wuji/ziyun"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/girl@huilang2": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/hzm": {
+  "name": "后宰门",
+  "long": "这里是王宫的偏门，看上去冷冷清清的，只有几个老太监无所事事地在那儿打瞌睡。",
+  "exits": {
+   "东": "x/qujing/wuji/jxt",
+   "南": "x/qujing/wuji/wall"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/taijian": 2
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/jxt": {
+  "name": "锦香亭",
+  "long": "亭畔种着一簇牡丹，红艳欲滴。牡丹原产东土洛阳，乌鸡国王知道皇后爱花，而牡丹又为花中之王，是以不惜代价差人移植到此，真可谓名花倾国两相欢，常得君王带笑看了。",
+  "exits": {
+   "西": "x/qujing/wuji/hzm",
+   "北": "x/qujing/wuji/qiyutan",
+   "东": "x/qujing/wuji/huilang"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/queen": 1,
+   "x/qujing/wuji/npc/girl@jxt": 3
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/kezhan": {
+  "name": "坤元客栈",
+  "long": "这家客栈位与乌鸡国最繁华的坤元街中段，所以生意非常兴隆。南来北往的客人多在此歇脚。几个跑堂的小二来来回回招待着四方来客。楼上是客房。",
+  "exits": {
+   "上": "x/qujing/wuji/up",
+   "北": "x/qujing/wuji/estreet2"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/xiaoer": 1
+  },
+  "noFight": true,
+  "noMagic": true,
+  "water": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/nstreet": {
+  "name": "乾元街",
+  "long": "乾元街两边多为官宅民房。向北走可直达皇宫。路两旁时有卫兵巡逻。",
+  "exits": {
+   "南": "x/qujing/wuji/square",
+   "北": "x/qujing/wuji/nstreet2"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/people#5@nstreet": 1,
+   "x/qujing/wuji/npc/people#0@nstreet": 1,
+   "x/qujing/wuji/npc/people#1": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/nstreet2": {
+  "name": "乾元街",
+  "long": "乾元街北段多为国内官员的府邸。东边是太子府，西边是天师府。再往北就是乌鸡国的皇宫了。",
+  "exits": {
+   "南": "x/qujing/wuji/nstreet",
+   "东": "x/qujing/wuji/house",
+   "北": "x/qujing/wuji/zym"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/people#1@nstreet2": 1,
+   "x/qujing/wuji/npc/people#2@nstreet2": 1,
+   "x/qujing/wuji/npc/people#3@nstreet2": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/palace": {
+  "name": "昭泽殿",
+  "long": "这里是乌鸡国王召见臣子，研讨国家大事的地方。四壁琉璃焕彩，流金滴玉。阶下臣子侍卫屏息作声，等候国王的旨意。",
+  "exits": {
+   "北": "x/qujing/wuji/huilang",
+   "南": "x/qujing/wuji/zym"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/taijian@palace": 2,
+   "x/qujing/wuji/npc/chen": 3,
+   "x/qujing/wuji/npc/kingfake": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/piandian": {
+  "name": "前殿",
+  "long": "只见两边红漆栏杆里面高坐这一对金刚，装塑的威依恶丑：一个铁面钢髯，一个燥眉圆眼，金甲连环光灿烂，明盔绣带映飘风。",
+  "exits": {
+   "出去": "x/qujing/wuji/temple",
+   "北": "x/qujing/wuji/zheng"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/qiyutan": {
+  "name": "祈雨坛",
+  "long": "此处乃国王祈雨的祭坛。祭坛四角各放着一鼎香炉，中央立着一鼎巨大的石碑，写着一些蝌蚪形的文字。乌鸡国六年前曾招大旱，国王曾在此昼夜焚香祷告，终于感动了圣明，请到一位会呼风唤雨的道士，解除了旱情。",
+  "exits": {
+   "南": "x/qujing/wuji/jxt"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/taijian@qiyutan": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road1": {
+  "name": "山路",
+  "long": "山顶嵯峨摩斗柄，树梢仿佛接云霄。青烟堆里，时闻得谷口啼猿；乱翠荫中，每听得松间鹤唳。",
+  "exits": {
+   "西": "x/qujing/wuji/road2"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/shanji": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road2": {
+  "name": "山路",
+  "long": "只见此山八面巍峨，四围险峻，古怪乔松盘翠盖，枯摧老树挂藤箩。",
+  "exits": {
+   "东": "x/qujing/wuji/road1",
+   "西": "x/qujing/wuji/road3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road3": {
+  "name": "山路",
+  "long": "高峰入云，清流见底，青林翠竹，四时俱备。猿鸟乱鸣，沉鳞竞跃，实是欲界之仙都。",
+  "exits": {
+   "西北": "x/qujing/wuji/road4",
+   "东": "x/qujing/wuji/road2"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/shanji@road3": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road4": {
+  "name": "山路",
+  "long": "路两边千株老柏，带雨半空青冉冉；万节修篁，含烟一壑色苍苍。林中隐隐有钟声传来，好象是一座寺庙。",
+  "exits": {
+   "东南": "x/qujing/wuji/road3",
+   "西北": "x/qujing/wuji/temple",
+   "西": "x/qujing/wuji/road5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road5": {
+  "name": "山路",
+  "long": "路两边千株老柏，带雨半空青冉冉；万节修篁，含烟一壑色苍苍。北边林中隐隐有钟声传来，好象是一座寺庙。",
+  "exits": {
+   "南": "x/qujing/wuji/hilltop",
+   "东": "x/qujing/wuji/road4",
+   "北": "x/qujing/wuji/temple",
+   "西": "x/qujing/wuji/road6"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/shanji@road5": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road6": {
+  "name": "山路",
+  "long": "只见此山八面巍峨，四围险峻，古怪乔松盘翠盖，枯摧老树挂藤箩。",
+  "exits": {
+   "西北": "x/qujing/wuji/road7",
+   "东": "x/qujing/wuji/road5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/road7": {
+  "name": "山路",
+  "long": "山顶嵯峨摩斗柄，树梢仿佛接云霄。青烟堆里，时闻得谷口啼猿；乱翠荫中，每听得松间鹤唳。远远的可以看见山下楼台叠叠，殿阁重重。",
+  "exits": {
+   "东南": "x/qujing/wuji/road6",
+   "西": "x/qujing/wuji/street1"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/shanji@road7": 1
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shandao1": {
+  "name": "山道",
+  "long": "山道崎岖不平，沿着山势上下左右盘绕，地形十分险恶。群峦环绕，难辨东西南北。大风吹来，有点令人寒颤。",
+  "exits": {
+   "东北": "x/qujing/pingding/shan4",
+   "西南": "x/qujing/wuji/shandao2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shandao2": {
+  "name": "山道",
+  "long": "山道崎岖不平，沿着山势上下左右盘绕，地形十分险恶。群峦环绕，难辨东西南北。大风吹来，有点令人寒颤。",
+  "exits": {
+   "东北": "x/qujing/wuji/shandao1",
+   "西南": "x/qujing/wuji/street1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shandao3": {
+  "name": "山道",
+  "long": "山道崎岖不平，沿着山势上下左右盘绕，地形十分险恶。群峦环绕，难辨东西南北。大风吹来，有点令人寒颤。",
+  "exits": {
+   "西": "x/qujing/wuji/shandao4",
+   "东北": "x/qujing/wuji/street1"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shandao4": {
+  "name": "山道",
+  "long": "山道崎岖不平，沿着山势上下左右盘绕，地形十分险恶。群峦环绕，难辨东西南北。大风吹来，有点令人寒颤。",
+  "exits": {
+   "东": "x/qujing/wuji/shandao3",
+   "西南": "x/qujing/wuji/shandao5"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shandao5": {
+  "name": "山道",
+  "long": "山道崎岖不平，沿着山势上下左右盘绕，地形十分险恶。群峦环绕，难辨东西南北。大风吹来，有点令人寒颤。",
+  "exits": {
+   "西北": "x/qujing/chechi/shatan3",
+   "东北": "x/qujing/wuji/shandao4"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shufang": {
+  "name": "书房",
+  "long": "房间三面都是书架，上面摆满了书，大多都是军事与哲学方面的书。房中央有一张红木的书桌，桌后的太师椅上挂着一张白虎皮，一丝杂毛也没有。这张虎皮是太子去年打猎而得，太子为此甚为自豪。",
+  "exits": {
+   "南": "x/qujing/wuji/garden",
+   "西南": "x/qujing/wuji/house"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/shuijing": {
+  "name": "水晶宫",
+  "long": "黑暗深处一片光明，一座牌楼在水下恍然隐现，你正行走在水晶宫里，四周如明镜一般，方向难辨。",
+  "exits": {
+   "上": "x/qujing/wuji/well",
+   "东": "x/qujing/wuji/shuijing",
+   "西": "x/qujing/wuji/shuijing",
+   "南": "x/qujing/wuji/shuijing",
+   "北": "x/qujing/wuji/shuijing"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/square": {
+  "name": "乾坤广场",
+  "long": "这里是城中心了，路两旁挤满了小贩向你兜售当地的土产。向北可以到达乌鸡国的皇宫。向南则是一片民宅。东西两边的大路上有不少商店，甚是繁华。近几年来乌鸡国风调雨顺，老百性安居乐业，一片欣向荣的景象。",
+  "exits": {
+   "东": "x/qujing/wuji/estreet2",
+   "北": "x/qujing/wuji/nstreet"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/stable": {
+  "name": "马槽",
+  "long": "此间的马都是太子精心挑选的大宛宝马。其中以那匹名为＂绝尘＂的马最为名贵。",
+  "exits": {
+   "西": "x/qujing/wuji/garden"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/street1": {
+  "name": "山脚",
+  "long": "两旁林木茂盛，遮天蔽日。满径落叶，柔软稀松。虫鸟啾啾。凉风习习。",
+  "exits": {
+   "东北": "x/qujing/wuji/shandao2",
+   "西": "x/qujing/wuji/street2",
+   "东": "x/qujing/wuji/road7",
+   "西南": "x/qujing/wuji/shandao3"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/street2": {
+  "name": "官道",
+  "long": "平西望去有一座城池，隐隐被一层黑云罩着。两边的草虫里时有小动物窜出来。东边是一座山，山势巍峨挺拔。",
+  "exits": {
+   "东": "x/qujing/wuji/street1",
+   "西": "x/qujing/wuji/eastgate"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/temple": {
+  "name": "宝林寺",
+  "long": "只见八字砖墙泥红粉，两边门上钉金钉，叠叠楼台藏岭畔，城城宫阙隐山中。果然是一座好寺院。正门上红底烫金的写着三个字：＂宝林寺＂。",
+  "exits": {
+   "东南": "x/qujing/wuji/road4",
+   "进去": "x/qujing/wuji/piandian",
+   "南": "x/qujing/wuji/road5"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/monk2": 2,
+   "x/qujing/wuji/npc/monk1#2": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/up": {
+  "name": "二楼客房",
+  "long": "客房里整齐大方，四周放着床铺和雕木小几。临街是一排窗子，挂着薄窗帘，是个歇脚休息的好地方。",
+  "exits": {
+   "下": "x/qujing/wuji/kezhan"
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/wall": {
+  "name": "宫墙外围",
+  "long": "这里是王宫的宫墙外围，高大的墙壁乃是青石垒成，十分结实整齐。宫墙上方有一个哨亭角楼。",
+  "exits": {
+   "北": "x/qujing/wuji/hzm",
+   "东": "x/qujing/wuji/wall2"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/weishi": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/wall2": {
+  "name": "宫墙外围",
+  "long": "这里是王宫的宫墙外围，高大的墙壁乃是青石垒成，十分结实整齐。宫墙上方有一个哨亭角楼。",
+  "exits": {
+   "西": "x/qujing/wuji/wall",
+   "东": "x/qujing/wuji/wall3"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/weishi@wall2": 2
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/wall3": {
+  "name": "宫墙外围",
+  "long": "这里是王宫的宫墙外围，高大的墙壁乃是青石垒成，十分结实整齐。宫墙上方有一个哨亭角楼。",
+  "exits": {
+   "西": "x/qujing/wuji/wall2",
+   "东": "x/qujing/wuji/zym"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/weishi@wall3": 3
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/well": {
+  "name": "井底",
+  "long": "这是一口深深的井，沿着井壁上下长满了青苔。井里阴森森，光线极其黑暗，下面……",
+  "exits": {
+   "上": "x/qujing/wuji/yuhua",
+   "下": "x/qujing/wuji/shuijing"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/westroom": {
+  "name": "西厢房",
+  "long": "此间乃寺中主持的禅房，但因近来夜间闹鬼，主持已搬去别处。屋中陈设甚是典雅。两边书架上摆满了经书，朝南的案上有一鼎香炉却好象好久没人上香了。",
+  "exits": {
+   "东": "x/qujing/wuji/zheng"
+  },
+  "sleep": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/yuhua": {
+  "name": "御花园",
+  "long": "御花园已经被封多年，园中池塘已经干枯，雕栏红漆尽褪。往日的奇花异草久不经修理，已被乱草埋没，惟有墙角的一棵芭蕉树长的茂盛(bajiao)，比众花木不同。",
+  "details": {
+   "bajiao": "一种灵苗秀，天生体性空。翠缕千条细，丹心一点红。青隐遮秀户，碧影上廉栊。愧无桃李色，冷落粉墙东。",
+   "茂盛": "一种灵苗秀，天生体性空。翠缕千条细，丹心一点红。青隐遮秀户，碧影上廉栊。愧无桃李色，冷落粉墙东。"
+  },
+  "exits": {
+   "出去": "x/qujing/wuji/huilang2"
+  },
+  "outdoors": true,
+  "area": "xyj"
+ },
+ "x/qujing/wuji/zheng": {
+  "name": "大雄宝殿",
+  "long": "大雄殿正中供着的乃是观音普度南海之相，其态度安详宁静，维妙维肖。两边是其他的一些佛祖塑像，分排站立，神态各异。殿里香烟缭绕，气氛静谧。",
+  "exits": {
+   "东": "x/qujing/wuji/eastroom",
+   "南": "x/qujing/wuji/piandian",
+   "西": "x/qujing/wuji/westroom"
+  },
+  "spawn": {
+   "x/qujing/wuji/npc/monk1#0": 1
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/ziyun": {
+  "name": "紫云宫",
+  "long": "此乃王后的寝宫。国王王后曾经非常恩爱，所以国王经常在此留宿。这三年来国王不知什么原因慢慢冷落了王后。宫中虽然陈设华丽，但冷冷清清的，一个人也没有。",
+  "exits": {
+   "东": "x/qujing/wuji/huilang2"
+  },
+  "area": "xyj"
+ },
+ "x/qujing/wuji/zym": {
+  "name": "正阳门",
+  "long": "这里是进入皇宫的正门，雕龙塑凤，一眼看去富丽堂皇。门前侍卫盔甲鲜明，威风凛凛，守卫森严。门内琼阁林立，层层叠叠，瑞气纷飘。",
+  "exits": {
+   "南": "x/qujing/wuji/nstreet2",
+   "北": "x/qujing/wuji/palace",
+   "西": "x/qujing/wuji/wall3"
+  },
   "area": "xyj"
  },
  "x/qujing/wuzhuang/anshi": {
@@ -6900,6 +9057,1832 @@ export const NPCS = {
    ]
   ]
  },
+ "x/qujing/chechi/npc/daguan": {
+  "name": "管家",
+  "ids": [
+   "guan jia",
+   "jia"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 9500,
+  "level": 13,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 50,
+   "dodge": 50,
+   "parry": 50
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "coin": 74,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#0": {
+  "name": "知书和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#1": {
+  "name": "尚礼和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#2": {
+  "name": "俗家和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#3": {
+  "name": "大和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#4": {
+  "name": "穷和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#5": {
+  "name": "瘦和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/daozhang": {
+  "name": "五福道长",
+  "ids": [
+   "dao zhang",
+   "dao"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 50000,
+  "level": 31,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 94,
+   "dodge": 94,
+   "parry": 94,
+   "force": 94
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/feng#0": {
+  "name": "大姑奶",
+  "ids": [
+   "da gunai"
+  ],
+  "gender": "女性",
+  "age": 22,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 5499,
+  "level": 9,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "maxForce": 200,
+  "maxMana": 200,
+  "forceFactor": 1,
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/feng#7": {
+  "name": "大小姐",
+  "ids": [
+   "da xiaojie"
+  ],
+  "gender": "女性",
+  "age": 22,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 5499,
+  "level": 9,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "maxForce": 200,
+  "maxMana": 200,
+  "forceFactor": 1,
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/feng#8": {
+  "name": "二小姐",
+  "ids": [
+   "er xiaojie"
+  ],
+  "gender": "女性",
+  "age": 22,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 5499,
+  "level": 9,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "maxForce": 200,
+  "maxMana": 200,
+  "forceFactor": 1,
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/feng#9": {
+  "name": "花姐儿",
+  "ids": [
+   "hua jieer"
+  ],
+  "gender": "女性",
+  "age": 22,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 5499,
+  "level": 9,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "maxForce": 200,
+  "maxMana": 200,
+  "forceFactor": 1,
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/feng#10": {
+  "name": "小姐",
+  "ids": [
+   "xiaojie"
+  ],
+  "gender": "女性",
+  "age": 22,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 5499,
+  "level": 9,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "maxForce": 200,
+  "maxMana": 200,
+  "forceFactor": 1,
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/taijian": {
+  "name": "太监",
+  "ids": [
+   "tai jian",
+   "jian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/weishi": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/sword/changjian",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/daotong": {
+  "name": "道童",
+  "ids": [
+   "dao tong",
+   "dao",
+   "tong"
+  ],
+  "gender": "男性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 74,
+   "dodge": 74,
+   "parry": 74,
+   "force": 74
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 3,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/girl": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#0": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#1": {
+  "name": "小贩",
+  "ids": [
+   "xiao fan"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#2": {
+  "name": "女佣",
+  "ids": [
+   "nu yong"
+  ],
+  "gender": "女性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#3": {
+  "name": "商人",
+  "ids": [
+   "shang ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#4": {
+  "name": "读书人",
+  "ids": [
+   "dushu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#5": {
+  "name": "官客",
+  "ids": [
+   "guan ke"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#6": {
+  "name": "僧侣",
+  "ids": [
+   "seng lu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#7": {
+  "name": "道人",
+  "ids": [
+   "dao ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/king": {
+  "name": "国王",
+  "ids": [
+   "guo wang",
+   "king"
+  ],
+  "title": "车迟国",
+  "gender": "男性",
+  "age": 80,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 260000,
+  "level": 71,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 50,
+   "dodge": 50,
+   "parry": 50,
+   "spells": 50,
+   "force": 50,
+   "seashentong": 50,
+   "dragonforce": 50,
+   "dragonstep": 50,
+   "dragonfight": 50
+  },
+  "map": {
+   "unarmed": "dragonfight",
+   "dodge": "dragonstep",
+   "force": "dragonforce",
+   "spells": "seashentong"
+  },
+  "max": {
+   "kee": 700,
+   "sen": 700,
+   "gin": 700
+  },
+  "force": 800,
+  "maxForce": 800,
+  "mana": 800,
+  "maxMana": 800,
+  "forceFactor": 50,
+  "manaFactor": 40,
+  "carry": [
+   [
+    "x/obj/cloth/mangpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/jz1": {
+  "name": "监斩官",
+  "ids": [
+   "jianzhan guan",
+   "guan"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 90,
+   "dodge": 90,
+   "parry": 90,
+   "force": 90,
+   "spells": 90
+  },
+  "max": {
+   "kee": 1000,
+   "sen": 1000,
+   "gin": 1000
+  },
+  "maxForce": 1200,
+  "maxMana": 1200,
+  "forceFactor": 100,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongpao",
+    "wear"
+   ],
+   [
+    "x/qujing/chechi/obj/dao",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/jiubao": {
+  "name": "酒保",
+  "ids": [
+   "jiu bao",
+   "bao"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 500,
+  "level": 2,
+  "attrs": {
+   "per": 34
+  },
+  "skills": {
+   "unarmed": 100
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "sells": {
+   "x/qujing/chechi/obj/roujia": 99,
+   "x/qujing/chechi/obj/niurou": 99,
+   "x/qujing/chechi/obj/baiye": 99,
+   "x/qujing/chechi/obj/jiuhu": 99
+  },
+  "coin": 1000,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/long#0": {
+  "name": "大少爷",
+  "ids": [
+   "da shaoye"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 12499,
+  "level": 15,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/long#9": {
+  "name": "花公子",
+  "ids": [
+   "hua gongzi"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 12499,
+  "level": 15,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/long#10": {
+  "name": "浪公子",
+  "ids": [
+   "lang gongzi"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 12499,
+  "level": 15,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/long#11": {
+  "name": "公子",
+  "ids": [
+   "gongzi"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 12499,
+  "level": 15,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/long#12": {
+  "name": "王孙",
+  "ids": [
+   "wang sun"
+  ],
+  "gender": "男性",
+  "age": 24,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 12499,
+  "level": 15,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/langli": {
+  "name": "狼力大仙",
+  "ids": [
+   "langli daxian",
+   "daxian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1424999,
+  "level": 168,
+  "attrs": {
+   "cor": 10,
+   "int": 10,
+   "spi": 10,
+   "cps": 10,
+   "con": 10,
+   "per": 10
+  },
+  "skills": {
+   "dodge": 170,
+   "parry": 170,
+   "force": 170,
+   "spells": 160,
+   "unarmed": 160,
+   "gouhunshu": 120,
+   "tonsillit": 120,
+   "ghost-steps": 140,
+   "jienan-zhi": 140
+  },
+  "map": {
+   "dodge": "ghost-steps",
+   "unarmed": "jienan-zhi",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 1200,
+   "sen": 1200,
+   "gin": 1200
+  },
+  "force": 1200,
+  "maxForce": 1200,
+  "mana": 1200,
+  "maxMana": 1200,
+  "forceFactor": 25,
+  "manaFactor": 80,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/chaili": {
+  "name": "豺力大仙",
+  "ids": [
+   "chaili daxian",
+   "daxian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1224999,
+  "level": 156,
+  "attrs": {
+   "cor": 10,
+   "int": 10,
+   "spi": 10,
+   "cps": 10,
+   "con": 10,
+   "per": 10
+  },
+  "skills": {
+   "dodge": 160,
+   "parry": 160,
+   "force": 160,
+   "spells": 160,
+   "unarmed": 160,
+   "gouhunshu": 140,
+   "tonsillit": 140,
+   "ghost-steps": 140,
+   "jienan-zhi": 140
+  },
+  "map": {
+   "dodge": "ghost-steps",
+   "unarmed": "jienan-zhi",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 1200,
+   "sen": 1200,
+   "gin": 1200
+  },
+  "force": 1200,
+  "maxForce": 1200,
+  "mana": 1200,
+  "maxMana": 1200,
+  "forceFactor": 25,
+  "manaFactor": 80,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/beili": {
+  "name": "狈力大仙",
+  "ids": [
+   "beili daxian",
+   "daxian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1100000,
+  "level": 147,
+  "attrs": {
+   "cor": 10,
+   "int": 10,
+   "spi": 10,
+   "cps": 10,
+   "con": 10,
+   "per": 10
+  },
+  "skills": {
+   "dodge": 160,
+   "parry": 160,
+   "force": 160,
+   "spells": 160,
+   "unarmed": 160,
+   "gouhunshu": 140,
+   "tonsillit": 140,
+   "ghost-steps": 140,
+   "jienan-zhi": 140
+  },
+  "map": {
+   "dodge": "ghost-steps",
+   "unarmed": "jienan-zhi",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 1200,
+   "sen": 1200,
+   "gin": 1200
+  },
+  "force": 1200,
+  "maxForce": 1200,
+  "mana": 1200,
+  "maxMana": 1200,
+  "forceFactor": 25,
+  "manaFactor": 80,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/mali": {
+  "name": "犸力大仙",
+  "ids": [
+   "mali daxian",
+   "daxian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1324999,
+  "level": 162,
+  "attrs": {
+   "cor": 10,
+   "int": 10,
+   "spi": 10,
+   "cps": 10,
+   "con": 10,
+   "per": 10
+  },
+  "skills": {
+   "dodge": 170,
+   "parry": 170,
+   "force": 170,
+   "spells": 170,
+   "unarmed": 170,
+   "gouhunshu": 150,
+   "tonsillit": 150,
+   "ghost-steps": 140,
+   "jienan-zhi": 140
+  },
+  "map": {
+   "dodge": "ghost-steps",
+   "unarmed": "jienan-zhi",
+   "force": "tonsillit",
+   "spells": "gouhunshu"
+  },
+  "max": {
+   "kee": 1200,
+   "sen": 1200,
+   "gin": 1200
+  },
+  "force": 1200,
+  "maxForce": 1200,
+  "mana": 1200,
+  "maxMana": 1200,
+  "forceFactor": 25,
+  "manaFactor": 80,
+  "carry": [
+   [
+    "x/obj/cloth/shoupiqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/jz3": {
+  "name": "监斩官",
+  "ids": [
+   "jianzhan guan",
+   "guan"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 90,
+   "dodge": 90,
+   "parry": 90,
+   "force": 90,
+   "spells": 90
+  },
+  "max": {
+   "kee": 1000,
+   "sen": 1000,
+   "gin": 1000
+  },
+  "maxForce": 1200,
+  "maxMana": 1200,
+  "forceFactor": 100,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongpao",
+    "wear"
+   ],
+   [
+    "x/qujing/chechi/obj/dao",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/yuanshi": {
+  "name": "元始天尊",
+  "ids": [
+   "yuanshi tianzun",
+   "yuanshi",
+   "tianzun"
+  ],
+  "title": "圣象",
+  "age": 100,
+  "long": "一尊丈许高的元始天尊的泥塑圣象，在殿台上正颜端坐。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 0,
+  "level": 1,
+  "max": {
+   "kee": 10,
+   "sen": 10,
+   "gin": 10
+  }
+ },
+ "x/qujing/chechi/npc/lingbao": {
+  "name": "灵宝道君",
+  "ids": [
+   "lingbao daojun",
+   "lingbao",
+   "daojun"
+  ],
+  "title": "圣象",
+  "age": 100,
+  "long": "一尊丈许高的灵宝道君的泥塑圣象，在殿台上正颜端坐。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 0,
+  "level": 1,
+  "max": {
+   "kee": 10,
+   "sen": 10,
+   "gin": 10
+  }
+ },
+ "x/qujing/chechi/npc/taishang": {
+  "name": "太上老君",
+  "ids": [
+   "taishang laojun",
+   "taishang",
+   "laojun"
+  ],
+  "title": "圣象",
+  "age": 100,
+  "long": "一尊丈许高的太上老君的泥塑圣象，在殿台上正颜端坐。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 0,
+  "level": 1,
+  "max": {
+   "kee": 10,
+   "sen": 10,
+   "gin": 10
+  }
+ },
+ "x/qujing/chechi/npc/shulao": {
+  "name": "说书老",
+  "ids": [
+   "shuoshu lao",
+   "lao"
+  ],
+  "gender": "男性",
+  "age": 55,
+  "long": "一位口若悬河的老人，正在敲木说书。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 5500,
+  "level": 10,
+  "attrs": {
+   "str": 25
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/jz2": {
+  "name": "监斩官",
+  "ids": [
+   "jianzhan guan",
+   "guan"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 90,
+   "dodge": 90,
+   "parry": 90,
+   "force": 90,
+   "spells": 90
+  },
+  "max": {
+   "kee": 1000,
+   "sen": 1000,
+   "gin": 1000
+  },
+  "maxForce": 1200,
+  "maxMana": 1200,
+  "forceFactor": 100,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongpao",
+    "wear"
+   ],
+   [
+    "x/qujing/chechi/obj/dao",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/daoshi": {
+  "name": "道士",
+  "ids": [
+   "dao shi",
+   "dao",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 20000,
+  "level": 19,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 84,
+   "dodge": 84,
+   "parry": 84,
+   "force": 84
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 5,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/xiaoguan": {
+  "name": "小管家",
+  "ids": [
+   "guan jia",
+   "jia"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 9500,
+  "level": 13,
+  "attrs": {
+   "str": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 5,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ],
+   [
+    "x/qujing/chechi/obj/guo",
+    "carry"
+   ],
+   [
+    "x/qujing/chechi/obj/guo",
+    "carry"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/xizi": {
+  "name": "戏子",
+  "ids": [
+   "xi zi",
+   "zi"
+  ],
+  "gender": "男性",
+  "age": 35,
+  "long": "一位装扮极为奇特的车迟国戏子。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 6500,
+  "level": 10,
+  "attrs": {
+   "str": 25
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/jinchai": {
+  "name": "金钗女",
+  "ids": [
+   "jinchai nu",
+   "nu",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 20,
+  "long": "一位柳眉粉面含笑，蛾裙领露酥胸的美女。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 2500,
+  "level": 6,
+  "attrs": {
+   "str": 15
+  },
+  "max": {
+   "kee": 130,
+   "sen": 130,
+   "gin": 130
+  },
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
  "x/qujing/pingding/npc/yao1": {
   "name": "小妖",
   "ids": [
@@ -7463,6 +11446,1606 @@ export const NPCS = {
    [
     "x/qujing/pingding/obj/shengreal",
     "carry"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/people#3": {
+  "name": "陈鸠",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#4": {
+  "name": "陈蜀",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#5": {
+  "name": "陈焘",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#7": {
+  "name": "陈笮",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#8": {
+  "name": "陈子虬",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#9": {
+  "name": "陈龙大",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#10": {
+  "name": "陈大头",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#16": {
+  "name": "陈大伯",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#17": {
+  "name": "陈大叔",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#18": {
+  "name": "陈大舅",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#19": {
+  "name": "陈大哥",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#20": {
+  "name": "陈大爷",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/vendor": {
+  "name": "陈三鲜",
+  "ids": [
+   "chen sanxian",
+   "chen"
+  ],
+  "title": "水鲜贩子",
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 500,
+  "level": 2,
+  "attrs": {
+   "per": 34
+  },
+  "skills": {
+   "unarmed": 100
+  },
+  "max": {
+   "kee": 180,
+   "sen": 180,
+   "gin": 180
+  },
+  "sells": {
+   "x/qujing/tongtian/obj/zhengxie": 99,
+   "x/qujing/tongtian/obj/shaoxia": 99,
+   "x/qujing/tongtian/obj/xunyu": 99,
+   "x/qujing/tongtian/obj/zuiluo": 99
+  },
+  "coin": 500,
+  "carry": [
+   [
+    "x/obj/cloth/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/yao#3": {
+  "name": "鲇鱼精",
+  "ids": [
+   "yao jing",
+   "jing"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 120000,
+  "level": 48,
+  "attrs": {
+   "per": 10
+  },
+  "skills": {
+   "parry": 60,
+   "unarmed": 60,
+   "dodge": 150,
+   "blade": 60,
+   "fork": 60,
+   "mace": 60,
+   "spear": 60,
+   "sword": 60,
+   "whip": 60,
+   "axe": 60,
+   "hammer": 60,
+   "rake": 60,
+   "stick": 60,
+   "staff": 60,
+   "dagger": 60
+  },
+  "max": {
+   "sen": 600,
+   "gin": 600,
+   "kee": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "carry": [
+   [
+    "x/qujing/tongtian/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/yao#4": {
+  "name": "水螺精",
+  "ids": [
+   "yao jing",
+   "jing"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 120000,
+  "level": 48,
+  "attrs": {
+   "per": 10
+  },
+  "skills": {
+   "parry": 60,
+   "unarmed": 60,
+   "dodge": 150,
+   "blade": 60,
+   "fork": 60,
+   "mace": 60,
+   "spear": 60,
+   "sword": 60,
+   "whip": 60,
+   "axe": 60,
+   "hammer": 60,
+   "rake": 60,
+   "stick": 60,
+   "staff": 60,
+   "dagger": 60
+  },
+  "max": {
+   "sen": 600,
+   "gin": 600,
+   "kee": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "carry": [
+   [
+    "x/qujing/tongtian/obj/armor#3",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/yao#5": {
+  "name": "蚌壳精",
+  "ids": [
+   "yao jing",
+   "jing"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 120000,
+  "level": 48,
+  "attrs": {
+   "per": 10
+  },
+  "skills": {
+   "parry": 60,
+   "unarmed": 60,
+   "dodge": 150,
+   "blade": 60,
+   "fork": 60,
+   "mace": 60,
+   "spear": 60,
+   "sword": 60,
+   "whip": 60,
+   "axe": 60,
+   "hammer": 60,
+   "rake": 60,
+   "stick": 60,
+   "staff": 60,
+   "dagger": 60
+  },
+  "max": {
+   "sen": 600,
+   "gin": 600,
+   "kee": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "carry": [
+   [
+    "x/qujing/tongtian/obj/armor#0",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/yao#6": {
+  "name": "鳌精",
+  "ids": [
+   "yao jing",
+   "jing"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 120000,
+  "level": 48,
+  "attrs": {
+   "per": 10
+  },
+  "skills": {
+   "parry": 60,
+   "unarmed": 60,
+   "dodge": 150,
+   "blade": 60,
+   "fork": 60,
+   "mace": 60,
+   "spear": 60,
+   "sword": 60,
+   "whip": 60,
+   "axe": 60,
+   "hammer": 60,
+   "rake": 60,
+   "stick": 60,
+   "staff": 60,
+   "dagger": 60
+  },
+  "max": {
+   "sen": 600,
+   "gin": 600,
+   "kee": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "carry": [
+   [
+    "x/qujing/tongtian/obj/armor#1",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/yao#7": {
+  "name": "水鲑精",
+  "ids": [
+   "yao jing",
+   "jing"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 120000,
+  "level": 48,
+  "attrs": {
+   "per": 10
+  },
+  "skills": {
+   "parry": 60,
+   "unarmed": 60,
+   "dodge": 150,
+   "blade": 60,
+   "fork": 60,
+   "mace": 60,
+   "spear": 60,
+   "sword": 60,
+   "whip": 60,
+   "axe": 60,
+   "hammer": 60,
+   "rake": 60,
+   "stick": 60,
+   "staff": 60,
+   "dagger": 60
+  },
+  "max": {
+   "sen": 600,
+   "gin": 600,
+   "kee": 180
+  },
+  "force": 600,
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 30,
+  "carry": [
+   [
+    "x/qujing/tongtian/obj/armor#2",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/jinyu": {
+  "name": "金鳞怪",
+  "ids": [
+   "jinlin guai",
+   "jinglin",
+   "guai"
+  ],
+  "title": "通天河",
+  "gender": "男性",
+  "age": 76,
+  "long": "一位身着金甲的妖怪。",
+  "kind": [
+   "bandit"
+  ],
+  "aggressive": true,
+  "exp": 1500000,
+  "level": 172,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "spells": 30,
+   "dao": 30,
+   "unarmed": 85,
+   "hammer": 85,
+   "dragonfight": 85,
+   "dodge": 80,
+   "dragonstep": 70,
+   "parry": 85,
+   "force": 70,
+   "dragonforce": 120
+  },
+  "map": {
+   "spells": "dao",
+   "unarmed": "dragon-step",
+   "dodge": "dragonstep",
+   "force": "dragonforce"
+  },
+  "max": {
+   "kee": 1700,
+   "sen": 1700,
+   "gin": 1700
+  },
+  "force": 1700,
+  "maxForce": 1700,
+  "mana": 600,
+  "maxMana": 600,
+  "forceFactor": 100,
+  "manaFactor": 20,
+  "carry": [
+   [
+    "x/obj/armor/jinjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/hammer/bahammer",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/kid": {
+  "name": "小童",
+  "ids": [
+   "kid"
+  ],
+  "gender": "男性",
+  "age": 5,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 499,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/ji": {
+  "name": "公鸡",
+  "ids": [
+   "gong ji",
+   "ji"
+  ],
+  "gender": "雄性",
+  "age": 2,
+  "long": "一只雄赳赳的大公鸡。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 0,
+  "level": 1,
+  "skills": {
+   "unarmed": 2,
+   "dodge": 10,
+   "parry": 10
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  }
+ },
+ "x/qujing/wuji/npc/people#0": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#1": {
+  "name": "小贩",
+  "ids": [
+   "xiao fan"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#2": {
+  "name": "商人",
+  "ids": [
+   "shang ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#3": {
+  "name": "官客",
+  "ids": [
+   "guan ke"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#4": {
+  "name": "僧侣",
+  "ids": [
+   "seng lu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#5": {
+  "name": "道人",
+  "ids": [
+   "dao ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/vender": {
+  "name": "叶大嫂",
+  "ids": [
+   "ye dasao",
+   "ye",
+   "dasao",
+   "fruit vendor"
+  ],
+  "gender": "女性",
+  "age": 26,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1000,
+  "level": 4,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 160,
+   "sen": 160,
+   "gin": 160
+  },
+  "sells": {
+   "x/obj/food/grape": 99,
+   "x/obj/food/xueli": 99,
+   "x/obj/food/strawberry": 99,
+   "x/obj/food/apple": 99,
+   "x/obj/food/mellon": 99
+  },
+  "coin": 100,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/prince": {
+  "name": "太子",
+  "ids": [
+   "tai zi",
+   "zi",
+   "prince"
+  ],
+  "title": "乌鸡国",
+  "gender": "男性",
+  "age": 20,
+  "long": "乌鸡国的王太子，成人之后不再常进宫，常以狩猎为乐。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 300000,
+  "level": 76,
+  "skills": {
+   "blade": 90,
+   "dodge": 90,
+   "parry": 90,
+   "unarmed": 90,
+   "force": 90,
+   "changquan": 90,
+   "wuhu-blade": 90,
+   "lengquan-force": 90,
+   "yanxing-steps": 90
+  },
+  "map": {
+   "blade": "wuhu-blade",
+   "unarmed": "changquan",
+   "dodge": "yanxing-steps",
+   "parry": "wuhu-blade"
+  },
+  "max": {
+   "kee": 700,
+   "sen": 400,
+   "gin": 130
+  },
+  "force": 1000,
+  "maxForce": 800,
+  "forceFactor": 45,
+  "carry": [
+   [
+    "x/obj/weapon/blade/jindao",
+    "wield"
+   ],
+   [
+    "x/obj/armor/jinjia",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/siwei": {
+  "name": "伺卫官",
+  "ids": [
+   "siwei guan",
+   "guan"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/blade/blade",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/girl": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/obj/cloth/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/taijian": {
+  "name": "太监",
+  "ids": [
+   "tai jian",
+   "jian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/queen": {
+  "name": "王后",
+  "ids": [
+   "wang hou",
+   "hou",
+   "queen"
+  ],
+  "title": "乌鸡国",
+  "gender": "女性",
+  "age": 40,
+  "long": "乌鸡国的王后，终日愁眉苦脸，心思重重。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "skills": {
+   "blade": 20,
+   "dodge": 20,
+   "parry": 20,
+   "unarmed": 20,
+   "force": 20
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 180
+  },
+  "force": 100,
+  "maxForce": 500,
+  "forceFactor": 4,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/xiaoer": {
+  "name": "店小二",
+  "ids": [
+   "xiao er",
+   "xiaoer",
+   "xiao",
+   "waiter",
+   "er"
+  ],
+  "gender": "男性",
+  "age": 26,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1000,
+  "level": 4,
+  "attrs": {
+   "per": 14
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 160,
+   "sen": 160,
+   "gin": 160
+  },
+  "sells": {
+   "x/moon/obj/jiudai": 99
+  },
+  "coin": 100,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/chen": {
+  "name": "臣子",
+  "ids": [
+   "chen zi",
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/kingfake": {
+  "name": "国王",
+  "ids": [
+   "guo wang",
+   "wang",
+   "king"
+  ],
+  "title": "乌鸡国",
+  "gender": "男性",
+  "age": 46,
+  "long": "头戴一顶冲天冠，腰束一条碧玉带，身穿一领飞龙舞凤赭黄袍。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 70,
+   "dodge": 70,
+   "force": 70,
+   "parry": 70,
+   "fork": 70,
+   "spells": 70,
+   "seashentong": 70,
+   "dragonfight": 70,
+   "dragonforce": 70,
+   "fengbo-cha": 70,
+   "dragonstep": 70
+  },
+  "map": {
+   "spells": "seashentong",
+   "unarmed": "dragonfight",
+   "force": "dragonforce",
+   "fork": "fengbo-cha",
+   "parry": "fengbo-cha",
+   "dodge": "dragonstep"
+  },
+  "max": {
+   "kee": 1000,
+   "sen": 800,
+   "gin": 800
+  },
+  "force": 1000,
+  "maxForce": 1000,
+  "mana": 1200,
+  "maxMana": 800,
+  "forceFactor": 10,
+  "manaFactor": 30,
+  "carry": [
+   [
+    "x/obj/cloth/longpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/shanji": {
+  "name": "山姬",
+  "ids": [
+   "shan ji",
+   "ji"
+  ],
+  "gender": "女性",
+  "age": 20,
+  "long": "一位娇艳迷人的野女子。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 100,
+   "dodge": 100,
+   "parry": 100,
+   "force": 100,
+   "spells": 100
+  },
+  "max": {
+   "kee": 750,
+   "sen": 750,
+   "gin": 750
+  },
+  "maxForce": 700,
+  "maxMana": 800,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/monk2": {
+  "name": "守寺僧",
+  "ids": [
+   "shousi seng",
+   "seng"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 74,
+   "dodge": 74,
+   "parry": 74
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 6,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/monk1#0": {
+  "name": "大和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/monk1#2": {
+  "name": "笑和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/weishi": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/spear/tieqiang",
+    "wield"
    ]
   ]
  },
@@ -8618,6 +14201,390 @@ export const NPCS = {
    ]
   ]
  },
+ "x/qujing/tongtian/npc/chen": {
+  "name": "陈长老",
+  "ids": [
+   "chen zhanglao",
+   "chen",
+   "zhanglao"
+  ],
+  "gender": "男性",
+  "age": 70,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 50000,
+  "level": 31,
+  "attrs": {
+   "per": 35
+  },
+  "skills": {
+   "dodge": 30,
+   "force": 30,
+   "parry": 30
+  },
+  "max": {
+   "sen": 600,
+   "gin": 600,
+   "kee": 180
+  },
+  "force": 500,
+  "maxForce": 500,
+  "maxMana": 500,
+  "forceFactor": 5,
+  "carry": [
+   [
+    "x/obj/cloth/choupao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/king": {
+  "name": "国王",
+  "ids": [
+   "ghost guo wang",
+   "guo wang",
+   "wang",
+   "king"
+  ],
+  "title": "乌鸡国",
+  "gender": "男性",
+  "age": 46,
+  "long": "头戴一顶冲天冠，腰束一条碧玉带，身穿一领飞龙舞凤赭黄袍。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1,
+  "level": 1,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 1,
+   "dodge": 1,
+   "parry": 1
+  },
+  "max": {
+   "kee": 1,
+   "sen": 1,
+   "gin": 1
+  },
+  "inquiry": {
+   "name": "老夫乃是乌鸡国国王，三年前被一道人所害，推下御花园琉璃井。",
+   "here": "此乃宝林寺也",
+   "妖道": "三年前那妖道将朕推下了井，自己变做朕的模样，霸占了朕的江山。",
+   "报仇": {
+    "fn": "give_jade"
+   }
+  },
+  "carry": [
+   [
+    "x/obj/cloth/longpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/kingreal": {
+  "name": "国王",
+  "ids": [
+   "guo wang",
+   "wang",
+   "king"
+  ],
+  "title": "乌鸡国",
+  "gender": "男性",
+  "age": 46,
+  "long": "头戴一顶冲天冠，腰束一条碧玉带，身穿一领飞龙舞凤赭黄袍。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 100,
+   "dodge": 100,
+   "parry": 100
+  },
+  "max": {
+   "kee": 800,
+   "sen": 800,
+   "gin": 800
+  },
+  "maxForce": 1000,
+  "maxMana": 1000,
+  "forceFactor": 120,
+  "carry": [
+   [
+    "x/obj/cloth/longpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/longwang": {
+  "name": "井龙王",
+  "ids": [
+   "jing longwang",
+   "longwang",
+   "wang"
+  ],
+  "gender": "男性",
+  "age": 55,
+  "long": "井里的龙王，掌管着井底的世界。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 550000,
+  "level": 104,
+  "attrs": {
+   "str": 30,
+   "per": 24
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "force": 80,
+   "parry": 80,
+   "fork": 80,
+   "spells": 80,
+   "seashentong": 80,
+   "dragonfight": 80,
+   "dragonforce": 80,
+   "fengbo-cha": 80,
+   "dragonstep": 80
+  },
+  "map": {
+   "spells": "seashentong",
+   "unarmed": "dragonfight",
+   "force": "dragonforce",
+   "fork": "fengbo-cha",
+   "parry": "fengbo-cha",
+   "dodge": "dragonstep"
+  },
+  "max": {
+   "kee": 1000,
+   "sen": 800,
+   "gin": 800
+  },
+  "force": 1000,
+  "maxForce": 1000,
+  "mana": 1200,
+  "maxMana": 800,
+  "forceFactor": 90,
+  "manaFactor": 40,
+  "inquiry": {
+   "宝贝": {
+    "fn": "show_king"
+   },
+   "国王": {
+    "fn": "show_king"
+   },
+   "king": {
+    "fn": "show_king"
+   }
+  },
+  "carry": [
+   [
+    "x/obj/cloth/longpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/ji": {
+  "name": "山鸡",
+  "ids": [
+   "shan ji",
+   "ji"
+  ],
+  "age": 20,
+  "long": "一只成精的母花山鸡。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 0,
+  "level": 1,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 100,
+   "dodge": 100,
+   "parry": 100
+  },
+  "max": {
+   "kee": 130,
+   "sen": 130,
+   "gin": 130
+  }
+ },
+ "x/qujing/chechi/npc/huli": {
+  "name": "虎力大仙",
+  "ids": [
+   "huli daxian",
+   "huli",
+   "daxian"
+  ],
+  "title": "国师",
+  "gender": "男性",
+  "age": 40,
+  "long": "车迟国的三大道士之一，善于求水祈雨，被尊为国师。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 900000,
+  "level": 133,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 75,
+   "dodge": 75,
+   "parry": 75,
+   "spells": 75,
+   "force": 75,
+   "wuxiangforce": 75,
+   "dao": 75,
+   "jindouyun": 75,
+   "puti-zhi": 75
+  },
+  "map": {
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce",
+   "spells": "dao"
+  },
+  "max": {
+   "kee": 1300,
+   "sen": 1300,
+   "gin": 1300
+  },
+  "force": 1300,
+  "maxForce": 1300,
+  "mana": 1300,
+  "maxMana": 1300,
+  "forceFactor": 80,
+  "manaFactor": 40,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/luli": {
+  "name": "鹿力大仙",
+  "ids": [
+   "luli daxian",
+   "luli",
+   "daxian"
+  ],
+  "title": "国师",
+  "gender": "男性",
+  "age": 40,
+  "long": "车迟国的三大道士之一，善于求水祈雨，被尊为国师。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 900000,
+  "level": 133,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 75,
+   "dodge": 75,
+   "parry": 75,
+   "spells": 75,
+   "force": 75,
+   "wuxiangforce": 75,
+   "dao": 75,
+   "jindouyun": 75,
+   "puti-zhi": 75
+  },
+  "map": {
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce",
+   "spells": "dao"
+  },
+  "max": {
+   "kee": 1300,
+   "sen": 1300,
+   "gin": 1300
+  },
+  "force": 1300,
+  "maxForce": 1300,
+  "mana": 1300,
+  "maxMana": 1300,
+  "forceFactor": 80,
+  "manaFactor": 40,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/yangli": {
+  "name": "羊力大仙",
+  "ids": [
+   "yangli daxian",
+   "yangli",
+   "daxian"
+  ],
+  "title": "国师",
+  "gender": "男性",
+  "age": 40,
+  "long": "车迟国的三大道士之一，善于求水祈雨，被尊为国师。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 900000,
+  "level": 133,
+  "attrs": {
+   "int": 30,
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 75,
+   "dodge": 75,
+   "parry": 75,
+   "spells": 75,
+   "force": 75,
+   "wuxiangforce": 75,
+   "dao": 75,
+   "jindouyun": 75,
+   "puti-zhi": 75
+  },
+  "map": {
+   "unarmed": "puti-zhi",
+   "dodge": "jindouyun",
+   "force": "wuxiangforce",
+   "spells": "dao"
+  },
+  "max": {
+   "kee": 1300,
+   "sen": 1300,
+   "gin": 1300
+  },
+  "force": 1300,
+  "maxForce": 1300,
+  "mana": 1300,
+  "maxMana": 1300,
+  "forceFactor": 80,
+  "manaFactor": 40,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
  "x/city/npc/wujiang@ximen": {
   "name": "守城武将",
   "ids": [
@@ -9518,6 +15485,968 @@ export const NPCS = {
    ]
   ]
  },
+ "x/qujing/chechi/npc/weishi@gong5b": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/sword/changjian",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/weishi@gong5d": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/sword/changjian",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/weishi@gong5e": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/sword/changjian",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#0@hou": {
+  "name": "知书和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/girl@hougong2": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/girl@hougong3": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#4@jieshi10": {
+  "name": "读书人",
+  "ids": [
+   "dushu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#5@jieshi10": {
+  "name": "官客",
+  "ids": [
+   "guan ke"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#5@jieshi2": {
+  "name": "官客",
+  "ids": [
+   "guan ke"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#6@jieshi3": {
+  "name": "僧侣",
+  "ids": [
+   "seng lu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#7@jieshi4": {
+  "name": "道人",
+  "ids": [
+   "dao ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#0@jieshi5": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#1@jieshi6": {
+  "name": "小贩",
+  "ids": [
+   "xiao fan"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#2@jieshi7": {
+  "name": "女佣",
+  "ids": [
+   "nu yong"
+  ],
+  "gender": "女性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#3@jieshi8": {
+  "name": "商人",
+  "ids": [
+   "shang ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/people#4@jieshi8": {
+  "name": "读书人",
+  "ids": [
+   "dushu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 8,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/changpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/taijian@jinluan": {
+  "name": "太监",
+  "ids": [
+   "tai jian",
+   "jian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/taijian@leiyu": {
+  "name": "太监",
+  "ids": [
+   "tai jian",
+   "jian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/girl@wufeng": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/qujing/chechi/obj/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/daoshi@xiang2": {
+  "name": "道士",
+  "ids": [
+   "dao shi",
+   "dao",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 20000,
+  "level": 19,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 84,
+   "dodge": 84,
+   "parry": 84,
+   "force": 84
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 5,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/daoshi@xiang3": {
+  "name": "道士",
+  "ids": [
+   "dao shi",
+   "dao",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 20000,
+  "level": 19,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 84,
+   "dodge": 84,
+   "parry": 84,
+   "force": 84
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 5,
+  "carry": [
+   [
+    "x/obj/cloth/daopao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/weishi@zhaomen": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/sword/changjian",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#3@zheng": {
+  "name": "大和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/chechi/npc/heshang#4@zheng": {
+  "name": "穷和尚",
+  "ids": [
+   "he shang"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 25999,
+  "level": 22,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 300,
+   "sen": 300,
+   "gin": 300
+  },
+  "maxForce": 400,
+  "maxMana": 400,
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/sengyi",
+    "wear"
+   ]
+  ]
+ },
  "x/qujing/pingding/npc/yao1@dating": {
   "name": "小妖",
   "ids": [
@@ -9955,6 +16884,888 @@ export const NPCS = {
    [
     "x/qujing/pingding/obj/armor#2",
     "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/people#17@bing2": {
+  "name": "陈大叔",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#18@bing3": {
+  "name": "陈大舅",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/people#19@bing4": {
+  "name": "陈大哥",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/tongtian/npc/kid@minju2": {
+  "name": "小童",
+  "ids": [
+   "kid"
+  ],
+  "gender": "男性",
+  "age": 5,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 499,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/kid@minju3": {
+  "name": "小童",
+  "ids": [
+   "kid"
+  ],
+  "gender": "男性",
+  "age": 5,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 499,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/kid@minju4": {
+  "name": "小童",
+  "ids": [
+   "kid"
+  ],
+  "gender": "男性",
+  "age": 5,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 499,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/kid@minju6": {
+  "name": "小童",
+  "ids": [
+   "kid"
+  ],
+  "gender": "男性",
+  "age": 5,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 499,
+  "level": 2,
+  "attrs": {
+   "per": 23
+  },
+  "max": {
+   "kee": 100,
+   "sen": 100,
+   "gin": 100
+  },
+  "forceFactor": 2,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/tongtian/npc/people#8@minju6": {
+  "name": "陈子虬",
+  "ids": [
+   "chen"
+  ],
+  "gender": "男性",
+  "age": 49,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10999,
+  "level": 14,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2
+ },
+ "x/qujing/wuji/npc/people#4@estreet2": {
+  "name": "僧侣",
+  "ids": [
+   "seng lu"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/siwei@house": {
+  "name": "伺卫官",
+  "ids": [
+   "siwei guan",
+   "guan"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/blade/blade",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/girl@huilang2": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/obj/cloth/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/girl@jxt": {
+  "name": "宫妃",
+  "ids": [
+   "gong fei",
+   "girl"
+  ],
+  "gender": "女性",
+  "age": 15,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 30
+  },
+  "skills": {
+   "unarmed": 10
+  },
+  "max": {
+   "kee": 105,
+   "sen": 105,
+   "gin": 105
+  },
+  "carry": [
+   [
+    "x/obj/cloth/gongqun",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#5@nstreet": {
+  "name": "道人",
+  "ids": [
+   "dao ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#0@nstreet": {
+  "name": "路人",
+  "ids": [
+   "lu ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#1@nstreet2": {
+  "name": "小贩",
+  "ids": [
+   "xiao fan"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#2@nstreet2": {
+  "name": "商人",
+  "ids": [
+   "shang ren"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/people#3@nstreet2": {
+  "name": "官客",
+  "ids": [
+   "guan ke"
+  ],
+  "gender": "男性",
+  "age": 29,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 1499,
+  "level": 4,
+  "attrs": {
+   "per": 23
+  },
+  "skills": {
+   "unarmed": 54,
+   "dodge": 54,
+   "parry": 54
+  },
+  "max": {
+   "kee": 200,
+   "sen": 200,
+   "gin": 200
+  },
+  "maxForce": 300,
+  "maxMana": 300,
+  "forceFactor": 2,
+  "chatChance": 9,
+  "chatMsg": [
+   {
+    "fn": "random_move"
+   }
+  ],
+  "coin": 200,
+  "carry": [
+   [
+    "x/obj/cloth/linen",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/taijian@palace": {
+  "name": "太监",
+  "ids": [
+   "tai jian",
+   "jian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/taijian@qiyutan": {
+  "name": "太监",
+  "ids": [
+   "tai jian",
+   "jian"
+  ],
+  "gender": "男性",
+  "age": 40,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 100000,
+  "level": 44,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 40,
+   "dodge": 40,
+   "parry": 40,
+   "force": 40,
+   "spells": 40
+  },
+  "max": {
+   "kee": 500,
+   "sen": 500,
+   "gin": 500
+  },
+  "maxForce": 600,
+  "maxMana": 600,
+  "forceFactor": 10,
+  "carry": [
+   [
+    "x/obj/cloth/gongpao",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/shanji@road3": {
+  "name": "山姬",
+  "ids": [
+   "shan ji",
+   "ji"
+  ],
+  "gender": "女性",
+  "age": 20,
+  "long": "一位娇艳迷人的野女子。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 100,
+   "dodge": 100,
+   "parry": 100,
+   "force": 100,
+   "spells": 100
+  },
+  "max": {
+   "kee": 750,
+   "sen": 750,
+   "gin": 750
+  },
+  "maxForce": 700,
+  "maxMana": 800,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/shanji@road5": {
+  "name": "山姬",
+  "ids": [
+   "shan ji",
+   "ji"
+  ],
+  "gender": "女性",
+  "age": 20,
+  "long": "一位娇艳迷人的野女子。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 100,
+   "dodge": 100,
+   "parry": 100,
+   "force": 100,
+   "spells": 100
+  },
+  "max": {
+   "kee": 750,
+   "sen": 750,
+   "gin": 750
+  },
+  "maxForce": 700,
+  "maxMana": 800,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/shanji@road7": {
+  "name": "山姬",
+  "ids": [
+   "shan ji",
+   "ji"
+  ],
+  "gender": "女性",
+  "age": 20,
+  "long": "一位娇艳迷人的野女子。",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 10000,
+  "level": 13,
+  "attrs": {
+   "per": 20
+  },
+  "skills": {
+   "unarmed": 100,
+   "dodge": 100,
+   "parry": 100,
+   "force": 100,
+   "spells": 100
+  },
+  "max": {
+   "kee": 750,
+   "sen": 750,
+   "gin": 750
+  },
+  "maxForce": 700,
+  "maxMana": 800,
+  "forceFactor": 50,
+  "carry": [
+   [
+    "x/obj/cloth/skirt",
+    "wear"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/weishi@wall2": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/spear/tieqiang",
+    "wield"
+   ]
+  ]
+ },
+ "x/qujing/wuji/npc/weishi@wall3": {
+  "name": "护宫卫士",
+  "ids": [
+   "wei shi",
+   "shi"
+  ],
+  "gender": "男性",
+  "age": 30,
+  "long": "",
+  "kind": [
+   "fighter"
+  ],
+  "exp": 200000,
+  "level": 62,
+  "attrs": {
+   "per": 25
+  },
+  "skills": {
+   "unarmed": 80,
+   "dodge": 80,
+   "parry": 80,
+   "force": 80,
+   "spells": 80
+  },
+  "max": {
+   "kee": 600,
+   "sen": 600,
+   "gin": 600
+  },
+  "maxForce": 800,
+  "maxMana": 800,
+  "forceFactor": 60,
+  "carry": [
+   [
+    "x/obj/armor/tongjia",
+    "wear"
+   ],
+   [
+    "x/obj/weapon/spear/tieqiang",
+    "wield"
    ]
   ]
  }
@@ -12088,6 +19899,166 @@ export const ITEMS = {
   "long": "一张镂空木桌。",
   "weight": 9000
  },
+ "x/obj/book/daode": {
+  "name": "〖道德经〗",
+  "ids": [
+   "daodejing",
+   "book"
+  ],
+  "unit": "本",
+  "value": 100,
+  "long": "道家经典－－道德经",
+  "weight": 1000
+ },
+ "x/qujing/chechi/obj/changpao": {
+  "name": "长袍",
+  "ids": [
+   "chang pao",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 300,
+  "long": "一件长袍。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/obj/cloth/daopao": {
+  "name": "灰色道袍",
+  "ids": [
+   "dao pao",
+   "pao",
+   "cloth"
+  ],
+  "unit": "件",
+  "long": "一件普普通通的灰布道袍。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1
+  }
+ },
+ "x/qujing/chechi/obj/gongpao": {
+  "name": "宫袍",
+  "ids": [
+   "gong pao",
+   "pao"
+  ],
+  "unit": "件",
+  "value": 1000,
+  "long": "一件长袍．",
+  "weight": 2700,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1,
+   "dodge": 10
+  }
+ },
+ "x/qujing/chechi/obj/gongqun": {
+  "name": "宫裙",
+  "ids": [
+   "gong qun",
+   "skirt"
+  ],
+  "unit": "袭",
+  "value": 1000,
+  "long": "一袭长长宫裙．",
+  "weight": 2700,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1,
+   "dodge": 10
+  }
+ },
+ "x/qujing/chechi/obj/dao": {
+  "name": "斩头刀",
+  "ids": [
+   "zhantou dao",
+   "dao",
+   "blade"
+  ],
+  "unit": "柄",
+  "value": 500,
+  "long": "这是一柄大头厚刃的斩头刀。",
+  "weight": 4000,
+  "wieldAs": "blade",
+  "weapon": {
+   "blade": [
+    1,
+    35,
+    0,
+    0
+   ]
+  }
+ },
+ "x/qujing/chechi/obj/chantai": {
+  "name": "云禅台",
+  "ids": [
+   "yun chantai",
+   "chantai"
+  ],
+  "unit": "只",
+  "value": 50000,
+  "long": "一座由五十张桌子级级垒成的禅台，高耸入云。",
+  "weight": 6000000
+ },
+ "x/qujing/chechi/obj/roujia": {
+  "name": "肉夹馍",
+  "ids": [
+   "roujia mo",
+   "roujiamo",
+   "mo"
+  ],
+  "unit": "只",
+  "value": 200,
+  "long": "一只热乎乎的肉夹馍。",
+  "weight": 1000,
+  "foodStuff": 35,
+  "bites": 6
+ },
+ "x/qujing/chechi/obj/niurou": {
+  "name": "酱牛肉",
+  "ids": [
+   "jiang niurou",
+   "jiangniurou",
+   "niurou"
+  ],
+  "unit": "大盘",
+  "value": 250,
+  "long": "一大盘切得薄薄的酱牛肉片。",
+  "weight": 1000,
+  "foodStuff": 50,
+  "bites": 6
+ },
+ "x/qujing/chechi/obj/baiye": {
+  "name": "牛百叶",
+  "ids": [
+   "niu baiye",
+   "niubaiye",
+   "baiye"
+  ],
+  "unit": "大盘",
+  "value": 240,
+  "long": "一大盘淋着辣油的牛百叶丝。",
+  "weight": 1000,
+  "foodStuff": 30,
+  "bites": 5
+ },
+ "x/qujing/chechi/obj/jiuhu": {
+  "name": "酒壶",
+  "ids": [
+   "jiuhu",
+   "hu"
+  ],
+  "unit": "个",
+  "value": 250,
+  "long": "一个装有白烧酒的酒壶。",
+  "weight": 100,
+  "water": 12,
+  "liquid": "白烧酒"
+ },
  "x/obj/cloth/shoupiqun": {
   "name": "兽皮裙",
   "ids": [
@@ -12102,6 +20073,111 @@ export const ITEMS = {
   "apply": {
    "armor": 2
   }
+ },
+ "x/qujing/chechi/obj/youguo": {
+  "name": "大油锅",
+  "ids": [
+   "da youguo",
+   "youguo"
+  ],
+  "unit": "口",
+  "value": 50000,
+  "long": "一口巨大的油锅，里面热油滚滚。",
+  "weight": 6000000
+ },
+ "x/qujing/chechi/obj/zhengsu": {
+  "name": "蒸酥",
+  "ids": [
+   "zheng su",
+   "su"
+  ],
+  "unit": "块",
+  "value": 140,
+  "long": "一块供给三清的新鲜蒸酥。",
+  "weight": 1500
+ },
+ "x/qujing/chechi/obj/guizi": {
+  "name": "朱红柜子",
+  "ids": [
+   "zhuhong guizi",
+   "guizi"
+  ],
+  "unit": "箱",
+  "value": 50000,
+  "long": "一箱朱红漆嵌玉金锁大柜子。",
+  "weight": 6000000
+ },
+ "x/qujing/chechi/obj/yujin": {
+  "name": "浴巾",
+  "ids": [
+   "yu jin",
+   "yujin",
+   "jin"
+  ],
+  "unit": "条",
+  "value": 110,
+  "long": "一条长长的粗布宽浴巾。",
+  "weight": 3000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1
+  }
+ },
+ "x/qujing/chechi/obj/guo": {
+  "name": "小供果",
+  "ids": [
+   "gong guo",
+   "gong",
+   "guo"
+  ],
+  "unit": "只",
+  "value": 20,
+  "long": "一只小供果。",
+  "weight": 400,
+  "foodStuff": 5,
+  "bites": 3
+ },
+ "x/qujing/chechi/obj/gongguo": {
+  "name": "供果",
+  "ids": [
+   "gong guo",
+   "gong",
+   "guo"
+  ],
+  "unit": "小竹蓝子",
+  "value": 340,
+  "long": "一小竹蓝子香客送来的供果。",
+  "weight": 2400,
+  "foodStuff": 20,
+  "bites": 10
+ },
+ "x/qujing/chechi/obj/rice": {
+  "name": "糙米饭",
+  "ids": [
+   "caomi fan",
+   "rice",
+   "fan"
+  ],
+  "unit": "碗",
+  "value": 40,
+  "long": "一碗煮得干干的糙米饭。",
+  "weight": 1000,
+  "foodStuff": 20,
+  "bites": 3
+ },
+ "x/qujing/chechi/obj/kang": {
+  "name": "菜糠团子",
+  "ids": [
+   "caikang tuanzi",
+   "caikang",
+   "tuanzi"
+  ],
+  "unit": "只",
+  "value": 40,
+  "long": "一只充饥用的菜糠团子。",
+  "weight": 1000,
+  "foodStuff": 20,
+  "bites": 3
  },
  "x/qujing/pingding/obj/armor#1": {
   "name": "白铜甲",
@@ -12268,6 +20344,321 @@ export const ITEMS = {
   "value": 600,
   "long": "一件硝好的花兽皮。",
   "weight": 7000
+ },
+ "x/obj/cloth/changpao": {
+  "name": "长袍",
+  "ids": [
+   "changpao"
+  ],
+  "unit": "件",
+  "value": 200,
+  "long": "一件青色长袍，象是有学问的人穿的．",
+  "weight": 2000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1
+  }
+ },
+ "x/qujing/tongtian/obj/zhengxie": {
+  "name": "蒸螃蟹",
+  "ids": [
+   "zheng pangxie",
+   "zhengpangxie",
+   "pangxie",
+   "crab"
+  ],
+  "unit": "只",
+  "value": 650,
+  "long": "一只蒸得通红的大河蟹。",
+  "weight": 1000,
+  "foodStuff": 50,
+  "bites": 9
+ },
+ "x/qujing/tongtian/obj/shaoxia": {
+  "name": "烧龙虾",
+  "ids": [
+   "shao longxia",
+   "shaolongxia",
+   "longxia",
+   "lobster"
+  ],
+  "unit": "只",
+  "value": 750,
+  "long": "一只烧得通红的大龙虾。",
+  "weight": 1000,
+  "foodStuff": 45,
+  "bites": 8
+ },
+ "x/qujing/tongtian/obj/xunyu": {
+  "name": "熏鱼",
+  "ids": [
+   "xun yu",
+   "xunyu",
+   "yu",
+   "fish"
+  ],
+  "unit": "条",
+  "value": 250,
+  "long": "一条两面熏得酥香金黄的鱼。",
+  "weight": 1000,
+  "foodStuff": 40,
+  "bites": 5
+ },
+ "x/qujing/tongtian/obj/zuiluo": {
+  "name": "醉泥螺",
+  "ids": [
+   "zui niluo",
+   "zuiniluo",
+   "zuiluo",
+   "luo"
+  ],
+  "unit": "包",
+  "value": 125,
+  "long": "一包醉泥螺，用荷叶包着。",
+  "weight": 100,
+  "foodStuff": 2,
+  "bites": 15
+ },
+ "x/qujing/tongtian/obj/armor#0": {
+  "name": "乌龟甲",
+  "ids": [
+   "wugui jia",
+   "jia",
+   "armor"
+  ],
+  "unit": "件",
+  "value": 300,
+  "weight": 20000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 2,
+   "dodge": -5
+  }
+ },
+ "x/qujing/tongtian/obj/armor#1": {
+  "name": "王八甲",
+  "ids": [
+   "wangba jia",
+   "jia",
+   "armor"
+  ],
+  "unit": "件",
+  "value": 300,
+  "weight": 20000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 2,
+   "dodge": -5
+  }
+ },
+ "x/qujing/tongtian/obj/armor#2": {
+  "name": "千鳞甲",
+  "ids": [
+   "qianling jia",
+   "jia",
+   "armor"
+  ],
+  "unit": "件",
+  "value": 300,
+  "weight": 20000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 2,
+   "dodge": -5
+  }
+ },
+ "x/qujing/tongtian/obj/armor#3": {
+  "name": "巨蟹壳",
+  "ids": [
+   "juxie ke",
+   "jia",
+   "armor"
+  ],
+  "unit": "件",
+  "value": 300,
+  "weight": 20000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 2,
+   "dodge": -5
+  }
+ },
+ "x/obj/armor/jinjia": {
+  "name": "金环锁子甲",
+  "ids": [
+   "golden armor",
+   "jinjia",
+   "jia",
+   "armor"
+  ],
+  "unit": "件",
+  "value": 20000,
+  "long": "一件金线织就的宝甲．",
+  "weight": 30000,
+  "wearAs": "armor",
+  "apply": {
+   "armor": 6,
+   "dodge": -5
+  }
+ },
+ "x/obj/weapon/hammer/bahammer": {
+  "name": "八宝铜锤",
+  "ids": [
+   "hammer"
+  ],
+  "unit": "把",
+  "value": 1200,
+  "long": "这是一把沉重的铜锤，打造的相当坚实。没有千斤力气是拿不起的。",
+  "weight": 10000,
+  "wieldAs": "hammer",
+  "weapon": {
+   "hammer": [
+    1,
+    35,
+    0,
+    0
+   ]
+  }
+ },
+ "x/obj/food/grape": {
+  "name": "水晶葡萄",
+  "ids": [
+   "pu tao",
+   "grape",
+   "putao"
+  ],
+  "unit": "把",
+  "value": 80,
+  "long": "水灵灵的葡萄象一颗颗紫色的水晶球。",
+  "weight": 40,
+  "foodStuff": 30,
+  "bites": 4
+ },
+ "x/obj/food/xueli": {
+  "name": "雪梨",
+  "ids": [
+   "xue li",
+   "xueli",
+   "li"
+  ],
+  "unit": "颗",
+  "value": 80,
+  "long": "这种雪梨只生长于雪山极寒之地。",
+  "weight": 40,
+  "foodStuff": 30,
+  "bites": 4
+ },
+ "x/obj/food/strawberry": {
+  "name": "草莓",
+  "ids": [
+   "cao mei",
+   "strawberry",
+   "caomei"
+  ],
+  "unit": "把",
+  "value": 120,
+  "long": "鲜红的草莓。",
+  "weight": 40,
+  "foodStuff": 30,
+  "bites": 4
+ },
+ "x/obj/food/apple": {
+  "name": "苹果",
+  "ids": [
+   "ping guo",
+   "apple",
+   "pingguo"
+  ],
+  "unit": "颗",
+  "value": 50,
+  "long": "又大又脆的青苹果。",
+  "weight": 40,
+  "foodStuff": 30,
+  "bites": 4
+ },
+ "x/obj/food/mellon": {
+  "name": "哈密瓜",
+  "ids": [
+   "hami gua",
+   "mellon",
+   "gua"
+  ],
+  "unit": "颗",
+  "value": 100,
+  "long": "又香又甜的哈密瓜。�n",
+  "weight": 40,
+  "foodStuff": 30,
+  "bites": 4
+ },
+ "x/obj/weapon/blade/jindao": {
+  "name": "金刀",
+  "ids": [
+   "jin dao",
+   "dao"
+  ],
+  "unit": "把",
+  "value": 2500,
+  "long": "一把金光闪闪的圆头长刀，刀把上镶嵌有白玉。",
+  "weight": 8000,
+  "wieldAs": "blade",
+  "weapon": {
+   "blade": [
+    1,
+    50,
+    0,
+    0
+   ]
+  }
+ },
+ "x/obj/cloth/gongpao": {
+  "name": "宫袍",
+  "ids": [
+   "gong pao",
+   "pao",
+   "cloth"
+  ],
+  "unit": "件",
+  "value": 1000,
+  "long": "一件长袍．",
+  "weight": 2700,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1,
+   "dodge": 10
+  }
+ },
+ "x/obj/cloth/gongqun": {
+  "name": "宫裙",
+  "ids": [
+   "gong qun",
+   "skirt"
+  ],
+  "unit": "袭",
+  "value": 1000,
+  "long": "一袭长长宫裙．",
+  "weight": 2700,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 1,
+   "dodge": 10
+  }
+ },
+ "x/obj/cloth/longpao": {
+  "name": "蟒龙袍",
+  "ids": [
+   "long pao",
+   "cloth",
+   "longpao",
+   "pao"
+  ],
+  "unit": "件",
+  "value": 15000,
+  "long": "这是一件华贵无比的蟒龙袍。你不由得想穿上它过过皇帝瘾。",
+  "weight": 2000,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
  },
  "x/obj/food/dbc": {
   "name": "大白菜",
@@ -12705,5 +21096,153 @@ export const ITEMS = {
     0
    ]
   }
+ },
+ "x/obj/magic/bishuizhou": {
+  "name": "避水咒",
+  "ids": [
+   "bishui zhou",
+   "zhou"
+  ],
+  "unit": "张",
+  "long": "一张小纸片。上面写着“避水咒”三个字，不知道有什么用没有。",
+  "weight": 100
+ },
+ "x/qujing/wuji/obj/jade": {
+  "name": "金厢白玉圭",
+  "ids": [
+   "yu gui",
+   "yu",
+   "jade"
+  ],
+  "unit": "柄",
+  "value": 100000,
+  "long": "一柄金厢白玉圭，乃乌鸡国之国宝。",
+  "weight": 100
+ },
+ "x/qujing/wuji/obj/jing": {
+  "name": "乌鸡精",
+  "ids": [
+   "wuji jing",
+   "jing"
+  ],
+  "unit": "小瓶",
+  "long": "一小瓶乌鸡精，据说服用(drink)可以提神，施用他人(apply)可以还魂。",
+  "weight": 100
+ },
+ "x/qujing/wuji/obj/kingbody": {
+  "name": "国王遗体",
+  "ids": [
+   "guo wang",
+   "wang",
+   "king"
+  ],
+  "unit": "具",
+  "long": "国王的遗体，容貌依旧，似生时未改分毫。",
+  "weight": 175000
+ },
+ "x/qujing/chechi/obj/yuanshi": {
+  "name": "元始天尊",
+  "ids": [
+   "yuanshi tianzun",
+   "yuanshi",
+   "tianzun"
+  ],
+  "unit": "尊",
+  "value": 10000,
+  "noGet": "这圣象如此之重，不用力去搬恐怕分寸难移也。",
+  "long": "一尊丈许高的元始天尊的泥塑圣象，在殿台上正颜端坐。",
+  "weight": 75000
+ },
+ "x/qujing/chechi/obj/lingbao": {
+  "name": "灵宝道君",
+  "ids": [
+   "lingbao daojun",
+   "lingbao",
+   "daojun"
+  ],
+  "unit": "尊",
+  "value": 10000,
+  "noGet": "这圣象如此之重，不用力去搬恐怕分寸难移也。",
+  "long": "一尊丈许高的灵宝道君的泥塑圣象，在殿台上正颜端坐。",
+  "weight": 75000
+ },
+ "x/qujing/chechi/obj/taishang": {
+  "name": "太上老君",
+  "ids": [
+   "taishang laojun",
+   "taishang",
+   "laojun"
+  ],
+  "unit": "尊",
+  "value": 10000,
+  "noGet": "这圣象如此之重，不用力去搬恐怕分寸难移也。",
+  "long": "一尊丈许高的太上老君的泥塑圣象，在殿台上正颜端坐。",
+  "weight": 75000
+ },
+ "x/qujing/chechi/obj/hupi": {
+  "name": "黄虎皮",
+  "ids": [
+   "huang hupi",
+   "hupi"
+  ],
+  "unit": "张",
+  "value": 1000,
+  "long": "一张黄色虎皮。",
+  "weight": 4500,
+  "wearAs": "cloth",
+  "apply": {
+   "armor": 2
+  }
+ },
+ "x/qujing/chechi/obj/lutou": {
+  "name": "白鹿头",
+  "ids": [
+   "bai lutou",
+   "lutou"
+  ],
+  "unit": "只",
+  "value": 1000,
+  "long": "一只白色鹿头。",
+  "weight": 1000,
+  "foodStuff": 40,
+  "bites": 6,
+  "wieldAs": "hammer",
+  "weapon": {
+   "hammer": [
+    1,
+    1,
+    0,
+    0
+   ]
+  }
+ },
+ "x/qujing/chechi/obj/yangjiao": {
+  "name": "灰羊角",
+  "ids": [
+   "hui yangjiao",
+   "yangjiao"
+  ],
+  "unit": "根",
+  "value": 1000,
+  "long": "一根灰色羊角。",
+  "weight": 1000,
+  "wieldAs": "hammer",
+  "weapon": {
+   "hammer": [
+    1,
+    1,
+    0,
+    0
+   ]
+  }
+ },
+ "x/obj/misc/bone": {
+  "name": "兽骨",
+  "ids": [
+   "bone"
+  ],
+  "unit": "副",
+  "long": "这是一副正在风化的兽骨。",
+  "weight": 8000
  }
 }

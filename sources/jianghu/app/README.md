@@ -6,7 +6,8 @@ the market is in `store/`. This README and `CHANGELOG.md` are for the repository
 
 - `xyj.js` — rooms, people and things as 西游记 made them, as data (`tools/build_xyj.py`). Nothing in it changes while
   playing.
-- `xyj-story.js`, `xyj-road.js` — what particular people and rooms do: 长安, 五庄观, 宝象国 and 平顶山, and XYJ's
+- `xyj-story.js`, `xyj-road.js`, `xyj-wuji.js`, `xyj-chechi.js`, `xyj-tongtian.js` — what particular people and
+  rooms do: 长安, 五庄观, 宝象国, 平顶山, 乌鸡国, 车迟国 and 通天河, and XYJ's
   growth (masters, 内力, 法力, 道行).
 - `world.js` — the world file and the verbs every rule uses: characters, stats, things, money, messages.
 - `fight.js` — combat: sparring (比武) and fights to the death (杀), death, ghosts.

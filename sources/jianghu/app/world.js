@@ -56,6 +56,7 @@ export function nameOf(w, id) {
   if (isThing(id)) return thingName(w, id)
   const p = w.players?.[id]
   if (!p) return '一位侠客'
+  if (p.temp?.bian) return p.temp.bian.name // bian.c apply/name: who one looks like
   return p.ghost ? `${p.name}的鬼魂` : p.name
 }
 /** How `viewer` reads a name: themselves as 你. */
@@ -270,8 +271,8 @@ export function weightOf(w, tid) {
   const it = ITEMS[t.id] ?? {}
   return it.baseWeight ? it.baseWeight * (t.n ?? 1) : it.weight ?? 0
 }
-/** feature/char/combat.c: a character carries 膂力² × 200 g, and at most 20 things. */
-export const carriage = (w, id) => attr(w, id, 'str') ** 2 * 200
+/** chard.c setup_char: a character carries 膂力 × 5000 g and 扑击 (the skill itself) × 200 more; at most 20 things. */
+export const carriage = (w, id) => attr(w, id, 'str') * 5000 + skillLv(w, id, 'unarmed', true) * 200
 export const load = (w, id) => thingsAt(w, id).reduce((sum, tid) => sum + weightOf(w, tid), 0)
 
 // ── money (feature/char/finance.c) ───────────────────────────────────────────────────────────────────────────────
@@ -331,7 +332,8 @@ function emit(x, ev, mine = true) {
   ev.at = x.now
   ev.by = x.me
   x.events.push(ev)
-  if (mine && ev.room === roomOf(x.w, x.me) && !(ev.k === 'move' && ev.a === x.me)) x.out.push(render(x.w, ev, x.me))
+  // What happens here, and a word to the whole world (k chat), which the one who set it off reads too.
+  if (mine && (ev.room === roomOf(x.w, x.me) || ev.k === 'chat') && !(ev.k === 'move' && ev.a === x.me)) x.out.push(render(x.w, ev, x.me))
 }
 
 /** A logged line as `viewer` reads it. */
