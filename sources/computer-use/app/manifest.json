@@ -3,9 +3,9 @@
   "name": "Computer Use",
   "defaultLocale": "en",
   "subtitle": "Native app control for agents",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "icon": "icon.png",
-  "apiVersion": 25,
+  "apiVersion": 36,
   "platforms": [
     "desktop"
   ],
@@ -16,7 +16,7 @@
   "categories": [
     "productivity"
   ],
-  "repository": "https://github.com/shuxueshuxue/gugu-apps",
+  "repository": "https://github.com/GUYI-AI/gugu-apps",
   "license": "MIT",
   "permissions": {
     "capabilities": [
@@ -24,11 +24,12 @@
     ]
   },
   "contributes": {
+    "toolsListed": true,
     "tabs": [
       {
         "name": "settings",
         "title": "Settings",
-        "hostPage": "settings"
+        "entry": "settings.html"
       },
       {
         "name": "preview",
@@ -41,10 +42,13 @@
     "mcpServers": [
       {
         "name": "computer-use",
-        "host": "computer-use"
+        "command": "node",
+        "args": [
+          "program/server.mjs"
+        ]
       }
     ],
-    "instructions": "Operates this computer's desktop apps: device_actions with group computer, then device_call; each task's Computer tab shows the steps."
+    "instructions": "Use Browser Use for webpages; use these tools for native desktop apps. The Computer tab shows the real window; blockers return for the conversation."
   },
   "examples": [
     "Which desktop apps are open now?",

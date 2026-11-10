@@ -114,10 +114,10 @@ test('revocation reaches the native call signal and terminates in-flight dispatc
       if (nativeSignal.aborted) abort(); else nativeSignal.addEventListener('abort', abort, { once: true });
     });
   } } });
-  const rejected = assert.rejects(tools.call('click', { pid: 44 }, caller), /native call cancelled/);
+  const pending = tools.call('click', { pid: 44 }, caller);
   await ready;
   control.dispose();
-  await rejected;
+  assert.equal((await pending).structuredContent.code, 'revoked');
   assert.equal(nativeSignal.aborted, true);
 });
 
@@ -154,4 +154,31 @@ test('batch file captures also require screen permission in both step forms and 
     { steps: [{ click: { pid: 44 } }], observe: { include_screenshot: false, screenshot_out_file: '/tmp/observe.png' } },
   ]) assert.equal((await tools.call('run_steps', args, caller)).structuredContent?.code, 'os_permission');
   assert.equal(calls.length, 0);
+});
+test('Linux drives through its display; a machine with no screen says so without dispatch', async () => {
+  const headless = fixture({ platform: 'linux', display: {} });
+  const refused = await headless.tools.call('get_desktop_state', {}, caller);
+  assert.equal(refused.structuredContent.code, 'unavailable');
+  assert.match(refused.content[0].text, /no screen/);
+  // A harness that shows only structuredContent (Codex) still gives the agent the reason, not a bare code.
+  assert.equal(refused.structuredContent.message, refused.content[0].text);
+  assert.equal(headless.calls.length, 0);
+  const virtual = fixture({ platform: 'linux', display: { DISPLAY: ':97' } });
+  assert.notEqual((await virtual.tools.call('get_desktop_state', {}, caller)).isError, true);
+  assert.deepEqual(virtual.calls.map(call => call.name), ['get_desktop_state']);
+});
+test('a Gugu started over SSH uses its own account screen, never another user', async () => {
+  const { linuxScreen } = await import('../app/program/native-runtime.mjs');
+  const socket = uid => ({ uid, isSocket: () => true });
+  const files = (entries) => ({
+    readdirSync: dir => Object.keys(entries).filter(file => path.dirname(file) === dir).map(file => path.basename(file)),
+    statSync: file => { if (!entries[file]) throw new Error('ENOENT'); return entries[file]; },
+  });
+  const path = await import('node:path');
+  assert.deepEqual(linuxScreen({ DISPLAY: ':0' }, { uid: 7, fs: files({}) }), {});
+  assert.deepEqual(linuxScreen({}, { uid: 7, fs: files({ '/tmp/.X11-unix/X0': socket(1), '/tmp/.X11-unix/X98': socket(7), '/run/user/7/bus': socket(7) }) }),
+    { DISPLAY: ':98', DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/7/bus' });
+  assert.deepEqual(linuxScreen({}, { uid: 7, fs: files({ '/tmp/.X11-unix/X0': socket(1), '/run/user/7/wayland-0': socket(7) }) }),
+    { WAYLAND_DISPLAY: 'wayland-0', XDG_RUNTIME_DIR: '/run/user/7' });
+  assert.deepEqual(linuxScreen({}, { uid: 7, fs: files({ '/tmp/.X11-unix/X0': socket(1) }) }), {});
 });

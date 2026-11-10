@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createComputerProgram, createProgramNative } from '../app/program/program-core.mjs';
-import { TOOLS } from '../app/program/native-runtime.mjs';
+import { createComputerControl, TOOLS } from '../app/program/native-runtime.mjs';
 const taskA = '11111111-1111-4111-8111-111111111111', taskB = '22222222-2222-4222-8222-222222222222';
 const agent = 'user:33333333-3333-4333-8333-333333333333';
 const meta = session => ({ 'gugu/agent': agent, 'gugu/sessionId': session });
@@ -19,6 +19,33 @@ function fixture(extra = {}) {
     settings: { async openSettings(...args) { settingsCalls.push(args); return { permissionGrantedByThisCall: false }; } }, ...extra });
   return { program, calls, settingsCalls, disposals: () => disposals };
 }
+test('the program connects App-owned Stop and disposal to its executing native call', { timeout: 3_000 }, async t => {
+  const errors = [];
+  const control = createComputerControl({
+    onViewError(error) { errors.push(error); },
+    view: { show() { throw new Error('Surface unavailable'); }, hide() {} },
+  });
+  let began, nativeSignal;
+  const ready = new Promise(resolve => { began = resolve; });
+  const { program } = fixture({ control, native: {
+    async callTool(name, _args, options) {
+      if (name === 'check_permissions') return { structuredContent: { accessibility: true, screen_recording: true } };
+      nativeSignal = options.signal;
+      began();
+      return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('Native call stopped')), { once: true }));
+    }, dispose() {},
+  } });
+  t.after(() => program.dispose());
+  const pending = program.call({ name: 'click', arguments: { pid: 44 }, _meta: meta(taskA) });
+  await within(ready);
+  assert(errors.length > 0, 'the failed surface is reported without preventing native dispatch');
+  control.stop();
+  assert.equal(nativeSignal.aborted, true);
+  assert.equal((await within(pending)).structuredContent.code, 'revoked');
+  assert.equal((await program.call({ name: 'click', arguments: { pid: 44 }, _meta: meta(taskA) })).structuredContent.code, 'revoked');
+  program.dispose();
+  assert('refused' in control.begin({ pid: 77 }), 'program disposal closes its App controller too');
+});
 test('only gateway metadata selects a native owner; arguments cannot forge the caller', async () => {
   const { program, calls } = fixture();
   const forged = await program.call({ name: 'click', arguments: { pid: 44, agent, session: taskA } });
@@ -36,9 +63,13 @@ test('page permission status is the driver result; agents cannot call page contr
   await program.call({ name: 'permissions_state', _meta: { 'gugu/caller': 'app' } });
   assert.deepEqual(calls[0].args, { prompt: false });
   await program.call({ name: 'open_system_settings', arguments: { permission: 'screen' }, _meta: { 'gugu/caller': 'app' } });
+  // The person's click asks macOS through the running driver first (system request, Gugu listed), then opens the pane.
+  assert.deepEqual(calls.at(-1).args, { prompt: true });
   assert.equal(settingsCalls[0][0], 'screen');
+  const askedByPerson = calls.length;
   assert.equal((await program.call({ name: 'open_system_settings', arguments: { permission: 'screen' }, _meta: { ...meta(taskA), 'gugu/caller': 'app' } })).structuredContent.code, 'not_granted');
   assert.equal(settingsCalls.length, 1, 'an agent working a page cannot open settings as the person');
+  assert.equal(calls.length, askedByPerson, 'nor make macOS ask for permission');
   assert.equal((await program.call({ name: 'open_system_settings', arguments: { permission: 'screen', session: taskB }, _meta: { 'gugu/caller': 'app' } })).structuredContent.code, 'invalid_args');
 });
 test('single-call cancellation does not cancel another task; disposal aborts all calls and refuses new work', { timeout: 6_000 }, async t => {

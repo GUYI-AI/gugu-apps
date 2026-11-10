@@ -1,5 +1,6 @@
 /** Native implementation owned by the Computer Use App. Shared host adapters are connected separately. */
 export { createCuaClient, cuaEnvironment, cuaSocketPath } from './native/cua-client'
+export { linuxScreen } from './native/linux-display'
 export { openCuaDaemonLease, cuaMutates, CUA_CANCEL_UNCONFIRMED } from './native/cua-daemon-lease'
 export { createObservationGate, settleCuaWindow, displayOnlyObservation } from './native/cua-observation'
 export { cursorOnWindow } from './native/cua-window-cursor'
@@ -10,3 +11,4 @@ export { TOOLS, checkCall } from './policy'
 export { DRIVER_RELEASES, prepareDriver, unpackDriver, assertNativeArchitecture } from './driver-resources.mjs'
 export { createPermissionClient } from './permissions.mjs'
 export { createComputerTools } from './tools'
+export { resolveComputerWindow, computerBarBounds } from './placement'

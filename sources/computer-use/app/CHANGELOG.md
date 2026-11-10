@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 (unreleased)
+
+- Move native tools, permission checks, driver preparation and target-specific Stop into the ordinary App program (App interface 36).
+- Accept direct window-picture clicks, committed Chinese input and paste through the authorized projection channel. Stale frames and changed targets reject input; uncertain native results are never replayed.
+- Show on the settings page and the task page whether macOS really allows Gugu Accessibility and Screen Recording. Only a missing permission offers Allow (macOS then asks and lists Gugu), and the page updates by itself once it is on. A call refused for a missing permission opens the task page beside the task.
+- The task page says it is getting a new window's picture in its own language, instead of an English line.
+- Keep human input lanes separate from agent calls and other viewers. Disconnect cancels only that viewer's pending input, without leaving native keys or buttons held.
+
 ## 0.4.1
 
 The task page's tab is titled Computer in English (it read 电脑 to everyone); Chinese keeps 电脑 through `localized.zh-CN`.

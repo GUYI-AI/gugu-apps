@@ -1,26 +1,36 @@
 // Migrated from OpenDCAI/gugu@1f8cd5f3a81df091d25a81f6838f186c33504a95: apps/desktop/electron/device-actions/computer-control.ts
+import { programLogger } from './log'
+
 /**
- * #7199 电脑控制的「正在操作 · 停止」小条与人接管 —— 按 App 算,不按整台电脑算(owner 10-15:「不接管电脑,只接管这个 App」):
+ * #7199 Control indicator and human takeover are per application, rather than
+ * the whole computer (owner decision, October 15).
  *
- * - agent 动某个 App(看也算:人该知道有人在看它),在实际目标窗口内浮一枚小条「<谁> 正在操作「<App>」 · 停止」;
- *   没指定 App 的动作(列 App、读屏幕大小、整屏截图、挪 agent 自己的鼠标)是「<谁> 正在查看这台电脑」,
- *   它不盖掉已经亮着的条(正在操作的 App、或人刚停下的 App)。最后一个动作做完半分钟没有下一个,小条收起。
- * - 人照常用电脑 —— 包括点进、挪动 agent 正在操作的那个 App —— 都不打断它:cua-driver 在后台做事,不碰人的真鼠标和前台。
- * - 「停止」只停小条上的那个 App:它在途的动作中断,之后 agent 再动这个 App 一律拒,直到人点「让它继续」;别的 App 照常。
- *   小条上是「正在查看这台电脑」时按停止 = 整个电脑控制停下。
+ * - Only input registers control. Inspection neither shows nor refreshes the
+ *   advisory, non-activating host surface. Display failure never admits or
+ *   refuses input. Untargeted input also replaces the active subject so Stop
+ *   reaches the current action. The indicator hides 30 seconds after work ends.
+ * - Ordinary human activity does not interrupt the agent: background driver
+ *   operations do not take the person's real pointer or foreground window.
+ * - Stop cancels in-flight work for the displayed application and refuses later
+ *   input until Continue; other applications remain usable. Stopping an
+ *   untargeted action stops computer control as a whole.
  */
 
-/** 小条本身(main 用一个不抢焦点、不进截图的置顶小窗实现;测试换成记录器)。没有 app = 没指定 App(查看这台电脑);app 没 name = 认不出名字的 App。 */
+/** Advisory surface; tests record deliveries. An absent app means an untargeted operation; an absent name means an unnamed app. */
 export interface ComputerControlView {
-  show(view: { state: 'driving' | 'paused'; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): void
-  hide(): void
+  show(view: { state: 'driving' | 'paused'; sessionId?: string; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): unknown
+  hide(): unknown
 }
 
-/** 一个动作:针对哪个 App(pid;不指定 App 的动作没有)。 */
+/** An action's application identity; untargeted actions have no PID. */
 export interface ComputerCall {
+  /** Presentation is deferred for a cold launch; cancellation admission is not. */
+  deferAttachment?: boolean
+  sessionId?: string
   callerName?: string
   taskTitle?: string
   pid?: number
+  targetPids?: readonly number[]
   windowId?: number
   appName?: string
 }
@@ -28,16 +38,18 @@ export interface ComputerCall {
 export type ComputerCallHandle = { refused: string } | { signal: AbortSignal; end(): void }
 
 export interface ComputerControl {
-  /** 动作开始前:这个 App(或整个电脑控制)被人停了 → 回拒绝原因;否则登记,回这一下的中止信号(人按停止时触发)与收尾。 */
+  /** Refuse a paused subject; otherwise register cancellable work and return its signal and cleanup handle. */
   begin(call: ComputerCall): ComputerCallHandle
   /**
-   * #7317 只问不登记:这个 App(或整个电脑控制)此刻是不是被人停着 —— 给「电脑」页签的只读画面用,它 ❌ 亮小条、❌ 算一次操作。
-   * 给的是被停的原因(和 begin 拒绝时同一句),没停就是 null。
+   * #7317 Inspect pause state without registering input or showing an indicator.
+   * Return the same refusal as begin, or null if this subject may proceed.
    */
   stoppedFor(pid: number | undefined): string | null
-  /** 小条上的「停止」。 */
+  /** A person on a task page targets its observed App, never whichever bar was shown last. */
+  setTargetPaused(call: ComputerCall & { pid: number }, pause: boolean): string | null
+  /** The control bar's Stop action. */
   stop(): void
-  /** 小条上的「让它继续」。 */
+  /** The control bar's Continue action. */
   resume(): void
   dispose(): void
 }
@@ -51,18 +63,33 @@ export const COMPUTER_STOPPED = 'The person pressed Stop on the bar at the botto
 
 const LINGER_MS = 30_000
 const PAUSED_BAR_MS = 2 * 60_000
+const log = programLogger('control-display')
 
-/** 停的对象:一个 App(pid),或整个电脑控制。 */
+/** Pause subject: one application PID, or computer control as a whole. */
 type Subject = number | 'computer'
 
-export function createComputerControl(input: { view: ComputerControlView; lingerMs?: number }): ComputerControl {
+export function createComputerControl(input: { view: ComputerControlView; lingerMs?: number; onViewError?(error: unknown): void }): ComputerControl {
   let disposed = false
   const lingerMs = input.lingerMs ?? LINGER_MS
-  /** 被人停了的:pid(或 'computer')→ 当时的 App 名(拒绝时说给 agent 听)。 */
+  /** Retain the paused subject's observed name for later agent refusals. */
   const paused = new Map<Subject, { appName?: string; windowId?: number }>()
   const inFlight = new Map<Subject, Set<AbortController>>()
-  let shown: { subject: Subject; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
+  let shown: { subject: Subject; sessionId?: string; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
   let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Display delivery is advisory. Neither an exception, a rejection nor a
+  // never-settling surface update can become an action permission decision.
+  const reportViewError = (error: unknown) => {
+    try {
+      if (input.onViewError) input.onViewError(error)
+      else log.warn({ error: String(error) }, 'Computer Use display failed')
+    } catch { /* A display error reporter cannot prevent input or cancellation. */ }
+  }
+  const display = (work: () => unknown) => {
+    try { void Promise.resolve(work()).catch(reportViewError) }
+    catch (error) { reportViewError(error) }
+  }
+  const hide = () => display(() => input.view.hide())
 
   const clearHide = () => {
     if (hideTimer) clearTimeout(hideTimer)
@@ -72,53 +99,57 @@ export function createComputerControl(input: { view: ComputerControlView; linger
     clearHide()
     hideTimer = setTimeout(() => {
       shown = null
-      input.view.hide()
+      hide()
     }, ms)
     ;(hideTimer as { unref?: () => void }).unref?.()
   }
   const show = (next: NonNullable<typeof shown>) => {
     shown = next
     clearHide()
-    input.view.show({
+    display(() => input.view.show({
       state: next.state,
+      ...(next.sessionId ? { sessionId: next.sessionId } : {}),
       ...(next.callerName ? { callerName: next.callerName } : {}),
       ...(next.taskTitle ? { taskTitle: next.taskTitle } : {}),
       ...(next.subject === 'computer' ? {} : { app: { pid: next.subject, ...(next.appName ? { name: next.appName } : {}), ...(next.windowId !== undefined ? { windowId: next.windowId } : {}) } }),
-    })
+    }))
   }
   const busy = () => [...inFlight.values()].some((set) => set.size > 0)
 
   return {
     begin(call) {
       if (disposed) return { refused: 'Computer Use App 已停止，不能接受新的操作。' }
-      const identity = { ...(call.callerName ? { callerName: call.callerName } : {}), ...(call.taskTitle ? { taskTitle: call.taskTitle } : {}) }
+      const identity = { ...(call.sessionId ? { sessionId: call.sessionId } : {}), ...(call.callerName ? { callerName: call.callerName } : {}), ...(call.taskTitle ? { taskTitle: call.taskTitle } : {}) }
       const subject: Subject = call.pid ?? 'computer'
-      const blockedBy = paused.has('computer') ? 'computer' : paused.has(subject) ? subject : null
+      const subjects = new Set<Subject>([subject, ...(call.targetPids ?? [])])
+      const blockedBy = paused.has('computer') ? 'computer' : [...subjects].find(target => paused.has(target)) ?? null
       if (blockedBy !== null) {
-        // agent 又来动停了的东西:把暂停的小条重新亮出来,让人看得到、点得到「让它继续」。
-        const appName = blockedBy === 'computer' ? undefined : (paused.get(blockedBy)?.appName ?? call.appName)
-        const windowId = blockedBy === 'computer' ? undefined : (call.windowId ?? paused.get(blockedBy)?.windowId)
+        // Re-show a paused subject's indicator so the person can choose Continue.
+        const appName = blockedBy === 'computer' ? undefined : (paused.get(blockedBy)?.appName ?? (call.pid === blockedBy ? call.appName : undefined))
+        const windowId = blockedBy === 'computer' ? undefined : ((call.pid === blockedBy ? call.windowId : undefined) ?? paused.get(blockedBy)?.windowId)
         show({ subject: blockedBy, ...identity, ...(appName ? { appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'paused' })
         hideAfter(PAUSED_BAR_MS)
         return { refused: blockedBy === 'computer' ? COMPUTER_STOPPED : appStopped(appName) }
       }
       const controller = new AbortController()
-      const set = inFlight.get(subject) ?? new Set<AbortController>()
-      set.add(controller)
-      inFlight.set(subject, set)
-      // 没指定 App 的动作不盖掉已经亮着的条:正在操作的 App 留着让人认得出、能停;暂停的留着让人点得到「让它继续」。
-      if (call.pid !== undefined || !shown) {
-        const windowId = call.windowId
-        show({ subject, ...identity, ...(call.appName ? { appName: call.appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'driving' })
-      }
-      else if (shown.state === 'driving') clearHide()
+      const sets = [...subjects].map(target => {
+        const set = inFlight.get(target) ?? new Set<AbortController>()
+        set.add(controller)
+        inFlight.set(target, set)
+        return { target, set }
+      })
+      const windowId = call.windowId
+      if (!call.deferAttachment) show({ subject, ...identity, ...(call.appName ? { appName: call.appName } : {}), ...(windowId !== undefined ? { windowId } : {}), state: 'driving' })
       let ended = false
       return {
         signal: controller.signal,
         end() {
           if (ended) return
           ended = true
-          set.delete(controller)
+          for (const { target, set } of sets) {
+            set.delete(controller)
+            if (set.size === 0 && inFlight.get(target) === set) inFlight.delete(target)
+          }
           if (!busy() && shown?.state === 'driving') hideAfter(lingerMs)
         },
       }
@@ -127,6 +158,26 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       if (disposed) return 'Computer Use App 已停止'
       if (paused.has('computer')) return COMPUTER_STOPPED
       return pid !== undefined && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null
+    },
+    setTargetPaused(call, pause) {
+      if (disposed) return 'Computer Use App 已停止'
+      if (!Number.isSafeInteger(call.pid) || call.pid <= 0) throw new Error('A known application is required')
+      if (paused.has('computer')) return COMPUTER_STOPPED
+      if (!pause) {
+        // A task-specific Continue cannot undo a whole-computer Stop.
+        paused.delete(call.pid)
+        if (shown?.subject === call.pid && shown.state === 'paused') {
+          shown = null; clearHide(); hide()
+        }
+        return null
+      }
+      paused.set(call.pid, { appName: call.appName, windowId: call.windowId })
+      const reason = appStopped(call.appName)
+      for (const controller of inFlight.get(call.pid) ?? []) controller.abort(reason)
+      show({ subject: call.pid, sessionId: call.sessionId, callerName: call.callerName, taskTitle: call.taskTitle,
+        appName: call.appName, windowId: call.windowId, state: 'paused' })
+      hideAfter(PAUSED_BAR_MS)
+      return reason
     },
     stop() {
       if (disposed) return
@@ -148,7 +199,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       paused.delete(shown.subject)
       shown = null
       clearHide()
-      input.view.hide()
+      hide()
     },
     dispose() {
       disposed = true
@@ -157,7 +208,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       paused.clear()
       shown = null
       clearHide()
-      input.view.hide()
+      hide()
     },
   }
 }

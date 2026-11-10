@@ -37,6 +37,8 @@ export function createProgramNative({ dataDir, bundleDir, platform = process.pla
   return {
     settings: settings({ bundleDir, dataDir, platform, arch }),
     native: {
+      // Query only an already-running agent lane; viewing must not create an agent session.
+      async cursorState(owner, signal) { return native?.cursorState?.(owner, signal) ?? null; },
       async callTool(name, args, options = {}) {
         const driver = await acquire(options.signal);
         return driver.callTool(name, args, options);
