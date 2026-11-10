@@ -31,14 +31,14 @@ test('both first-party tool App sources are inspectable; only Computer Use has a
   const tabs = {
     'browser-use': undefined,
     'computer-use': [
-      { name: 'settings', title: 'Settings', hostPage: 'settings' },
+      { name: 'settings', title: 'Settings', entry: 'settings.html' },
       { name: 'preview', title: 'Computer', entry: 'preview.html', icon: 'icon.png', perSession: true },
     ],
   };
-  // Browser Use runs its own program (GUYI-AI/gugu#1607); Computer Use still names the host's until its migration lands.
+  // Both run their own programs (GUYI-AI/gugu#1607), not a program of the host.
   const programs = {
     'browser-use': [{ name: 'browser-use', command: 'node', args: ['program/lib/server.mjs'] }],
-    'computer-use': [{ name: 'computer-use', host: 'computer-use' }],
+    'computer-use': [{ name: 'computer-use', command: 'node', args: ['program/server.mjs'] }],
   };
   for (const [id, expected] of Object.entries(tabs)) {
     const dir = new URL(`${id}/app/`, root).pathname;

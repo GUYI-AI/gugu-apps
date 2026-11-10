@@ -22,8 +22,13 @@ export function createProtectedHost({ platform = process.platform, pid = process
     if (processes.get(pid)?.parent !== parent || !processes.has(parent)) throw new Error('The program launch owner could not be verified.');
     const pids = new Set(), names = new Set(['gugu', '咕咕', '咕咕 beta']);
     let current = pid;
+    // Windows has no launchd at the top: Gugu's main process is started by explorer.exe (or a shell), whose own parent
+    // has often exited. There the chain is Gugu's own processes only — this program, its launcher and the processes of
+    // the launcher's executable above it — so explorer and the rest of the desktop stay operable.
+    const hostExecutable = processes.get(parent)?.executable;
     while (current > 1 && !pids.has(current)) {
       const entry = processes.get(current);
+      if (platform === 'win32' && current !== pid && current !== parent && (!entry || entry.executable !== hostExecutable)) break;
       if (!entry) throw new Error('The program launch ancestry is unavailable.');
       pids.add(current);
       const basename = (platform === 'win32' ? path.win32 : path.posix).basename(entry.executable).replace(/\.exe$/i, '').trim().toLowerCase();

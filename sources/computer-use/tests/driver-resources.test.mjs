@@ -42,6 +42,10 @@ test('Mach-O and PE architecture mismatch is rejected before execution', () => {
   const bytes = Buffer.alloc(128); bytes.writeUInt32LE(64, 60); bytes.write('PE\0\0', 64); bytes.writeUInt16LE(0x8664, 68);
   assert.doesNotThrow(() => assertNativeArchitecture(bytes, 'win32', 'x64'));
   assert.throws(() => assertNativeArchitecture(bytes, 'win32', 'arm64'), /architecture/);
+  const elf = Buffer.alloc(64); elf.writeUInt32BE(0x7f454c46, 0); elf[4] = 2; elf[5] = 1; elf.writeUInt16LE(62, 18);
+  assert.doesNotThrow(() => assertNativeArchitecture(elf, 'linux', 'x64'));
+  assert.throws(() => assertNativeArchitecture(elf, 'linux', 'arm64'), /architecture/);
+  assert.throws(() => assertNativeArchitecture(mach(), 'linux', 'x64'), /architecture/);
 });
 test('offline cache is verified, damaged executable is repaired, and missing execution bits are restored', async t => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), 'computer-use-resource-')); t.after(() => rm(dataDir, { recursive: true, force: true }));

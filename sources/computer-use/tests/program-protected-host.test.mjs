@@ -34,6 +34,15 @@ test('Windows ancestry uses the same protected owner chain without command inter
   assert.deepEqual([...value.pids], [80, 70]); assert(value.names.has('gugu'));
 });
 
+test('on Windows only Gugu\'s own processes are protected; explorer above it, whose parent exited, stays operable', async () => {
+  const rows = [{ ProcessId: 80, ParentProcessId: 70, ExecutablePath: 'C:\\Gugu\\gugu-beta.exe' }, { ProcessId: 70, ParentProcessId: 65, ExecutablePath: 'C:\\Gugu\\gugu-beta.exe' },
+    { ProcessId: 65, ParentProcessId: 60, ExecutablePath: 'C:\\Gugu\\gugu-beta.exe' }, { ProcessId: 60, ParentProcessId: 5512, ExecutablePath: 'C:\\Windows\\explorer.exe' }];
+  const value = await createProtectedHost({ platform: 'win32', pid: 80, parent: 70, run: async () => ({ stdout: JSON.stringify(rows) }) })();
+  assert.deepEqual([...value.pids], [80, 70, 65]); assert(value.names.has('gugu-beta')); assert(!value.names.has('explorer'));
+  // The program's own launcher must still be there.
+  await assert.rejects(createProtectedHost({ platform: 'win32', pid: 80, parent: 70, run: async () => ({ stdout: JSON.stringify(rows.slice(0, 1)) }) })(), /owner/);
+});
+
 test('binary host plists are decoded before admission rather than dropping the bundle identity', async () => {
   const value = await createProtectedHost({ platform: 'darwin', pid: 80, parent: 70,
     run: async (command, args) => {

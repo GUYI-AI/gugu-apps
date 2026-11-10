@@ -143,7 +143,7 @@ function refusal(tool: string, args: Args, self: SelfApp, inherited: { pid?: num
   return null
 }
 
-function stepsOf(args: Args): Array<{ tool: string; args: Args }> {
+export function stepsOf(args: Args): Array<{ tool: string; args: Args }> {
   const steps = Array.isArray(args.steps) ? args.steps : []
   return steps.flatMap((step): Array<{ tool: string; args: Args }> => {
     if (!isRecord(step)) return []

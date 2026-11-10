@@ -3,10 +3,10 @@
 // runtime/native/cua-client.ts
 import { spawn as nodeSpawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
+import fs2 from "node:fs";
 import net2 from "node:net";
 import os from "node:os";
-import path from "node:path";
+import path2 from "node:path";
 import readline2 from "node:readline";
 import { stripVTControlCharacters } from "node:util";
 
@@ -362,6 +362,39 @@ function replaceBatchObservation(result, fresh) {
   };
 }
 
+// runtime/native/linux-display.ts
+import fs from "node:fs";
+import path from "node:path";
+function linuxScreen(source, deps = {}) {
+  if (source.DISPLAY || source.WAYLAND_DISPLAY) return {};
+  const uid = deps.uid ?? process.getuid?.();
+  if (uid === void 0) return {};
+  const files = deps.fs ?? fs;
+  const owned = (file) => {
+    try {
+      const stat = files.statSync(file);
+      return stat.uid === uid && stat.isSocket();
+    } catch {
+      return false;
+    }
+  };
+  const list = (dir) => {
+    try {
+      return files.readdirSync(dir);
+    } catch {
+      return [];
+    }
+  };
+  const runtime = source.XDG_RUNTIME_DIR || `/run/user/${uid}`;
+  const bus = path.join(runtime, "bus");
+  const session = source.DBUS_SESSION_BUS_ADDRESS || !owned(bus) ? {} : { DBUS_SESSION_BUS_ADDRESS: `unix:path=${bus}` };
+  const x = list("/tmp/.X11-unix").map((name) => /^X(\d+)$/.exec(name)?.[1]).filter((n) => n !== void 0).map(Number).sort((a, b) => a - b).find((n) => owned(`/tmp/.X11-unix/X${n}`));
+  if (x !== void 0) return { DISPLAY: `:${x}`, ...session };
+  const wayland = list(runtime).filter((name) => /^wayland-\d+$/.test(name)).sort().find((name) => owned(path.join(runtime, name)));
+  if (wayland) return { WAYLAND_DISPLAY: wayland, XDG_RUNTIME_DIR: runtime, ...session };
+  return {};
+}
+
 // runtime/native/cua-client.ts
 var IDLE_MS = 10 * 6e4;
 var READY_MS = 15e3;
@@ -372,9 +405,36 @@ var INPUTS = /* @__PURE__ */ new Set(["click", "double_click", "right_click", "d
 var START_FAILED = "\u7535\u8111\u63A7\u5236\u6CA1\u80FD\u542F\u52A8\uFF1A\u8BF7\u91CD\u542F Computer Use App\uFF1B\u8FD8\u4E0D\u884C\u5C31\u91CD\u65B0\u5B89\u88C5\u8FD9\u4E2A App";
 var CRASHED = "\u7535\u8111\u63A7\u5236\u610F\u5916\u505C\u4E86\uFF1A\u518D\u8C03\u4E00\u6B21\u4F1A\u81EA\u52A8\u91CD\u65B0\u542F\u52A8";
 var DISCONNECTED = "\u7535\u8111\u63A7\u5236\u7684\u8FDE\u63A5\u65AD\u4E86\uFF1A\u518D\u8C03\u4E00\u6B21\u4F1A\u81EA\u52A8\u91CD\u65B0\u8FDE\u4E0A";
-var PASS_THROUGH = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "CUA_LOG", "SystemRoot", "windir", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP", "ComSpec", "PATHEXT", "SystemDrive", "ProgramData"];
+var PASS_THROUGH = [
+  "PATH",
+  "HOME",
+  "USER",
+  "LOGNAME",
+  "TMPDIR",
+  "LANG",
+  "LC_ALL",
+  "CUA_LOG",
+  "SystemRoot",
+  "windir",
+  "USERPROFILE",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "TEMP",
+  "TMP",
+  "ComSpec",
+  "PATHEXT",
+  "SystemDrive",
+  "ProgramData",
+  // Linux: the display and accessibility bus the driver observes and drives.
+  "DISPLAY",
+  "XAUTHORITY",
+  "WAYLAND_DISPLAY",
+  "XDG_RUNTIME_DIR",
+  "XDG_SESSION_TYPE",
+  "DBUS_SESSION_BUS_ADDRESS"
+];
 function cuaEnvironment(input) {
-  const source = input.source ?? process.env;
+  const source = input.source ?? (process.platform === "linux" ? { ...process.env, ...linuxScreen(process.env) } : process.env);
   const env = {};
   for (const key of PASS_THROUGH) if (source[key] !== void 0) env[key] = source[key];
   return {
@@ -389,7 +449,7 @@ function cuaEnvironment(input) {
   };
 }
 function cuaSocketPath(platform = process.platform, pid = process.pid) {
-  return platform === "win32" ? `\\\\.\\pipe\\gugu-cua-${pid}` : path.join(os.tmpdir(), `gugu-cua-${pid}.sock`);
+  return platform === "win32" ? `\\\\.\\pipe\\gugu-cua-${pid}` : path2.join(os.tmpdir(), `gugu-cua-${pid}.sock`);
 }
 var pipeAccepting = (pipe) => new Promise((resolve) => {
   const socket = net2.connect(pipe);
@@ -496,7 +556,7 @@ function createCuaClient(options) {
     oldDaemon?.kill();
     if (platform !== "win32") {
       try {
-        fs.rmSync(socket, { force: true });
+        fs2.rmSync(socket, { force: true });
       } catch (error) {
         options.log?.warn({ err: String(error) }, "cua-driver socket could not be removed");
       }
@@ -513,19 +573,20 @@ function createCuaClient(options) {
         options.log?.warn({ code: child.exitCode, signal: child.signalCode }, "cua-driver serve exited before its socket was ready");
         throw new NativeCallError("execution_failed", START_FAILED);
       }
-      if (platform === "win32" ? await pipeAccepting(socket) : fs.existsSync(socket)) return;
+      if (platform === "win32" ? await pipeAccepting(socket) : fs2.existsSync(socket)) return;
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     options.log?.warn({ timeoutMs: options.readyTimeoutMs ?? READY_MS }, "cua-driver serve did not open its socket in time");
     throw new NativeCallError("execution_failed", START_FAILED);
   };
+  const driverCwd = () => os.homedir();
   const environment2 = () => cuaEnvironment({ home: options.home, ...options.hostBundleId ? { hostBundleId: options.hostBundleId } : {} });
   const startDaemon = () => {
     if (daemonReady) return daemonReady;
     shutdown("\u7535\u8111\u63A7\u5236\u91CD\u65B0\u542F\u52A8\u4E86");
-    fs.mkdirSync(options.home, { recursive: true });
+    fs2.mkdirSync(options.home, { recursive: true });
     const serveArgs = ["serve", "--embedded", "--socket", socket, ...platform === "win32" ? [] : ["--pid-file", `${socket}.pid`]];
-    const d = spawn(options.binary, serveArgs, { env: { ...environment2(), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" }, stdio: ["pipe", "pipe", "pipe"] });
+    const d = spawn(options.binary, serveArgs, { cwd: driverCwd(), env: { ...environment2(), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" }, stdio: ["pipe", "pipe", "pipe"] });
     daemon = d;
     d.stdin?.on("error", () => void 0);
     d.stdout?.on("data", () => void 0);
@@ -611,7 +672,7 @@ function createCuaClient(options) {
         lane.starting = false;
         return daemon;
       }
-      const p = spawn(options.binary, ["mcp", "--embedded", "--socket", socket], { env: environment2(), stdio: ["pipe", "pipe", "pipe"] });
+      const p = spawn(options.binary, ["mcp", "--embedded", "--socket", socket], { cwd: driverCwd(), env: environment2(), stdio: ["pipe", "pipe", "pipe"] });
       lane.proc = p;
       p.stdin?.on("error", (error) => options.log?.info({ err: error.message, lane: key }, "cua-driver mcp stdin closed"));
       const pending = /* @__PURE__ */ new Map();
@@ -748,7 +809,7 @@ function createCuaClient(options) {
     },
     available() {
       if (!options.binary) return { ok: false, message: options.missingMessage };
-      if (!fs.existsSync(options.binary)) return { ok: false, message: `${options.missingMessage}(\u627E\u4E0D\u5230 ${options.binary})` };
+      if (!fs2.existsSync(options.binary)) return { ok: false, message: `${options.missingMessage}(\u627E\u4E0D\u5230 ${options.binary})` };
       return { ok: true };
     },
     async callTool(name, args, callOptions = {}) {
@@ -842,6 +903,7 @@ function appStopped(appName) {
 var COMPUTER_STOPPED = 'The person pressed Stop on the bar at the bottom of their screen. Do not use computer.* until they press "\u7EE7\u7EED / Continue" on that bar. Tell them what you have done and what is left.';
 var LINGER_MS = 3e4;
 var PAUSED_BAR_MS = 2 * 6e4;
+var log2 = programLogger("control-display");
 function createComputerControl(input) {
   let disposed = false;
   const lingerMs = input.lingerMs ?? LINGER_MS;
@@ -849,6 +911,21 @@ function createComputerControl(input) {
   const inFlight = /* @__PURE__ */ new Map();
   let shown = null;
   let hideTimer = null;
+  const reportViewError = (error) => {
+    try {
+      if (input.onViewError) input.onViewError(error);
+      else log2.warn({ error: String(error) }, "Computer Use display failed");
+    } catch {
+    }
+  };
+  const display = (work) => {
+    try {
+      void Promise.resolve(work()).catch(reportViewError);
+    } catch (error) {
+      reportViewError(error);
+    }
+  };
+  const hide = () => display(() => input.view.hide());
   const clearHide = () => {
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = null;
@@ -857,49 +934,55 @@ function createComputerControl(input) {
     clearHide();
     hideTimer = setTimeout(() => {
       shown = null;
-      input.view.hide();
+      hide();
     }, ms);
     hideTimer.unref?.();
   };
   const show = (next) => {
     shown = next;
     clearHide();
-    input.view.show({
+    display(() => input.view.show({
       state: next.state,
+      ...next.sessionId ? { sessionId: next.sessionId } : {},
       ...next.callerName ? { callerName: next.callerName } : {},
       ...next.taskTitle ? { taskTitle: next.taskTitle } : {},
       ...next.subject === "computer" ? {} : { app: { pid: next.subject, ...next.appName ? { name: next.appName } : {}, ...next.windowId !== void 0 ? { windowId: next.windowId } : {} } }
-    });
+    }));
   };
   const busy = () => [...inFlight.values()].some((set) => set.size > 0);
   return {
     begin(call) {
       if (disposed) return { refused: "Computer Use App \u5DF2\u505C\u6B62\uFF0C\u4E0D\u80FD\u63A5\u53D7\u65B0\u7684\u64CD\u4F5C\u3002" };
-      const identity = { ...call.callerName ? { callerName: call.callerName } : {}, ...call.taskTitle ? { taskTitle: call.taskTitle } : {} };
+      const identity = { ...call.sessionId ? { sessionId: call.sessionId } : {}, ...call.callerName ? { callerName: call.callerName } : {}, ...call.taskTitle ? { taskTitle: call.taskTitle } : {} };
       const subject = call.pid ?? "computer";
-      const blockedBy = paused.has("computer") ? "computer" : paused.has(subject) ? subject : null;
+      const subjects = /* @__PURE__ */ new Set([subject, ...call.targetPids ?? []]);
+      const blockedBy = paused.has("computer") ? "computer" : [...subjects].find((target) => paused.has(target)) ?? null;
       if (blockedBy !== null) {
-        const appName = blockedBy === "computer" ? void 0 : paused.get(blockedBy)?.appName ?? call.appName;
-        const windowId = blockedBy === "computer" ? void 0 : call.windowId ?? paused.get(blockedBy)?.windowId;
-        show({ subject: blockedBy, ...identity, ...appName ? { appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "paused" });
+        const appName = blockedBy === "computer" ? void 0 : paused.get(blockedBy)?.appName ?? (call.pid === blockedBy ? call.appName : void 0);
+        const windowId2 = blockedBy === "computer" ? void 0 : (call.pid === blockedBy ? call.windowId : void 0) ?? paused.get(blockedBy)?.windowId;
+        show({ subject: blockedBy, ...identity, ...appName ? { appName } : {}, ...windowId2 !== void 0 ? { windowId: windowId2 } : {}, state: "paused" });
         hideAfter(PAUSED_BAR_MS);
         return { refused: blockedBy === "computer" ? COMPUTER_STOPPED : appStopped(appName) };
       }
       const controller = new AbortController();
-      const set = inFlight.get(subject) ?? /* @__PURE__ */ new Set();
-      set.add(controller);
-      inFlight.set(subject, set);
-      if (call.pid !== void 0 || !shown) {
-        const windowId = call.windowId;
-        show({ subject, ...identity, ...call.appName ? { appName: call.appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "driving" });
-      } else if (shown.state === "driving") clearHide();
+      const sets = [...subjects].map((target) => {
+        const set = inFlight.get(target) ?? /* @__PURE__ */ new Set();
+        set.add(controller);
+        inFlight.set(target, set);
+        return { target, set };
+      });
+      const windowId = call.windowId;
+      if (!call.deferAttachment) show({ subject, ...identity, ...call.appName ? { appName: call.appName } : {}, ...windowId !== void 0 ? { windowId } : {}, state: "driving" });
       let ended = false;
       return {
         signal: controller.signal,
         end() {
           if (ended) return;
           ended = true;
-          set.delete(controller);
+          for (const { target, set } of sets) {
+            set.delete(controller);
+            if (set.size === 0 && inFlight.get(target) === set) inFlight.delete(target);
+          }
           if (!busy() && shown?.state === "driving") hideAfter(lingerMs);
         }
       };
@@ -908,6 +991,34 @@ function createComputerControl(input) {
       if (disposed) return "Computer Use App \u5DF2\u505C\u6B62";
       if (paused.has("computer")) return COMPUTER_STOPPED;
       return pid !== void 0 && paused.has(pid) ? appStopped(paused.get(pid)?.appName) : null;
+    },
+    setTargetPaused(call, pause) {
+      if (disposed) return "Computer Use App \u5DF2\u505C\u6B62";
+      if (!Number.isSafeInteger(call.pid) || call.pid <= 0) throw new Error("A known application is required");
+      if (paused.has("computer")) return COMPUTER_STOPPED;
+      if (!pause) {
+        paused.delete(call.pid);
+        if (shown?.subject === call.pid && shown.state === "paused") {
+          shown = null;
+          clearHide();
+          hide();
+        }
+        return null;
+      }
+      paused.set(call.pid, { appName: call.appName, windowId: call.windowId });
+      const reason = appStopped(call.appName);
+      for (const controller of inFlight.get(call.pid) ?? []) controller.abort(reason);
+      show({
+        subject: call.pid,
+        sessionId: call.sessionId,
+        callerName: call.callerName,
+        taskTitle: call.taskTitle,
+        appName: call.appName,
+        windowId: call.windowId,
+        state: "paused"
+      });
+      hideAfter(PAUSED_BAR_MS);
+      return reason;
     },
     stop() {
       if (disposed) return;
@@ -929,7 +1040,7 @@ function createComputerControl(input) {
       paused.delete(shown.subject);
       shown = null;
       clearHide();
-      input.view.hide();
+      hide();
     },
     dispose() {
       disposed = true;
@@ -938,13 +1049,13 @@ function createComputerControl(input) {
       paused.clear();
       shown = null;
       clearHide();
-      input.view.hide();
+      hide();
     }
   };
 }
 
 // runtime/policy.ts
-import path2 from "node:path";
+import path3 from "node:path";
 
 // runtime/types.ts
 var str = (args, key) => typeof args[key] === "string" ? args[key].trim() : "";
@@ -1064,7 +1175,7 @@ function stepsOf(args) {
   });
 }
 function launchQuestion(args) {
-  const target = str(args, "name") || path2.win32.basename(str(args, "path") || str(args, "launch_path")) || str(args, "bundle_id") || str(args, "aumid") || "\u8FD9\u4E2A App";
+  const target = str(args, "name") || path3.win32.basename(str(args, "path") || str(args, "launch_path")) || str(args, "bundle_id") || str(args, "aumid") || "\u8FD9\u4E2A App";
   return `\u8981\u6253\u5F00\u300C${target}\u300D\u5417\uFF1F\u5728 Windows \u4E0A\u5B83\u6253\u5F00\u65F6\u53EF\u80FD\u4F1A\u8DF3\u5230\u6700\u524D\u9762\uFF0C\u6253\u65AD\u4F60\u6B63\u5728\u7528\u7684\u7A97\u53E3\u3002`;
 }
 function checkCall(tool, args, self, platform) {
@@ -1104,7 +1215,7 @@ function descriptionOf(tool, spec) {
 import { createHash as createHash2, randomUUID as randomUUID2 } from "node:crypto";
 import { execFile } from "node:child_process";
 import { chmod, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import path3 from "node:path";
+import path4 from "node:path";
 import { promisify } from "node:util";
 import { gunzipSync, inflateRawSync } from "node:zlib";
 var execute = promisify(execFile);
@@ -1116,7 +1227,9 @@ var DRIVER_RELEASES = Object.freeze({
   "darwin-arm64": { platform: "darwin", arch: "arm64", version: "0.36.0", revision: "0.36.0-gugu.1", format: "tar.gz", member: "cua-driver", sha256: "3a9e5ddfc3078bdc09ab1eb708d8bc49964a306b31f0251689fda8da69fae9c6", url: "https://github.com/OpenDCAI/gugu/releases/download/assets/cua-driver-rs-0.36.0-gugu.1-darwin-universal-binary.tar.gz" },
   "darwin-x64": { platform: "darwin", arch: "x64", version: "0.36.0", revision: "0.36.0-gugu.1", format: "tar.gz", member: "cua-driver", sha256: "3a9e5ddfc3078bdc09ab1eb708d8bc49964a306b31f0251689fda8da69fae9c6", url: "https://github.com/OpenDCAI/gugu/releases/download/assets/cua-driver-rs-0.36.0-gugu.1-darwin-universal-binary.tar.gz" },
   "win32-x64": { platform: "win32", arch: "x64", version: "0.36.0", revision: "0.36.0", format: "zip", member: "cua-driver.exe", sha256: "f8c47024b626f4e0e70f8428d2998df39e4879110c5722a29d5fd03e367353ad", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-windows-x86_64-binary.zip" },
-  "win32-arm64": { platform: "win32", arch: "arm64", version: "0.36.0", revision: "0.36.0", format: "zip", member: "cua-driver.exe", sha256: "520ea584cf11c074bccc4fd2328e8f2b34ec43de9328d97afb7fd03f761b55ee", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-windows-arm64-binary.zip" }
+  "win32-arm64": { platform: "win32", arch: "arm64", version: "0.36.0", revision: "0.36.0", format: "zip", member: "cua-driver.exe", sha256: "520ea584cf11c074bccc4fd2328e8f2b34ec43de9328d97afb7fd03f761b55ee", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-windows-arm64-binary.zip" },
+  "linux-x64": { platform: "linux", arch: "x64", version: "0.36.0", revision: "0.36.0", format: "tar.gz", member: "cua-driver", sha256: "05dae2160c86bdf4855c279d30898213d7a150edb1992b7470afdd69f0df4064", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-linux-x86_64-binary.tar.gz" },
+  "linux-arm64": { platform: "linux", arch: "arm64", version: "0.36.0", revision: "0.36.0", format: "tar.gz", member: "cua-driver", sha256: "f64a33889605944a4e5af0e6036496137a25d6375f041d7c56e65c3be456aab2", url: "https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.36.0/cua-driver-rs-0.36.0-linux-arm64-binary.tar.gz" }
 });
 function safeName(name) {
   const normalized = name.replace(/^\.\//, "").replace(/\/$/, "");
@@ -1225,6 +1338,11 @@ function assertNativeArchitecture(bytes, platform, arch) {
     if (!expected2 || offset < 64 || offset + 6 > bytes.length || bytes.toString("latin1", offset, offset + 4) !== "PE\0\0" || bytes.readUInt16LE(offset + 4) !== expected2) throw new Error("Incorrect native PE architecture.");
     return;
   }
+  if (platform === "linux") {
+    const expected2 = { arm64: 183, x64: 62 }[arch];
+    if (!expected2 || bytes.length < 20 || bytes.readUInt32BE(0) !== 2135247942 || bytes[4] !== 2 || bytes[5] !== 1 || bytes.readUInt16LE(18) !== expected2) throw new Error("Incorrect native ELF architecture.");
+    return;
+  }
   if (platform !== "darwin" || bytes.length < 8) throw new Error("This platform has no supported native driver.");
   const expected = { arm64: 16777228, x64: 16777223 }[arch];
   const magic = bytes.readUInt32BE(0);
@@ -1258,20 +1376,20 @@ async function regular(file) {
   }
 }
 function environment(home) {
-  const names = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "SystemRoot", "windir", "USERPROFILE", "TEMP", "TMP"];
+  const names = ["PATH", "HOME", "USER", "LOGNAME", "TMPDIR", "SystemRoot", "windir", "USERPROFILE", "TEMP", "TMP", "DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "XDG_SESSION_TYPE", "DBUS_SESSION_BUS_ADDRESS"];
   return { ...Object.fromEntries(names.filter((key) => process.env[key] !== void 0).map((key) => [key, process.env[key]])), CUA_DRIVER_EMBEDDED: "1", CUA_DRIVER_RS_TELEMETRY_ENABLED: "false", CUA_DRIVER_RS_UPDATE_CHECK: "false", CUA_DRIVER_RS_HOME: home };
 }
 async function verifyExecutable(file, release, dataDir, signal) {
   if (release.platform === "darwin") await execute("/usr/bin/codesign", ["--verify", "--strict", file], { signal, timeout: 15e3 });
-  const { stdout } = await execute(file, ["--version"], { signal, timeout: 15e3, maxBuffer: 8192, env: environment(path3.join(dataDir, "driver-home")) });
+  const { stdout } = await execute(file, ["--version"], { signal, timeout: 15e3, maxBuffer: 8192, env: environment(path4.join(dataDir, "driver-home")) });
   if (stdout.trim() !== `cua-driver ${release.version}`) throw new Error("Incorrect native driver version.");
 }
 async function prepareDriver({ dataDir, platform = process.platform, arch = process.arch, signal, fetchArchive = download, verify = verifyExecutable, releases = DRIVER_RELEASES }) {
-  if (!dataDir || !path3.isAbsolute(dataDir)) throw new Error("The App data directory is required.");
+  if (!dataDir || !path4.isAbsolute(dataDir)) throw new Error("The App data directory is required.");
   const release = releases[`${platform}-${arch}`];
   if (!release || release.platform !== platform || release.arch !== arch) throw new Error("This platform has no supported native driver.");
   if (signal?.aborted) throw signal.reason;
-  const key = path3.join(dataDir, "native", release.sha256);
+  const key = path4.join(dataDir, "native", release.sha256);
   const identity = key + "\0" + platform + "\0" + arch;
   let job = active.get(identity);
   if (!job) {
@@ -1310,7 +1428,7 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
   async function prepare(signal2) {
     await mkdir(key, { recursive: true, mode: 448 });
     signal2.throwIfAborted();
-    const archive = path3.join(key, "archive");
+    const archive = path4.join(key, "archive");
     let bytes = await regular(archive);
     signal2.throwIfAborted();
     if (!bytes || digest(bytes) !== release.sha256) {
@@ -1328,7 +1446,7 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
     if (signal2?.aborted) throw signal2.reason;
     const executableBytes = unpackDriver(bytes, release);
     assertNativeArchitecture(executableBytes, platform, arch);
-    const file = path3.join(key, release.member);
+    const file = path4.join(key, release.member);
     const cached = await regular(file);
     signal2.throwIfAborted();
     if (!cached || digest(cached) !== digest(executableBytes)) {
@@ -1353,25 +1471,25 @@ import { execFile as execFile2 } from "node:child_process";
 import { createHash as createHash3, randomUUID as randomUUID3 } from "node:crypto";
 import { chmod as chmod2, mkdir as mkdir2, readFile as readFile2, rename as rename2, rm as rm2 } from "node:fs/promises";
 import { writeFile as writeFile2 } from "node:fs/promises";
-import path4 from "node:path";
+import path5 from "node:path";
 import { promisify as promisify2 } from "node:util";
 var execute2 = promisify2(execFile2);
 var digest2 = (bytes) => createHash3("sha256").update(bytes).digest("hex");
 var choices = /* @__PURE__ */ new Set(["accessibility", "screen"]);
 function createPermissionClient({ bundleDir, dataDir, platform = process.platform, arch = process.arch, run = execute2 }) {
-  if (!bundleDir || !dataDir || !path4.isAbsolute(bundleDir) || !path4.isAbsolute(dataDir)) throw new Error("App bundle and data directories are required.");
+  if (!bundleDir || !dataDir || !path5.isAbsolute(bundleDir) || !path5.isAbsolute(dataDir)) throw new Error("App bundle and data directories are required.");
   let ready;
   async function prepare() {
     if (platform !== "darwin") throw new Error("macOS system settings are not available on this platform.");
     ready ??= (async () => {
-      const meta = JSON.parse(await readFile2(path4.join(bundleDir, "permissions.json"), "utf8"));
+      const meta = JSON.parse(await readFile2(path5.join(bundleDir, "permissions.json"), "utf8"));
       if (meta.platform !== platform || !meta.architectures.includes(arch) || !/^[a-f0-9]{64}$/.test(meta.sha256)) throw new Error("The permission helper does not match this computer.");
-      const bytes = await readFile2(path4.join(bundleDir, "mac-permissions"));
+      const bytes = await readFile2(path5.join(bundleDir, "mac-permissions"));
       if (digest2(bytes) !== meta.sha256) throw new Error("The permission helper failed its integrity check.");
       assertNativeArchitecture(bytes, platform, arch);
-      const directory = path4.join(dataDir, "native", "permissions", meta.sha256);
+      const directory = path5.join(dataDir, "native", "permissions", meta.sha256);
       await mkdir2(directory, { recursive: true, mode: 448 });
-      const file = path4.join(directory, "mac-permissions");
+      const file = path5.join(directory, "mac-permissions");
       const temporary = file + "." + randomUUID3() + ".part";
       try {
         await writeFile2(temporary, bytes, { mode: 448, flag: "wx" });
@@ -1411,6 +1529,7 @@ import { createHash as createHash4 } from "node:crypto";
 // runtime/app-directory.ts
 var isRecord2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 var isNum2 = (v) => typeof v === "number" && Number.isFinite(v);
+var lower2 = (v) => typeof v === "string" ? v.trim().toLowerCase() : "";
 var targetPid2 = (args) => isRecord2(args.target) && isNum2(args.target.pid) ? args.target.pid : isNum2(args.pid) ? args.pid : void 0;
 function createAppDirectory() {
   const described = /* @__PURE__ */ new Map();
@@ -1419,6 +1538,7 @@ function createAppDirectory() {
   const fileNames = /* @__PURE__ */ new Map();
   const listed = /* @__PURE__ */ new Map();
   const snapshots = /* @__PURE__ */ new Map();
+  const appPids = /* @__PURE__ */ new Map();
   const askedWindows = /* @__PURE__ */ new Set();
   const askedDescription = /* @__PURE__ */ new Set();
   const isFileName = (name) => /\.exe$/i.test(name);
@@ -1439,7 +1559,7 @@ function createAppDirectory() {
       if (pid !== void 0) return pid;
       const token = typeof args.element_token === "string" ? args.element_token : "";
       const snapshot = token.includes(":") ? token.slice(0, token.lastIndexOf(":")) : "";
-      return snapshot ? snapshots.get(`${session}|${snapshot}`)?.pid : void 0;
+      return snapshot ? snapshots.get(`${session}|${snapshot}`)?.pid : appPids.get(`${session}|${lower2(args.app)}`);
     },
     windowOf(session, args) {
       const target = isRecord2(args.target) ? args.target : args;
@@ -1463,14 +1583,113 @@ function createAppDirectory() {
       const target = isRecord2(args.target) ? args.target : args;
       const windowId = isNum2(data.window_id) ? data.window_id : isNum2(target.window_id) ? target.window_id : void 0;
       if (pid !== void 0 && typeof data.snapshot_id === "string") snapshots.set(`${session}|${data.snapshot_id}`, { pid, ...windowId !== void 0 ? { windowId } : {} });
+      const remember = (entry, aliases = []) => {
+        if (!isRecord2(entry) || !isNum2(entry.pid) || entry.pid <= 0) return;
+        for (const name of [entry.app_name, entry.name, entry.bundle_id, ...aliases]) {
+          if (lower2(name)) appPids.set(`${session}|${lower2(name)}`, entry.pid);
+        }
+      };
+      remember(data, [args.app]);
+      for (const list of [data.windows, data.apps]) if (Array.isArray(list)) list.forEach((entry) => remember(entry));
       learnOne(data);
       for (const list of [data.windows, data.apps]) if (Array.isArray(list)) list.forEach(learnOne);
     }
   };
 }
 
+// runtime/placement.ts
+var COMPUTER_HEAD_WIDTH = 236;
+var COMPUTER_HEAD_HEIGHT = 44;
+var record2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+var finite = (v) => typeof v === "number" && Number.isFinite(v);
+function resolveComputerWindow(data, target) {
+  if (!record2(data) || !Array.isArray(data.windows)) return null;
+  const windows = data.windows.filter((w) => record2(w) && w.pid === target.pid && w.is_on_screen === true && w.on_current_space !== false && (target.windowId !== void 0 ? w.window_id === target.windowId : (w.layer ?? 0) === 0));
+  if (windows.length !== 1) return null;
+  const windowId = windows[0]?.window_id, bounds = windows[0]?.bounds;
+  if (!finite(windowId) || !Number.isSafeInteger(windowId) || windowId <= 0) return null;
+  if (!record2(bounds) || !finite(bounds.x) || !finite(bounds.y) || !finite(bounds.width) || !finite(bounds.height) || bounds.width <= 0 || bounds.height <= 0) return null;
+  return { windowId, bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } };
+}
+function computerBarBounds(target, area) {
+  const left = Math.max(target.x, area.x), top = Math.max(target.y, area.y);
+  const right = Math.min(target.x + target.width, area.x + area.width);
+  const bottom = Math.min(target.y + target.height, area.y + area.height);
+  const width = Math.min(COMPUTER_HEAD_WIDTH, Math.floor(right - left - 16)), height = COMPUTER_HEAD_HEIGHT;
+  if (width < 120 || bottom - top < height) return null;
+  const y = target.y - height + 1 >= area.y ? Math.round(target.y - height + 1) : Math.ceil(top);
+  return { x: Math.round(Math.max(left + 8, Math.min(right - width - 8, left + (right - left) * 0.44 - width / 2))), y, width, height };
+}
+
+// runtime/targets.ts
+var record3 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+var number3 = (v) => typeof v === "number" && Number.isFinite(v);
+var lower3 = (v) => typeof v === "string" ? v.trim().toLowerCase() : "";
+async function resolveCallTargets(input) {
+  const launching = input.name === "launch_app";
+  const named = /* @__PURE__ */ new Map();
+  const targetOf = async (args) => {
+    const explicit = record3(args.target) && number3(args.target.pid) ? args.target.pid : number3(args.pid) ? args.pid : void 0;
+    if (!launching && input.control && lower3(args.app) && explicit === void 0 && typeof args.element_token !== "string") {
+      const key = JSON.stringify([args.app, args.window]);
+      let pending = named.get(key);
+      if (!pending) {
+        pending = (async () => {
+          const options = { signal: input.signal, timeoutMs: 5e3, lane: input.owner };
+          try {
+            const listed = await input.native.callTool("list_windows", { app: args.app, on_screen_only: true }, options);
+            const raw = listed.structuredContent;
+            if (!listed.isError && record3(raw) && Array.isArray(raw.windows)) {
+              const data = { ...raw, windows: raw.windows.filter((w) => !lower3(args.window) || record3(w) && lower3(w.title).includes(lower3(args.window))) };
+              const pids = new Set(data.windows.flatMap((w) => record3(w) && number3(w.pid) && w.pid > 0 ? [w.pid] : []));
+              if (pids.size === 1) {
+                const pid = [...pids][0];
+                input.apps.learn(input.owner, data, args);
+                const window = resolveComputerWindow(data, { pid, ...number3(args.window_id) ? { windowId: args.window_id } : {} });
+                return { pid, ...window ? { windowId: window.windowId } : {} };
+              }
+            }
+          } catch {
+          }
+          try {
+            const listed = await input.native.callTool("list_apps", {}, options);
+            const raw = listed.structuredContent;
+            if (!listed.isError && record3(raw) && Array.isArray(raw.apps)) {
+              const matched = raw.apps.filter((app2) => record3(app2) && [app2.name, app2.app_name, app2.bundle_id].some((name) => lower3(name) === lower3(args.app)));
+              const pids = new Set(matched.flatMap((app2) => record3(app2) && number3(app2.pid) && app2.pid > 0 ? [app2.pid] : []));
+              if (pids.size === 1) {
+                const pid = [...pids][0];
+                input.apps.learn(input.owner, { ...raw, pid, apps: matched }, args);
+                return { pid };
+              }
+            }
+          } catch {
+          }
+          const known = input.apps.pidOf(input.owner, args);
+          const stopped = known !== void 0 ? input.control?.stoppedFor(known) : null;
+          return stopped ? { stopped } : {};
+        })();
+        named.set(key, pending);
+      }
+      return pending;
+    }
+    return { pid: input.apps.pidOf(input.owner, args), windowId: input.apps.windowOf(input.owner, args) };
+  };
+  const targets = input.name === "run_steps" ? await Promise.all(stepsOf(input.args).map((step) => targetOf(
+    ["target", "pid", "app", "element_token"].some((key) => step.args[key] !== void 0) ? step.args : { ...input.args, ...step.args }
+  ))) : [await targetOf(input.args)];
+  const first = targets[0];
+  const app = first && targets.every((other) => other.pid === first.pid) ? first : void 0;
+  return {
+    pid: app?.pid ?? (launching ? input.apps.pidOf(input.owner, { app: input.args.name ?? input.args.bundle_id }) : void 0),
+    windowId: app && targets.every((other) => other.windowId === app.windowId) ? app.windowId : void 0,
+    targetPids: [...new Set(targets.flatMap((target) => target.pid !== void 0 ? [target.pid] : []))],
+    stopped: targets.find((target) => target.stopped)?.stopped
+  };
+}
+
 // runtime/tools.ts
-var failure = (code, message) => ({ isError: true, content: [{ type: "text", text: message }], structuredContent: { code } });
+var failure = (code, message) => ({ isError: true, content: [{ type: "text", text: message }], structuredContent: { code, message } });
 var object2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 function permissionState(result) {
   if (result.isError) return null;
@@ -1491,6 +1710,7 @@ function fileCapture(args) {
 function needsScreen(name, args) {
   return fileCapture(args) || name === "get_desktop_state" || name === "zoom" || name === "get_window_state" && args.include_screenshot !== false || name === "verify_state" && args.include_screenshot === true || name === "run_steps" && (fileCapture(args.observe) || object2(args.observe) && args.observe.include_screenshot === true || Array.isArray(args.steps) && args.steps.some((step) => object2(step) && Object.values(step).some(fileCapture)));
 }
+var hasScreen = (env) => Boolean(env.DISPLAY || env.WAYLAND_DISPLAY);
 function createComputerTools(input) {
   const specs = new Map(input.specs.map((spec) => [spec.name, spec]));
   const definitions = new Map(TOOLS.map((tool) => {
@@ -1511,7 +1731,8 @@ function createComputerTools(input) {
       const definition = definitions.get(name);
       if (!definition) return failure("not_found", "This App does not expose that native tool.");
       if (!caller.agent || !caller.session) return failure("not_granted", "An agent and its bound task are required.");
-      if (input.platform !== "darwin" && input.platform !== "win32") return failure("unsupported", "This platform has no supported Computer Use driver.");
+      if (input.platform !== "darwin" && input.platform !== "win32" && input.platform !== "linux") return failure("unsupported", "This platform has no supported Computer Use driver.");
+      if (input.platform === "linux" && !hasScreen(input.display ?? { ...process.env, ...linuxScreen(process.env) })) return failure("unavailable", "This computer has no screen (no X11 or Wayland display). Start a desktop or virtual display session for the account running Gugu, then retry. No input was sent.");
       if (["session", "device", "device_id", "agent"].some((key) => key in args)) return failure("invalid_args", "Caller and machine identity cannot be supplied as tool arguments.");
       const { confirmed, ...forwardArgs } = args;
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
@@ -1526,25 +1747,67 @@ function createComputerTools(input) {
       }
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
       const owner = "gugu-" + createHash4("sha256").update(caller.agent + "\0" + caller.session).digest("hex").slice(0, 20);
-      const pid = apps.pidOf(owner, forwardArgs);
-      if (pid !== void 0 && self.pids.has(pid)) return failure("invalid_args", "The target belongs to the protected host.");
-      const handle = input.control?.begin({ ...pid === void 0 ? {} : { pid }, ...caller.name ? { callerName: caller.name } : {}, windowId: apps.windowOf(owner, forwardArgs) });
+      const lane = caller.humanViewer ? owner + "-human-" + createHash4("sha256").update(caller.humanViewer).digest("hex").slice(0, 12) : caller.preview ? owner + "-preview" : owner;
+      const launching = name === "launch_app";
+      const target = await resolveCallTargets({
+        name,
+        args: forwardArgs,
+        owner,
+        apps,
+        native: input.cua,
+        signal: caller.signal,
+        ...tool.kind === "act" ? { control: input.control } : {}
+      });
+      if (target.stopped) return failure("revoked", target.stopped);
+      const { pid, windowId, targetPids } = target;
+      if ([pid, ...targetPids].some((pid2) => pid2 !== void 0 && self.pids.has(pid2))) return failure("invalid_args", "The target belongs to the protected host.");
+      const identity = { sessionId: caller.session, ...caller.name ? { callerName: caller.name } : {}, ...caller.taskTitle ? { taskTitle: caller.taskTitle } : {} };
+      let handle = tool.kind === "act" ? input.control?.begin({
+        ...identity,
+        ...launching ? { deferAttachment: true } : {},
+        ...pid === void 0 ? {} : { pid, appName: apps.nameOf(pid) },
+        ...targetPids.some((target2) => target2 !== pid) ? { targetPids } : {},
+        windowId
+      }) : void 0;
       if (handle && "refused" in handle) return failure("revoked", handle.refused);
       const signal = handle ? caller.signal ? AbortSignal.any([caller.signal, handle.signal]) : handle.signal : caller.signal;
       try {
         if (input.platform === "darwin") {
-          const state = permissionState(await input.cua.callTool("check_permissions", { prompt: false }, { signal, lane: owner, timeoutMs: 15e3, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {} }));
+          const state = permissionState(await input.cua.callTool("check_permissions", { prompt: false }, { signal, lane, timeoutMs: 15e3, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {} }));
           if (!state || typeof state.accessibility !== "boolean" || typeof state.screen_recording !== "boolean") return failure("unavailable", "The native driver could not check its system permissions. No input was sent.");
           const missing = [...!state.accessibility ? ["Accessibility"] : [], ...!state.screen_recording ? ["Screen Recording"] : []];
           if (!state.accessibility || !state.screen_recording && needsScreen(name, forwardArgs)) {
-            return failure("os_permission", `${missing.join(" and ")} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`);
+            return failure("os_permission", `${missing.join(" and ")} permission is missing on this computer. The person must grant it before this operation can continue. The Computer Use page beside this task (also the App's settings page) now lists what is missing with an Allow button for each; macOS then lists \u5495\u5495 and they turn it on, and the page shows Allowed by itself. No permission prompt or input was sent by this tool. Tell the person exactly that using the existing conversation, then retry after they report completion.`);
           }
         }
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
         if (signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
-        const forward = object2(definition.schema.properties) && "session" in definition.schema.properties ? { ...forwardArgs, session: owner } : forwardArgs;
-        const result = await input.cua.callTool(name, forward, { signal, lane: owner, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}, timeoutMs: tool.timeoutMs?.(args) ?? 6e4 });
-        if (result.isError !== true) apps.learn(owner, result.structuredContent, forwardArgs);
+        const forward = object2(definition.schema.properties) && "session" in definition.schema.properties ? { ...forwardArgs, session: lane } : forwardArgs;
+        const result = await input.cua.callTool(name, forward, { signal, lane, ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}, timeoutMs: caller.preview ? 1e4 : tool.timeoutMs?.(args) ?? 6e4 });
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
+        if (result.isError !== true) {
+          apps.learn(owner, result.structuredContent, launching ? { ...forwardArgs, app: forwardArgs.name ?? forwardArgs.bundle_id ?? forwardArgs.app } : forwardArgs);
+          if (launching && input.control && object2(result.structuredContent)) {
+            const launchedPid = apps.pidOf(owner, result.structuredContent);
+            if (launchedPid !== void 0) {
+              const window = resolveComputerWindow(result.structuredContent, { pid: launchedPid });
+              handle?.end();
+              const attached = input.control.begin({ ...identity, pid: launchedPid, appName: apps.nameOf(launchedPid), ...window ? { windowId: window.windowId } : {} });
+              if ("refused" in attached) return failure("revoked", attached.refused);
+              handle = attached;
+            }
+          }
+        }
+        if (!caller.preview) {
+          try {
+            input.observed?.({ caller, owner, name, args: forwardArgs, pid, windowId, result });
+          } catch {
+          }
+        }
         return result;
+      } catch (error) {
+        if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));
+        throw error;
       } finally {
         handle?.end();
       }
@@ -1558,6 +1821,7 @@ export {
   TOOLS,
   assertNativeArchitecture,
   checkCall,
+  computerBarBounds,
   createComputerControl,
   createComputerTools,
   createCuaClient,
@@ -1568,8 +1832,10 @@ export {
   cuaSocketPath,
   cursorOnWindow,
   displayOnlyObservation,
+  linuxScreen,
   openCuaDaemonLease,
   prepareDriver,
+  resolveComputerWindow,
   sameCuaImageSample,
   sampleCuaImage,
   settleCuaWindow,
