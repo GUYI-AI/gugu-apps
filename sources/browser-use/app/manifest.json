@@ -3,9 +3,9 @@
   "name": "Browser Use",
   "defaultLocale": "en",
   "subtitle": "Web browsing for agents",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "icon": "icon.png",
-  "apiVersion": 25,
+  "apiVersion": 36,
   "platforms": [
     "desktop"
   ],
@@ -27,11 +27,14 @@
     "mcpServers": [
       {
         "name": "browser-use",
-        "host": "browser-use"
+        "command": "node",
+        "args": [
+          "program/lib/server.mjs"
+        ]
       }
     ],
     "toolsListed": true,
-    "instructions": "browser_* tools browse, click, fill and screenshot in this session's own Gugu browser tab, signed in with its browser profile."
+    "instructions": "browser_* tools browse, click, fill and screenshot in this task's own Gugu browser page, signed in with its browser profile."
   },
   "settings": [
     {

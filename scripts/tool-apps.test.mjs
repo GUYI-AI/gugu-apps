@@ -26,7 +26,7 @@ test('tool Apps package and inspect without HTML; HTML entry checks still reject
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('both first-party tool App sources are inspectable; only Computer Use has a page, one per task', async () => {
+test('both first-party tool App sources are inspectable; only Computer Use has a page, one per task; Browser Use ships its program', async () => {
   const root = new URL('../sources/', import.meta.url);
   const tabs = {
     'browser-use': undefined,
@@ -35,15 +35,18 @@ test('both first-party tool App sources are inspectable; only Computer Use has a
       { name: 'preview', title: 'Computer', entry: 'preview.html', icon: 'icon.png', perSession: true },
     ],
   };
+  // Both run their own programs (GUYI-AI/gugu#1607), not a program of the host.
+  const programs = {
+    'browser-use': [{ name: 'browser-use', command: 'node', args: ['program/lib/server.mjs'] }],
+    'computer-use': [{ name: 'computer-use', command: 'node', args: ['program/server.mjs'] }],
+  };
   for (const [id, expected] of Object.entries(tabs)) {
     const dir = new URL(`${id}/app/`, root).pathname;
     const { version } = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
     const read = inspectAppDir(dir, id, version, passing);
     assert.equal(read.manifest.entry, undefined);
     assert.deepEqual(read.manifest.contributes.tabs, expected);
-    assert.deepEqual(read.manifest.contributes.mcpServers, id === 'computer-use'
-      ? [{ name: id, command: 'node', args: ['program/server.mjs'] }]
-      : [{ name: id, host: id }]);
+    assert.deepEqual(read.manifest.contributes.mcpServers, programs[id]);
     assert.deepEqual(read.manifest.permissions.capabilities, ['agents:tools']);
     assert.ok((await packDir(dir)).length > 0);
   }
