@@ -10,7 +10,9 @@ import { linuxScreen } from './native/linux-display'
 
 type NativeSpec = { name: string; description?: string; input_schema?: Args; inputSchema?: Args }
 export type ToolCaller = { agent: string; session: string; name?: string; taskTitle?: string; signal?: AbortSignal; remainingMs?: () => number; preview?: boolean; humanViewer?: string }
-const failure = (code: string, message: string): CuaToolResult => ({ isError: true, content: [{ type: 'text', text: message }], structuredContent: { code } })
+// The message goes in the structured result too: some harnesses (Codex) show an agent only structuredContent, and a
+// bare code left it unable to tell a missing permission from a broken App, so it fell back to other computer tools.
+const failure = (code: string, message: string): CuaToolResult => ({ isError: true, content: [{ type: 'text', text: message }], structuredContent: { code, message } })
 const object = (v: unknown): v is Args => !!v && typeof v === 'object' && !Array.isArray(v)
 
 function permissionState(result: CuaToolResult): Args | null {

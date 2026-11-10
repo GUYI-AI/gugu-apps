@@ -160,6 +160,8 @@ test('Linux drives through its display; a machine with no screen says so without
   const refused = await headless.tools.call('get_desktop_state', {}, caller);
   assert.equal(refused.structuredContent.code, 'unavailable');
   assert.match(refused.content[0].text, /no screen/);
+  // A harness that shows only structuredContent (Codex) still gives the agent the reason, not a bare code.
+  assert.equal(refused.structuredContent.message, refused.content[0].text);
   assert.equal(headless.calls.length, 0);
   const virtual = fixture({ platform: 'linux', display: { DISPLAY: ':97' } });
   assert.notEqual((await virtual.tools.call('get_desktop_state', {}, caller)).isError, true);

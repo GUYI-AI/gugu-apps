@@ -6,7 +6,7 @@ import { createComputerPreview } from './preview.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const failed = (code, text) => ({ isError: true, content: [{ type: 'text', text }], structuredContent: { code } });
+const failed = (code, text) => ({ isError: true, content: [{ type: 'text', text }], structuredContent: { code, message: text } });
 const pageTools = [
   { name: 'preview_state', description: 'Read only this page’s host-bound task preview metadata. Pictures travel through its authorized projection resource.', inputSchema: { type: 'object', properties: { live: { type: 'boolean' } }, additionalProperties: false }, _meta: { ui: { visibility: ['app'] } } },
   { name: 'preview_control', description: 'Pause or continue the observed application in this task. Only the person using this task page can call it.', inputSchema: { type: 'object', properties: { action: { type: 'string', enum: ['pause', 'resume'] }, projection: { type: 'string' }, targetRevision: { type: 'integer', minimum: 1 } }, required: ['action', 'projection', 'targetRevision'], additionalProperties: false }, _meta: { ui: { visibility: ['app'] } } },

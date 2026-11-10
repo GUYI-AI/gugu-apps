@@ -1689,7 +1689,7 @@ async function resolveCallTargets(input) {
 }
 
 // runtime/tools.ts
-var failure = (code, message) => ({ isError: true, content: [{ type: "text", text: message }], structuredContent: { code } });
+var failure = (code, message) => ({ isError: true, content: [{ type: "text", text: message }], structuredContent: { code, message } });
 var object2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 function permissionState(result) {
   if (result.isError) return null;
