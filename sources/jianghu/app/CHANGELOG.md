@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0
+
+The road west goes on to its fourth, fifth and sixth obstacles, as XYJ tells them, and stops at 通天河. 乌鸡国: the
+ghost king of the 宝林寺's west room by night, his 金厢白玉圭 shown to the queen and the prince, the 芭蕉 felled down
+to the 水晶宫, 井龙王 raised, the king revived with the 乌鸡精 and led back past the guards to beat 青毛狮子. 车迟国:
+the 三清 statues thrown out and their offerings eaten in their shape, the three 大仙, the king's judgement, the three
+contests before the 监斩官 (the 禅台, the cabinet, the 油锅). 通天河: 袁守诚's 无字天书 for a 桂花酒袋, its 避水咒,
+the ice that gives way under a 小童, and 金鳞怪 at the bottom. 变化 (「变 <谁>」) is XYJ's, its gates scaled as the
+road's are; XYJ's timed events are kept in the world file, so they run on while nobody plays. The monsters' numbers
+are set so that one past 平顶山 with a teammate gets through. Carrying is now XYJ's (膂力 × 5000 and 扑击 × 200), and
+a command this game knows but that has nothing to act on here answers XYJ's 「什么？」.
+取经路往西推到通天河：新增乌鸡国、车迟国、通天河三难，剧情照原版；新增「变」（变化）；定时的事件存进存档，没人在线也照常发生。
+
 ## 0.6.1
 
 The first world is gone: 西游记 is the whole game. A new world is 长安 and the road west only, a newcomer arrives at

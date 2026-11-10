@@ -16,6 +16,9 @@ import { DIRS, BACK, CLASS_NAMES, EMOTES, HUNT_MSG, woundMsg, phaseOf, timeText,
 import { brawl, improve, skillName, weaponOf } from './fight.js'
 import './xyj-story.js'
 import './xyj-road.js'
+import './xyj-wuji.js'
+import './xyj-chechi.js'
+import './xyj-tongtian.js'
 
 export const FILE_NAME = '西游.jianghu.json'
 export const VERSION = 4
@@ -59,6 +62,8 @@ export function apply(target, ops) {
 function diff(a, b) {
   const ops = []
   for (const k of ['version', 't', 'reset']) if (a[k] !== b[k]) ops.push([[k], b[k]])
+  // Whole values of the world's own: its call_outs (xyj-story.js later) and the day noon last came.
+  for (const k of ['timers', 'noon']) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) ops.push([[k], b[k] === undefined ? undefined : structuredClone(b[k])])
   for (const k of ['players', 'npcs', 'things', 'rooms', 'sold']) {
     for (const id of new Set([...Object.keys(a[k] ?? {}), ...Object.keys(b[k] ?? {})])) {
       const x = a[k]?.[id]; const y = b[k]?.[id]
@@ -387,11 +392,20 @@ const VERBS = [
   [['冥想', '冥思', 'meditate'], 'meditate'],
   [['取经', '关卡', 'obstacles'], 'obstacles'],
   [['腾云', '飞', 'fly'], 'fly'],
+  [['变成', '变化', '变', 'bian'], 'bian'],
+  [['撕开', '撕', 'tear'], 'tear'],
   [['打听', '问', 'ask'], 'ask'],
   [['摸', 'mo'], 'mo'],
   [['跳下', '跳', 'jump'], 'jump'],
   [['接受', '观礼', 'accept'], 'accept'],
   [['回去', 'back'], 'back'],
+  [['砍', 'kan'], 'kan'],
+  [['施用', '洒', 'apply'], 'apply'],
+  [['搬起', '搬', '扛起', '扛', 'lift'], 'lift'],
+  [['扔', 'throw'], 'throw'],
+  [['登上', '登', '攀上', '攀', 'climb'], 'climb'],
+  [['猜枚', '猜', 'guess'], 'guess'],
+  [['念咒', '念', 'spell'], 'spell'],
 ]
 
 const ascii = (w) => /^[a-z?']+$/i.test(w)
@@ -440,7 +454,12 @@ export function lead(cands, text) {
   const part = word && !ascii(word) && cands.find((c) => c.names.some((n) => n.length > word.length && n.includes(word)))
   return part ? { key: part.key, kind: part.kind, rest: more.join(' ') } : null
 }
-const personNames = (w, id) => (isNpc(id) ? [npcData(id).name, ...npcData(id).ids] : [w.players[id].name, nameOf(w, id)])
+/** The names a person answers to; one who has 变 answers only to the one they look like (name.c apply/name, apply/id). */
+export const personNames = (w, id) => {
+  if (isNpc(id)) return [npcData(id).name, ...npcData(id).ids]
+  const b = w.players[id].temp?.bian
+  return b ? [b.name, ...b.ids] : [w.players[id].name]
+}
 const thingNames = (w, tid) => [thingName(w, tid), ...(itemOf(w, tid)?.ids ?? []), ...(w.things[tid].id === 'corpse' ? ['尸体', 'corpse', '骸骨'] : [])]
 const people = (w, me, room) => peopleIn(w, room).filter((id) => id !== me && !(ch(w, id).ghost && !ch(w, me).ghost)).map((id) => ({ key: id, kind: 'person', names: personNames(w, id) }))
 const things = (w, at) => thingsAt(w, at).map((tid) => ({ key: tid, kind: 'thing', names: thingNames(w, tid) }))
@@ -506,6 +525,8 @@ function command(x, line) {
   const reply = (t) => x.out.push(t)
   const ghostNo = () => { reply('你现在是鬼魂，做不了这件事。快去长安的城隍庙复活吧！'); return true }
   const roomHook = (v) => HOOKS.room[room]?.[v]?.(x, rest)
+  // Where one is shut in (xyj-chechi.js: the 柜子 takes every command, the 禅台 and the 油锅 most).
+  if (HOOKS.before?.(x, verb, rest)) return
   // A world's own command, or its own way with a common one (false: not here).
   if (HOOKS.cmd[verb] && HOOKS.cmd[verb](x, rest) !== false) return
 
@@ -700,7 +721,8 @@ function command(x, line) {
     case 'enter':
       return room === TEMPLE && /漩涡|swirl/.test(rest) ? revive(x) : reply('什么？')
   }
-  return reply(HELP)
+  // A command known to this game but not here (its story's things are elsewhere): add_action's 「什么？」.
+  return reply('什么？')
 }
 
 // ── things in hand ───────────────────────────────────────────────────────────────────────────────────────────────

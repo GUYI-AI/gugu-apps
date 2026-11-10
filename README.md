@@ -103,6 +103,10 @@ non-author review. Companion specifications and producer live in GUYI-AI/gugu-de
   `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;上架要的东西照**钉住的咕咕客户端提交**里的规矩判(`.github/gugu-app-contract.json`
   钉的那一版 `app-listing.ts`、`app-platforms.ts`,本仓不抄一份):`subtitle`、`defaultLocale`、源码顶层 `store/`(`about.md` 与每种
   `localized` 语言的 `about.<语言>.md`、`screenshots/` 1–8 张、`whats-new.md`)、图标。`store/` 不进包;README.md、CHANGELOG.md 只给仓库看。
+  钉的是**最新已发布的 Beta 客户端**的源码提交(不是正式版):新接口的 App 可以先上架给 Beta 用户。正式版用户不受影响 ——
+  市场只追加、旧版本一直在,客户端按自己的 `apiVersion` 和咕咕版本挑能装的最新一版(客户端 `market.ts` 的 `pickForHost`),
+  撤回版本、下架 App 都照常可以;只是要知道:撤掉的若是正式版能装的最后一版,而更新的版本要新咕咕,正式版用户就装不上了
+  (界面说「需要更新咕咕」)。
   源码仓要是公开仓,或者本仓自己;提交必须在源码仓默认分支的历史里(GitHub 按 sha 也给 fork 里的提交,不核就会把 fork 的代码记成「代码在 owner/repo」)。
 - `sync`(合并到 `main`,environment `mirror`):写 `market/bundles|meta|media/…`,每个文件只写一次
   (同名同字节跳过,不同字节报红),meta 带上这一版的 `about`(各语言)、截图地址和 `releaseNotes`(= `store/whats-new.md`);已发布的版本从不重判、meta 不改写。最后覆盖 `market/index.json`。只写 `market/` 下面,由 `scripts/sync.mjs` 的 `putObject` 硬守。
