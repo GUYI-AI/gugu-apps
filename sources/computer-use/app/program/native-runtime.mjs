@@ -1777,7 +1777,7 @@ function createComputerTools(input) {
           if (!state || typeof state.accessibility !== "boolean" || typeof state.screen_recording !== "boolean") return failure("unavailable", "The native driver could not check its system permissions. No input was sent.");
           const missing = [...!state.accessibility ? ["Accessibility"] : [], ...!state.screen_recording ? ["Screen Recording"] : []];
           if (!state.accessibility || !state.screen_recording && needsScreen(name, forwardArgs)) {
-            return failure("os_permission", `${missing.join(" and ")} permission is missing on this computer. The person must grant it in System Settings before this operation can continue. No permission prompt or input was sent by this tool. Tell the person what is blocked using the existing conversation, then retry after they report completion.`);
+            return failure("os_permission", `${missing.join(" and ")} permission is missing on this computer. The person must grant it before this operation can continue. The Computer Use page beside this task (also the App's settings page) now lists what is missing with an Allow button for each; macOS then lists \u5495\u5495 and they turn it on, and the page shows Allowed by itself. No permission prompt or input was sent by this tool. Tell the person exactly that using the existing conversation, then retry after they report completion.`);
           }
         }
         if (handle?.signal.aborted) return failure("revoked", String(handle.signal.reason));

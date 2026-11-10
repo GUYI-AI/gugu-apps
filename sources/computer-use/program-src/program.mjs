@@ -72,6 +72,10 @@ export function createComputerProgram({ specs, native, platform = process.platfo
           if (meta['gugu/agent']) return failed('not_granted', 'Only the person using the App page can open system settings. Tell them what permission is missing through the existing conversation.');
           if (Object.keys(args).some(key => key !== 'permission') || !['accessibility', 'screen'].includes(args.permission)) return failed('invalid_args', 'Choose Accessibility or Screen Recording.');
           if (platform !== 'darwin') return failed('unsupported', 'macOS system settings are not available on this platform.');
+          // The person asked for this permission: let the running driver ask macOS first. That shows the system's own
+          // request and puts the App that runs the driver (Gugu) in the list, so the person only turns it on instead of
+          // finding and adding it by hand. Agents never reach this branch (refused above).
+          await native.callTool('check_permissions', { prompt: true }, { signal, lane: 'page-permissions', timeoutMs: 15_000 }).catch(error => log.warn({ error: String(error) }, 'Computer Use could not ask macOS for permission'));
           const value = await settings.openSettings(args.permission, signal);
           return { content: [{ type: 'text', text: 'System Settings was opened. This call did not grant permission; read permissions_state again after the person finishes.' }], structuredContent: value };
         }

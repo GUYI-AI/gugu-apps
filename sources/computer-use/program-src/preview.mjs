@@ -64,7 +64,7 @@ export function createComputerPreview({ projection, native, tools, control, show
     state = { session: caller.session, caller: { ...caller, signal: undefined, remainingMs: undefined },
       abort: new AbortController(), actions: [], frames: [], target: null, epoch: 0,
       coordinateRevision: 0, coordinateKey: null,
-      lastAt: -Infinity, took: 0, capture: null, publishing: Promise.resolve(), source: null, opening: true, problem: null };
+      lastAt: -Infinity, took: 0, capture: null, publishing: Promise.resolve(), source: null, opening: true, problem: null, waiting: false };
     state.input = createPreviewInput({ state: () => state, valid, tools, control, now, platform,
       refresh: () => detached(async () => {
         await state.capture;
@@ -125,7 +125,7 @@ export function createComputerPreview({ projection, native, tools, control, show
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
         at, target });
       state.frames = state.frames.slice(-32);
-      state.problem = null; changed();
+      state.problem = null; state.waiting = false; changed();
     })).catch(error => { if (valid(state) && state.epoch === epoch) { state.problem = line(error); changed(); } });
   }
   async function capture(state) {
@@ -154,6 +154,15 @@ export function createComputerPreview({ projection, native, tools, control, show
       .finally(() => { state.lastAt = now(); state.took = now() - started; state.capture = null; });
     return state.capture;
   }
+  // Puts this App's page beside the task, once per task (retried after a minute if the host refused).
+  function reveal(session) {
+    if (!showTaskPages || shown.has(session) || showing.has(session) || now() - (failedAt.get(session) ?? -Infinity) < 60_000) return;
+    showing.add(session);
+    try {
+      void Promise.resolve(showTaskPages()).then(() => { shown.add(session); failedAt.delete(session); },
+        error => { failedAt.set(session, now()); report(error); }).finally(() => showing.delete(session));
+    } catch (error) { showing.delete(session); failedAt.set(session, now()); report(error); }
+  }
   return {
     begin(caller, name, args) {
       if (disposed) return () => {};
@@ -164,6 +173,8 @@ export function createComputerPreview({ projection, native, tools, control, show
         if (!valid(state)) return;
         if (result?.structuredContent?.code === 'needs_confirmation') state.actions = state.actions.filter(a => a !== action);
         else action.status = result?.isError === true ? 'failed' : 'done';
+        // Missing macOS permission: the page beside the task is where the person sees what is missing and turns it on.
+        if (result?.structuredContent?.code === 'os_permission') reveal(caller.session);
         changed();
       };
     },
@@ -185,18 +196,12 @@ export function createComputerPreview({ projection, native, tools, control, show
         ...(positive(nextWindow) ? { window_id: nextWindow } : samePid && state.target.window_id ? { window_id: state.target.window_id } : {}),
         ...((typeof raw.app_name === 'string' || typeof args.app === 'string') ? { app: raw.app_name ?? args.app } : samePid && state.target.app ? { app: state.target.app } : {}) } : null;
       if (target) {
-        if (key(target) !== key(state.target)) state.problem = 'Waiting for a fresh picture of this window.';
+        // A new window is not a failure: the page says, in its own language, that its picture is on the way.
+        if (key(target) !== key(state.target)) { state.problem = null; state.waiting = true; }
         state.target = target;
       }
       state.owner = owner;
-      if (showTaskPages && !shown.has(caller.session) && !showing.has(caller.session)
-        && now() - (failedAt.get(caller.session) ?? -Infinity) >= 60_000) {
-        showing.add(caller.session);
-        try {
-          void Promise.resolve(showTaskPages()).then(() => { shown.add(caller.session); failedAt.delete(caller.session); },
-            error => { failedAt.set(caller.session, now()); report(error); }).finally(() => showing.delete(caller.session));
-        } catch (error) { showing.delete(caller.session); failedAt.set(caller.session, now()); report(error); }
-      }
+      reveal(caller.session);
       // Only a get_window_state image is known to describe this exact window.
       // Crops/zoom/list output must not masquerade as a full target frame.
       if (name === 'get_window_state' && state.target?.window_id && imageOf(result)) publish(state, result, null, state.epoch);
@@ -211,7 +216,8 @@ export function createComputerPreview({ projection, native, tools, control, show
         live: !!(state?.source && positive(target?.pid) && positive(target?.window_id)),
         paused: !!(target && control?.stoppedFor(target.pid)),
         targetRevision: state?.epoch ?? null,
-        liveProblem: state?.problem ?? null };
+        liveProblem: state?.problem ?? null,
+        waiting: state?.waiting === true };
     },
     control(session, action, expected) {
       const state = tasks.get(session);

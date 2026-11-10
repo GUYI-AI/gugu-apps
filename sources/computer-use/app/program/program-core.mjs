@@ -19401,7 +19401,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       publishing: Promise.resolve(),
       source: null,
       opening: true,
-      problem: null
+      problem: null,
+      waiting: false
     };
     state.input = createPreviewInput({
       state: () => state,
@@ -19489,6 +19490,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       });
       state.frames = state.frames.slice(-32);
       state.problem = null;
+      state.waiting = false;
       changed();
     })).catch((error2) => {
       if (valid(state) && state.epoch === epoch) {
@@ -19546,6 +19548,26 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
     });
     return state.capture;
   }
+  function reveal(session) {
+    if (!showTaskPages || shown.has(session) || showing.has(session) || now() - (failedAt.get(session) ?? -Infinity) < 6e4) return;
+    showing.add(session);
+    try {
+      void Promise.resolve(showTaskPages()).then(
+        () => {
+          shown.add(session);
+          failedAt.delete(session);
+        },
+        (error2) => {
+          failedAt.set(session, now());
+          report(error2);
+        }
+      ).finally(() => showing.delete(session));
+    } catch (error2) {
+      showing.delete(session);
+      failedAt.set(session, now());
+      report(error2);
+    }
+  }
   return {
     begin(caller, name, args) {
       if (disposed) return () => {
@@ -19558,6 +19580,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         if (!valid(state)) return;
         if (result?.structuredContent?.code === "needs_confirmation") state.actions = state.actions.filter((a) => a !== action);
         else action.status = result?.isError === true ? "failed" : "done";
+        if (result?.structuredContent?.code === "os_permission") reveal(caller.session);
         changed();
       };
     },
@@ -19579,29 +19602,14 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         ...typeof raw.app_name === "string" || typeof args.app === "string" ? { app: raw.app_name ?? args.app } : samePid && state.target.app ? { app: state.target.app } : {}
       } : null;
       if (target) {
-        if (key(target) !== key(state.target)) state.problem = "Waiting for a fresh picture of this window.";
+        if (key(target) !== key(state.target)) {
+          state.problem = null;
+          state.waiting = true;
+        }
         state.target = target;
       }
       state.owner = owner;
-      if (showTaskPages && !shown.has(caller.session) && !showing.has(caller.session) && now() - (failedAt.get(caller.session) ?? -Infinity) >= 6e4) {
-        showing.add(caller.session);
-        try {
-          void Promise.resolve(showTaskPages()).then(
-            () => {
-              shown.add(caller.session);
-              failedAt.delete(caller.session);
-            },
-            (error2) => {
-              failedAt.set(caller.session, now());
-              report(error2);
-            }
-          ).finally(() => showing.delete(caller.session));
-        } catch (error2) {
-          showing.delete(caller.session);
-          failedAt.set(caller.session, now());
-          report(error2);
-        }
-      }
+      reveal(caller.session);
       if (name === "get_window_state" && state.target?.window_id && imageOf(result)) publish(state, result, null, state.epoch);
     },
     async read(session, { live = false } = {}) {
@@ -19618,7 +19626,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         live: !!(state?.source && positive(target?.pid) && positive(target?.window_id)),
         paused: !!(target && control?.stoppedFor(target.pid)),
         targetRevision: state?.epoch ?? null,
-        liveProblem: state?.problem ?? null
+        liveProblem: state?.problem ?? null,
+        waiting: state?.waiting === true
       };
     },
     control(session, action, expected) {
@@ -19721,6 +19730,7 @@ function createComputerProgram({ specs, native, platform = process.platform, pro
           if (meta2["gugu/agent"]) return failed("not_granted", "Only the person using the App page can open system settings. Tell them what permission is missing through the existing conversation.");
           if (Object.keys(args).some((key2) => key2 !== "permission") || !["accessibility", "screen"].includes(args.permission)) return failed("invalid_args", "Choose Accessibility or Screen Recording.");
           if (platform !== "darwin") return failed("unsupported", "macOS system settings are not available on this platform.");
+          await native.callTool("check_permissions", { prompt: true }, { signal, lane: "page-permissions", timeoutMs: 15e3 }).catch((error2) => log.warn({ error: String(error2) }, "Computer Use could not ask macOS for permission"));
           const value = await settings.openSettings(args.permission, signal);
           return { content: [{ type: "text", text: "System Settings was opened. This call did not grant permission; read permissions_state again after the person finishes." }], structuredContent: value };
         }

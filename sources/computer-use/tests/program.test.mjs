@@ -63,9 +63,13 @@ test('page permission status is the driver result; agents cannot call page contr
   await program.call({ name: 'permissions_state', _meta: { 'gugu/caller': 'app' } });
   assert.deepEqual(calls[0].args, { prompt: false });
   await program.call({ name: 'open_system_settings', arguments: { permission: 'screen' }, _meta: { 'gugu/caller': 'app' } });
+  // The person's click asks macOS through the running driver first (system request, Gugu listed), then opens the pane.
+  assert.deepEqual(calls.at(-1).args, { prompt: true });
   assert.equal(settingsCalls[0][0], 'screen');
+  const askedByPerson = calls.length;
   assert.equal((await program.call({ name: 'open_system_settings', arguments: { permission: 'screen' }, _meta: { ...meta(taskA), 'gugu/caller': 'app' } })).structuredContent.code, 'not_granted');
   assert.equal(settingsCalls.length, 1, 'an agent working a page cannot open settings as the person');
+  assert.equal(calls.length, askedByPerson, 'nor make macOS ask for permission');
   assert.equal((await program.call({ name: 'open_system_settings', arguments: { permission: 'screen', session: taskB }, _meta: { 'gugu/caller': 'app' } })).structuredContent.code, 'invalid_args');
 });
 test('single-call cancellation does not cancel another task; disposal aborts all calls and refuses new work', { timeout: 6_000 }, async t => {

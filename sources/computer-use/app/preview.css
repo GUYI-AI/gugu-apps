@@ -16,3 +16,8 @@ body { position: relative; margin: 0; height: 100vh; display: flex; flex-directi
 #when { flex: none; }
 gugu-empty { position: absolute; inset: var(--em-spacing-lg); pointer-events: none; }
 #alert { margin: var(--em-spacing-lg); color: var(--em-foreground-destructive); }
+/* Above the picture area, so the reason nothing shows and its fix are the first thing seen. */
+#permit { position: relative; z-index: 1; margin: var(--em-spacing-lg) var(--em-spacing-lg) 0; padding: var(--em-spacing-md); background: var(--em-background-1); border: 1px solid var(--em-border); border-radius: var(--em-radius-xl); }
+#permit .permission-rows { margin-bottom: 0; }
+#permit .permission-summary { margin-top: 0; }
+body.blocked gugu-empty { display: none; }

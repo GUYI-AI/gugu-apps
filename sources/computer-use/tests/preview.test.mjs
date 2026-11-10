@@ -243,3 +243,32 @@ test('real preview dispatch preserves permission and host guards while isolating
   assert.equal((await tools.call('get_window_state', { pid: 10, window_id: 77 }, { ...caller(a), preview: true })).structuredContent.code, 'invalid_args');
   assert.equal(calls.length, count);
 });
+
+test('a newly observed window is waiting for its picture, not a failure; the first frame clears it', async t => {
+  const pending = deferred();
+  const f = fixture({ projection: { async create() { await pending.promise; return { id: 'source-0', async publish() { return 1; }, async close() {} }; } } });
+  t.after(() => f.preview.dispose());
+  f.preview.begin(caller(a), 'list_windows', {})({ content: [] });
+  f.preview.observed({ caller: caller(a), owner: 'native-a', name: 'list_windows', args: { app: 'TextEdit' }, pid: 44, windowId: 77, result: { content: [], structuredContent: { pid: 44, window_id: 77 } } });
+  let state = await f.preview.read(a);
+  assert.equal(state.waiting, true);
+  assert.equal(state.liveProblem, null, 'no untranslatable English sentence for a normal wait');
+  pending.resolve(); for (let i = 0; i < 6; i++) await tick();
+  f.observe(); for (let i = 0; i < 6; i++) await tick();
+  state = await f.preview.read(a);
+  assert.equal(state.frames.length > 0, true);
+  assert.equal(state.waiting, false);
+});
+
+test('a missing macOS permission opens the page beside the task, where the person sees what to allow', async t => {
+  let opens = 0;
+  const f = fixture({ showTaskPages() { opens++; return Promise.resolve(); } });
+  t.after(() => f.preview.dispose());
+  f.preview.begin(caller(a), 'click', {})({ isError: true, structuredContent: { code: 'not_found', message: 'x' } });
+  assert.equal(opens, 0, 'ordinary failures do not open pages');
+  f.preview.begin(caller(a), 'click', {})({ isError: true, structuredContent: { code: 'os_permission', message: 'Accessibility permission is missing' } });
+  assert.equal(opens, 1);
+  await tick();
+  f.preview.begin(caller(a), 'click', {})({ isError: true, structuredContent: { code: 'os_permission', message: 'again' } });
+  assert.equal(opens, 1, 'once per task');
+});

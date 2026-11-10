@@ -2,6 +2,7 @@
 import { MotionPlayer } from './cursor.js';
 import { createPaintedCursor } from './painted-cursor.js';
 import { startPageContext } from './page-context.js';
+import { createPermissionGuide } from './permission-guide.js';
 const gugu = window.gugu;
 const $ = id => document.getElementById(id);
 const ui = { stage: $('stage'), frame: $('frame'), canvas: $('cursor'), what: $('what'), when: $('when'),
@@ -14,6 +15,7 @@ const TEXT = {
     loading: '正在获取画面…',
     unseen: '暂时看不到画面',
     stale: '没有新画面：',
+    waiting: '正在获取这个窗口的画面…',
     cursorStale: '光标暂不可用：',
     failed: '没能',
     verbs: { click: '点击', double_click: '双击', right_click: '右键点击', drag: '拖动', scroll: '滚动', type_text: '输入',
@@ -29,6 +31,7 @@ const TEXT = {
     loading: 'Getting the picture…',
     unseen: 'Cannot see the screen right now',
     stale: 'No fresh picture: ',
+    waiting: 'Getting this window’s picture…',
     cursorStale: 'Cursor unavailable: ',
     failed: 'Could not',
     verbs: { click: 'Click', double_click: 'Double-click', right_click: 'Right-click', drag: 'Drag', scroll: 'Scroll', type_text: 'Type',
@@ -42,6 +45,9 @@ const TEXT = {
 let context = null, text = TEXT['zh-CN'], player = null, pending = null, timer = null;
 let generation = 0, resource = null, view = null, live = false;
 let controlTask = null, controlRevision = null, paused = false, controlling = false;
+// On this Mac, a missing system permission is why nothing shows or works: say so here, with the way to fix it.
+const permit = createPermissionGuide($('permit'), { gugu, onState(status) { $('permit').hidden = status !== 'missing'; document.body.classList.toggle('blocked', status === 'missing'); } });
+const local = () => !context?.workspace?.deviceId;
 const sessionId = () => context?.workspace?.sessionId ?? null;
 const visible = () => context?.layout?.visible !== false;
 const cursor = createPaintedCursor({
@@ -96,7 +102,8 @@ async function mount(id) {
 async function apply(state) {
   if (!state.session) { reset(); empty(text.outside); return; }
   const latest = state.actions.at(-1);
-  const said = [state.target?.app, latest && describe(latest), state.liveProblem && `${text.stale}${state.liveProblem}`].filter(Boolean).join(' · ');
+  if (local() && latest?.status === 'failed' && permit.status !== 'missing') void permit.check();
+  const said = [state.target?.app, latest && describe(latest), state.liveProblem ? `${text.stale}${state.liveProblem}` : state.waiting && text.waiting].filter(Boolean).join(' · ');
   ui.what.textContent = said;
   await mount(state.projection);
   controlTask = state.target?.pid && state.projection ? sessionId() : null;
@@ -155,6 +162,8 @@ async function start() {
       context = next;
       text = String(next.locale).startsWith('zh') ? TEXT['zh-CN'] : TEXT['en-US'];
       if (moved) reset();
+      permit.setLocale(next.locale);
+      if (local()) void permit.check(); else { permit.stop(); $('permit').hidden = true; document.body.classList.remove('blocked'); }
       void refresh();
     }, reject: error });
 }
