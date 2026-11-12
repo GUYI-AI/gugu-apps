@@ -1,4 +1,11 @@
 {
   "schemaVersion": 1,
-  "keys": []
+  "keys": [
+    {
+      "id": "gugu-assistant-release-1",
+      "appId": "gugu-assistant",
+      "sourceRepo": "GUYI-AI/gugu-assistant",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAZCxoiWip7MXhYrpML6ORB9KkBqoDw2SIjF2x5r/eOuw=\n-----END PUBLIC KEY-----\n"
+    }
+  ]
 }
