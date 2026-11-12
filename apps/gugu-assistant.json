@@ -1,0 +1,19 @@
+{
+  "id": "gugu-assistant",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "releases/gugu-assistant/1.0.0",
+      "commit": "8ded15bf4c7a5e9cb4614725828723e1dde6a34d",
+      "sha256": "6dcbb66b6fccb9eb68515604c0ff17440bef89cd51d768cee2f19a26854e1595",
+      "bytes": 303793,
+      "yanked": null,
+      "release": {
+        "keyId": "gugu-assistant-release-1"
+      }
+    }
+  ]
+}
