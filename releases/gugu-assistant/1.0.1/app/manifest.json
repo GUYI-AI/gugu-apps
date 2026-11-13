@@ -1,0 +1,48 @@
+{
+  "id": "gugu-assistant",
+  "name": "咕咕助理",
+  "defaultLocale": "zh-CN",
+  "subtitle": "早晚简报、今天的进展和它记下的事",
+  "localized": {
+    "en": { "name": "Gugu Assistant", "subtitle": "Your briefs, plan and memory", "tabs": { "today": { "title": "Activity" } } }
+  },
+  "author": "咕咕",
+  "license": "Proprietary",
+  "version": "1.0.1",
+  "apiVersion": 50,
+  "engines": { "gugu": ">=0.3.3" },
+  "platforms": ["desktop", "phone"],
+  "entry": "today.html",
+  "icon": "icon.png",
+  "permissions": {
+    "capabilities": [
+      "chat:unread", "chat:files", "chat:draft", "chat:surface", "chat:resources", "chat:resources:write",
+      "chat:schedules", "chat:schedules:control", "assistant:status", "assistant:open", "assistant:rename", "chat:work",
+      "chat:voice-notes:record", "chat:voice-notes:manage"
+    ],
+    "bindings": [{
+      "name": "main",
+      "kind": "conversation",
+      "actions": [
+        "unread", "files", "draft", "surface", "resources", "resources:write",
+        "schedules", "schedules:control", "assistant-status", "assistant-open", "assistant-rename", "work",
+        "voice-notes:record", "voice-notes:manage"
+      ],
+      "domains": { "resources": ["memory", "files", "voice-notes", "personality"], "resources:write": ["memory", "files", "personality"] }
+    }]
+  },
+  "contributes": {
+    "tabs": [{ "name": "today", "title": "动态", "entry": "today.html" }],
+    "conversationSurface": {
+      "binding": "main",
+      "placement": "side-panel",
+      "header": "assistant",
+      "composerActions": [
+        { "id": "ideas", "label": { "zh": "获取灵感", "en": "Get ideas" }, "icon": "sparkles", "chip": { "zh": "灵感", "en": "Ideas" }, "run": { "kind": "page-intent" } },
+        { "id": "voice-note", "label": { "zh": "录制语音笔记", "en": "Record a voice note" }, "icon": "mic", "run": { "kind": "voice-note" } },
+        { "id": "health-report", "label": { "zh": "分析健康报告", "en": "Analyze a health report" }, "icon": "upload", "run": { "kind": "page-intent" } }
+      ]
+    },
+    "assistantRules": "rules"
+  }
+}
