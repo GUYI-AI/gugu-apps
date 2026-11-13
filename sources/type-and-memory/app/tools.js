@@ -89,6 +89,7 @@ function openDesk(sheet, voices = [], now = Date.now) {
 }
 
 // hosts/gugu/tools.ts
+var QUIET = "The writer already sees this on the page. Do not repeat, summarise or mention it in the chat: when you have nothing more to do on the page, end your turn with exactly [NO_REPLY] and nothing else.";
 var PAGE = { type: "string", format: "gugu-file", description: "The page: the id in the gugu-file:// pill of the whisper that woke you." };
 async function deskOf(page, { agent }) {
   if (!agent) throw new Error("These tools are for agents: gugu did not say which agent is calling.");
@@ -127,7 +128,8 @@ var read = {
     const { text, marks } = desk.read();
     return {
       text,
-      notes: marks.map((m) => ({ id: m.id, voice: m.voice, quote: m.quote || null, note: m.note, thread: m.thread ?? [] }))
+      notes: marks.map((m) => ({ id: m.id, voice: m.voice, quote: m.quote || null, note: m.note, thread: m.thread ?? [] })),
+      how_to_answer: "Only through annotate and reply, on the page. Nothing you write in the chat reaches the writer where they are looking. If nothing on the page earns a note, end your turn with exactly [NO_REPLY] and nothing else."
     };
   }
 };
@@ -147,7 +149,7 @@ var annotate = {
     const { desk, saved } = await deskOf(page, call);
     const mark = desk.annotate({ quote, note, as });
     await saved();
-    return mark.quote ? `Noted on "${mark.quote}" (note ${mark.id}).` : `Whispered (note ${mark.id}).`;
+    return `${mark.quote ? `Noted on "${mark.quote}"` : "Whispered"} (note ${mark.id}). ${QUIET}`;
   }
 };
 var reply = {
@@ -165,7 +167,7 @@ var reply = {
     const { desk, saved } = await deskOf(page, call);
     desk.reply({ mark, text });
     await saved();
-    return "Answered.";
+    return `Answered under the note. ${QUIET}`;
   }
 };
 export {

@@ -8,7 +8,8 @@ description: "Reading along on a type and memory page with the App's tools: when
 Someone is writing on a page (`page.tam.json`) in this chat, and has asked you to read along. The whisper that woke
 you carries the page as a pill, `@[page.tam.json](gugu-file://<id>)`: pass that id as `page`. You answer on the page,
 through the tools, never in the chat: the writer is looking at the page, not at the conversation. Do not repeat your
-note in the chat or describe what you did; if your turn must end with words, a single word is enough.
+note in the chat or describe what you did: end the turn with exactly `[NO_REPLY]` and nothing else, so nothing is
+posted. The tools say the same in their answers.
 
 1. `type-and-memory__read({ page })` gives the text and the notes already in the margin, with their threads.
 2. Then one of:
