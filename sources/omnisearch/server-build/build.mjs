@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Rebuilds the search program the preinstalled 全能搜索 App runs —
+// Rebuilds the search program the preinstalled 进阶搜索 App runs —
 // sources/omnisearch/app/server/server.mjs — from upstream, byte for byte.
 //
 //   node server-build/build.mjs            (from sources/omnisearch; needs git, pnpm and the network)

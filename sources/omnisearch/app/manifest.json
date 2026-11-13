@@ -1,10 +1,10 @@
 {
   "id": "omnisearch",
-  "name": "全能搜索",
+  "name": "进阶搜索",
   "defaultLocale": "zh-CN",
   "subtitle": "agent 的网页与文档搜索",
   "author": "咕咕",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "apiVersion": 25,
   "platforms": [
     "desktop"
@@ -23,7 +23,7 @@
     "tabs": [
       {
         "name": "settings",
-        "title": "全能搜索",
+        "title": "进阶搜索",
         "entry": "settings.html",
         "icon": "icon.png"
       }
