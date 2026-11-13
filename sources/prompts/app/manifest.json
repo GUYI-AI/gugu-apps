@@ -6,15 +6,16 @@
   "author": "咕咕",
   "license": "MIT",
   "icon": "icon.png",
-  "version": "0.1.1",
-  "apiVersion": 34,
+  "version": "0.2.0",
+  "apiVersion": 52,
   "platforms": ["desktop"],
-  "engines": { "gugu": ">=0.3.3" },
+  "engines": { "gugu": ">=0.3.4" },
   "categories": ["productivity"],
   "permissions": { "capabilities": ["prompts", "agents:tools"] },
   "contributes": {
     "mcpServers": [{ "tools": "tools.js" }],
-    "instructions": "The person's prompts (Library/资源库 → Prompts/提示词, the composer's / menu; not library_* notes): prompts__list, save, delete (undoable). App prompts: read-only."
+    "instructions": "The person's prompts (Library/资源库 → Prompts/提示词, the composer's / menu; not library_* notes): prompts__list, save, delete (undoable). App prompts: read-only.",
+    "hostLinks": ["library:prompts"]
   },
   "examples": ["把这段存成提示词", "我的提示词里有哪些重复的？"],
   "localized": {
