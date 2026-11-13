@@ -1,0 +1,10 @@
+/* The paper takes gugu's own colours, so it follows the host's light and dark. */
+html, body, #page { height: 100%; margin: 0; }
+#page .tm-root {
+  --tm-paper: var(--em-background);
+  --tm-ink: var(--em-foreground);
+  --tm-faint: var(--em-foreground-muted);
+  --tm-rule: var(--em-border);
+  --tm-sans: inherit;
+  --tm-size: 17px;
+}
