@@ -1,0 +1,95 @@
+{
+  "id": "type-and-memory",
+  "name": "type and memory",
+  "defaultLocale": "zh-CN",
+  "subtitle": "你写，聊天里的 agent 在页边批注",
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 27,
+  "platforms": [
+    "desktop",
+    "phone"
+  ],
+  "engines": {
+    "gugu": ">=0.3.1"
+  },
+  "entry": "main.html",
+  "icon": "icon.png",
+  "categories": [
+    "productivity"
+  ],
+  "permissions": {
+    "capabilities": [
+      "files:read",
+      "files:write",
+      "chat:read",
+      "chat:relay",
+      "agents:tools"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "page",
+        "title": "type and memory",
+        "entry": "main.html",
+        "toolbar": [
+          {
+            "id": "glance",
+            "title": "请它看一眼"
+          }
+        ]
+      },
+      {
+        "name": "file",
+        "title": "type and memory",
+        "entry": "main.html",
+        "opensFiles": {
+          "chat": [
+            ".tam.json"
+          ]
+        },
+        "toolbar": [
+          {
+            "id": "glance",
+            "title": "请它看一眼"
+          }
+        ]
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "skills": "skills",
+    "instructions": "A whisper about a type and memory page (page.tam.json): read skill type-and-memory, then answer with its tools, not in chat."
+  },
+  "license": "MIT",
+  "localized": {
+    "en": {
+      "name": "type and memory",
+      "subtitle": "Write; an agent reads along",
+      "tabs": {
+        "page": {
+          "title": "type and memory",
+          "toolbar": {
+            "glance": "Ask for a look"
+          }
+        },
+        "file": {
+          "title": "type and memory",
+          "toolbar": {
+            "glance": "Ask for a look"
+          }
+        }
+      },
+      "examples": [
+        "Have a look at my type and memory page"
+      ]
+    }
+  },
+  "examples": [
+    "看一眼我在 type and memory 里写的那页纸"
+  ]
+}

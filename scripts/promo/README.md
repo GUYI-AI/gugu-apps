@@ -24,6 +24,7 @@ All product images below already existed in the corresponding App before this ar
 | `paper-club.html` | `store/screenshots/1.jpg` | `e26afb7562ff42903bce04b1bd37cb5d45b525b0301cdd6c5693c6698f300f2c` |
 | `radar.html` | `store/screenshots/1.jpg` | `d4f58bc74dabf211407cabdd9436cc35503a36bc06d7de33a1ce22dc5bd69d49` |
 | `turtle-soup.html` | `store/screenshots/1.jpg` | `ac5df95fc41ff375b0516b61e9bc1b34a248e9bd335152f015c1f4cca503f0cc` |
+| `type-and-memory.html` | `store/screenshots/1.png` | `0569e7c42fadffa0fdd048bd9d384de31de7576ccfb6c9519d2b90a46479f459` |
 
 ## Teamboard and Data Lens native-image refresh
 
