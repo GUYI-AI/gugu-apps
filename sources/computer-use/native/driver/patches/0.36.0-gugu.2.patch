@@ -2350,10 +2350,10 @@ index dd919c71c278d23550be46f613dfff639d917f98..bceb95e6e5e500c7e74193a4c2e28358
      }
 diff --git a/libs/cua-driver/rust/crates/platform-macos/src/tools/browser_address_bar.rs b/libs/cua-driver/rust/crates/platform-macos/src/tools/browser_address_bar.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..579b7cdd2f24b80546c2bde5dcbac5b61f338089
+index 0000000000000000000000000000000000000000..b33e58539b18529e4816b835b4ff1132901d55cc
 --- /dev/null
 +++ b/libs/cua-driver/rust/crates/platform-macos/src/tools/browser_address_bar.rs
-@@ -0,0 +1,771 @@
+@@ -0,0 +1,873 @@
 +// SPDX-License-Identifier: MIT
 +//! Native Chromium location editing without changing either app's key window.
 +//!
@@ -2447,6 +2447,36 @@ index 0000000000000000000000000000000000000000..579b7cdd2f24b80546c2bde5dcbac5b6
 +impl<T: Tool> Tool for Reset<T> {
 +    fn def(&self) -> &ToolDef {
 +        self.inner.def()
++    }
++    // A lifecycle decorator must preserve implementation attestation. In
++    // particular kill_app proves a process-instance fingerprint here; falling
++    // back to Tool's defaults would discard that protected resource boundary.
++    fn has_independent_input_lane(&self, args: &Value) -> bool {
++        self.inner.has_independent_input_lane(args)
++    }
++    async fn protected_resource_ownership(
++        &self,
++        adapter: &str,
++        args: &Value,
++    ) -> cua_driver_core::tool::ProtectedResourceOwnership {
++        self.inner.protected_resource_ownership(adapter, args).await
++    }
++    async fn protected_resource_scope(
++        &self,
++        adapter: &str,
++        args: &Value,
++    ) -> Result<Option<Value>, String> {
++        self.inner.protected_resource_scope(adapter, args).await
++    }
++    async fn validate_protected_resource_scope(
++        &self,
++        adapter: &str,
++        args: &Value,
++        scope: &Value,
++    ) -> Result<(), String> {
++        self.inner
++            .validate_protected_resource_scope(adapter, args, scope)
++            .await
 +    }
 +    async fn invoke(&self, args: Value) -> ToolResult {
 +        self.routes.clear(&args);
@@ -3124,6 +3154,78 @@ index 0000000000000000000000000000000000000000..579b7cdd2f24b80546c2bde5dcbac5b6
 +        assert_eq!(data["effect"], "confirmed");
 +        assert!(execution_record(&Action::Confirm).public_result().is_ok());
 +    }
++    struct DelegationFixture;
++    #[async_trait::async_trait]
++    impl Tool for DelegationFixture {
++        fn def(&self) -> &ToolDef {
++            static INNER: WireFixture = WireFixture;
++            INNER.def()
++        }
++        fn has_independent_input_lane(&self, _args: &Value) -> bool {
++            true
++        }
++        async fn protected_resource_ownership(
++            &self,
++            _adapter: &str,
++            _args: &Value,
++        ) -> cua_driver_core::tool::ProtectedResourceOwnership {
++            cua_driver_core::tool::ProtectedResourceOwnership::DriverOwned
++        }
++        async fn protected_resource_scope(
++            &self,
++            _adapter: &str,
++            args: &Value,
++        ) -> Result<Option<Value>, String> {
++            Ok(Some(json!({"pid":args["pid"],"native_identity":"fixture"})))
++        }
++        async fn validate_protected_resource_scope(
++            &self,
++            _adapter: &str,
++            _args: &Value,
++            _scope: &Value,
++        ) -> Result<(), String> {
++            Err("inner-validation-marker".into())
++        }
++        async fn invoke(&self, _args: Value) -> ToolResult {
++            ToolResult::text("delegated")
++        }
++    }
++    #[tokio::test]
++    async fn reset_preserves_implementation_attested_input_and_resource_contracts() {
++        let args = json!({"pid":42});
++        let wrapped = Reset::new(DelegationFixture, Arc::new(Routes::default()));
++        assert!(wrapped.has_independent_input_lane(&args));
++        assert_eq!(
++            wrapped
++                .protected_resource_ownership("process_control", &args)
++                .await,
++            cua_driver_core::tool::ProtectedResourceOwnership::DriverOwned
++        );
++        assert_eq!(
++            wrapped
++                .protected_resource_scope("process_control", &args)
++                .await
++                .unwrap(),
++            Some(json!({"pid":42,"native_identity":"fixture"}))
++        );
++        assert_eq!(
++            wrapped
++                .validate_protected_resource_scope("process_control", &args, &json!({}))
++                .await,
++            Err("inner-validation-marker".into())
++        );
++        // The real kill tool must still reject an invalid process identity at
++        // the attestation boundary, before any termination can be dispatched.
++        let kill = Reset::new(
++            super::super::kill_app::KillAppTool,
++            Arc::new(Routes::default()),
++        );
++        assert_eq!(
++            kill.protected_resource_scope("process_control", &json!({"pid":-1}))
++                .await,
++            Err("kill_app requires a positive integer pid".into())
++        );
++    }
 +}
 diff --git a/libs/cua-driver/rust/crates/platform-macos/src/tools/click.rs b/libs/cua-driver/rust/crates/platform-macos/src/tools/click.rs
 index 67bfae23e41ab94ee1b865ec6b3c73f2ea1af34e..a2d33d88c5361e8d510f64690716758137b3dd0b 100644
@@ -3771,7 +3873,7 @@ index cd39cdd64f20d84dccedd18827ff77b8306e6249..dce5acf1f7f791825fd72c1a7aff131f
      ));
      registry.register(pid_keyboard_guarded(
 diff --git a/libs/cua-driver/rust/crates/platform-macos/src/tools/press_key.rs b/libs/cua-driver/rust/crates/platform-macos/src/tools/press_key.rs
-index 1069b452f969e7e763971f186b0c8e3c1bbb884e..80e97576d706ba4b46cbc2b91b7a44e822a8a939 100644
+index 1069b452f969e7e763971f186b0c8e3c1bbb884e..f8e8c65458455a93a9ac087a03eb5a8528576b50 100644
 --- a/libs/cua-driver/rust/crates/platform-macos/src/tools/press_key.rs
 +++ b/libs/cua-driver/rust/crates/platform-macos/src/tools/press_key.rs
 @@ -181,7 +181,7 @@ fn delivery_failed(error: impl std::fmt::Display) -> ToolResult {
@@ -3779,7 +3881,7 @@ index 1069b452f969e7e763971f186b0c8e3c1bbb884e..80e97576d706ba4b46cbc2b91b7a44e8
      DEF.get_or_init(|| ToolDef {
          name: "press_key".into(),
 -        description: "Press and release one key. `delivery_mode` as in click/type_text.\n\
-+        description: "On macOS, unmodified Return after this session edits a Chromium address bar confirms its associated native suggestion through accessibility without switching a sibling window key; observe the target page to verify navigation. On macOS, an unmodified Return after this session focuses or types into a Chromium address bar confirms its associated native suggestion through accessibility without switching a sibling window key; observe the target page to verify navigation. Press and release one key. `delivery_mode` as in click/type_text.\n\
++        description: "On macOS, unmodified Return after this session edits a Chromium address bar confirms its associated native suggestion through accessibility without switching a sibling window key; observe the target page to verify navigation. Press and release one key. `delivery_mode` as in click/type_text.\n\
              - `background` (default): posts to the pid without raising the window; with `element_token` it focuses that element first.\n\
              - `foreground`: fronts the exact window (needs `window_id`), sends a real HID key transition (Chromium content, inline editors, menu equivalents), then restores the prior app.\n\
              \n\
@@ -3823,7 +3925,7 @@ index df1b6b1aa942990d101a3fd381650ad966a06110..b02b5b5dfc7e114583be97abc8d7ecea
          // set_value is an always-background semantic AX mutation. Re-prove
          // that the retained element still belongs to the requested exact
 diff --git a/libs/cua-driver/rust/crates/platform-macos/src/tools/type_text.rs b/libs/cua-driver/rust/crates/platform-macos/src/tools/type_text.rs
-index f8fe1500e501c51a141eeb17575ae705486ea667..76345cf165cd8feb785aa10a199b25d4f338e2c5 100644
+index f8fe1500e501c51a141eeb17575ae705486ea667..39cf77ddd8ef1363652815f66d2aaa61e79a3d51 100644
 --- a/libs/cua-driver/rust/crates/platform-macos/src/tools/type_text.rs
 +++ b/libs/cua-driver/rust/crates/platform-macos/src/tools/type_text.rs
 @@ -57,7 +57,7 @@ static DEF: std::sync::OnceLock<ToolDef> = std::sync::OnceLock::new();
@@ -3831,7 +3933,7 @@ index f8fe1500e501c51a141eeb17575ae705486ea667..76345cf165cd8feb785aa10a199b25d4
      DEF.get_or_init(|| ToolDef {
          name: "type_text".into(),
 -        description: "Insert text via `AXSetAttribute(kAXSelectedText)` into the element given by `element_token`, or the pid's focused element. Does not press keys: use `press_key` / `hotkey` for Return, Escape, arrows. If AX insertion is unsupported (Chromium/Electron), it falls back to CGEvent typing when the route fits the transport budget; longer routes are refused with a safe chunk size.\n\
-+        description: "On macOS, this session's Chromium address-bar text uses accessibility value and selection updates without document-marking keystrokes. On macOS, text inserted into this session's Chromium address bar uses accessibility selection insertion without document-marking keystrokes. Insert text via `AXSetAttribute(kAXSelectedText)` into the element given by `element_token`, or the pid's focused element. Does not press keys: use `press_key` / `hotkey` for Return, Escape, arrows. If AX insertion is unsupported (Chromium/Electron), it falls back to CGEvent typing when the route fits the transport budget; longer routes are refused with a safe chunk size.\n\
++        description: "On macOS, this session's Chromium address-bar text uses accessibility value and selection updates without document-marking keystrokes. Insert text via `AXSetAttribute(kAXSelectedText)` into the element given by `element_token`, or the pid's focused element. Does not press keys: use `press_key` / `hotkey` for Return, Escape, arrows. If AX insertion is unsupported (Chromium/Electron), it falls back to CGEvent typing when the route fits the transport budget; longer routes are refused with a safe chunk size.\n\
              \n\
              Web content (browser tabs, Slack, VS Code): AXValue is not proof the DOM saw the text, so the result is `effect:\"unverifiable\"` and Electron web content refuses background delivery. For a browser tab use the `page` tool. For an embedded web view pass `x, y` (no element_token) to pixel-click the field then type in one call; a pixel click will not reliably open a closed control, so AX-press it open first. Confirm from the screenshot, and use `delivery_mode:\"foreground\"` only if background still drops the text.".into(),
          input_schema: serde_json::json!({
