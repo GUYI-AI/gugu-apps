@@ -92,7 +92,8 @@ export const TOOLS: readonly CuaTool[] = [
   },
   { cua: 'type_text', title: '输入文字', titleEn: 'Type text', kind: 'act', confirm: 'on_conflict', windowInput: true },
   { cua: 'press_key', title: '按键', titleEn: 'Press a key', kind: 'act', confirm: 'on_conflict', windowInput: true },
-  { cua: 'hotkey', title: '按快捷键', titleEn: 'Press a shortcut', kind: 'act', confirm: 'on_conflict', windowInput: true },
+  { cua: 'hotkey', title: '按快捷键', titleEn: 'Press a shortcut', kind: 'act', confirm: 'on_conflict', windowInput: true,
+    note: 'On macOS, background Cmd+L in a Chromium browser is unavailable because it can activate the app. Use Browser Use for webpage navigation; address-bar control needs explicitly approved foreground (interrupts the person).' },
   { cua: 'set_value', title: '设置值', titleEn: 'Set a value', kind: 'act', confirm: 'on_conflict', windowInput: true },
   {
     cua: 'run_steps',

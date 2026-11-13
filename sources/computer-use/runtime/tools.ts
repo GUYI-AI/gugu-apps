@@ -7,6 +7,7 @@ import type { Args, SelfApp } from './types'
 import { resolveCallTargets } from './targets'
 import { resolveComputerWindow } from './placement'
 import { linuxScreen } from './native/linux-display'
+import { backgroundLocationShortcut } from './background-location-shortcut'
 
 type NativeSpec = { name: string; description?: string; input_schema?: Args; inputSchema?: Args }
 export type ToolCaller = { agent: string; session: string; name?: string; taskTitle?: string; signal?: AbortSignal; remainingMs?: () => number; preview?: boolean; humanViewer?: string }
@@ -97,6 +98,11 @@ export function createComputerTools(input: {
       if (target.stopped) return failure('revoked', target.stopped)
       const { pid, windowId, targetPids } = target
       if ([pid, ...targetPids].some(pid => pid !== undefined && self.pids.has(pid))) return failure('invalid_args', 'The target belongs to the protected host.')
+      if (input.platform === 'darwin') {
+        const refusal = await backgroundLocationShortcut({ name, args: forwardArgs, owner, lane, apps, native: input.cua,
+          signal: caller.signal, ...(caller.remainingMs ? { remainingMs: caller.remainingMs } : {}) })
+        if (refusal) return failure(refusal.code, refusal.message)
+      }
       const identity = { sessionId: caller.session, ...(caller.name ? { callerName: caller.name } : {}), ...(caller.taskTitle ? { taskTitle: caller.taskTitle } : {}) }
       let handle = tool.kind === 'act' ? input.control?.begin({
         ...identity,

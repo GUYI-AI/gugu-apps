@@ -37,7 +37,7 @@ async function openCuaDaemonLease(options) {
   const connections = /* @__PURE__ */ new Set();
   let closed = false;
   let control = null;
-  const unavailable = () => new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u7684\u8FDE\u63A5\u5DF2\u7ED3\u675F\uFF0C\u8BF7\u91CD\u65B0\u83B7\u53D6\u7A97\u53E3\u540E\u518D\u8BD5");
+  const unavailable2 = () => new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u7684\u8FDE\u63A5\u5DF2\u7ED3\u675F\uFF0C\u8BF7\u91CD\u65B0\u83B7\u53D6\u7A97\u53E3\u540E\u518D\u8BD5");
   const close = () => {
     if (closed) return;
     closed = true;
@@ -46,7 +46,7 @@ async function openCuaDaemonLease(options) {
     options.onClosed();
   };
   const exchange = (request, call = {}, mutation = false) => {
-    if (closed) return Promise.reject(unavailable());
+    if (closed) return Promise.reject(unavailable2());
     if (call.signal?.aborted) return Promise.reject(new NativeCallError("execution_failed", "\u5DF2\u53D6\u6D88"));
     return new Promise((resolve, reject) => {
       const connection = net.createConnection(options.socket);
@@ -82,7 +82,7 @@ async function openCuaDaemonLease(options) {
 `);
       });
       connection.once("error", (error) => finish(new NativeCallError("execution_failed", error.message)));
-      connection.once("close", () => finish(unavailable()));
+      connection.once("close", () => finish(unavailable2()));
       lines.once("line", (line) => {
         try {
           const result = JSON.parse(line);
@@ -100,7 +100,7 @@ async function openCuaDaemonLease(options) {
     if (!metadata.ok || identity?.embedded !== true || !identity.driver_version || options.hostBundleId && identity.host_bundle_id !== options.hostBundleId) {
       throw new NativeCallError("execution_failed", "\u7535\u8111\u63A7\u5236\u670D\u52A1\u7684\u5BBF\u4E3B\u8EAB\u4EFD\u4E0D\u5339\u914D");
     }
-    if (options.signal?.aborted) throw unavailable();
+    if (options.signal?.aborted) throw unavailable2();
     await new Promise((resolve, reject) => {
       control = net.createConnection(options.socket);
       const lines = readline.createInterface({ input: control });
@@ -113,7 +113,7 @@ async function openCuaDaemonLease(options) {
           close();
         } else resolve();
       };
-      const abort = () => finish(unavailable());
+      const abort = () => finish(unavailable2());
       const timer = setTimeout(() => finish(new NativeCallError("timeout", "\u7535\u8111\u63A7\u5236\u4F1A\u8BDD\u672A\u80FD\u542F\u52A8")), options.timeoutMs);
       options.signal?.addEventListener("abort", abort, { once: true });
       control.once("connect", () => control.write(`${JSON.stringify({ method: "session_begin", session_id: options.owner })}
@@ -122,13 +122,13 @@ async function openCuaDaemonLease(options) {
       control.once("close", () => {
         clearTimeout(timer);
         lines.close();
-        if (!acknowledged) finish(unavailable());
+        if (!acknowledged) finish(unavailable2());
         close();
       });
       lines.once("line", (line) => {
         try {
           const response = JSON.parse(line);
-          if (!response.ok || response.result?.session_begin !== true) throw unavailable();
+          if (!response.ok || response.result?.session_begin !== true) throw unavailable2();
           acknowledged = true;
           finish();
         } catch (error) {
@@ -462,7 +462,7 @@ var pipeAccepting = (pipe) => new Promise((resolve) => {
 function createCuaClient(options) {
   const platform = options.platform ?? process.platform;
   const socket = options.socketPath ?? cuaSocketPath(platform);
-  const spawn = options.spawn ?? ((command, args, spawnOptions) => nodeSpawn(command, args, spawnOptions));
+  const spawn = options.spawn ?? ((command2, args, spawnOptions) => nodeSpawn(command2, args, spawnOptions));
   const laneIdleMs = options.laneIdleMs ?? LANE_IDLE_MS;
   let daemon = null;
   let daemonReady = null;
@@ -1126,7 +1126,15 @@ var TOOLS = [
   },
   { cua: "type_text", title: "\u8F93\u5165\u6587\u5B57", titleEn: "Type text", kind: "act", confirm: "on_conflict", windowInput: true },
   { cua: "press_key", title: "\u6309\u952E", titleEn: "Press a key", kind: "act", confirm: "on_conflict", windowInput: true },
-  { cua: "hotkey", title: "\u6309\u5FEB\u6377\u952E", titleEn: "Press a shortcut", kind: "act", confirm: "on_conflict", windowInput: true },
+  {
+    cua: "hotkey",
+    title: "\u6309\u5FEB\u6377\u952E",
+    titleEn: "Press a shortcut",
+    kind: "act",
+    confirm: "on_conflict",
+    windowInput: true,
+    note: "On macOS, background Cmd+L in a Chromium browser is unavailable because it can activate the app. Use Browser Use for webpage navigation; address-bar control needs explicitly approved foreground (interrupts the person)."
+  },
   { cua: "set_value", title: "\u8BBE\u7F6E\u503C", titleEn: "Set a value", kind: "act", confirm: "on_conflict", windowInput: true },
   {
     cua: "run_steps",
@@ -1688,6 +1696,102 @@ async function resolveCallTargets(input) {
   };
 }
 
+// runtime/background-location-shortcut.ts
+var record4 = (value) => !!value && typeof value === "object" && !Array.isArray(value);
+var lower4 = (value) => typeof value === "string" ? value.toLowerCase() : "";
+var pidNumber = (value) => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+var command = /* @__PURE__ */ new Set(["cmd", "command", "meta", "super", "win"]);
+var modifiers = /* @__PURE__ */ new Set([...command, "shift", "option", "alt", "ctrl", "control", "fn"]);
+var windowKeys = ["pid", "window_id", "app", "window"];
+function locationShortcut(name, args) {
+  if (name !== "hotkey" || lower4(args.delivery_mode) === "foreground" || !Array.isArray(args.keys)) return false;
+  const keys = args.keys.filter((key) => typeof key === "string").map(lower4);
+  const held = keys.filter((key) => modifiers.has(key));
+  return keys.filter((key) => !modifiers.has(key)).at(-1) === "l" && held.length > 0 && held.every((key) => command.has(key));
+}
+function windowSelector(args) {
+  const nested = record4(args.target) ? args.target : {};
+  return Object.fromEntries(windowKeys.flatMap((key) => {
+    const value = nested[key] ?? args[key];
+    return value === void 0 ? [] : [[key, value]];
+  }));
+}
+function candidates(name, args) {
+  if (name !== "run_steps") return locationShortcut(name, args) ? [{ args }] : [];
+  let context = windowSelector(args);
+  const result = [];
+  for (const [index, raw] of (Array.isArray(args.steps) ? args.steps : []).entries()) {
+    if (!record4(raw)) continue;
+    if (record4(raw.wait_for)) {
+      const selector = windowSelector(raw.wait_for);
+      if (Object.keys(selector).length) context = selector;
+    }
+    const action = stepsOf({ steps: [raw] })[0];
+    if (action) {
+      const selector = windowSelector(action.args);
+      if (Object.keys(selector).length) context = selector;
+      const effective = { ...context, ...action.args, delivery_mode: action.args.delivery_mode ?? args.delivery_mode };
+      if (locationShortcut(action.tool, effective)) result.push({ args: effective, step: index + 1 });
+    } else if (Array.isArray(raw.expect)) {
+      for (const check of raw.expect.filter(record4)) {
+        const selector = windowSelector(check);
+        if (Object.keys(selector).length) context = selector;
+      }
+    }
+  }
+  return result;
+}
+function chromiumBundle(bundle) {
+  return bundle.split(/[^a-z0-9]+/).some((part) => ["chrome", "chromium", "brave", "edgemac", "vivaldi", "opera", "thorium"].includes(part)) || ["company.thebrowser.browser", "com.operasoftware.operagx", "com.operasoftware.operanext", "com.operasoftware.operadeveloper"].includes(bundle);
+}
+var unavailable = () => ({ code: "unavailable", message: "The shortcut target could not be verified from the native process list. Read its window again before retrying." });
+var blocked = () => ({ code: "background_unavailable", message: "Background Cmd+L is unavailable for this Chromium app. Use Browser Use for webpage navigation; address-bar control needs explicitly approved foreground (interrupts the person)." });
+async function backgroundLocationShortcut(input) {
+  const pending = candidates(input.name, input.args);
+  if (!pending.length) return null;
+  const options = {
+    lane: input.lane,
+    signal: input.signal,
+    timeoutMs: 5e3,
+    ...input.remainingMs ? { remainingMs: input.remainingMs } : {}
+  };
+  try {
+    const listed = await input.native.callTool("list_apps", {}, options);
+    if (listed.isError || !record4(listed.structuredContent) || !Array.isArray(listed.structuredContent.apps)) return unavailable();
+    const running = listed.structuredContent.apps.filter(record4).filter((app) => pidNumber(app.pid) && app.running === true);
+    const windows = /* @__PURE__ */ new Map();
+    const resolvePid = async (args) => {
+      const selector = windowSelector(args);
+      if (pidNumber(selector.pid)) return selector.pid;
+      if (typeof args.element_token === "string" && !Object.keys(selector).length) return input.apps.pidOf(input.owner, args);
+      const app = typeof selector.app === "string" ? selector.app : "";
+      const key = JSON.stringify(selector);
+      let read = windows.get(key);
+      if (!read) {
+        read = input.native.callTool("list_windows", { ...app ? { app } : {}, on_screen_only: false }, options).then((value) => {
+          const data = value.structuredContent;
+          if (value.isError || !record4(data) || !Array.isArray(data.windows)) return null;
+          return data.windows.filter(record4).filter((window) => (selector.window_id === void 0 || window.window_id === selector.window_id) && (!selector.window || lower4(window.title).includes(lower4(selector.window))));
+        });
+        windows.set(key, read);
+      }
+      const found = await read;
+      const pids = new Set(found?.flatMap((window) => pidNumber(window.pid) ? [window.pid] : []));
+      return pids.size === 1 ? [...pids][0] : void 0;
+    };
+    for (const candidate of pending) {
+      const pid = await resolvePid(candidate.args);
+      const identities = new Set(running.filter((app) => app.pid === pid).map((app) => lower4(app.bundle_id)).filter(Boolean));
+      const bundle = identities.size === 1 ? [...identities][0] : void 0;
+      const refusal2 = !bundle ? unavailable() : chromiumBundle(bundle) ? blocked() : null;
+      if (refusal2) return { ...refusal2, message: `${candidate.step ? `Step ${candidate.step}: ` : ""}${refusal2.message}` };
+    }
+    return null;
+  } catch {
+    return input.signal?.aborted ? { code: "cancelled", message: "This operation was cancelled before input." } : unavailable();
+  }
+}
+
 // runtime/tools.ts
 var failure = (code, message) => ({ isError: true, content: [{ type: "text", text: message }], structuredContent: { code, message } });
 var object2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
@@ -1761,6 +1865,19 @@ function createComputerTools(input) {
       if (target.stopped) return failure("revoked", target.stopped);
       const { pid, windowId, targetPids } = target;
       if ([pid, ...targetPids].some((pid2) => pid2 !== void 0 && self.pids.has(pid2))) return failure("invalid_args", "The target belongs to the protected host.");
+      if (input.platform === "darwin") {
+        const refusal2 = await backgroundLocationShortcut({
+          name,
+          args: forwardArgs,
+          owner,
+          lane,
+          apps,
+          native: input.cua,
+          signal: caller.signal,
+          ...caller.remainingMs ? { remainingMs: caller.remainingMs } : {}
+        });
+        if (refusal2) return failure(refusal2.code, refusal2.message);
+      }
       const identity = { sessionId: caller.session, ...caller.name ? { callerName: caller.name } : {}, ...caller.taskTitle ? { taskTitle: caller.taskTitle } : {} };
       let handle = tool.kind === "act" ? input.control?.begin({
         ...identity,

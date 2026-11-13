@@ -1,1 +1,1 @@
-Computer tools, target-specific Stop, native driver and task picture run in the App. Click, type Chinese, and paste directly in the window picture; the App checks the actual target and system permissions. Settings reads the running driver's permissions. Requires Gugu App interface 36.
+Background Cmd+L in Chromium browsers is refused before input so it cannot interrupt your active window. Use Browser Use for webpage navigation, or explicitly approve foreground address-bar control. Other shortcuts and foreground controls keep their behavior.

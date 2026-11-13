@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.5.0 (unreleased)
+## 0.5.1 (unreleased)
+
+- Refuse background Cmd+L for native-verified Chromium browser targets before sending input, including an entire batch containing that shortcut. Use Browser Use for webpage navigation or explicitly approve foreground address-bar control.
+- Keep other applications' shortcuts, explicit foreground delivery, and bring-to-front behavior unchanged.
+
+## 0.5.0
 
 - Move native tools, permission checks, driver preparation and target-specific Stop into the ordinary App program (App interface 36).
 - Accept direct window-picture clicks, committed Chinese input and paste through the authorized projection channel. Stale frames and changed targets reject input; uncertain native results are never replayed.
