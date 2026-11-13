@@ -5,7 +5,7 @@ import { CAPABILITIES, SERVICES, SETTINGS_FILE, parseSettings, serviceFor } from
 const host = window.gugu;
 const TEXT = {
 	zh: {
-		title: '全能搜索', canUse: (n) => `agent 现在能用 ${n} 项`, none: '还没有能用的', off: '不使用',
+		title: '进阶搜索', canUse: (n) => `agent 现在能用 ${n} 项`, none: '还没有能用的', off: '不使用',
 		configured: '已配置', needKey: '需 key', apiKey: 'API 密钥', getKey: '获取密钥', site: '官网',
 		check: '检查', change: '更换', cancel: '取消', saveCheck: '保存并检查', paste: (s) => `粘贴 ${s} 的 API 密钥`,
 		works: (ms) => `能用 · 刚才试过一次，${(ms / 1000).toFixed(1)} 秒`, fails: (r) => `不能用：${r}`, checking: '正在试一次…',
@@ -13,9 +13,9 @@ const TEXT = {
 		advanced: '高级设置', firecrawlHost: '自建 Firecrawl 地址', firecrawlHostHelp: '留空就用 Firecrawl 官方的服务。', save: '保存',
 		sentTo: (url) => `这把 key 会发到 ${url}，不是 Firecrawl 官方的服务。`,
 		where: (p) => `设置存在这台电脑上：${p}。agent 也可以直接改这个文件。`, elsewhere: '在电脑上设置',
-		elsewhereWhy: '全能搜索给电脑上的 agent 用，手机上跑不了。到电脑上的咕咕里打开它，在那里选服务、填密钥。',
+		elsewhereWhy: '进阶搜索给电脑上的 agent 用，手机上跑不了。到电脑上的咕咕里打开它，在那里选服务、填密钥。',
 		withdrawn: 'agent 现在用不了',
-		withdrawnWhy: '「给 agent 工具」这项权限被收回了，agent 现在一项都用不了。在 App 管理里全能搜索的权限中把它打开，就恢复了。',
+		withdrawnWhy: '「给 agent 工具」这项权限被收回了，agent 现在一项都用不了。在 App 管理里进阶搜索的权限中把它打开，就恢复了。',
 		sep: '、',
 	},
 	en: {
@@ -29,7 +29,7 @@ const TEXT = {
 		where: (p) => `Settings live on this computer: ${p}. Agents may edit that file too.`, elsewhere: 'Set up on a computer',
 		elsewhereWhy: 'Omnisearch is for the agents on your computer and does not run on a phone. Open it in gugu on your computer to pick services and add keys.',
 		withdrawn: 'Agents cannot use it now',
-		withdrawnWhy: 'The permission to give agents tools was taken back, so agents can use none of these now. Turn it back on under 全能搜索’s permissions in Apps.',
+		withdrawnWhy: 'The permission to give agents tools was taken back, so agents can use none of these now. Turn it back on under Omnisearch’s permissions in Apps.',
 		sep: ', ',
 	},
 };

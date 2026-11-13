@@ -1,5 +1,5 @@
 // @vitest-environment node
-// 全能搜索 App(app/):launch.mjs 是咕咕和 omnisearch 之间的那一层。
+// 进阶搜索 App(app/):launch.mjs 是咕咕和 omnisearch 之间的那一层。
 // 这里用真的 launch.mjs、真的 server.mjs 起进程,按 MCP stdio 跟它说话;判的是 agent 看到什么、没 key 时起不起 omnisearch。
 // omnisearch 起来时自己在 stderr 说「Omnisearch MCP server running on stdio」—— 这一句就是「起没起」的判据。
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
@@ -66,11 +66,11 @@ const toolNames = (answer: { result?: Record<string, unknown> }) =>
     .map((tool) => tool.name)
     .sort()
 
-describe('全能搜索 launch.mjs', () => {
+describe('进阶搜索 launch.mjs', () => {
   it('no key anywhere: agents get no tool, the page still gets its status, and omnisearch is never started', async () => {
     const app = launch()
     // Why agents get nothing, in initialize's instructions: what gugu shows where it says this App gives agents no tools.
-    expect((await app.open()).result?.instructions).toBe('未配置搜索服务的 API key，请在全能搜索的设置页填写。')
+    expect((await app.open()).result?.instructions).toBe('还没有配置搜索服务的 key，agent 现在用不了进阶搜索；agent 自己的搜索不受影响。要加装，在进阶搜索的设置页填 key。')
     expect(toolNames(await app.ask('tools/list'))).toEqual([])
     const status = await app.ask('tools/call', { name: 'provider_status', arguments: {} })
     const structured = status.result?.structuredContent as { settings_path: string; services: Record<string, boolean> }
@@ -157,7 +157,7 @@ describe('全能搜索 launch.mjs', () => {
   }, 30_000)
 })
 
-describe('全能搜索 catalog.mjs: which service a capability uses', () => {
+describe('进阶搜索 catalog.mjs: which service a capability uses', () => {
   const webSearch = CAPABILITIES.find((c) => c.id === 'web_search')!
 
   it('the person\'s pick when it has a key; otherwise the first service with a key; off is off; no key, nothing', () => {

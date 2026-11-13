@@ -95,7 +95,7 @@ non-author review. Companion specifications and producer live in GUYI-AI/gugu-de
   - devDependencies 里有 `playwright` 的(有真浏览器用例),先装 Chromium。
   - 咕咕办公打包进去的库(`app/skills/office/vendor/`)由 `vendor/build.mjs` 照钉住的 lockfile 打出来,它的 `npm test` 先跑
     `node vendor/build.mjs --check`:重打一遍，逐字节和仓里的比。
-  - 全能搜索的 `app/server/server.mjs` 由 `server-build/build.mjs` 从上游打出来(要 git、pnpm、网络，手动跑)。
+  - 进阶搜索的 `app/server/server.mjs` 由 `server-build/build.mjs` 从上游打出来(要 git、pnpm、网络，手动跑)。
 
 ## CI
 

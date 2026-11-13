@@ -44,7 +44,7 @@ function readSettings() {
 	}
 }
 
-const NO_KEY = '未配置搜索服务的 API key，请在全能搜索的设置页填写。';
+const NO_KEY = '还没有配置搜索服务的 key，agent 现在用不了进阶搜索；agent 自己的搜索不受影响。要加装，在进阶搜索的设置页填 key。';
 const anyKey = (settings) => Object.keys(SERVICES).some((id) => typeof settings.keys[id] === 'string' && settings.keys[id].trim());
 
 /** settings.json is the only source of keys: one the person cleared is gone even if the shell has it. */
@@ -118,7 +118,7 @@ function presentTool(tool, settings) {
 	const via = capability.via[chosen] === null
 		? ''
 		: ` Uses ${SERVICES[chosen].name}${others.length ? `; also ${others.map((s) => SERVICES[s].name).join(', ')} via provider` : ''}.`;
-	const where = ` Set up in the 全能搜索 App; its settings are ${SETTINGS_PATH} — "keys" by service (${Object.keys(SERVICES).join(', ')}) and "use" by capability (${CAPABILITIES.map((c) => c.id).join(', ')}: a service id or "off") — which you may edit for the person; changes apply at once.`;
+	const where = ` Set up in the Omnisearch App; its settings are ${SETTINGS_PATH} — "keys" by service (${Object.keys(SERVICES).join(', ')}) and "use" by capability (${CAPABILITIES.map((c) => c.id).join(', ')}: a service id or "off") — which you may edit for the person; changes apply at once.`;
 	return { ...tool, description: `${lead}${via}${where}`, inputSchema: schema };
 }
 
@@ -296,7 +296,7 @@ function answerWithoutServer(message) {
 	if (message.id === undefined) return;
 	if (message.method === 'tools/list') return toGugu({ jsonrpc: '2.0', id: message.id, result: { tools: PAGE_TOOLS } });
 	if (message.method === 'ping') return toGugu({ jsonrpc: '2.0', id: message.id, result: {} });
-	errorTo(message.id, 'No service has a key yet: set one up in the 全能搜索 App.');
+	errorTo(message.id, 'No service has a key yet: set one up in the Omnisearch App.');
 }
 
 let restarting = Promise.resolve();

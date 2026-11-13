@@ -38,3 +38,9 @@ it sits beside the template because it is cover material, not a gallery image. I
 the question and the card sit close together and stay legible in the frame. The template now caps the image at the frame's
 530 px height: an image narrower than 16:10 is centred instead of being stretched to full width and clipped at the bottom. The cover was rendered with Chromium 147 on Linux, with Noto Sans
 CJK SC (the template's first font) supplied through a private fontconfig. See `sources/data-lens/app/store/SOURCE.md`.
+
+## Omnisearch renamed 进阶搜索 (0.4.1)
+
+Only the Chinese name in `omnisearch.html` changed. The cover was re-rendered with Chromium 147 (Playwright headless shell) on
+Linux, with Noto Sans CJK SC supplied through a private fontconfig. Rendering the previous template the same way reproduced
+the previous cover, so nothing but the name moved. The product screenshot is unchanged.
