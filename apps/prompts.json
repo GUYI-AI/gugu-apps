@@ -1,0 +1,16 @@
+{
+  "id": "prompts",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/prompts/app",
+      "commit": "bda62e21a1de1889227765086c9304220d0b623d",
+      "sha256": "23aee6add4da99b63edafaddc05fef34a04d9925bd0a9dcf7722751efb163be4",
+      "bytes": 1569,
+      "yanked": null
+    }
+  ]
+}
