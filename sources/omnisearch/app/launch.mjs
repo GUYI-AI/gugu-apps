@@ -44,7 +44,7 @@ function readSettings() {
 	}
 }
 
-const NO_KEY = '未配置搜索服务的 API key，请在进阶搜索的设置页填写。';
+const NO_KEY = '还没有配置搜索服务的 key，agent 现在用不了进阶搜索；agent 自己的搜索不受影响。要加装，在进阶搜索的设置页填 key。';
 const anyKey = (settings) => Object.keys(SERVICES).some((id) => typeof settings.keys[id] === 'string' && settings.keys[id].trim());
 
 /** settings.json is the only source of keys: one the person cleared is gone even if the shell has it. */

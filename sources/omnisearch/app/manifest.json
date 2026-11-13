@@ -37,7 +37,7 @@
         ]
       }
     ],
-    "instructions": "omnisearch__* tools: web search, read a page, library docs, cited answers and GitHub search, for the services that have a key."
+    "instructions": "Optional extra search once the person sets a key: omnisearch__* (web search, read a page, library docs, cited answers, GitHub). Use your own search first."
   },
   "localized": {
     "en": {

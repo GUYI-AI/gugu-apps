@@ -4,6 +4,8 @@
 
 The Chinese name is now 进阶搜索 (was 全能搜索), so people can tell it is an optional App rather than gugu's built-in search; the English name stays Omnisearch. English messages that named the App in Chinese now say Omnisearch.
 
+Agents read it as optional: the instructions say to use their own search first and that these tools exist only once the person sets a key, and the no-key message says the agent's own search is unaffected.
+
 ## 0.4.0
 
 App interface 25: nothing else changes.
