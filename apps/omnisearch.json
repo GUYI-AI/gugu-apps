@@ -1,7 +1,6 @@
 {
   "id": "omnisearch",
   "unlisted": false,
-  "firstRun": true,
   "deprecated": null,
   "versions": [
     {
@@ -83,6 +82,15 @@
       "commit": "7c480639bb64f7a66c31d185a56df2ebbf0623ce",
       "sha256": "e13cf63d7358e99967762615037856273b065f008c45aa442f70218c84c09344",
       "bytes": 211017,
+      "yanked": null
+    },
+    {
+      "version": "0.4.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "7d483d56d3a0cfc3918c5dba321c3f6ca9d6bab4",
+      "sha256": "06225b899e48def212d1052fd6575ec522a12fb08975a16cc236467332038647",
+      "bytes": 211340,
       "yanked": null
     }
   ]
