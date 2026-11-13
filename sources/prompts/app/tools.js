@@ -1,4 +1,4 @@
-// The 「Prompt 管理」 App's tools: the person's own prompts, the 「我的」 group of the composer's `/` menu, through the
+// The 「提示词管理」 App's tools: the person's own prompts (资源库 → 提示词, the 「我的」 group of the composer's `/` menu), through the
 // host's `gugu.prompts` (apiVersion 34, capability `prompts`). Nothing is kept here; the account holds the list.
 // A delete is shown to the person at once with an undo.
 const host = () => globalThis.gugu

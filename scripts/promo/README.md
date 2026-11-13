@@ -25,6 +25,7 @@ All product images below already existed in the corresponding App before this ar
 | `radar.html` | `store/screenshots/1.jpg` | `d4f58bc74dabf211407cabdd9436cc35503a36bc06d7de33a1ce22dc5bd69d49` |
 | `turtle-soup.html` | `store/screenshots/1.jpg` | `ac5df95fc41ff375b0516b61e9bc1b34a248e9bd335152f015c1f4cca503f0cc` |
 | `type-and-memory.html` | `store/screenshots/1.png` | `0569e7c42fadffa0fdd048bd9d384de31de7576ccfb6c9519d2b90a46479f459` |
+| `prompts.html` | `scripts/promo/prompts-chat.png` (repo path; not in the package) | `255d6baa11904a4170e25b6466e8fdc949e876ecdc326d9b9710bbee1a343b51` |
 
 ## Teamboard and Data Lens native-image refresh
 
@@ -44,3 +45,11 @@ CJK SC (the template's first font) supplied through a private fontconfig. See `s
 Only the Chinese name in `omnisearch.html` changed. The cover was re-rendered with Chromium 147 (Playwright headless shell) on
 Linux, with Noto Sans CJK SC supplied through a private fontconfig. Rendering the previous template the same way reproduced
 the previous cover, so nothing but the name moved. The product screenshot is unchanged.
+
+## Prompts (0.1.1)
+
+The first cover for Prompts (提示词管理). `prompts-chat.png` is an exact crop of a desktop capture taken for 0.1.1: a person
+asks an agent to save a prompt and list the Library's prompts, then to delete one. It sits beside the template because it
+is cover material; the full capture is `store/screenshots/4.png`. The cover was rendered with Chromium 147 (Playwright
+headless shell) on Linux with Noto Sans CJK SC. The icon gets rounded corners in the template, as the client draws it. See
+`sources/prompts/app/store/SOURCE.md`.
