@@ -84,7 +84,9 @@ test('a wait target participates in batch preflight without performing the prece
   await refused(fixture(), 'run_steps', { pid: 77, steps: [{ click: {} }, { tool: 'hotkey', wait_for: { app: 'Google Chrome' }, args: { keys: ['cmd', 'l'] } }] });
 });
 test('actionless expect target changes are included in the complete batch preflight', async () => {
-  await refused(fixture(), 'run_steps', { pid: 77, steps: [{ click: {} }, { expect: [{ app: 'Google Chrome' }] }, { hotkey: { keys: ['cmd', 'l'] } }] });
+  for (const expect of [[{ app: 'Google Chrome' }], { app: 'Google Chrome' }]) {
+    await refused(fixture(), 'run_steps', { pid: 77, steps: [{ click: {} }, { expect }, { hotkey: { keys: ['cmd', 'l'] } }] });
+  }
 });
 test('a non-Chromium batch target override is not classified from the batch default', async () => {
   const f = fixture();

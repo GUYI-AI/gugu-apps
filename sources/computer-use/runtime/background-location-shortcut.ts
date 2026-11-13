@@ -43,8 +43,9 @@ function candidates(name: string, args: Args): Array<{ args: Args; step?: number
       if (Object.keys(selector).length) context = selector
       const effective = { ...context, ...action.args, delivery_mode: action.args.delivery_mode ?? args.delivery_mode }
       if (locationShortcut(action.tool, effective)) result.push({ args: effective, step: index + 1 })
-    } else if (Array.isArray(raw.expect)) {
-      for (const check of raw.expect.filter(record)) {
+    } else {
+      const checks = Array.isArray(raw.expect) ? raw.expect : [raw.expect]
+      for (const check of checks.filter(record)) {
         const selector = windowSelector(check)
         if (Object.keys(selector).length) context = selector
       }
