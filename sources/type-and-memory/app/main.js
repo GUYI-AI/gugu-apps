@@ -964,6 +964,14 @@ function mount(host, options) {
     if (marks.size) notes.layout();
     if (!typed) return;
     save();
+    if (marks.size && !surface.read().trim()) {
+      marks.clear();
+      held.clear();
+      activate(null);
+      energy.restore(0, 0);
+      marksChanged();
+      flush();
+    }
     energy.earn(typed.weight);
     if (whisperId && marks.has(whisperId)) sheet.drop(whisperId);
     lullText = null;
