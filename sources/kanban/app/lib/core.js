@@ -197,6 +197,7 @@ function planSet(card, op, { by, name, at, caller, fresh = false }) {
   if (op.wait !== undefined && op.wait !== null) {
     const what = line(op.wait, 'wait', 300)
     if (what) {
+      if (card.wait?.on === 'owner') put('wait', null, 'withdrew', card.wait.question)
       if (card.wait?.on !== 'other' || card.wait.what !== what) put('wait', { on: 'other', what, since: card.wait?.on === 'other' ? card.wait.since : at }, 'waits', what)
     } else if (card.wait?.on === 'other') put('wait', null, 'no longer waits', card.wait.what)
   }
@@ -206,6 +207,7 @@ function planSet(card, op, { by, name, at, caller, fresh = false }) {
     } else {
       const question = line(op.ask?.question, 'a question', 500)
       if (!question) throw new Error('ask needs its question: { question, options? }')
+      if (card.doneAt && op.done !== false) throw new Error(`card ${card.id} is done: reopen it (done: false) to ask on it`)
       const options = op.ask.options ?? []
       if (!Array.isArray(options) || options.length > 6) throw new Error('ask options are a list of at most 6 short answers')
       const kept = options.map((o) => line(o, 'an option', 40)).filter(Boolean)
@@ -357,9 +359,9 @@ function fromOld(board, c, decisions, comments) {
     wait = { on: 'owner', question: d.question, options: d.options ?? [], by: d.by, since: d.at }
     for (const p of pending.slice(0, -1)) add(p.at, p.by, 'asks', `${p.question}${p.options?.length ? ` [${p.options.join(' / ')}]` : ''}`)
   } else if (c.waitKind === 'owner') {
-    wait = { on: 'owner', question: c.waitingOn || '等你', options: [], by: c.updatedBy ?? c.by, since: c.waitSince ?? c.updatedAt }
+    wait = { on: 'owner', question: c.waitingOn || '等你', options: [], by: null, since: c.waitSince ?? c.updatedAt }
   } else if (role === 'review' && !(c.waitingOn || c.waitKind)) {
-    wait = { on: 'owner', question: '验收？', options: ['通过', '打回'], by: c.updatedBy ?? c.by, since: c.updatedAt }
+    wait = { on: 'owner', question: '验收？', options: ['通过', '打回'], by: null, since: c.updatedAt }
   } else if (c.waitingOn || c.waitKind) {
     const what = [c.waitingOn, c.waitKind && c.waitKind !== 'other' ? c.waitKind : null, c.waitWho].filter(Boolean).join(' · ')
     wait = { on: 'other', what, since: c.waitSince ?? c.updatedAt }

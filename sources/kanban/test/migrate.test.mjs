@@ -49,6 +49,7 @@ test('each 1.x state lands where the design says', () => {
   assert.ok(logOf(push).some((l) => l.what === 'said' && l.text === 'arm 3 flaky' && l.by === 'user:00000000-0000-0000-0000-0000000000b2'))
   const review = byTitle(b, 'phone task-file open #2798')
   assert.deepEqual([review.wait.on, review.wait.question, review.wait.options], ['owner', '验收？', ['通过', '打回']])
+  assert.equal(review.wait.by, null, 'a question migration made up has no asker, so whoever last touched the card can answer it')
   const colour = byTitle(b, 'colour PR2 #2189')
   assert.equal(colour.wait.question, '边框对比度定 3:1 吗？', 'a pending decision wins over waitKind owner')
   assert.ok(logOf(colour).some((l) => l.what === 'column' && l.text === '本周'), 'custom column title kept')

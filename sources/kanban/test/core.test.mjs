@@ -122,3 +122,14 @@ test('stopped cards sort first in progress', () => {
   assert.deepEqual(groups(b).progress.map((x) => x.id), [c, a])
   assert.deepEqual(groups(b, (x) => x.id === a).progress.map((x) => x.id), [a, c])
 })
+
+test('wait over an owner question logs it withdrawn; ask on a done card is refused until reopened', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'x', hold: true, ask: { question: 'merge?' } }, as(LANE))
+  applyOp(b, { type: 'set', card, wait: 'CI' }, as(LANE))
+  assert.deepEqual(logOf(b.cards[card]).slice(-2).map((l) => [l.what, l.text]), [['withdrew', 'merge?'], ['waits', 'CI']])
+  applyOp(b, { type: 'set', card, wait: '', done: true }, as(LANE))
+  assert.throws(() => applyOp(b, { type: 'set', card, ask: { question: 'again?' } }, as(LANE)), /is done: reopen it/)
+  applyOp(b, { type: 'set', card, done: false, ask: { question: 'again?' } }, as(LANE))
+  assert.equal(stateOf(b.cards[card]), 'owner')
+})

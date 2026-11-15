@@ -109,3 +109,9 @@ test("this computer's 1.x board reads as 2.0 and stays version 1 until a write",
   await tools.set.run({ card: Object.keys(JSON.parse(v1).cards)[0], log: 'first 2.0 write' }, LANE)
   assert.equal(JSON.parse(await readFile(path.join(dir, 'board.json'), 'utf8')).version, 2)
 })
+
+test('a refused set on a chat with no board makes no file', async () => {
+  await assert.rejects(tools.set.run({ chat: CHAT, card: 'nope', next: 'x' }, LANE))
+  await assert.rejects(tools.set.run({ chat: CHAT, title: '' }, LANE), /needs a title/)
+  assert.equal(chatFiles.size, 0)
+})

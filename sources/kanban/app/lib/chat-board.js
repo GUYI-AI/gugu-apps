@@ -26,11 +26,13 @@ export async function readChatBoard(files, chat) {
 /**
  * The chat's own board, to write to: made the first time anyone writes to it. Two making it at once: the host either
  * refuses the second (the folder's names are unique) or names it `协作看板 (2).board.json` — either way the second
- * removes what it made, if anything, and opens the first.
+ * removes what it made, if anything, and opens the first. `check` sees an empty board first and throws to refuse:
+ * a refused write leaves no file behind.
  */
-export async function openChatBoard(files, chat) {
+export async function openChatBoard(files, chat, check) {
   const found = await findBoard(files, chat)
   if (found) return files.open(found)
+  check?.(emptyBoard())
   let made
   try {
     made = await files.create({ chat, name: CHAT_BOARD_NAME }, emptyBoard())

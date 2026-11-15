@@ -126,3 +126,18 @@ test('a 1.x board on the page: a question without answers opens its reply box, a
   ;[...document.querySelectorAll('.card .head')].find((b) => b.textContent.includes('sidebar push')).click()
   assert.ok([...document.querySelectorAll('#sheet .log b')].some((b) => b.textContent === 'Mei'))
 })
+
+test("a holder missing from the viewer's task list gets no dot and is not counted as stopped; machines come only from rows that know them", async () => {
+  const b = emptyBoard()
+  card(b, { type: 'create', title: 'mine', hold: true })
+  const other = card(b, { type: 'create', title: 'theirs', hold: true })
+  applyOp(b, { type: 'set', card: other, hold: 'session:sess-elsewhere' }, { by: LANE.agent, now: new Date().toISOString(), caller: LANE })
+  const here = { agentId: LANE.agent, sessionId: LANE.session, status: 'working', deviceId: null, deviceLabel: null, statusFrom: 'this_machine', title: 'scroll-pull' }
+  const { document, data } = await openPage(b, { agents: [here] })
+  const article = (title) => [...document.querySelectorAll('.group.progress article')].find((a) => a.textContent.includes(title))
+  assert.ok(article('mine').querySelector('.dot'))
+  assert.equal(article('theirs').querySelector('.dot'), null)
+  assert.equal(document.querySelector('.group.progress small.stopped'), null)
+  assert.equal(document.getElementById('summary').textContent, '2 进行中')
+  assert.equal(data.cards[other].holder.machine, undefined, 'nothing is written for a session the page cannot see')
+})

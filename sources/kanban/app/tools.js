@@ -8,7 +8,7 @@
 // `chat` is always passed; and it cannot know the caller's machine, which the page fills in from the task list.
 import { apply as applyLocal, snapshot as readLocal } from './lib/store.js'
 import { readChatBoard, openChatBoard, applyToFile, whenSaved } from './lib/chat-board.js'
-import { boardText, cardText, findCard } from './lib/core.js'
+import { applyOp, boardText, cardText, findCard } from './lib/core.js'
 
 const forAgents = { ui: { visibility: ['model'] } }
 const forPages = { ui: { visibility: ['app'] } }
@@ -75,7 +75,7 @@ export const set = {
     if (chat === undefined) {
       result = (await applyLocal(op, call.agent, caller)).result
     } else {
-      const f = await openChatBoard(gugu.files, chat)
+      const f = await openChatBoard(gugu.files, chat, (empty) => applyOp(empty, op, { by: call.agent, now: new Date().toISOString(), caller, name: caller.name }))
       try {
         result = applyToFile(f, op, call.agent, caller)
         await whenSaved(f)

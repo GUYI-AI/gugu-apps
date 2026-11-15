@@ -124,14 +124,16 @@ const chatArg = () => (home?.kind === 'chat' ? `chat: "${home.f.entry.chat}", ` 
 // ── the task list: dots, and who to send an answer to ───────────────────────
 
 function liveState(row) {
-  if (!row) return 'stopped' // gone from the list: no longer running anywhere we can see
+  // Not in the list: someone else's agent, a machine not reached, or archived — the page cannot tell, so it says nothing.
+  if (!row) return null
   if (row.failure || row.status === 'error') return 'error'
   if (row.status === 'working') return 'running'
   if (row.status === 'needs_user') return 'asking'
   return 'stopped'
 }
 const rowOf = (card) => (agents && card.holder?.session ? agents.get(card.holder.session) ?? null : undefined)
-/** running | stopped | error | asking, or null when the page cannot know (no task list, or a person holds it). */
+/** running | stopped | error | asking, or null when the page cannot know (no task list, a person holds it, or the
+ * holder's session is not in the viewer's list). */
 const dotOf = (card) => (agents && card.holder && card.holder !== 'person' ? liveState(rowOf(card)) : null)
 const isStopped = (card) => stateOf(card) === 'progress' && ['stopped', 'error'].includes(dotOf(card))
 
@@ -157,7 +159,8 @@ function fillHolders() {
   for (const card of Object.values(board.cards)) {
     const row = rowOf(card)
     if (!row || card.doneAt) continue
-    const machine = row.deviceLabel ?? thisMachine
+    // A row from another machine carries its label; this machine's rows carry none, and only they may take its name.
+    const machine = row.deviceLabel ?? (row.statusFrom === 'this_machine' ? thisMachine : null)
     const name = row.title
     if ((machine && card.holder.machine !== machine) || (name && !card.holder.name) || (row.agentId && !card.holder.agent)) {
       quietly(change({ type: 'holder.fill', card: card.id, session: card.holder.session, ...(name ? { name } : {}), ...(machine ? { machine } : {}), ...(row.agentId ? { agent: row.agentId } : {}) }))
@@ -269,9 +272,10 @@ function row(card, state) {
 }
 
 function counts(gr) {
-  const known = agents !== null
+  // 在跑 only when every card in progress has a known state; otherwise the line says how many are in progress.
+  const known = agents !== null && gr.progress.every((c) => dotOf(c) !== null)
   const stopped = gr.progress.filter(isStopped).length
-  return { owner: gr.owner.length, progress: gr.progress.length, waiting: gr.waiting.length, running: known ? gr.progress.length - stopped : null, stopped: known ? stopped : 0 }
+  return { owner: gr.owner.length, progress: gr.progress.length, waiting: gr.waiting.length, running: known ? gr.progress.length - stopped : null, stopped }
 }
 
 function render() {
