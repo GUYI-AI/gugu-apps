@@ -4,6 +4,8 @@ import { chmod, lstat, mkdir, readFile, rename, rm, writeFile } from 'node:fs/pr
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { gunzipSync, inflateRawSync } from 'node:zlib';
+import { downloadDriverArchive, DriverDownloadError } from './driver-download.mjs';
+import { NativeCallError } from './native/errors.ts';
 
 const execute = promisify(execFile);
 const MAX_ARCHIVE = 64 * 1024 * 1024;
@@ -147,17 +149,6 @@ export function assertNativeArchitecture(bytes, platform, arch) {
   throw new Error('Incorrect native Mach-O architecture.');
 }
 
-async function download(url, { signal }) {
-  const response = await fetch(url, { signal });
-  if (!response.ok || Number(response.headers.get('content-length') ?? 0) > MAX_ARCHIVE) throw new Error('Native download was not available.');
-  const chunks = []; let size = 0;
-  for await (const chunk of response.body) {
-    size += chunk.length;
-    if (size > MAX_ARCHIVE) throw new Error('Native download exceeds the size limit.');
-    chunks.push(Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
-}
 async function regular(file) {
   try { const value = await lstat(file); if (!value.isFile() || value.isSymbolicLink()) throw new Error('Native cache entry is not a regular file.'); return await readFile(file); }
   catch (error) { if (error.code === 'ENOENT') return null; throw error; }
@@ -173,7 +164,7 @@ async function verifyExecutable(file, release, dataDir, signal) {
 }
 
 /** No host-native lookup, default data directory or unverified execution path. */
-export async function prepareDriver({ dataDir, platform = process.platform, arch = process.arch, signal, fetchArchive = download, verify = verifyExecutable, releases = DRIVER_RELEASES }) {
+export async function prepareDriver({ dataDir, platform = process.platform, arch = process.arch, signal, fetchArchive = downloadDriverArchive, verify = verifyExecutable, releases = DRIVER_RELEASES }) {
   if (!dataDir || !path.isAbsolute(dataDir)) throw new Error('The App data directory is required.');
   const release = releases[`${platform}-${arch}`];
   if (!release || release.platform !== platform || release.arch !== arch) throw new Error('This platform has no supported native driver.');
@@ -214,12 +205,21 @@ export async function prepareDriver({ dataDir, platform = process.platform, arch
     let bytes = await regular(archive);
     signal.throwIfAborted();
     if (!bytes || digest(bytes) !== release.sha256) {
-      bytes = await fetchArchive(release.url, { signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(120_000)]) });
+      const partialFile = archive + '.part';
+      try {
+        bytes = await fetchArchive(release.url, {
+          signal, partialFile, sha256: release.sha256, maximum: MAX_ARCHIVE,
+        });
+      } catch (error) {
+        if (error instanceof DriverDownloadError) throw new NativeCallError('unavailable', error.message);
+        throw error;
+      }
       signal.throwIfAborted();
       if (digest(bytes) !== release.sha256 || bytes.length > MAX_ARCHIVE) throw new Error('Native archive integrity check failed.');
       const temporary = archive + '.' + randomUUID() + '.part';
       try { await writeFile(temporary, bytes, { mode: 0o600, flag: 'wx' }); await rename(temporary, archive); }
       finally { await rm(temporary, { force: true }); }
+      await rm(partialFile, { force: true });
     }
     if (signal?.aborted) throw signal.reason;
     const executableBytes = unpackDriver(bytes, release);

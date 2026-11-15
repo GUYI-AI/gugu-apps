@@ -1,7 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createComputerProgram, createProgramNative } from '../app/program/program-core.mjs';
-import { createComputerControl, TOOLS } from '../app/program/native-runtime.mjs';
+import { createComputerControl, prepareDriver, TOOLS } from '../app/program/native-runtime.mjs';
+import { createServer } from 'node:http';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 const taskA = '11111111-1111-4111-8111-111111111111', taskB = '22222222-2222-4222-8222-222222222222';
 const agent = 'user:33333333-3333-4333-8333-333333333333';
 const meta = session => ({ 'gugu/agent': agent, 'gugu/sessionId': session });
@@ -19,6 +23,22 @@ function fixture(extra = {}) {
     settings: { async openSettings(...args) { settingsCalls.push(args); return { permissionGrantedByThisCall: false }; } }, ...extra });
   return { program, calls, settingsCalls, disposals: () => disposals };
 }
+test('a real driver download failure reaches the caller as one concrete reason without retry advice', async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'cu-program-download-'));
+  const server = createServer((_request, response) => { response.writeHead(404); response.end(); });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await rm(directory, { recursive: true, force: true }); });
+  const release = { platform: 'darwin', arch: 'arm64', version: '0.36.0', url: `http://127.0.0.1:${server.address().port}/driver`, member: 'cua-driver', format: 'tar.gz', sha256: '0'.repeat(64) };
+  const { native } = createProgramNative({ dataDir: directory, bundleDir: directory, settings: () => ({}),
+    prepare: ({ signal }) => prepareDriver({ dataDir: directory, platform: 'darwin', arch: 'arm64', signal, releases: { 'darwin-arm64': release } }),
+    client: () => { throw new Error('An unverified driver must not execute'); },
+  });
+  const { program } = fixture({ native }); t.after(() => program.dispose());
+  const result = await program.call({ name: 'get_window_state', arguments: { pid: 44 }, _meta: meta(taskA) });
+  assert.equal(result.structuredContent.code, 'unavailable');
+  assert.deepEqual(result.content, [{ type: 'text', text: 'Driver download from 127.0.0.1 returned HTTP 404.' }]);
+  assert.doesNotMatch(result.content[0].text, /retry|reinstall/i);
+});
 test('the program connects App-owned Stop and disposal to its executing native call', { timeout: 3_000 }, async t => {
   const errors = [];
   const control = createComputerControl({
