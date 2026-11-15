@@ -5,7 +5,8 @@
 - 交给…: the sheet is gugu's `pickAgent` in the board's words: the card's title and one line, no text box, no card id
   or tool names. Once an agent is picked the page sends it the words for taking the card (`dispatch` to that agent);
   the card's log says whom it was handed to; cancelling sends nothing. A host without `pickAgent` keeps 2.0.0's sheet.
-- An agent that no online computer has: the card's sheet says so in words instead of the host's refusal with an id.
+- A hand-over that fails: the card's sheet says why. When the host answers `not-found` (no online computer of the person's
+  has that agent), it says so in words; any other refusal shows the host's reason, with the agent's name in place of its id.
 
 ## 2.0.0
 

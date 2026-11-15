@@ -167,11 +167,25 @@ test('交给…: the sheet shows the title and one line; the picked agent gets t
 test('交给… an agent no online computer has: the page says so in words and logs nothing', async () => {
   const b = emptyBoard()
   const id = card(b, { type: 'create', title: 'x' })
-  const { document, data } = await openPage(b, { host: { pickAgent: async () => ({ agent: 'user:00000000-0000-0000-0000-0000000000ff' }), dispatch: async () => { throw new Error('user:00000000-0000-0000-0000-0000000000ff is not an agent on this computer') } } })
+  const { document, data } = await openPage(b, { host: { pickAgent: async () => ({ agent: 'user:00000000-0000-0000-0000-0000000000ff' }), dispatch: async () => { throw Object.assign(new Error('user:00000000-0000-0000-0000-0000000000ff is not an agent on this computer or on your other online computers'), { code: 'not-found' }) } } })
   document.querySelector('.card .head').click()
   ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '交给…').click()
   await new Promise((r) => setImmediate(r))
   assert.match(document.querySelector('#sheet [role=alert]').textContent, /没交出去：这个 agent 现在不在你任何一台在线的电脑上/)
+  assert.doesNotMatch(document.body.textContent, /0000000000ff/)
+  assert.equal(logOf(data.cards[id]).length, 1)
+})
+
+test('交给… refused for another reason: the page says the host\'s reason, without the id, not the offline line', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'x' })
+  const { document, data } = await openPage(b, { host: { pickAgent: async () => ({ agent: 'user:00000000-0000-0000-0000-0000000000ff' }), dispatch: async () => { throw Object.assign(new Error('user:00000000-0000-0000-0000-0000000000ff is not an agent on this computer or on your other online computers (not read: Office Mac)'), { code: 'failed' }) } } })
+  document.querySelector('.card .head').click()
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '交给…').click()
+  await new Promise((r) => setImmediate(r))
+  const alert = document.querySelector('#sheet [role=alert]').textContent
+  assert.equal(alert, '没交出去：这个 agent is not an agent on this computer or on your other online computers (not read: Office Mac)')
+  assert.doesNotMatch(alert, /现在不在你任何一台在线的电脑上/)
   assert.doesNotMatch(document.body.textContent, /0000000000ff/)
   assert.equal(logOf(data.cards[id]).length, 1)
 })
