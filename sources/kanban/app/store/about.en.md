@@ -1,32 +1,31 @@
-A board people and agents share. A board can live in two places:
+A board people and agents share. A board is a list of cards, one card per piece of work.
 
-- **This computer's board**: kept on this computer, for your own work and this computer's tasks. Desktop only.
-- **A chat's board**: kept in the chat's folder (`协作看板.board.json`); the chat's members and their agents read it and move it forward together, and changes sync live. It can be read and changed on a phone, too.
+## At a glance
 
-Cards, pages and agent tools are the same in both.
+Cards are grouped by who has to act, always in this order:
 
-## Where to find it
+- **Waiting on you**: an agent's question with its answers as buttons. One tap answers, and the answer goes to the agent holding the card as a message. You can undo for 5 seconds.
+- **In progress**: the title, the next step and the holder's live status (running, stopped, error). Stopped cards come first.
+- **Waiting**: what the card waits on, and for how long.
+- **Unclaimed** and **Done**: one line each, opened with a tap.
 
-- Left bar: opens full page on this computer's board; switch to the board of a chat you are in beside the title.
-- A task page: the tab bar's "+" menu shows this computer's board. A card made inside a task can be linked to it.
-- A group or private chat: the side panel's "⋯" menu shows that chat's board, made the first time it is opened. A topic opens the same board as its group or private chat; topics get no board of their own.
-- A `.board.json` file in a chat's folder opens with the board on a click.
+The line on top answers the two questions that matter: what waits on you, and whether the work is moving ("2 waiting on you · 3 running · 1 stopped").
 
-## What it does
+## A card
 
-- **Cards**: four columns by default (To do, In progress, To review, Done); add and rename columns; add cards at a column's head or foot, drag to reorder or move between columns; a move to Done can be undone. On a narrow screen the board is a list, in progress and to review first.
-- **Progress**: each card can carry progress, what it waits on, the next step and a due date. A card waiting on something shows why; a linked task in progress without an update for 45 minutes shows as not updated.
-- **Needs attention**: filters the cards that wait on something or whose task waits for approval or a reply, counted on the tab.
-- **Linked tasks**: a card can link tasks, showing the agent's avatar, the task's state (running, waiting for approval, waiting for a reply, turn finished, stopped, error) and its computer. Open the task, hand the card to it (filled into its composer, sent only if you choose), or start a new task.
-- **Files and links**: cards can link task files, project files, chat files, links, PRs and chat messages. Markdown, text, code and JSON can be read and edited in the card, images and videos viewed there; any file can open beside the board.
-- **Three views**: Board (the columns), Team and Decisions are views of one page; the filter and the open card stay when you switch.
-- **Team**: your agents on every computer as you → each machine's supervisor → its lanes, each lane with the cards it claimed, and the cards nobody holds beside them. Open an agent to see what it holds, message it, read its transcript or open its PR; moving it under another session, handing it over and archiving are under More, carried out by the machine's supervisor — supervisors are never archived, and a lane only after its handoff is accepted or its PR is open.
-- **Who holds what**: a card shows its holder's face, name and state; the faces on top narrow every view to one holder (or to the unclaimed cards). An unclaimed card can be given to an agent from the card.
-- **Waiting on you**: an agent's question shows above every view, in its card and under Decisions, with the answers as buttons; the answer is kept in the decision ledger (scope: the fleet, a machine, a lane, a release) and sent back to the agent that asked.
-- **Fleet card**: send a fleet card in a chat message; it shows live counts (running, waiting on you, on CI/review/merge, failing) and opens the Team view.
-- **Agents move it too**: agents in tasks read cards, claim them, update progress, move and comment; Gugu records who changed what. Say "check the board" or "take this card".
+A title, who holds it, what it waits on, the next step, a checklist, a note and a log. The checklist holds what must be true before the card is done ("PR merged", "test machine cleared"), and a card with an open item cannot be marked done. Every change adds a log line saying who changed what, and when.
 
-## Data
+Open a card to answer, tick items, mark it done or reopen it, hand it to an agent (it is told to take the card), edit the title and note, or delete it. "+" adds a card. On a phone a card opens from the bottom; on a computer, beside the list.
 
-- This computer's board: kept in the App's data folder on this computer (`board.json`), shared by the accounts on it, deleted with the App. Not uploaded, not synced across devices.
-- A chat's board: kept in the chat's folder and shared with its members like any shared file, with its history. Each `.board.json` is its own board. Uninstalling the App does not delete it.
+## Agents
+
+Agents use two tools: one reads the board (`kanban__board`), one changes cards (`kanban__set`). They update their card when they start, get blocked, finish or hand off, and put questions for you on the card instead of in the chat. Say "check the board" or "take this card".
+
+## Where boards live
+
+- **A chat's board**: open it from the "⋯" menu of a group or private chat. It is kept in the chat's folder (`协作看板.board.json`); members and their agents read and change it together, live, on a phone too.
+- **This computer's board**: open it from the left bar. It is kept in the App's data folder on this computer (`board.json`), desktop only, and deleted with the App.
+
+A board summary card can be sent in a chat message: it shows how many cards wait on you, are in progress and are waiting, and the first question to you; a tap opens the board.
+
+Boards from 1.x are converted automatically: columns, progress, links, comments and decisions go into each card's note or log, with nothing lost; the chat file's version history keeps the old content.

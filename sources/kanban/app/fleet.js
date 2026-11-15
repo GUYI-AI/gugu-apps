@@ -1,93 +1,66 @@
-// 舰队 in a message: four numbers and the machines, read when the card is shown — the message's own data is fixed
-// when sent and names only the board (`{ board: <file id> }`), so a card sent this morning still shows the fleet as it
-// is now. Its text (previews, quotes) keeps the counts of the moment it was sent. A click opens the board on its 团队 view.
-import { filled, openChatBoard } from './lib/chat-board.js'
-import { fleetOf } from './lib/fleet.js'
-import { wordsFor } from './lib/fleet-text.js'
+// 协作看板 in a message: the board's counts and the first question waiting on the owner, read from the board file when
+// shown — the message's own data names only the file (`{ board: <file id> }`), so a card sent this morning shows the
+// board as it is now. A card sent by 1.x carries the same data. A click opens the board.
+import { asCurrent, groups } from './lib/core.js'
+import { findBoard } from './lib/chat-board.js'
 
 const g = window.gugu
 const $ = (id) => document.getElementById(id)
 const ctx = await g.getContext()
-const t = wordsFor(ctx.locale)
+const WORDS = {
+  zh: { title: '协作看板', owner: '等你', progress: '进行中', waiting: '等别的', none: '还没有卡片', gone: '这块看板已不可用', asks: (c) => `等你：${c.title} — ${c.wait.question}` },
+  en: { title: 'Teamboard', owner: 'Waiting on you', progress: 'In progress', waiting: 'Waiting', none: 'No cards yet', gone: 'This board is no longer available', asks: (c) => `Waiting on you: ${c.title} — ${c.wait.question}` },
+}
+const wordsFor = (locale) => WORDS[String(locale ?? '').startsWith('zh') ? 'zh' : 'en']
+let t = wordsFor(ctx.locale)
+let shown = null
 
 function h(tag, props = {}, ...kids) {
   const el = document.createElement(tag)
-  for (const [key, value] of Object.entries(props)) {
-    if (value === undefined || value === null || value === false) continue
-    if (key === 'text') el.textContent = value
-    else el.setAttribute(key, String(value))
-  }
-  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(kid)
+  for (const [key, value] of Object.entries(props)) if (key === 'text') el.textContent = value; else el.setAttribute(key, String(value))
+  for (const kid of kids) el.append(kid)
   return el
 }
 
 // Anyone in the chat can send a card with any data: only a file id is taken from it, and only to open it.
 const named = typeof ctx.widget?.data?.board === 'string' && /^[\w-]{1,80}$/.test(ctx.widget.data.board) ? ctx.widget.data.board : null
 let boardId = named
-let board = null
-let report = null
-let boardProblem = null
 
-function problem(text, ofBoard = false) {
-  if (ofBoard) boardProblem = text
-  $('card').classList.add('problem')
-  $('sub').textContent = text
-}
-
-function draw() {
+function draw(board) {
+  shown = board
   $('title').textContent = t.title
-  if (!report) return
-  const fleet = fleetOf(report, board)
-  const c = fleet.counts
-  $('card').classList.remove('problem')
-  $('sub').textContent = boardProblem ?? ''
-  $('when').replaceChildren(h('span', { text: t.live }))
-  const num = (n, label, tone) => h('span', { class: `num ${n ? `tone-${tone}` : 'zero'}` }, h('b', { text: String(n) }), label)
-  $('nums').replaceChildren(
-    num(c.running, t.counts.running, 'run'),
-    num(c.owner, t.counts.owner, 'owner'),
-    num(c.external, t.counts.external, 'ci'),
-    num(c.error, t.counts.error, 'error'))
-  // The machines in one line: how many, and only the ones that do not answer by name.
-  const off = fleet.machines.filter((m) => !m.online)
-  $('machines').replaceChildren(
-    h('span', {}, h('i', { class: `dot ${off.length ? 'off' : 'on'}` }), t.machines(c.online, c.machines)),
-    // replaceChildren, unlike h, writes a null child out as the text "null".
-    ...(off.length ? [h('span', { class: 'off', text: `${t.offline} ${off.map((m) => m.label ?? '?').join('、')}` })] : []),
-    h('span', { class: 'go', text: `${t.open} ›` }))
-  // The full count for screen readers and the right-click description: the same line the message's text would say.
-  $('card').setAttribute('aria-label', `${t.title} · ${c.running} ${t.counts.running} · ${c.owner} ${t.counts.owner} · ${c.external} ${t.counts.external} · ${c.error} ${t.counts.error}`)
+  const gr = groups(board)
+  const num = (n, label, cls) => h('span', { class: `num ${cls}${n ? '' : ' zero'}` }, h('b', { text: String(n) }), label)
+  $('nums').replaceChildren(num(gr.owner.length, t.owner, 'owner'), num(gr.progress.length, t.progress, 'progress'), num(gr.waiting.length, t.waiting, 'waiting'))
+  $('first').textContent = gr.owner[0] ? t.asks(gr.owner[0]) : Object.keys(board.cards).length ? '' : t.none
+  $('card').setAttribute('aria-label', `${t.title} · ${gr.owner.length} ${t.owner} · ${gr.progress.length} ${t.progress} · ${gr.waiting.length} ${t.waiting}`)
 }
 
 $('card').addEventListener('click', async () => {
   try {
-    const link = await g.linkTo({ kind: 'app', tab: 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), query: { view: 'team', ...(boardId ? { board: boardId } : {}) } })
-    await g.openLink(link)
+    await g.openLink(await g.linkTo({ kind: 'app', tab: 'board', ...(ctx.chat ? { chat: ctx.chat.id } : {}), ...(boardId ? { query: { board: boardId } } : {}) }))
   } catch (error) {
-    // Said where the click was: a card that silently does nothing looks broken for no reason.
     $('sub').textContent = error?.message ?? String(error)
     g.reportError?.(error?.message ?? String(error))
   }
 })
 
-draw()
+draw(asCurrent(null))
 try {
-  const f = named
-    ? filled(await g.files.open({ id: named, ...(ctx.chat ? { chat: ctx.chat.id } : {}) }))
-    : ctx.chat ? await openChatBoard(g.files, ctx.chat.id) : null
-  if (f) {
+  // Read only: a card shown in a chat with no board makes none.
+  const entry = named ? { id: named, ...(ctx.chat ? { chat: ctx.chat.id } : {}) } : ctx.chat ? await findBoard(g.files, ctx.chat.id) : null
+  if (entry) {
+    const f = await g.files.open(entry)
     boardId = f.entry.id
-    board = f.toJSON()
-    f.onChange(() => { board = f.toJSON(); draw() })
+    draw(asCurrent(f.toJSON()))
+    f.onChange(() => draw(asCurrent(f.toJSON())))
   }
 } catch (error) {
-  // The board gone or out of reach: the sessions still draw; say why the lanes' own words are missing.
-  problem(error?.code === 'not-found' || error?.code === 'denied' ? t.cardGone : error?.message ?? String(error), true)
+  $('card').classList.add('problem')
+  $('sub').textContent = error?.code === 'not-found' || error?.code === 'denied' ? t.gone : error?.message ?? String(error)
 }
-try {
-  const answer = await g.listAgents({ report: true })
-  report = Array.isArray(answer) ? { agents: answer, devices: [], unreached: [] } : answer
-  draw()
-} catch (error) {
-  problem(error?.message ?? String(error))
-}
+
+g.onContextChanged?.(async () => {
+  t = wordsFor((await g.getContext()).locale)
+  if (shown) draw(shown)
+})

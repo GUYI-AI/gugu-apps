@@ -1,17 +1,17 @@
 # Market media sources
 
-The product images were captured in the Gugu desktop client on macOS on November 4, 2026 (UTC), with Teamboard 1.4.0 installed through the normal market UI. The host was built from `GUYI-AI/gugu@9b07c9a232f78d963193dd2cfe1ce4d3326b734a`; the App source was `GUYI-AI/gugu-apps@7c480639bb64f7a66c31d185a56df2ebbf0623ce`.
+All five pictures are screenshots of Teamboard 2.0.0 running in the real Gugu clients on November 15, 2026 (UTC), against the shared test backend, in a scratch test group. The desktop client is a macOS build of `GUYI-AI/gugu` dev at `9b62809d8`; the phone pictures come from an Android debug build of the same day on an emulator (360 × 640 CSS pixels, scale 3). The App was installed from this source folder (desktop) and from an App card sent into the group (phone).
 
-The board and comments were created through the product. The final board contains 15 example cards about a reading group: four To do, four In progress, three Review and four Done. Teamboard 1.4.0 has no separate assignee or label fields for these cards; the pictures show its real due dates, progress and Waiting on state. The extra cards were added by one person, not presented as a multi-person editing demonstration.
+The board was filled through the App's own code: cards held by a real agent in the group were created and answered through `kanban__set` and the page; the other cards and their holders, machines and times were written with the App's `lib/core.js` operations, so every field is one the App produces. Holder and machine names are made up; the two green dots are a real agent running at the time.
 
-| File | Native picture and crop in device pixels (x, y, width, height) | What it shows |
+| File | Client | What it shows |
 | --- | --- | --- |
-| `1.jpg` | `kb-board-2x.png`, (641, 198, 2528, 1580) | All four columns and the complete header, including the filters and Add column control |
-| `2.jpg` | `kb-card-detail.png`, (996, 86, 600, 700) | A card's properties, note, links and a comment |
-| `3.jpg` | `kb-card-detail.png`, (308, 86, 1288, 804) | The same card in the context of the earlier six-card board |
+| `1.png` | desktop, light, board tab widened | The grouped list and a card open beside it: holder with live status, wait, next step, checklist, note, log, and 完成 kept off while a check is open |
+| `2.png` | phone, light | The list's first screen: two questions with their answers as buttons, then 进行中 with a stopped card first |
+| `3.png` | phone, light | A card opened from the bottom |
+| `4.png` | desktop, dark | The list in the dark theme |
+| `5.png` | phone, dark | The phone list in the dark theme |
 
-The first picture was captured with device scale factor 2: a 1600 × 1000 logical window produced a 3200 × 2000 native PNG. The other two pictures retain their original 1600 × 1000, scale-1 captures. The cropped PNG masters match the original pixels exactly; the JPEG gallery exports use quality 90, without resizing. The crops omit desktop navigation and the capture label, without replacing or painting over interface content.
+Desktop pictures are captures of the App's own view (no window chrome) at scale 1. Phone pictures are `adb screencap` captures with the top 100 and bottom 20 device pixels cut (the Android status bar), otherwise unchanged. Nothing was painted over or redrawn.
 
-`0-promo.png` uses the existing `scripts/promo/kanban.html` frame, icon, colours and wording, with the same final-board crop as `1.jpg`. Its composition is separate from the native screenshot: the 2528 × 1580 product image is downsampled into the existing frame on a 1600 × 900 canvas, device scale 1. The empty area below the cards is part of the real board; no extra cards or controls were drawn to fill it.
-
-The export used Electron 44.0.0 / Chromium 152.0.7977.54 on macOS 26.5.1, with the existing PingFang SC font fallback. Native PNGs, crop masters and render records are retained separately. These images replace the earlier pictures rendered in a browser against the host stylesheet; this release does not change board behaviour.
+`0-promo.png` is the existing `scripts/promo/kanban.html` frame, icon, colours and wording, with `1.png` as its product image (scaled to the frame's width, cut at its bottom edge). It was rendered at 1600 × 900, device scale 1, with Chrome for Testing 151 headless on macOS, PingFang SC as the font fallback.

@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "1.6.1",
+  "version": "2.0.0",
   "apiVersion": 26,
   "platforms": [
     "desktop",
@@ -35,13 +35,7 @@
       {
         "name": "board",
         "title": "协作看板",
-        "entry": "board.html",
-        "toolbar": [
-          {
-            "id": "new",
-            "title": "新建卡片"
-          }
-        ]
+        "entry": "board.html"
       },
       {
         "name": "file",
@@ -52,17 +46,11 @@
             ".board.json"
           ]
         },
-        "chatFile": "协作看板.board.json",
-        "toolbar": [
-          {
-            "id": "new",
-            "title": "新建卡片"
-          }
-        ]
+        "chatFile": "协作看板.board.json"
       },
       {
         "name": "fleet",
-        "title": "舰队",
+        "title": "看板摘要",
         "entry": "fleet.html",
         "widget": {
           "height": 120
@@ -75,12 +63,12 @@
       }
     ],
     "skills": "skills",
-    "instructions": "Read skill kanban first. kanban__list shows who holds each card and what waits on the owner; claim, update, ask, move, comment cards. Fleets: see the skill."
+    "instructions": "Read skill kanban first. kanban__board reads a board; kanban__set is its one write: add or take a card, wait, ask the owner, tick checks, finish."
   },
   "examples": [
-    "把这件事添加到我的看板",
-    "群看板上有哪些卡片在等人处理？",
-    "舰队现在有哪些车道在等我拍板？"
+    "把这件事记到我的看板上",
+    "群看板上有什么在等我？",
+    "接手看板上那张没人接的卡"
   ],
   "license": "MIT",
   "localized": {
@@ -89,21 +77,20 @@
       "subtitle": "A board for people and agents",
       "tabs": {
         "board": {
-          "title": "Teamboard",
-          "toolbar": {
-            "new": "New card"
-          }
+          "title": "Teamboard"
         },
         "file": {
-          "title": "Teamboard",
-          "toolbar": {
-            "new": "New card"
-          }
+          "title": "Teamboard"
         },
         "fleet": {
-          "title": "Fleet"
+          "title": "Board summary"
         }
-      }
+      },
+      "examples": [
+        "Put this on my board",
+        "What on the group's board is waiting on me?",
+        "Take the unclaimed card on the board"
+      ]
     }
   }
 }
