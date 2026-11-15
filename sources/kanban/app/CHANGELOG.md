@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.1
+
+- 交给…: the sheet is gugu's `pickAgent` in the board's words: the card's title and one line, no text box, no card id
+  or tool names. Once an agent is picked the page sends it the words for taking the card (`dispatch` to that agent);
+  the card's log says whom it was handed to; cancelling sends nothing. A host without `pickAgent` keeps 2.0.0's sheet.
+- A hand-over that fails: the card's sheet says why. When the host answers `not-found` (no online computer of the person's
+  has that agent), it says so in words; any other refusal shows the host's reason, with the agent's name in place of its id.
+
 ## 2.0.0
 
 A redesign (owner 11-15: 「太杂太乱了」 … 「要做得越简洁清晰精致越好」). One object, the card; one list grouped by state;

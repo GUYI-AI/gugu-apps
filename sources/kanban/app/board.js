@@ -24,6 +24,10 @@ const WORDS = {
     handText: (c, arg) => `请接手协作看板的卡 ${c.id}「${c.title}」：先用 kanban__board { ${arg}card: "${c.id}" } 读全卡，再用 kanban__set { ${arg}card: "${c.id}", hold: true } 认领，照清单推进。`,
     answerText: (c, q, a, arg) => `Owner 在协作看板答复了卡 ${c.id}「${c.title}」：${q} → ${a}。照这个继续；全卡见 kanban__board { ${arg}card: "${c.id}" }。`,
     handed: (who) => `交给 ${who}`, sep: '：', listSep: '、',
+    unreached: '没交出去：这个 agent 现在不在你任何一台在线的电脑上。先在那台电脑上打开咕咕，或换一个 agent。',
+    notHanded: (why) => `没交出去：${why}`,
+    thatAgent: '这个 agent',
+    pick: (c) => ({ title: '交给谁', subject: c.title, body: checksOf(c).length ? '它会接手这张卡，按清单做下去。' : '它会接手这张卡。', action: '交给', search: '搜索你的 agent', empty: '没有找到 agent' }),
     verbs: {
       created: '创建', took: '接手', released: '放下', 'held by': '持有者设为', waits: '等', 'no longer waits': '不再等', asks: '问 owner', withdrew: '撤回问题',
       answered: '答复', ticked: '勾上', unticked: '取消勾选', 'added check': '加清单项', 'removed check': '删清单项', done: '完成', reopened: '重开', title: '改标题为',
@@ -46,6 +50,10 @@ const WORDS = {
     handText: (c, arg) => `Please take Teamboard card ${c.id} “${c.title}”: read it with kanban__board { ${arg}card: "${c.id}" }, take it with kanban__set { ${arg}card: "${c.id}", hold: true }, and work through its checklist.`,
     answerText: (c, q, a, arg) => `The owner answered on Teamboard card ${c.id} “${c.title}”: ${q} → ${a}. Carry on from it; the card: kanban__board { ${arg}card: "${c.id}" }.`,
     handed: (who) => `handed to ${who}`, sep: ': ', listSep: ', ',
+    unreached: 'Not handed over: that agent is not on any of your computers that are online. Open gugu on its computer, or pick another agent.',
+    notHanded: (why) => `Not handed over: ${why}`,
+    thatAgent: 'that agent',
+    pick: (c) => ({ title: 'Hand to', subject: c.title, body: checksOf(c).length ? 'It takes this card and works through its checklist.' : 'It takes this card.', action: 'Hand over', search: 'Search your agents', empty: 'No agent found' }),
     verbs: {
       created: 'created', took: 'took it', released: 'released', 'held by': 'held by', waits: 'waits on', 'no longer waits': 'no longer waits on', asks: 'asks the owner',
       withdrew: 'withdrew the question', answered: 'answered', ticked: 'ticked', unticked: 'unticked', 'added check': 'added', 'removed check': 'removed', done: 'done',
@@ -68,6 +76,7 @@ let thisMachine = null
 let selected = null
 let noteEditing = false
 let logOpen = false
+let handFailed = null // { card, text }: the card whose last 交给… did not reach the agent, and why — said in its sheet, where the person is
 const pending = new Map() // card id -> { answer, timer }: an answer the owner can still take back
 const waiting = new Map() // a local change sent to the background page -> its promise
 let visible = ctx.layout?.visible ?? true
@@ -419,7 +428,8 @@ function renderSheet() {
     h('button', { type: 'button', class: 'icon', 'aria-label': t.del, title: t.del, onclick: async () => {
       if (await confirm(t.confirmDel(card.title), t.del)) quietly(change({ type: 'delete', card: card.id }).then(closeCard))
     } }, icon('trash-2')),
-    state !== 'done' && blocking.length ? h('p', { class: 'muted blocking', text: t.openRefused(blocking.join(t.listSep)) }) : null)
+    state !== 'done' && blocking.length ? h('p', { class: 'muted blocking', text: t.openRefused(blocking.join(t.listSep)) }) : null,
+    handFailed?.card === card.id ? h('p', { class: 'blocking failed', role: 'alert', text: handFailed.text }) : null)
   parts.push(actions)
   $('sheet').replaceChildren(...parts)
 }
@@ -430,15 +440,36 @@ function whoWrote(l) {
   return l.name ?? ctx.chat?.members?.find((m) => m.id === l.by)?.name ?? l.by.replace(/^user:/, '').slice(0, 8)
 }
 
-/** 交给…: gugu's own sheet picks the agent (one in the chat, or one of the person's); it is told to take the card. */
+/**
+ * 交给…: gugu's sheet, in the board's words (the card's title and one line), picks one of the person's agents; the page then
+ * tells it how to take the card — words for the agent, never shown in the sheet. A host without pickAgent shows its
+ * dispatch sheet with those words, as 2.0.0 did.
+ */
+// The host's refusal names the agent by id; the person picked a name. not-found: no online computer of theirs has it.
+function whyNotHanded(error, name) {
+  if (error?.code === 'not-found') return t.unreached
+  const why = String(error?.message ?? error ?? '').replace(/(user:)?[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/gi, name ?? t.thatAgent).trim()
+  return t.notHanded(why || '?')
+}
+
+const nameOf = (id, otherwise) => ctx.chat?.members?.find((m) => m.id === id)?.name ?? [...(agents?.values() ?? [])].find((a) => a.agentId === id)?.title ?? otherwise
+
 async function handTo(card) {
   try {
-    const sent = await g.dispatch(t.handText(card, chatArg()), { offer: ['agent-in-chat', 'my-agent'] })
-    if (sent?.cancelled) return
-    const to = sent?.to ?? {}
-    const id = to.agent ?? to.member
-    const name = ctx.chat?.members?.find((m) => m.id === id)?.name ?? [...(agents?.values() ?? [])].find((a) => a.agentId === id)?.title ?? id ?? '?'
-    quietly(change({ type: 'set', card: card.id, log: t.handed(name) }))
+    let id
+    if (handFailed) { handFailed = null; renderSheet() }
+    if (typeof g.pickAgent === 'function') {
+      const picked = await g.pickAgent(t.pick(card))
+      if (!picked?.agent) return
+      id = picked.agent.startsWith('user:') ? picked.agent : `user:${picked.agent}`
+      const failed = await g.dispatch(t.handText(card, chatArg()), { to: { agent: id } }).then(() => null, (error) => error)
+      if (failed) { handFailed = { card: card.id, text: whyNotHanded(failed, nameOf(id, null)) }; return renderSheet() }
+    } else {
+      const sent = await g.dispatch(t.handText(card, chatArg()), { offer: ['agent-in-chat', 'my-agent'] })
+      if (sent?.cancelled) return
+      id = sent?.to?.agent ?? sent?.to?.member
+    }
+    quietly(change({ type: 'set', card: card.id, log: t.handed(nameOf(id, id ?? '?')) }))
   } catch (error) {
     said(error)
   }
