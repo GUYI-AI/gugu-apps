@@ -2,7 +2,7 @@ import { test, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { parseHTML } from 'linkedom'
-import { applyOp, emptyBoard } from '../app/lib/core.js'
+import { applyOp, emptyBoard, logOf } from '../app/lib/core.js'
 import { live } from './live.mjs'
 const v1 = await readFile(new URL('./fixtures/v1-board.json', import.meta.url), 'utf8')
 
@@ -11,7 +11,7 @@ const LANE = { agent: 'user:00000000-0000-0000-0000-00000000000a', session: 'ses
 let n = 0
 
 /** The board page in a chat, on a live board file, with gugu's verbs recorded. */
-async function openPage(data, { members = [], agents = [{ agentId: LANE.agent, sessionId: LANE.session, status: 'idle', detail: 'done', deviceLabel: 'gpu', title: 'scroll-pull' }] } = {}) {
+async function openPage(data, { members = [], host = {}, agents = [{ agentId: LANE.agent, sessionId: LANE.session, status: 'idle', detail: 'done', deviceLabel: 'gpu', title: 'scroll-pull' }] } = {}) {
   const { window, document } = parseHTML(html)
   const sent = []
   const changes = new Set()
@@ -34,6 +34,7 @@ async function openPage(data, { members = [], agents = [{ agentId: LANE.agent, s
     reportError: (e) => { throw new Error(`reportError: ${e}`) },
     onContextChanged() {}, onAgentsChanged() {}, onLink() {},
     markdown: async () => ({ render: (el, text) => { el.textContent = text } }),
+    ...host,
   }
   Object.assign(globalThis, { window, document, addEventListener: () => {} })
   await import(`../app/board.js?page=${++n}`)
@@ -140,4 +141,37 @@ test("a holder missing from the viewer's task list gets no dot and is not counte
   assert.equal(document.querySelector('.group.progress small.stopped'), null)
   assert.equal(document.getElementById('summary').textContent, '2 进行中')
   assert.equal(data.cards[other].holder.machine, undefined, 'nothing is written for a session the page cannot see')
+})
+
+test('交给…: the sheet shows the title and one line; the picked agent gets the tool words and the log says who', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'colour #2189', check: { 'PR merged': false } })
+  const asked = []
+  let answer = { agent: LANE.agent.replace('user:', '') }
+  const { document, sent, data } = await openPage(b, { host: { pickAgent: async (words) => { asked.push(words); return answer } } })
+  const open = () => { document.querySelector('.card .head').click(); [...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '交给…').click() }
+  open()
+  await new Promise((r) => setImmediate(r))
+  assert.deepEqual(asked[0], { title: '交给谁', subject: 'colour #2189', body: '它会接手这张卡，按清单做下去。', action: '交给', search: '搜索你的 agent', empty: '没有找到 agent' })
+  assert.equal(sent.length, 1)
+  assert.deepEqual(sent[0].opts, { to: { agent: LANE.agent } })
+  assert.match(sent[0].text, new RegExp(`kanban__set \\{ chat: "chat-1", card: "${id}", hold: true \\}`))
+  assert.equal(logOf(data.cards[id]).at(-1).text, '交给 scroll-pull')
+  answer = { cancelled: true }
+  open()
+  await new Promise((r) => setImmediate(r))
+  assert.equal(sent.length, 1, 'cancelled: nothing goes')
+  assert.equal(logOf(data.cards[id]).at(-1).text, '交给 scroll-pull', 'and nothing is logged')
+})
+
+test('交给… an agent no online computer has: the page says so in words and logs nothing', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'x' })
+  const { document, data } = await openPage(b, { host: { pickAgent: async () => ({ agent: 'user:00000000-0000-0000-0000-0000000000ff' }), dispatch: async () => { throw new Error('user:00000000-0000-0000-0000-0000000000ff is not an agent on this computer') } } })
+  document.querySelector('.card .head').click()
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '交给…').click()
+  await new Promise((r) => setImmediate(r))
+  assert.match(document.querySelector('#sheet [role=alert]').textContent, /没交出去：这个 agent 现在不在你任何一台在线的电脑上/)
+  assert.doesNotMatch(document.body.textContent, /0000000000ff/)
+  assert.equal(logOf(data.cards[id]).length, 1)
 })
