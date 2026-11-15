@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>舰队</title>
+  <title>协作看板</title>
   <link rel="stylesheet" href="fleet.css">
 </head>
 <body class="fleet-card">
-  <button id="card" type="button" aria-describedby="nums">
-    <span class="top"><strong id="title"></strong><small id="sub" class="muted"></small><small id="when" class="muted"></small></span>
+  <button id="card" type="button">
+    <span class="top"><strong id="title"></strong><small id="sub" class="muted"></small><small class="go muted">›</small></span>
     <span id="nums"></span>
-    <span id="machines"></span>
+    <span id="first" class="muted"></span>
   </button>
   <script type="module" src="fleet.js"></script>
 </body>

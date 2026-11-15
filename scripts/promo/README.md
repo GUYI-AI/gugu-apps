@@ -8,7 +8,7 @@ To add an App, copy a template and replace the icon, name, benefit, screenshot p
 
 ## Screenshot sources
 
-All product images below already existed in the corresponding App before this artwork change, except Radar and Context, whose screenshots were retaken in the client for 0.2.1 in an example account to show the 0.2 interface, Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader, Calendar, whose screenshots were retaken in the client for 0.5.5 to show the time axis, and Forum, whose screenshots were retaken in the client for 0.2.0 in example accounts to show the new layout (see each App's `store/SOURCE.md`). Only their placement inside the promotional frame is new.
+All product images below already existed in the corresponding App before this artwork change, except Radar and Context, whose screenshots were retaken in the client for 0.2.1 in an example account to show the 0.2 interface, Paper Club, whose screenshots were retaken for 0.3.9 to show the reworked reader, Calendar, whose screenshots were retaken in the client for 0.5.5 to show the time axis, Forum, whose screenshots were retaken in the client for 0.2.0 in example accounts to show the new layout, and Teamboard, whose screenshots were retaken in the clients for 2.0.0 to show the one-list redesign (see each App's `store/SOURCE.md`). Only their placement inside the promotional frame is new.
 
 | Template | Product screenshot, relative to package root | SHA-256 |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ All product images below already existed in the corresponding App before this ar
 | `data-lens.html` | `scripts/promo/data-lens-chat.png` (repo path; not in the package) | `852d562d0635f57a4fbd043af6d6d2b58ffc691798125b4fa1aabb96ae006b97` |
 | `day-calendar.html` | `store/screenshots/side.png` | `78e9df4611db4ee671d483c98c6d045770afe5af2482ea2e22e304e49b354acd` |
 | `forum.html` | `store/screenshots/3.jpg` | `7662ae08cfe657102729704636ed8aba783024410b911d19aed9eadd0b54c69b` |
-| `kanban.html` | `store/screenshots/1.jpg` | `339866f4d5f9a1777da860619fa9bafda967aee8da9fc0528a5d4664fd41a030` |
+| `kanban.html` | `store/screenshots/1.png` | `00faa27df1298b3fcdf160dda21f43d56b4125f311f0ea411dd8a40698e5d113` |
 | `office.html` | `store/screenshots/1.jpg` | `0df5e78865659d4b16d90a5dba9cd40abca227a51b21bc702b64b2dff4368465` |
 | `omnisearch.html` | `store/screenshots/1.jpg` | `7ab7f0ddbd42d8433e19e5b0770374aa51d8f33c871287b53ad4cfc6b418e948` |
 | `paper-club.html` | `store/screenshots/1.jpg` | `e26afb7562ff42903bce04b1bd37cb5d45b525b0301cdd6c5693c6698f300f2c` |

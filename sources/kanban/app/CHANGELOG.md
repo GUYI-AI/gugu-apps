@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.0.0
+
+A redesign (owner 11-15: 「太杂太乱了」 … 「要做得越简洁清晰精致越好」). One object, the card; one list grouped by state;
+two agent tools. Design: gugu-base `evidence/kanban-redesign/DESIGN.md`.
+
+- A card is title, holder, wait (on the owner with a question and answers, or on something else), next, checks, note
+  and log. Its state is read from it, never set. Every write logs itself with its author; `done` is refused while a
+  check is open or a question pending, and says which.
+- The page is one list: 等你 (questions with their answers as buttons; one tap answers, 5 s to undo, then the holder
+  is told), 进行中 (live status from the task list, stopped first), 等别的, then 没人接 and 完成 folded. A card opens
+  as a bottom sheet on a phone and beside the list on a desktop.
+- Tools: `board` (read; a chat with no board makes no file) and `set` (the only write). The 15 1.x tools are gone.
+  A program cannot know the caller's chat or machine: `chat` is passed, the holder's name comes from gugu's task name,
+  and the page fills in the machine.
+- Cut: columns, drag, progress, due / dest / head, wait kinds, links and the file viewer, PR sync, the decision ledger,
+  the team view and agent panel, supervisor marks, the 45-minute stale flag, the board switcher.
+- 1.x boards convert on their first 2.0 write (a read converts a copy); nothing is lost — what has no field goes into
+  the note or the log, card-less decisions onto one done card. A 2.0 file keeps the four 1.x columns and an empty
+  `links` on each card, so a member still on 1.x sees an empty board and its `filled()` writes nothing over the cards.
+
 ## 1.6.1
 
 On a phone: a column's Rename / Delete menu no longer lies open over the cards where the WebView has no `popover` (before

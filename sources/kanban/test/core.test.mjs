@@ -1,141 +1,124 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { keyBetween, emptyBoard, applyOp, cardsIn, columnsInOrder, findColumn, taskState, cardFlags, STALE_MS } from '../app/lib/core.js'
+import { applyOp, emptyBoard, boardText, cardText, findCard, stateOf, checksOf, logOf, groups } from '../app/lib/core.js'
 
-let n = 0
-const ctx = (by = 'person') => ({ by, now: '2026-10-19T00:00:00.000Z', id: () => `id${++n}` })
+const LANE = { agent: 'user:00000000-0000-0000-0000-00000000000a', session: 'sess-lane-1', name: 'scroll-pull' }
+const SUP = { agent: 'user:00000000-0000-0000-0000-00000000000b', session: 'sess-sup-1', name: 'supervisor' }
+let clock = Date.parse('2026-11-15T06:00:00Z')
+const tick = () => new Date(clock += 60_000).toISOString()
+const as = (caller) => ({ by: caller.agent, now: tick(), caller })
 
-test('keyBetween always lands strictly between, and never needs a renumber', () => {
-  let keys = [keyBetween(null, null)]
-  for (let i = 0; i < 200; i++) keys.push(keyBetween(keys.at(-1), null)) // append
-  for (let i = 0; i < 200; i++) keys.unshift(keyBetween(null, keys[0])) // prepend
-  for (let i = 0; i < 200; i++) {
-    const at = 1 + (i * 37) % (keys.length - 1)
-    keys.splice(at, 0, keyBetween(keys[at - 1], keys[at])) // insert in the middle
-  }
-  for (let i = 1; i < keys.length; i++) assert.ok(keys[i - 1] < keys[i], `${keys[i - 1]} < ${keys[i]}`)
-  assert.equal(new Set(keys).size, keys.length)
-  assert.ok(keys.every((k) => !k.endsWith('0')))
-  // the same spot, hammered: still between
-  let lo = 'a', hi = 'b'
-  for (let i = 0; i < 100; i++) { const k = keyBetween(lo, hi); assert.ok(lo < k && k < hi); hi = k }
+test('one set makes a card held by the caller with next, a wait and three checks, and logs each part', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'scroll pull #2714', hold: true, next: 'archive after receipt', wait: 'P4 receipt', check: { 'PR merged': '#2785', 'slot cleared': true, 'P4 receipt': false } }, as(LANE))
+  const c = b.cards[card]
+  assert.equal(card.length, 4)
+  assert.deepEqual(c.holder, { session: LANE.session, agent: LANE.agent, name: 'scroll-pull' })
+  assert.equal(stateOf(c), 'waiting')
+  assert.deepEqual(checksOf(c).map((x) => [x.label, x.done, x.note ?? '']), [['PR merged', true, '#2785'], ['slot cleared', true, ''], ['P4 receipt', false, '']])
+  assert.deepEqual(logOf(c).map((l) => l.what), ['created', 'took', 'waits', 'ticked', 'ticked', 'added check'])
+  assert.ok(logOf(c).every((l) => l.by === LANE.agent && l.name === 'scroll-pull'))
+  const text = cardText(b, c, { caller: LANE })
+  for (const part of ['holder: you', 'waits on', 'P4 receipt', 'next: archive after receipt', '[x] PR merged — #2785', '[ ] P4 receipt', 'took it']) assert.match(text, new RegExp(part.replace(/[[\]]/g, '\\$&')))
 })
 
-test('keyBetween refuses bounds out of order (a check that can fail)', () => {
-  assert.throws(() => keyBetween('b', 'a'), /out of order/)
-  assert.throws(() => keyBetween('a', 'a'), /out of order/)
+test('done is refused while a check is open or a question is pending, naming what; then it succeeds', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'x', hold: true, check: { 'PR merged': false } }, as(LANE))
+  applyOp(b, { type: 'set', card, ask: { question: 'merge?', options: ['yes', 'no'] } }, as(LANE))
+  assert.throws(() => applyOp(b, { type: 'set', card, done: true }, as(LANE)), /open checks: PR merged; a question to the owner is pending: merge\?/)
+  assert.equal(b.cards[card].doneAt, null)
+  applyOp(b, { type: 'set', card, ask: null }, as(LANE))
+  assert.throws(() => applyOp(b, { type: 'set', card, done: true }, as(LANE)), /open checks: PR merged$/)
+  applyOp(b, { type: 'set', card, check: { 'PR merged': '#1' }, done: true }, as(LANE))
+  assert.equal(stateOf(b.cards[card]), 'done')
+  applyOp(b, { type: 'set', card, done: false }, as(LANE))
+  assert.equal(stateOf(b.cards[card]), 'progress')
 })
 
-test('a new board has the four starting columns in order', () => {
-  const board = emptyBoard()
-  assert.deepEqual(columnsInOrder(board).map((c) => c.role), ['todo', 'doing', 'review', 'done'])
-  assert.equal(findColumn(board, 'Doing').id, 'doing')
-  assert.equal(findColumn(board, 'nope'), null)
+test('a refused set writes nothing at all', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'x', check: { a: false } }, as(LANE))
+  const before = JSON.stringify(b)
+  assert.throws(() => applyOp(b, { type: 'set', card, next: 'new next', check: { a: true }, ask: { question: 'q', options: ['1', '2', '3', '4', '5', '6', '7'] } }, as(LANE)), /at most 6/)
+  assert.equal(JSON.stringify(b), before)
 })
 
-test('create, move between, move to another column, delete', () => {
-  const board = emptyBoard()
-  const a = applyOp(board, { type: 'card.create', title: 'a' }, ctx()).card
-  const b = applyOp(board, { type: 'card.create', title: 'b' }, ctx()).card
-  const c = applyOp(board, { type: 'card.create', title: 'c' }, ctx()).card
-  assert.deepEqual(cardsIn(board, 'todo').map((x) => x.title), ['a', 'b', 'c'])
-  applyOp(board, { type: 'card.move', card: c, column: 'todo', before: a }, ctx())
-  assert.deepEqual(cardsIn(board, 'todo').map((x) => x.title), ['c', 'a', 'b'])
-  applyOp(board, { type: 'card.move', card: a, column: 'doing' }, ctx())
-  assert.deepEqual(cardsIn(board, 'doing').map((x) => x.title), ['a'])
-  applyOp(board, { type: 'comment.add', card: b, text: 'hi' }, ctx())
-  applyOp(board, { type: 'card.delete', card: b }, ctx())
-  assert.equal(board.cards[b], undefined)
-  assert.equal(Object.keys(board.comments).length, 0)
+test('only the page answers: the asker cannot, an agent caller cannot; the answer clears the wait and is logged', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'x', hold: true, ask: { question: 'CI green, merge?', options: ['合', '先别合'] } }, as(LANE))
+  assert.throws(() => applyOp(b, { type: 'answer', card, answer: '合' }, as(LANE)), /answered by the owner/)
+  assert.throws(() => applyOp(b, { type: 'answer', card, answer: '合' }, as(SUP)), /answered by the owner/)
+  const r = applyOp(b, { type: 'answer', card, answer: '合' }, { by: 'user:owner', now: tick(), name: 'Owner' })
+  assert.deepEqual(r, { card, question: 'CI green, merge?', answer: '合', asker: LANE.agent })
+  assert.equal(b.cards[card].wait, null)
+  assert.match(logOf(b.cards[card]).at(-1).text, /CI green, merge\? → 合/)
 })
 
-test('links: kinds checked, the same task twice is one link', () => {
-  const board = emptyBoard()
-  const card = applyOp(board, { type: 'card.create', title: 'x' }, ctx()).card
-  const first = applyOp(board, { type: 'link.add', card, link: { kind: 'task', session: 's1', agent: 'user:a' } }, ctx('user:a'))
-  const again = applyOp(board, { type: 'link.add', card, link: { kind: 'task', session: 's1' } }, ctx())
-  assert.equal(again.link, first.link)
-  assert.equal(again.existed, true)
-  assert.equal(board.cards[card].links[first.link].by, 'user:a')
-  assert.throws(() => applyOp(board, { type: 'link.add', card, link: { kind: 'file', session: 's', path: '../etc/passwd' } }, ctx()), /without \.\./)
-  assert.throws(() => applyOp(board, { type: 'link.add', card, link: { kind: 'url', url: 'javascript:alert(1)' } }, ctx()), /http/)
-  assert.throws(() => applyOp(board, { type: 'link.add', card, link: { kind: 'shell' } }, ctx()), /kind is one of/)
+test('a supervisor records another session as holder; taking a held card logs whom it was taken from', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'lane' }, as(SUP))
+  applyOp(b, { type: 'set', card, hold: 'session:sess-lane-1' }, as(SUP))
+  assert.deepEqual(b.cards[card].holder, { session: 'sess-lane-1' })
+  assert.match(logOf(b.cards[card]).at(-1).text, /session:sess-lane-1/)
+  applyOp(b, { type: 'set', card, hold: true }, as({ ...LANE, session: 'sess-lane-2', name: 'new lane' }))
+  const last = logOf(b.cards[card]).at(-1)
+  assert.equal(last.what, 'took')
+  assert.match(last.text, /from session:sess-lan/)
+  applyOp(b, { type: 'set', card, hold: false }, as(SUP))
+  assert.equal(stateOf(b.cards[card]), 'unclaimed')
 })
 
-test('refusals throw and leave the board as it was', () => {
-  const board = emptyBoard()
-  const before = JSON.stringify(board)
-  assert.throws(() => applyOp(board, { type: 'card.create', title: '   ' }, ctx()), /needs a title/)
-  assert.throws(() => applyOp(board, { type: 'card.move', card: 'nope', column: 'todo' }, ctx()), /no card/)
-  assert.throws(() => applyOp(board, { type: 'whatever' }, ctx()), /unknown operation/)
-  assert.equal(JSON.stringify(board), before)
+test('checks: add open, tick with a note, untick, remove; wait set and cleared', () => {
+  const b = emptyBoard()
+  const { card } = applyOp(b, { type: 'create', title: 'x' }, as(LANE))
+  applyOp(b, { type: 'set', card, check: { a: false, b: false } }, as(LANE))
+  applyOp(b, { type: 'set', card, check: { a: 'done it', b: null } }, as(LANE))
+  assert.deepEqual(checksOf(b.cards[card]).map((c) => [c.label, c.done, c.note]), [['a', true, 'done it']])
+  applyOp(b, { type: 'set', card, check: { a: false } }, as(LANE))
+  assert.equal(checksOf(b.cards[card])[0].done, false)
+  assert.throws(() => applyOp(b, { type: 'set', card, check: { zzz: null } }, as(LANE)), /no check "zzz"/)
+  applyOp(b, { type: 'set', card, wait: 'quota' }, as(LANE))
+  assert.equal(b.cards[card].wait.what, 'quota')
+  applyOp(b, { type: 'set', card, wait: '' }, as(LANE))
+  assert.equal(b.cards[card].wait, null)
+  assert.throws(() => applyOp(b, { type: 'set', card }, as(LANE)), /nothing to change/)
 })
 
-test('columns: add, rename, a starting column takes its default name back, delete only when empty', () => {
-  const board = emptyBoard()
-  const col = applyOp(board, { type: 'column.create', title: 'Blocked' }, ctx()).column
-  assert.equal(columnsInOrder(board).at(-1).id, col)
-  applyOp(board, { type: 'column.update', column: 'todo', title: 'Inbox' }, ctx())
-  assert.equal(board.columns.todo.title, 'Inbox')
-  applyOp(board, { type: 'column.update', column: 'todo', title: '' }, ctx())
-  assert.equal(board.columns.todo.title, null)
-  assert.throws(() => applyOp(board, { type: 'column.update', column: col, title: '' }, ctx()), /needs a title/)
-  applyOp(board, { type: 'card.create', title: 'x', column: col }, ctx())
-  assert.throws(() => applyOp(board, { type: 'column.delete', column: col }, ctx()), /first/)
+test('cards are found by a unique id prefix', () => {
+  const b = emptyBoard()
+  b.cards.abcd1234 = { id: 'abcd1234', title: 'a', log: {} }
+  b.cards.abce9999 = { id: 'abce9999', title: 'b', log: {} }
+  assert.equal(findCard(b, 'abcd').id, 'abcd1234')
+  assert.throws(() => findCard(b, 'abc'), /ambiguous/)
+  assert.throws(() => findCard(b, 'zz'), /no card zz/)
 })
 
-test('a task status reads on the card as gugu states it', () => {
-  assert.deepEqual(taskState({ status: 'needs_user', detail: 'approval' }), { key: 'approval', waiting: true })
-  assert.deepEqual(taskState({ status: 'needs_user', detail: 'question' }), { key: 'answer', waiting: true })
-  assert.equal(taskState({ status: 'working', detail: 'running' }).key, 'running')
-  assert.equal(taskState({ status: 'working', detail: 'parked' }).key, 'parked')
-  assert.equal(taskState({ status: 'idle', detail: 'done' }).key, 'done')
-  assert.equal(taskState({ status: 'idle', detail: 'plain' }).key, 'stopped')
-  assert.equal(taskState({ status: 'working', failure: { kind: 'adapter-exit' } }).key, 'error')
-  assert.equal(taskState({ status: null }).key, 'none')
-  assert.equal(taskState(null).key, 'gone')
+test('the board text for 15 open cards with real titles is under 4,000 characters, in page order, done only counted', () => {
+  const b = emptyBoard()
+  const titles = ['#2798 phone task-file open', 'colour PR2 #2189 border contrast', 'sidebar push #2771', 'restart duplicates images', 'promo s11 online',
+    'session address error copy', 'scroll pull #2714', 'prompt v2 #2187', 'gateway cache probe all routes', 'widget apps e2e on devdb', 'fe-perf rig read receipts',
+    '西游 0.7.0 diff gate', 'beta queue 313dab8c rerun', 'restart-session lane after merge #2288', 'jianghu real-client gif']
+  titles.forEach((title, i) => {
+    const caller = { agent: `user:00000000-0000-0000-0000-0000000000${String(i).padStart(2, '0')}`, session: `sess-${i}-abcdef`, name: `lane-${i}` }
+    const { card } = applyOp(b, { type: 'create', title, hold: i % 5 !== 4, next: 'reproduce on mac1 with four arms, then report', check: { 'PR merged': false, 'gpu slot cleared': i % 2 === 0, 'P4 receipt': false } }, as(caller))
+    if (i < 2) applyOp(b, { type: 'set', card, ask: { question: 'CI green, merge it now?', options: ['合', '先别合'] } }, as(caller))
+    else if (i < 5) applyOp(b, { type: 'set', card, wait: 'P4 receipt for both tickets' }, as(caller))
+  })
+  for (let i = 0; i < 42; i++) b.cards[`d${i}`] = { id: `d${i}`, title: `old ${i}`, holder: null, wait: null, next: '', checks: {}, note: '', log: {}, doneAt: '2026-11-01T00:00:00Z' }
+  const text = boardText(b, { name: 'work' })
+  assert.ok(text.length < 4000, `${text.length} characters`)
+  assert.match(text, /^work · 2 wait on owner · 8 in progress · 3 waiting · 2 unclaimed · 42 done/)
+  const order = ["WAIT ON OWNER", "IN PROGRESS", "WAITING", "UNCLAIMED", "LOG"].map((s) => text.indexOf(s))
+  assert.deepEqual(order, [...order].sort((x, y) => x - y))
+  assert.ok(!text.includes('old 1'))
+  for (const title of titles) assert.ok(text.includes(title), title)
 })
 
-test('a project file link needs its project and a path inside it', () => {
-  const board = emptyBoard()
-  const card = applyOp(board, { type: 'card.create', title: 'x' }, ctx()).card
-  const { link } = applyOp(board, { type: 'link.add', card, link: { kind: 'project', project: 'p1', path: 'docs/a.md', title: 'proj' } }, ctx())
-  assert.deepEqual({ ...board.cards[card].links[link], at: undefined, by: undefined }, { kind: 'project', project: 'p1', path: 'docs/a.md', title: 'proj', at: undefined, by: undefined })
-  assert.throws(() => applyOp(board, { type: 'link.add', card, link: { kind: 'project', path: 'a.md' } }, ctx()), /needs project/)
-  assert.throws(() => applyOp(board, { type: 'link.add', card, link: { kind: 'project', project: 'p1', path: '../../etc/passwd' } }, ctx()), /without \.\./)
-})
-
-
-test('progress: any card carries it, checked before anything is written, every change says who', () => {
-  const board = emptyBoard()
-  const card = applyOp(board, { type: 'card.create', title: 'lane', progress: 10, next: 'read the code' }, ctx('user:a')).card
-  assert.equal(board.cards[card].progress, 10)
-  assert.equal(board.cards[card].updatedBy, 'user:a')
-  applyOp(board, { type: 'card.update', card, progress: 60, waitingOn: ' mac1 slot ', due: '16:30' }, ctx('user:b'))
-  assert.deepEqual([board.cards[card].progress, board.cards[card].waitingOn, board.cards[card].due, board.cards[card].next], [60, 'mac1 slot', '16:30', 'read the code'])
-  assert.equal(board.cards[card].updatedBy, 'user:b')
-  const before = JSON.stringify(board)
-  assert.throws(() => applyOp(board, { type: 'card.update', card, title: 'renamed', progress: 101 }, ctx()), /0 to 100/)
-  assert.throws(() => applyOp(board, { type: 'card.update', card, title: 'renamed', progress: 2.5 }, ctx()), /0 to 100/)
-  assert.equal(JSON.stringify(board), before, 'the title is not written when the progress is refused')
-  applyOp(board, { type: 'card.update', card, progress: null, waitingOn: '' }, ctx())
-  assert.equal(board.cards[card].progress, null)
-  assert.equal(board.cards[card].waitingOn, '')
-})
-
-test('flags: waiting on someone, a task asking the person, a lane gone quiet', () => {
-  const board = emptyBoard()
-  const card = applyOp(board, { type: 'card.create', title: 'lane', column: 'doing' }, ctx()).card
-  const c = board.cards[card]
-  const at = Date.parse(c.updatedAt)
-  const none = () => null
-  assert.deepEqual(cardFlags(board, c, none, at + STALE_MS * 2), { waiting: false, asks: false, stale: false, attention: false }, 'no task: never stale')
-  applyOp(board, { type: 'link.add', card, link: { kind: 'task', session: 's1' } }, ctx())
-  assert.equal(cardFlags(board, c, none, at + STALE_MS - 1).stale, false)
-  assert.equal(cardFlags(board, c, none, at + STALE_MS + 1).stale, true)
-  assert.equal(cardFlags(board, c, () => taskState({ status: 'needs_user', detail: 'approval' }), at).asks, true)
-  applyOp(board, { type: 'card.update', card, waitingOn: 'owner' }, ctx())
-  assert.deepEqual(cardFlags(board, c, none, at), { waiting: true, asks: false, stale: false, attention: true })
-  applyOp(board, { type: 'card.move', card, column: 'review' }, ctx())
-  assert.equal(cardFlags(board, c, none, at + STALE_MS * 9).stale, false, 'only cards in progress go stale')
+test('stopped cards sort first in progress', () => {
+  const b = emptyBoard()
+  const a = applyOp(b, { type: 'create', title: 'a', hold: true }, as(LANE)).card
+  const c = applyOp(b, { type: 'create', title: 'c', hold: true }, as(SUP)).card
+  assert.deepEqual(groups(b).progress.map((x) => x.id), [c, a])
+  assert.deepEqual(groups(b, (x) => x.id === a).progress.map((x) => x.id), [a, c])
 })
