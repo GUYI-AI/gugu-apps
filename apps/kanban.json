@@ -272,6 +272,15 @@
       "sha256": "e27b39731e210f717dc6dba507f70534a82c6af750119709123537818eadfdf6",
       "bytes": 42143,
       "yanked": null
+    },
+    {
+      "version": "2.0.1",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/kanban/app",
+      "commit": "ff2cbdf2ac47ba3e76d39417e2bc8309155b2e23",
+      "sha256": "9bf69b91d48cbd496c7ffc1bf5d62201f13fcf9df39ae83783af9dbdf0bc7795",
+      "bytes": 43184,
+      "yanked": null
     }
   ]
 }
