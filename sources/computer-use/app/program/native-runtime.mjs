@@ -12,6 +12,8 @@ import { stripVTControlCharacters } from "node:util";
 
 // runtime/native/errors.ts
 var NativeCallError = class extends Error {
+  code;
+  details;
   constructor(code, message, details) {
     super(message);
     this.code = code;
@@ -1212,16 +1214,204 @@ function descriptionOf(tool, spec) {
 }
 
 // runtime/driver-resources.mjs
-import { createHash as createHash2, randomUUID as randomUUID2 } from "node:crypto";
+import { createHash as createHash3, randomUUID as randomUUID2 } from "node:crypto";
 import { execFile } from "node:child_process";
-import { chmod, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { chmod as chmod2, lstat as lstat2, mkdir, readFile as readFile2, rename, rm as rm2, writeFile } from "node:fs/promises";
 import path4 from "node:path";
 import { promisify } from "node:util";
 import { gunzipSync, inflateRawSync } from "node:zlib";
+
+// runtime/driver-download.mjs
+import { createHash as createHash2 } from "node:crypto";
+import { constants } from "node:fs";
+import { chmod, lstat, open, readFile, rm } from "node:fs/promises";
+var MAX_DRIVER_ARCHIVE = 64 * 1024 * 1024;
+var DRIVER_TRANSFER_TIMEOUT_MS = 15 * 6e4;
+var transfers = /* @__PURE__ */ new Map();
+var sha = (bytes) => createHash2("sha256").update(bytes).digest("hex");
+var DriverDownloadError = class extends Error {
+  constructor(message, kind = "download") {
+    super(message);
+    this.name = "DriverDownloadError";
+    this.kind = kind;
+  }
+};
+function driverDownloadSources(url) {
+  const source = new URL(url);
+  const publicDriver = source.origin === "https://github.com" && /^\/(GUYI-AI|trycua)\/cua\/releases\/download\//.test(source.pathname) && !source.username && !source.password && !source.search && !source.hash;
+  return publicDriver ? ["https://gh-proxy.org/" + url, url] : [url];
+}
+async function partialSize(file, maximum) {
+  try {
+    const stat = await lstat(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new DriverDownloadError("Driver download cache is not a regular file.", "cache");
+    if (stat.size > maximum) {
+      await rm(file);
+      return 0;
+    }
+    return stat.size;
+  } catch (error) {
+    if (error.code === "ENOENT") return 0;
+    if (error instanceof DriverDownloadError) throw error;
+    throw new DriverDownloadError(`Driver download could not read its cache: ${causeText(error)}.`, "cache");
+  }
+}
+function causeText(error) {
+  let reason = error;
+  while (reason?.cause instanceof Error || reason instanceof AggregateError && reason.errors[0] instanceof Error) {
+    reason = reason.cause instanceof Error ? reason.cause : reason.errors[0];
+  }
+  return String(reason?.message || reason?.code || reason).replace(/[\r\n]+/g, " ");
+}
+async function downloadDriverArchive(url, options) {
+  const previous = transfers.get(options.partialFile);
+  const task = (previous ?? Promise.resolve()).catch(() => {
+  }).then(() => download(url, options));
+  transfers.set(options.partialFile, task);
+  try {
+    return await task;
+  } finally {
+    if (transfers.get(options.partialFile) === task) transfers.delete(options.partialFile);
+  }
+}
+async function download(url, {
+  partialFile,
+  sha256,
+  signal,
+  sources = driverDownloadSources(url),
+  fetchImpl = fetch,
+  maximum = MAX_DRIVER_ARCHIVE,
+  headersTimeoutMs = 2e4,
+  idleTimeoutMs = 3e4,
+  transferTimeoutMs = DRIVER_TRANSFER_TIMEOUT_MS
+}) {
+  signal?.throwIfAborted();
+  if (!/^[a-f0-9]{64}$/.test(sha256)) throw new DriverDownloadError("Driver download has no valid pinned checksum.", "integrity");
+  let offset = await partialSize(partialFile, maximum);
+  if (offset > 0) {
+    const bytes = await readFile(partialFile);
+    if (sha(bytes) === sha256) return bytes;
+  }
+  let failure2;
+  for (let index = 0; index < sources.length; index++) {
+    const source = sources[index];
+    let freshRecovery = false;
+    for (; ; ) {
+      signal?.throwIfAborted();
+      offset = await partialSize(partialFile, maximum);
+      try {
+        const bytes = await transfer(source, offset);
+        if (sha(bytes) !== sha256) throw new DriverDownloadError(`Driver download from ${new URL(source).hostname} failed its pinned SHA-256 check.`, "integrity");
+        return bytes;
+      } catch (error) {
+        signal?.throwIfAborted();
+        failure2 = error instanceof DriverDownloadError ? error : new DriverDownloadError(`Driver download from ${new URL(source).hostname} failed: ${causeText(error)}.`);
+        if (failure2.kind === "cache") throw failure2;
+        if (failure2.kind === "integrity" || failure2.kind === "range") {
+          await rm(partialFile, { force: true });
+          if (index === sources.length - 1 && offset > 0 && !freshRecovery) {
+            freshRecovery = true;
+            continue;
+          }
+        }
+        break;
+      }
+    }
+  }
+  throw failure2 ?? new DriverDownloadError("Driver download has no available source.");
+  async function transfer(source, offset2) {
+    const host = new URL(source).hostname;
+    const controller = new AbortController();
+    const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
+    const deadline = setTimeout(() => controller.abort(new DriverDownloadError(`Driver download from ${host} exceeded ${transferTimeoutMs / 1e3} seconds.`)), transferTimeoutMs);
+    let headerTimer, idleTimer, handle, reader;
+    let total;
+    try {
+      for (; ; ) {
+        combined.throwIfAborted();
+        headerTimer = setTimeout(() => controller.abort(new DriverDownloadError(`Driver download from ${host} did not respond within ${headersTimeoutMs / 1e3} seconds.`)), headersTimeoutMs);
+        const response = await fetchImpl(source, {
+          signal: combined,
+          headers: { "Accept-Encoding": "identity", ...offset2 > 0 ? { Range: `bytes=${offset2}-` } : {} }
+        });
+        clearTimeout(headerTimer);
+        const reject = async (message, kind) => {
+          await response.body?.cancel();
+          throw new DriverDownloadError(message, kind);
+        };
+        if (response.status === 416) return reject(`Driver download from ${host} rejected the saved byte range (HTTP 416).`, "range");
+        if (![200, 206].includes(response.status)) return reject(`Driver download from ${host} returned HTTP ${response.status}.`);
+        const encoding = response.headers.get("content-encoding");
+        if (encoding && encoding !== "identity") return reject(`Driver download from ${host} returned an encoded byte range.`, "range");
+        const lengthHeader = response.headers.get("content-length");
+        const length = lengthHeader === null ? void 0 : Number(lengthHeader);
+        if (length !== void 0 && (!Number.isSafeInteger(length) || length < 0 || length > maximum)) return reject("Driver download exceeds the archive size limit.", "integrity");
+        let end;
+        if (response.status === 206) {
+          const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(response.headers.get("content-range") ?? "");
+          const values = match?.slice(1).map(Number);
+          if (!values || values.some((value) => !Number.isSafeInteger(value)) || values[0] !== offset2 || values[1] < offset2 || values[2] <= values[1] || values[2] > maximum || total !== void 0 && total !== values[2] || length !== void 0 && length !== values[1] - offset2 + 1) {
+            return reject(`Driver download from ${host} returned an invalid Content-Range.`, "range");
+          }
+          [, end, total] = values;
+        } else {
+          offset2 = 0;
+          total = length;
+          end = length === void 0 ? void 0 : length - 1;
+        }
+        if (!response.body) throw new DriverDownloadError(`Driver download from ${host} returned no body.`);
+        const flags = constants.O_WRONLY | constants.O_CREAT | (constants.O_NOFOLLOW ?? 0) | (offset2 > 0 ? constants.O_APPEND : constants.O_TRUNC);
+        try {
+          handle = await open(partialFile, flags, 384);
+          if (!(await handle.stat()).isFile()) throw new Error("not a regular file");
+          await chmod(partialFile, 384);
+        } catch (error) {
+          await response.body.cancel();
+          throw new DriverDownloadError(`Driver download could not open its cache: ${causeText(error)}.`, "cache");
+        }
+        reader = response.body.getReader();
+        for (; ; ) {
+          idleTimer = setTimeout(() => controller.abort(new DriverDownloadError(`Driver download from ${host} stalled for ${idleTimeoutMs / 1e3} seconds; ${offset2} bytes are saved.`)), idleTimeoutMs);
+          const { done, value } = await reader.read();
+          clearTimeout(idleTimer);
+          if (done) break;
+          combined.throwIfAborted();
+          if (offset2 + value.byteLength > maximum || end !== void 0 && offset2 + value.byteLength > end + 1) {
+            throw new DriverDownloadError(`Driver download from ${host} exceeded its declared size.`, "integrity");
+          }
+          try {
+            await handle.writeFile(value);
+          } catch (error) {
+            throw new DriverDownloadError(`Driver download could not save its cache: ${causeText(error)}.`, "cache");
+          }
+          offset2 += value.byteLength;
+        }
+        await handle.close();
+        handle = void 0;
+        reader.releaseLock();
+        reader = void 0;
+        if (end !== void 0 && offset2 !== end + 1) throw new DriverDownloadError(`Driver download from ${host} ended early; ${offset2} bytes are saved.`);
+        if (response.status === 200 || offset2 === total) return await readFile(partialFile);
+      }
+    } catch (error) {
+      if (combined.aborted) throw combined.reason;
+      throw error;
+    } finally {
+      clearTimeout(deadline);
+      clearTimeout(headerTimer);
+      clearTimeout(idleTimer);
+      await reader?.cancel().catch(() => {
+      });
+      await handle?.close();
+    }
+  }
+}
+
+// runtime/driver-resources.mjs
 var execute = promisify(execFile);
 var MAX_ARCHIVE = 64 * 1024 * 1024;
 var MAX_NATIVE = 256 * 1024 * 1024;
-var digest = (bytes) => createHash2("sha256").update(bytes).digest("hex");
+var digest = (bytes) => createHash3("sha256").update(bytes).digest("hex");
 var active = /* @__PURE__ */ new Map();
 var DRIVER_RELEASES = Object.freeze({
   "darwin-arm64": { platform: "darwin", arch: "arm64", version: "0.36.0", revision: "0.36.0-gugu.2", format: "tar.gz", member: "cua-driver", sha256: "6b513935bdd6f7972e1a51485bf2b1243d559763c64606d096b686a93ebea312", url: "https://github.com/GUYI-AI/cua/releases/download/cua-driver-rs-v0.36.0-gugu.2/cua-driver-rs-0.36.0-gugu.2-darwin-universal-binary.tar.gz" },
@@ -1353,23 +1543,11 @@ function assertNativeArchitecture(bytes, platform, arch) {
   } else if (magic === 3489328638 && expected && bytes.readUInt32LE(4) === expected) return;
   throw new Error("Incorrect native Mach-O architecture.");
 }
-async function download(url, { signal }) {
-  const response = await fetch(url, { signal });
-  if (!response.ok || Number(response.headers.get("content-length") ?? 0) > MAX_ARCHIVE) throw new Error("Native download was not available.");
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of response.body) {
-    size += chunk.length;
-    if (size > MAX_ARCHIVE) throw new Error("Native download exceeds the size limit.");
-    chunks.push(Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
-}
 async function regular(file) {
   try {
-    const value = await lstat(file);
+    const value = await lstat2(file);
     if (!value.isFile() || value.isSymbolicLink()) throw new Error("Native cache entry is not a regular file.");
-    return await readFile(file);
+    return await readFile2(file);
   } catch (error) {
     if (error.code === "ENOENT") return null;
     throw error;
@@ -1384,7 +1562,7 @@ async function verifyExecutable(file, release, dataDir, signal) {
   const { stdout } = await execute(file, ["--version"], { signal, timeout: 15e3, maxBuffer: 8192, env: environment(path4.join(dataDir, "driver-home")) });
   if (stdout.trim() !== `cua-driver ${release.version}`) throw new Error("Incorrect native driver version.");
 }
-async function prepareDriver({ dataDir, platform = process.platform, arch = process.arch, signal, fetchArchive = download, verify = verifyExecutable, releases = DRIVER_RELEASES }) {
+async function prepareDriver({ dataDir, platform = process.platform, arch = process.arch, signal, fetchArchive = downloadDriverArchive, verify = verifyExecutable, releases = DRIVER_RELEASES }) {
   if (!dataDir || !path4.isAbsolute(dataDir)) throw new Error("The App data directory is required.");
   const release = releases[`${platform}-${arch}`];
   if (!release || release.platform !== platform || release.arch !== arch) throw new Error("This platform has no supported native driver.");
@@ -1432,7 +1610,18 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
     let bytes = await regular(archive);
     signal2.throwIfAborted();
     if (!bytes || digest(bytes) !== release.sha256) {
-      bytes = await fetchArchive(release.url, { signal: AbortSignal.any([...signal2 ? [signal2] : [], AbortSignal.timeout(12e4)]) });
+      const partialFile = archive + ".part";
+      try {
+        bytes = await fetchArchive(release.url, {
+          signal: signal2,
+          partialFile,
+          sha256: release.sha256,
+          maximum: MAX_ARCHIVE
+        });
+      } catch (error) {
+        if (error instanceof DriverDownloadError) throw new NativeCallError("unavailable", error.message);
+        throw error;
+      }
       signal2.throwIfAborted();
       if (digest(bytes) !== release.sha256 || bytes.length > MAX_ARCHIVE) throw new Error("Native archive integrity check failed.");
       const temporary = archive + "." + randomUUID2() + ".part";
@@ -1440,8 +1629,9 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
         await writeFile(temporary, bytes, { mode: 384, flag: "wx" });
         await rename(temporary, archive);
       } finally {
-        await rm(temporary, { force: true });
+        await rm2(temporary, { force: true });
       }
+      await rm2(partialFile, { force: true });
     }
     if (signal2?.aborted) throw signal2.reason;
     const executableBytes = unpackDriver(bytes, release);
@@ -1455,10 +1645,10 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
         await writeFile(temporary, executableBytes, { mode: 448, flag: "wx" });
         await rename(temporary, file);
       } finally {
-        await rm(temporary, { force: true });
+        await rm2(temporary, { force: true });
       }
     }
-    if (platform !== "win32") await chmod(file, 448);
+    if (platform !== "win32") await chmod2(file, 448);
     if (signal2?.aborted) throw signal2.reason;
     await verify(file, release, dataDir, signal2);
     signal2.throwIfAborted();
@@ -1468,13 +1658,13 @@ async function prepareDriver({ dataDir, platform = process.platform, arch = proc
 
 // runtime/permissions.mjs
 import { execFile as execFile2 } from "node:child_process";
-import { createHash as createHash3, randomUUID as randomUUID3 } from "node:crypto";
-import { chmod as chmod2, mkdir as mkdir2, readFile as readFile2, rename as rename2, rm as rm2 } from "node:fs/promises";
+import { createHash as createHash4, randomUUID as randomUUID3 } from "node:crypto";
+import { chmod as chmod3, mkdir as mkdir2, readFile as readFile3, rename as rename2, rm as rm3 } from "node:fs/promises";
 import { writeFile as writeFile2 } from "node:fs/promises";
 import path5 from "node:path";
 import { promisify as promisify2 } from "node:util";
 var execute2 = promisify2(execFile2);
-var digest2 = (bytes) => createHash3("sha256").update(bytes).digest("hex");
+var digest2 = (bytes) => createHash4("sha256").update(bytes).digest("hex");
 var choices = /* @__PURE__ */ new Set(["accessibility", "screen"]);
 function createPermissionClient({ bundleDir, dataDir, platform = process.platform, arch = process.arch, run = execute2 }) {
   if (!bundleDir || !dataDir || !path5.isAbsolute(bundleDir) || !path5.isAbsolute(dataDir)) throw new Error("App bundle and data directories are required.");
@@ -1482,9 +1672,9 @@ function createPermissionClient({ bundleDir, dataDir, platform = process.platfor
   async function prepare() {
     if (platform !== "darwin") throw new Error("macOS system settings are not available on this platform.");
     ready ??= (async () => {
-      const meta = JSON.parse(await readFile2(path5.join(bundleDir, "permissions.json"), "utf8"));
+      const meta = JSON.parse(await readFile3(path5.join(bundleDir, "permissions.json"), "utf8"));
       if (meta.platform !== platform || !meta.architectures.includes(arch) || !/^[a-f0-9]{64}$/.test(meta.sha256)) throw new Error("The permission helper does not match this computer.");
-      const bytes = await readFile2(path5.join(bundleDir, "mac-permissions"));
+      const bytes = await readFile3(path5.join(bundleDir, "mac-permissions"));
       if (digest2(bytes) !== meta.sha256) throw new Error("The permission helper failed its integrity check.");
       assertNativeArchitecture(bytes, platform, arch);
       const directory = path5.join(dataDir, "native", "permissions", meta.sha256);
@@ -1495,9 +1685,9 @@ function createPermissionClient({ bundleDir, dataDir, platform = process.platfor
         await writeFile2(temporary, bytes, { mode: 448, flag: "wx" });
         await rename2(temporary, file);
       } finally {
-        await rm2(temporary, { force: true });
+        await rm3(temporary, { force: true });
       }
-      await chmod2(file, 448);
+      await chmod3(file, 448);
       await run("/usr/bin/codesign", ["--verify", "--strict", file], { timeout: 15e3 });
       return file;
     })().catch((error) => {
@@ -1524,7 +1714,7 @@ function createPermissionClient({ bundleDir, dataDir, platform = process.platfor
 }
 
 // runtime/tools.ts
-import { createHash as createHash4 } from "node:crypto";
+import { createHash as createHash5 } from "node:crypto";
 
 // runtime/app-directory.ts
 var isRecord2 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
@@ -1746,8 +1936,8 @@ function createComputerTools(input) {
         return failure("needs_confirmation", `${question} Ask the person using AskUserQuestion or the existing conversation. Only after their explicit approval retry with confirmed: true. No input was sent; this tool does not wait for an answer.`);
       }
       if (caller.signal?.aborted) return failure("cancelled", "This operation was cancelled before it was sent.");
-      const owner = "gugu-" + createHash4("sha256").update(caller.agent + "\0" + caller.session).digest("hex").slice(0, 20);
-      const lane = caller.humanViewer ? owner + "-human-" + createHash4("sha256").update(caller.humanViewer).digest("hex").slice(0, 12) : caller.preview ? owner + "-preview" : owner;
+      const owner = "gugu-" + createHash5("sha256").update(caller.agent + "\0" + caller.session).digest("hex").slice(0, 20);
+      const lane = caller.humanViewer ? owner + "-human-" + createHash5("sha256").update(caller.humanViewer).digest("hex").slice(0, 12) : caller.preview ? owner + "-preview" : owner;
       const launching = name === "launch_app";
       const target = await resolveCallTargets({
         name,

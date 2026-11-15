@@ -17,3 +17,11 @@ This layer leaves the current market manifest unchanged. Program entry/cancellat
 Decision: the owner already has AskUserQuestion and rejected an additional “needs you” mechanism because waiting browser tools blocked normal messages. Tools report blockers and return; they do not wait for people inside a tool call.
 
 `native/check-macos-runtime.mjs` is an opt-in actual-driver check (`GUGU_TEST_NATIVE_MAC=1` plus absolute isolated `GUGU_HOME`, `GUGU_USER_DATA_DIR`, and `GUGU_EXTENSION_DATA_DIR`). It opens an owned native fixture window, reads driver status without prompts, captures only that exact pid/window, saves evidence, and closes its owned processes. It does not change system grants or establish the final installed App MCP/TCC attribution; that launch chain is verified after program integration.
+
+## Driver downloads
+
+Pinned public driver assets use the free [GH-Proxy release download service](https://gh-proxy.com/docs/github-accelerator), followed by the official GitHub URL. The proxy's [terms](https://gh-proxy.com/terms) permit open-source mirror distribution and automated builds. No project CDN or new asset upload is needed. Credential-bearing URLs and other repositories do not use the service.
+
+Interrupted bytes remain in a private `archive.part` file under the App's existing checksum-keyed cache. Requests resume with `Range`; HTTP 200 replaces the prefix, while HTTP 206 must describe exactly the requested offset and body length. Invalid ranges and checksum failures discard untrusted bytes. A stale official-source prefix can recover with one fresh transfer. The pinned SHA-256, archive limits, architecture checks, signature verification, and driver version checks still gate execution.
+
+Each source has a 15-minute transfer budget, a 20-second response-header deadline, and a 30-second inactivity deadline. Caller cancellation preserves partial bytes and still obeys the existing shared-preparation subscriber ownership. Download failures use the existing `NativeCallError` path, so the program returns a single concrete cause instead of generic retry/reinstall advice.
