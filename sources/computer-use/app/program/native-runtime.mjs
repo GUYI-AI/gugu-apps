@@ -12,6 +12,8 @@ import { stripVTControlCharacters } from "node:util";
 
 // runtime/native/errors.ts
 var NativeCallError = class extends Error {
+  code;
+  details;
   constructor(code, message, details) {
     super(message);
     this.code = code;
