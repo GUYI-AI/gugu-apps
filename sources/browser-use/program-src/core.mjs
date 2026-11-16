@@ -7,6 +7,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListRootsRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { createLeaseTransport, pageBrowserVersion } from './transport.mjs';
+import { createBrowserFeedbackViews } from './feedback-view.mjs';
 
 /**
  * Browser Use's tools are `@playwright/mcp`'s own (snapshot / click / type / navigate / screenshot …, Apache-2.0),
@@ -70,8 +71,8 @@ export async function checkFileArguments(args, roots) {
 }
 
 class TaskBrowser {
-  constructor({ playwright, pages, sessionId, workspace, outputDir, log, onGone }) {
-    Object.assign(this, { playwright, pages, sessionId, workspace, outputDir, log, onGone });
+  constructor({ playwright, pages, feedbackViews, sessionId, workspace, outputDir, log, onGone }) {
+    Object.assign(this, { playwright, pages, feedbackViews, sessionId, workspace, outputDir, log, onGone });
     this.connecting = null;
     this.lease = null;
     this.server = null;
@@ -90,12 +91,20 @@ class TaskBrowser {
     await mkdir(this.outputDir, { recursive: true });
     const lease = await this.pages.acquire(initialUrl ? { url: initialUrl } : {});
     this.lease = lease;
+    this.feedback = this.feedbackViews.attach(lease);
+    const observedLease = { ...lease, send: (method, params = {}, sessionId) => {
+      const native = lease.send(method, params, sessionId);
+      try { this.feedback.observe(method, params, native, !!sessionId); }
+      catch (error) { this.log({ error: String(error) }, 'Browser feedback could not observe an action'); }
+      return native;
+    } };
+    lease.onMessage((method, params) => { if (method === 'Page.frameNavigated' && !params.frame?.parentId) this.feedback.clear(); });
     lease.onClose((reason) => {
       this.log({ sessionId: this.sessionId, reason }, 'task page lease ended');
       void this.close();
     });
     const browser = await pageBrowserVersion(lease);
-    const transport = createLeaseTransport(lease, browser, { log: (fields, message) => this.log({ sessionId: this.sessionId, ...fields }, message) });
+    const transport = createLeaseTransport(observedLease, browser, { log: (fields, message) => this.log({ sessionId: this.sessionId, ...fields }, message) });
     const { createConnection, chromium } = this.playwright;
     const server = await createConnection({ ...PLAYWRIGHT_CONFIG, outputDir: this.outputDir }, async () => {
       const connected = await chromium.connectOverCDP(transport);
@@ -116,6 +125,7 @@ class TaskBrowser {
   async close() {
     if (this.closed) return;
     this.closed = true;
+    this.feedback?.close();
     this.onGone();
     await this.client?.close().catch(() => undefined);
     await this.server?.close().catch(() => undefined);
@@ -127,6 +137,7 @@ class TaskBrowser {
 /** One MCP server per App program; one TaskBrowser per calling session. */
 export function createBrowserUse({ playwright, gugu, dataDir, settings, log }) {
   const browsers = new Map();
+  const feedbackViews = createBrowserFeedbackViews({ surfaces: gugu.surfaces, log });
   let schemas = null;
 
   /** Listing must not acquire a page. */
@@ -150,7 +161,7 @@ export function createBrowserUse({ playwright, gugu, dataDir, settings, log }) {
   function browserOf(sessionId, workspace) {
     let browser = browsers.get(sessionId);
     if (!browser) {
-      const created = new TaskBrowser({ playwright, pages: gugu.pages, sessionId, workspace, log,
+      const created = new TaskBrowser({ playwright, pages: gugu.pages, feedbackViews, sessionId, workspace, log,
         outputDir: path.join(dataDir, 'sessions', sessionId.replace(/[^\w.-]/g, '_')),
         onGone: () => { if (browsers.get(sessionId) === created) browsers.delete(sessionId); } });
       browsers.set(sessionId, created);
@@ -176,7 +187,12 @@ export function createBrowserUse({ playwright, gugu, dataDir, settings, log }) {
         const start = typeof settings.startUrl === 'string' && settings.startUrl !== 'about:blank' ? settings.startUrl : undefined;
         const client = await browser.connect(navigate ?? start);
         signal?.throwIfAborted();
-        return await client.callTool({ name: params.name, arguments: params.arguments }, undefined, { signal, timeout: TOOL_TIMEOUT_MS });
+        browser.feedback?.activity('正在操作网页', 'running');
+        try {
+          const result = await client.callTool({ name: params.name, arguments: params.arguments }, undefined, { signal, timeout: TOOL_TIMEOUT_MS });
+          browser.feedback?.activity(null);
+          return result;
+        } catch (error) { browser.feedback?.activity(null); throw error; }
       } catch (error) {
         log({ sessionId, tool: params.name, error: error instanceof Error ? error.message : String(error) }, 'browser tool failed');
         return refused(`The browser tool could not run: ${error instanceof Error ? error.message : String(error)}`);
@@ -186,6 +202,7 @@ export function createBrowserUse({ playwright, gugu, dataDir, settings, log }) {
 
   async function closeAll() {
     await Promise.allSettled([...browsers.values()].map((browser) => browser.close()));
+    feedbackViews.dispose();
   }
 
   return { listTools, callTool, closeAll, browsers };
