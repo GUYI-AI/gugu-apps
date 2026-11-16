@@ -15,6 +15,7 @@ export function createBrowserFeedbackViews({ surfaces, log = () => {} }) {
   return {
     attach(lease) {
       let disposed = false, handle, placement = null, cursor = null, action = null, serial = 0, revision = 0;
+      const activities = new Map();
       let gesture, off = () => {}, placementVersion = 0;
       const visible = () => !disposed && placement?.space === 'screen-dip' && placement.clip.width > 0 && placement.clip.height > 0;
       const update = () => {
@@ -52,10 +53,17 @@ export function createBrowserFeedbackViews({ surfaces, log = () => {} }) {
             cursor = { x: params.x, y: params.y, ...(gesture ? { click: gesture } : {}) }; update();
           }), () => detached(() => { if (!disposed && operation === serial) { cursor = null; update(); } }));
         },
-        activity(label, phase) { if (disposed) return; action = label ? { label, phase } : null; detached(update); },
-        clear() { revision++; serial++; cursor = action = null; gesture = undefined; detached(update); },
+        activity(label, phase, call) {
+          if (disposed) return;
+          if (label) activities.set(call, { label, phase });
+          else activities.delete(call);
+          action = [...activities.values()].at(-1) ?? null;
+          detached(update);
+        },
+        clear() { revision++; serial++; cursor = null; gesture = undefined; detached(update); },
         close() {
           if (disposed) return; disposed = true; off(); views.delete(view);
+          activities.clear(); action = cursor = null;
           if (handle) detached(() => attempt(() => handle.close()));
         },
       };

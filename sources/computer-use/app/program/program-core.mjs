@@ -19319,6 +19319,47 @@ function createPreviewInput({ state: readState, valid, tools, control, refresh, 
   };
 }
 
+// program-src/presentation.mjs
+var verbs = {
+  click: "\u70B9\u51FB",
+  double_click: "\u53CC\u51FB",
+  right_click: "\u53F3\u952E\u70B9\u51FB",
+  drag: "\u62D6\u52A8",
+  scroll: "\u6EDA\u52A8",
+  type_text: "\u8F93\u5165",
+  press_key: "\u6309\u952E",
+  hotkey: "\u6309\u952E",
+  set_value: "\u586B\u5199",
+  invoke_menu: "\u9009\u62E9\u83DC\u5355",
+  launch_app: "\u6253\u5F00 App",
+  set_window_frame: "\u8C03\u6574\u7A97\u53E3",
+  get_window_state: "\u67E5\u770B\u7A97\u53E3",
+  get_accessibility_tree: "\u67E5\u770B\u7A97\u53E3",
+  list_apps: "\u67E5\u770B\u6253\u5F00\u7684 App",
+  list_windows: "\u67E5\u770B\u7A97\u53E3",
+  zoom: "\u653E\u5927\u67E5\u770B",
+  run_steps: "\u8FDE\u7EED\u64CD\u4F5C"
+};
+var presentationTarget = (target, revision) => target?.pid && target?.window_id ? { id: `computer:${target.pid}:${target.window_id}`, revision: revision + 1 } : null;
+function computerPresentation(frame, target, cursor, action, actionId, paused) {
+  if (!target || !frame?.target) return null;
+  const label = action && (verbs[action.tool] ?? "\u64CD\u4F5C");
+  return {
+    frame: { sequence: frame.sequence, width: frame.width, height: frame.height, target: { ...frame.target } },
+    targetLabel: String(target.app || "\u7535\u8111").slice(0, 200),
+    ...cursor && Number.isFinite(cursor.x) && Number.isFinite(cursor.y) && cursor.x >= 0 && cursor.y >= 0 && cursor.x < frame.width && cursor.y < frame.height ? { cursor: {
+      x: cursor.x,
+      y: cursor.y,
+      ...cursor.click === true ? { click: String(cursor.revision).slice(0, 128) } : {}
+    } } : {},
+    ...action ? { action: {
+      id: actionId,
+      phase: paused ? "paused" : action.status,
+      label: `${paused ? "\u5DF2\u6682\u505C" : action.status === "running" ? "\u6B63\u5728" : action.status === "failed" ? "\u6CA1\u80FD" : "\u5DF2"}${label}`
+    } } : {}
+  };
+}
+
 // program-src/preview.mjs
 var record2 = (value) => value && typeof value === "object" && !Array.isArray(value);
 var positive = (value) => Number.isSafeInteger(value) && value > 0;
@@ -19348,6 +19389,8 @@ function projectionPng(base642) {
 function createComputerPreview({ projection, native, tools, control, showTaskPages, notify = async () => {
 }, log = console, now = Date.now, platform = process.platform }) {
   const tasks = /* @__PURE__ */ new Map();
+  const callActions = /* @__PURE__ */ new WeakMap(), actionTargets = /* @__PURE__ */ new WeakMap(), actionIds = /* @__PURE__ */ new WeakMap();
+  let nextAction = 0;
   const shown = /* @__PURE__ */ new Set(), showing = /* @__PURE__ */ new Set(), failedAt = /* @__PURE__ */ new Map();
   const background = new AsyncResource("ComputerUsePreview");
   const detached = (work) => background.runInAsyncScope(work);
@@ -19367,7 +19410,25 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
   };
   const changed = () => attempt(() => notify({ method: "notifications/computer-use/changed" }));
   const valid = (state) => !disposed && !state.abort.signal.aborted && tasks.get(state.session) === state;
+  const clearPresentation = (state) => {
+    if (state.source?.present) detached(() => attempt(() => state.source.present(null)));
+  };
+  const present = (state) => {
+    const frame = state.frames.at(-1);
+    if (!valid(state) || !state.source?.present || !frame || frame.epoch !== state.epoch) return;
+    const action = state.actions.findLast((value2) => actionTargets.get(value2) === key(state.target));
+    const value = computerPresentation(
+      frame.presentationFrame,
+      state.target,
+      frame.cursor,
+      action,
+      action && actionIds.get(action),
+      !!control?.stoppedFor(state.target?.pid)
+    );
+    detached(() => attempt(() => state.source.present(value)));
+  };
   const retire = (state) => {
+    clearPresentation(state);
     state.abort.abort();
     state.input?.close();
     state.frames.length = 0;
@@ -19474,7 +19535,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         state.input.invalidate();
       }
       const coordinateRevision = state.coordinateRevision;
-      const sequence = await state.source.publish(frame);
+      const identity = presentationTarget(target, epoch);
+      const sequence = await state.source.publish({ ...frame, ...identity ? { target: identity } : {} });
       if (!valid(state) || state.epoch !== epoch) return;
       state.frames.push({
         sequence,
@@ -19486,12 +19548,14 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         coordinateKey,
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
         at,
-        target
+        target,
+        presentationFrame: { sequence, width: frame.width, height: frame.height, target: identity }
       });
       state.frames = state.frames.slice(-32);
       state.problem = null;
       state.waiting = false;
       changed();
+      present(state);
     })).catch((error2) => {
       if (valid(state) && state.epoch === epoch) {
         state.problem = line(error2);
@@ -19507,6 +19571,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
     const stopped = control?.stoppedFor(target.pid);
     if (stopped) {
       state.problem = line(stopped);
+      clearPresentation(state);
       return;
     }
     const started = now();
@@ -19530,6 +19595,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       const stopped2 = control?.stoppedFor(target.pid);
       if (stopped2) {
         state.problem = line(stopped2);
+        clearPresentation(state);
         return;
       }
       if (result.isError || !imageOf(result)) throw new Error(result.content?.find((b) => b.type === "text")?.text ?? "The window returned no picture.");
@@ -19539,6 +19605,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
     })().catch((error2) => {
       if (valid(state) && state.epoch === epoch) {
         state.problem = line(error2);
+        clearPresentation(state);
         changed();
       }
     }).finally(() => {
@@ -19574,12 +19641,19 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       };
       const state = open2(caller);
       const action = { tool: name, args: argsForDisplay(args), at: new Date(now()).toISOString(), status: "running" };
+      callActions.set(caller, action);
+      actionIds.set(action, `action-${++nextAction}`);
       state.actions.push(action);
       state.actions = state.actions.slice(-30);
+      if (args.pid === state.target?.pid && (args.window_id === void 0 || args.window_id === state.target?.window_id)) {
+        actionTargets.set(action, key(state.target));
+        present(state);
+      } else clearPresentation(state);
       return (result) => {
         if (!valid(state)) return;
         if (result?.structuredContent?.code === "needs_confirmation") state.actions = state.actions.filter((a) => a !== action);
         else action.status = result?.isError === true ? "failed" : "done";
+        present(state);
         if (result?.structuredContent?.code === "os_permission") reveal(caller.session);
         changed();
       };
@@ -19588,6 +19662,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       const state = tasks.get(caller.session);
       if (!state || result.isError || !valid(state)) return;
       const raw = record2(result.structuredContent) ? result.structuredContent : {};
+      clearPresentation(state);
       state.epoch++;
       state.input.invalidate();
       state.caller = { ...caller, signal: void 0, remainingMs: void 0 };
@@ -19607,6 +19682,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
           state.waiting = true;
         }
         state.target = target;
+        const action = callActions.get(caller);
+        if (action) actionTargets.set(action, key(target));
       }
       state.owner = owner;
       reveal(caller.session);
@@ -19635,6 +19712,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
       if (!state || !valid(state) || !positive(state.target?.pid) || !control?.setTargetPaused) throw new Error("No observed application is available in this task.");
       if (expected?.projection !== state.source?.id || expected?.targetRevision !== state.epoch) throw new Error("The task picture or target changed. Refresh before controlling it.");
       state.input.invalidate();
+      clearPresentation(state);
       const { target, caller } = state;
       const reason = control.setTargetPaused({
         pid: target.pid,

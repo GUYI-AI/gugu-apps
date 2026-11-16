@@ -187,12 +187,11 @@ export function createBrowserUse({ playwright, gugu, dataDir, settings, log }) {
         const start = typeof settings.startUrl === 'string' && settings.startUrl !== 'about:blank' ? settings.startUrl : undefined;
         const client = await browser.connect(navigate ?? start);
         signal?.throwIfAborted();
-        browser.feedback?.activity('正在操作网页', 'running');
+        const activity = Symbol(params.name);
+        browser.feedback?.activity('正在操作网页', 'running', activity);
         try {
-          const result = await client.callTool({ name: params.name, arguments: params.arguments }, undefined, { signal, timeout: TOOL_TIMEOUT_MS });
-          browser.feedback?.activity(null);
-          return result;
-        } catch (error) { browser.feedback?.activity(null); throw error; }
+          return await client.callTool({ name: params.name, arguments: params.arguments }, undefined, { signal, timeout: TOOL_TIMEOUT_MS });
+        } finally { browser.feedback?.activity(null, undefined, activity); }
       } catch (error) {
         log({ sessionId, tool: params.name, error: error instanceof Error ? error.message : String(error) }, 'browser tool failed');
         return refused(`The browser tool could not run: ${error instanceof Error ? error.message : String(error)}`);
