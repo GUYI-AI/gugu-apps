@@ -19416,7 +19416,8 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
   const present = (state) => {
     const frame = state.frames.at(-1);
     if (!valid(state) || !state.source?.present || !frame || frame.epoch !== state.epoch) return;
-    const action = state.actions.findLast((value2) => actionTargets.get(value2) === key(state.target));
+    const actions = state.actions.filter((value2) => actionTargets.get(value2) === key(state.target));
+    const action = actions.findLast((value2) => value2.status === "running") ?? actions.at(-1);
     const value = computerPresentation(
       frame.presentationFrame,
       state.target,

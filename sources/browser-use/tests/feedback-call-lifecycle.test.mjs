@@ -7,8 +7,9 @@ import { createBrowserFeedbackViews } from '../program-src/feedback-view.mjs';
 const tick = async () => { await new Promise(setImmediate); await new Promise(setImmediate); };
 
 for (const first of [0, 1]) for (const rejected of [false, true]) {
-  test(`native tool entry retains an overlapping call when ${first} ${rejected ? 'rejects' : 'resolves'}`, async t => {
+  test(`native tool entry retains an overlapping call when ${first} ${rejected ? 'rejects' : 'resolves'}`, { timeout: 2000 }, async t => {
     const updates = [], entered = [], pending = [Promise.withResolvers(), Promise.withResolvers()];
+    const allEntered = Promise.withResolvers();
     const factory = createBrowserFeedbackViews({ surfaces: { open: async () => ({
       update: value => updates.push(value), close() {}, onEvent() {},
     }) } });
@@ -22,13 +23,17 @@ for (const first of [0, 1]) for (const rejected of [false, true]) {
       gugu: { withCall: async (_meta, work) => work() } });
     // Only page execution is fake: exercise createBrowserUse.callTool's real completion/error handling.
     browserUse.browsers.set('owned-session', { outputDir: tmpdir(), feedback,
-      connect: async () => ({ callTool: ({ name }) => { entered.push(name); return pending[Number(name.at(-1))].promise; } }),
+      connect: async () => ({ callTool: ({ name }) => {
+        entered.push(name); if (entered.length === 2) allEntered.resolve();
+        return pending[Number(name.at(-1))].promise;
+      } }),
       close: async () => feedback.close(),
     });
     t.after(() => browserUse.closeAll());
     const results = [0, 1].map(i => browserUse.callTool({ name: `browser_action_${i}`, arguments: {},
       _meta: { 'gugu/sessionId': 'owned-session' } }));
-    await tick(); assert.deepEqual(entered, ['browser_action_0', 'browser_action_1']);
+    await allEntered.promise;
+    assert.deepEqual([...entered].sort(), ['browser_action_0', 'browser_action_1']);
     if (rejected) pending[first].reject(new Error('one-tool-failed'));
     else pending[first].resolve({ content: [] });
     const completed = await results[first];
