@@ -56,3 +56,19 @@ test('a legacy pixel source without present keeps its existing preview path', as
   f.preview.observed({ caller: who, owner: 'native-owner', name: 'get_window_state', args: {}, pid: 44, windowId: 7, result: shot(7) });
   await tick(); assert.equal(f.frames.length, 1); assert.equal(f.presentations.length, 0); assert.equal(f.errors.length, 0);
 });
+
+for (const first of [0, 1]) for (const failed of [false, true]) {
+  test(`an overlapping target call remains running when call ${first} ${failed ? 'fails' : 'finishes'}`, async t => {
+    const f = setup(); t.after(() => f.preview.dispose()); const who = caller();
+    const observed = f.preview.begin(who, 'get_window_state', { pid: 44, window_id: 7 });
+    f.preview.observed({ caller: who, owner: 'native-owner', name: 'get_window_state', args: {}, pid: 44, windowId: 7, result: shot(7) });
+    await tick(); observed(shot(7));
+    const finish = ['click', 'type_text'].map(tool => f.preview.begin(caller(), tool, { pid: 44, window_id: 7 }));
+    finish[first](failed ? { isError: true, content: [] } : { content: [] }); await tick();
+    const presentation = f.presentations.findLast(Boolean);
+    assert.equal(presentation.action.phase, 'running');
+    assert.equal(presentation.action.id, `action-${3 - first}`);
+    finish[1 - first]({ content: [] }); await tick();
+    assert.notEqual(f.presentations.findLast(Boolean).action.phase, 'running');
+  });
+}

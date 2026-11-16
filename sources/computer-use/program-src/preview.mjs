@@ -53,7 +53,8 @@ export function createComputerPreview({ projection, native, tools, control, show
   const present = state => {
     const frame = state.frames.at(-1);
     if (!valid(state) || !state.source?.present || !frame || frame.epoch !== state.epoch) return;
-    const action = state.actions.findLast(value => actionTargets.get(value) === key(state.target));
+    const actions = state.actions.filter(value => actionTargets.get(value) === key(state.target));
+    const action = actions.findLast(value => value.status === 'running') ?? actions.at(-1);
     const value = computerPresentation(frame.presentationFrame, state.target, frame.cursor, action,
       action && actionIds.get(action), !!control?.stoppedFor(state.target?.pid));
     detached(() => attempt(() => state.source.present(value)));
