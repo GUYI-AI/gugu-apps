@@ -308,7 +308,7 @@ function showNewVersion(current) {
   const k = current.view.picks().length
   const said = k ? fmt(t.newVersionPicks, { n: current.latest, v: current.drawn, k }) : fmt(t.newVersion, { n: current.latest, v: current.drawn })
   showBanner(current.failure ? `${said} ${fmt(t.failed, { e: current.failure.message })}` : said, current.failure ? 'error' : 'info', true)
-  const open = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: t.openNew })
+  const open = Object.assign(document.createElement('button'), { type: 'button', textContent: t.openNew })
   open.onclick = () => {
     if (state.current !== current) return
     current.view.clear()
