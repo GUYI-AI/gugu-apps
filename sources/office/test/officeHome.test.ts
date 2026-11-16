@@ -242,6 +242,15 @@ describe('咕咕办公自己的一页 · 画在群里', () => {
     await until(() => expect(document.body.classList.contains('empty-here')).toBe(false))
   })
 
+  test('一份文件画成宿主的文件图块(<gugu-file-mark tile>,和文件 App 一样),页面里没有自带的图', async () => {
+    handTo(ctxOf(A, ['files:read', 'files:write', 'agents:tools']))
+    await until(() => expect(names()).toContain('季度汇报.pptx'))
+    const marks = [...$('files').querySelectorAll('li')].map((li) => li.querySelector('gugu-file-mark'))
+    expect(marks.map((mark) => [mark?.getAttribute('name'), mark?.hasAttribute('tile')])).toEqual(names().map((name) => [name, true]))
+    expect([...$('create').querySelectorAll('gugu-file-mark')].map((mark) => mark.getAttribute('name'))).toEqual(['blank.pptx', 'blank.xlsx'])
+    expect(document.querySelectorAll('main img, .menu img')).toHaveLength(0)
+  })
+
   test('挪到没有群的地方(左栏):没有「本群/所有群」,照旧是最近打开和最近打开过的群', async () => {
     handTo(ctxOf(null))
     await until(() => expect($('scope').hidden).toBe(true))

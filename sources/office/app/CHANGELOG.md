@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+App interface 56: a deck and a workbook are drawn as the host's file tile (`<gugu-file-mark tile>`) wherever they show, the same as every other file: in the Files App (the manifest declares no `fileIcons` any more), and on Gugu Office's own page (its list, the 「新建」 menu, the blank deck card). Its own xlsx.png and pptx.png are gone. A client before interface 56 keeps 0.4.x.
+
 ## 0.4.2
 
 The page around a file takes gugu's palette: a sheet's row and column headers, a picked header, a pick's tint, the pick bar's shadow and the 「新窗口打开」 button follow the theme (in dark the headers are dark beside the white paper). Cells and slides are still the file's own colours.

@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "与 agent 协作修改演示稿和表格",
   "author": "咕咕",
-  "version": "0.4.2",
-  "apiVersion": 25,
+  "version": "0.5.0",
+  "apiVersion": 56,
   "platforms": [
     "desktop",
     "phone"
@@ -34,11 +34,6 @@
             ".xlsx",
             ".xlsm"
           ]
-        },
-        "fileIcons": {
-          ".pptx": "pptx.png",
-          ".xlsx": "xlsx.png",
-          ".xlsm": "xlsx.png"
         }
       },
       {

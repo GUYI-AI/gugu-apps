@@ -82,7 +82,14 @@ const KINDS = {
   md: ['.md'],
   all: null,
 }
-const ICONS = { '.pptx': 'pptx.png', '.xlsx': 'xlsx.png', '.xlsm': 'xlsx.png' }
+/** A file's mark is the host's file tile (App API 56), the same as in the Files App and on the host's cards. */
+const fileMark = (name, mime) => {
+  const mark = document.createElement('gugu-file-mark')
+  mark.setAttribute('name', name)
+  if (mime) mark.setAttribute('mime', mime)
+  mark.toggleAttribute('tile', true)
+  return mark
+}
 /** What 「新建」 makes: a copy of the App's own blank file (one empty 16:9 slide; one empty sheet), as the folder's next file. */
 const BLANKS = {
   pptx: { file: 'blank.pptx', type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
@@ -190,14 +197,14 @@ function drawCreate() {
   $('create').replaceChildren(...(!on ? [] : Object.keys(BLANKS).map((kind) => {
     const item = choice(kind, 'plain')
     item.setAttribute('role', 'menuitem')
-    item.append(Object.assign(document.createElement('img'), { src: ICONS[`.${kind}`], alt: '' }), state.t.create[kind])
+    item.append(fileMark(BLANKS[kind].file), state.t.create[kind])
     return item
   })))
   show('blanks', on)
   $('blanks').replaceChildren(...(!on ? [] : Object.keys(BLANKS).map((kind) => {
     const card = choice(kind, 'blank')
     const face = Object.assign(document.createElement('div'), { className: 'face' })
-    if (kind === 'pptx') face.append(Object.assign(document.createElement('img'), { src: ICONS['.pptx'], alt: '' }))
+    if (kind === 'pptx') face.append(fileMark(BLANKS.pptx.file))
     card.append(face, Object.assign(document.createElement('span'), { textContent: state.t.create[kind] }))
     return card
   })))
@@ -339,13 +346,7 @@ function row(entry) {
   const li = document.createElement('li')
   li.tabIndex = 0
   li.dataset.item = entry.id
-  const image = ICONS[suffixOf(entry)]
-  if (image) li.append(Object.assign(document.createElement('img'), { className: 'kind-icon', src: image, alt: '' }))
-  else {
-    const icon = document.createElement('gugu-icon')
-    icon.setAttribute('name', suffixOf(entry) === '.md' ? 'file-text' : 'file')
-    li.append(icon)
-  }
+  li.append(fileMark(entry.name, entry.contentType))
   const text = document.createElement('div')
   const folder = entry.path.includes('/') ? entry.path.slice(0, entry.path.lastIndexOf('/')) : ''
   text.append(
