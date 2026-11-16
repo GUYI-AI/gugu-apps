@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+
+The page around a file takes gugu's palette: a sheet's row and column headers, a picked header, a pick's tint, the pick bar's shadow and the 「新窗口打开」 button follow the theme (in dark the headers are dark beside the white paper). Cells and slides are still the file's own colours.
+
 ## 0.4.1
 
 Right click on a slide or a sheet opens the host's menu (`gugu.showContextMenu`) with what the pick bar does: 放进输入框 / 交给 agent / 全部取消. What is under the pointer is picked first, unless a pick already covers it, as a spreadsheet does. A finger's long press stays the view's own.
