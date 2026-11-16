@@ -554,8 +554,8 @@ function createNotes(opts) {
     rows.sort((a, b) => a.y - b.y || order.get(a.id) - order.get(b.id));
     const lines = [];
     for (const row of rows) {
-      const last = lines.at(-1);
-      if (last && row.y - last[0].y < SAME_LINE) last.push(row);
+      const last2 = lines.at(-1);
+      if (last2 && row.y - last2[0].y < SAME_LINE) last2.push(row);
       else lines.push([row]);
     }
     const pitch = parseFloat(getComputedStyle(margin).lineHeight);
@@ -1069,16 +1069,57 @@ function mount(host, options) {
   };
 }
 
+// hosts/gugu/alone.ts
+function dataStore(data, path) {
+  let retired = false;
+  let writing = Promise.resolve();
+  return {
+    async load() {
+      const raw = await data.read(path);
+      if (!raw) return null;
+      const page = JSON.parse(raw);
+      return { text: String(page.text ?? ""), marks: Object.values(page.marks ?? {}) };
+    },
+    save(doc) {
+      if (retired) return writing;
+      const content = JSON.stringify({ v: 1, text: doc.text, marks: Object.fromEntries(doc.marks.map((m) => [m.id, m])) });
+      writing = writing.then(() => data.write(path, content));
+      return writing;
+    },
+    async retire() {
+      retired = true;
+      await writing;
+    }
+  };
+}
+function joined(there, here) {
+  const kept = there.replace(/\s+$/, "");
+  return kept ? `${kept}
+
+${here}` : here;
+}
+async function carry(here, target, drop) {
+  if (here.trim()) {
+    target.write(joined(target.text(), here));
+    await target.saved();
+    const back = await target.reread();
+    if (!back.endsWith(here)) throw new Error("the chat page did not read back with the text in it");
+  }
+  await drop();
+}
+
 // hosts/gugu/main.ts
 var ctx = await gugu.getContext();
 var zh = String(ctx.locale ?? "").startsWith("zh");
 var say = (en, cn) => zh ? cn : en;
-try {
-  const PAGE = "page.tam.json";
-  if (!ctx.file && !ctx.chat) throw new Error(say("Open type and memory in a chat.", "\u8BF7\u5728\u4E00\u4E2A\u804A\u5929\u91CC\u6253\u5F00 type and memory\u3002") + " " + JSON.stringify({ ...ctx, capabilities: void 0 }).slice(0, 600));
-  const entry = ctx.file ?? (await gugu.files.list({ chat: ctx.chat.id, folder: "" })).find((e) => e.name === PAGE) ?? await gugu.files.create({ chat: ctx.chat.id, name: PAGE }, {});
+var PAGE = "page.tam.json";
+var bare = (id) => String(id).replace(/^user:/, "");
+var pageIn = async (chat) => (await gugu.files.list({ chat, folder: "" })).find((e) => e.name === PAGE) ?? await gugu.files.create({ chat, name: PAGE }, {}, { ifExists: "use" });
+var current = null;
+var unopened = null;
+gugu.onCommand((id) => current ? current.command(id) : unopened?.());
+async function openFile(entry) {
   const f = await gugu.files.open(entry);
-  const chat = f.entry.chat;
   if (f.data.v === void 0) {
     f.transact(() => {
       f.data.v = 1;
@@ -1086,6 +1127,11 @@ try {
       f.data.marks = {};
     });
   }
+  return f;
+}
+async function openPage(entry, host = document.getElementById("page")) {
+  const f = await openFile(entry);
+  const chat = f.entry.chat;
   const marksNow = () => Object.values(f.toJSON().marks ?? {});
   let seen = JSON.stringify(marksNow());
   let heard = null;
@@ -1131,7 +1177,7 @@ try {
       await answered;
     }
   });
-  const page = mount(document.getElementById("page"), {
+  const page = mount(host, {
     store,
     agent,
     // The same energy as everywhere: a note costs 50. But a look here is a whole turn of a real agent, so the page
@@ -1142,8 +1188,8 @@ try {
     theme: ctx.themeMode === "dark" ? "dark" : "light"
   });
   await page.ready;
-  gugu.bind.text(page.text, f.textAt(["text"]));
-  gugu.onCommand(async (id) => {
+  const unbind = gugu.bind.text(page.text, f.textAt(["text"]));
+  async function command(id) {
     if (id !== "glance") return;
     const here = await agentsHere();
     if (here.length > 1 && !getSelection()?.toString()) {
@@ -1153,7 +1199,168 @@ try {
       return;
     }
     page.glance(getSelection()?.toString());
+  }
+  return {
+    command,
+    glance: (focus) => page.glance(focus),
+    async close() {
+      if (typeof unbind === "function") unbind();
+      page.destroy();
+      await f.close();
+    }
+  };
+}
+var LAST2 = "type-and-memory:with";
+var last = () => {
+  try {
+    const w = JSON.parse(localStorage.getItem(LAST2) ?? "null");
+    return w?.alone === true ? { alone: true } : w && typeof w.agent === "string" && typeof w.chat === "string" ? w : null;
+  } catch {
+    return null;
+  }
+};
+var remember = (w) => localStorage.setItem(LAST2, JSON.stringify(w));
+var lastAgent = () => {
+  const w = last();
+  return w && "agent" in w ? w.agent : void 0;
+};
+async function privateChatWith(agent, hint) {
+  const dms = (await gugu.chats.list()).chats.filter((c) => c.kind === "dm");
+  dms.sort((a, b) => Number(b.id === hint) - Number(a.id === hint));
+  for (const c of dms) {
+    const me = (await gugu.chats.members({ chat: c.id })).members.find((m) => m.kind === "agent" && bare(m.id) === bare(agent));
+    if (me) return { chat: c.id, agent: me };
+  }
+  return null;
+}
+function whenSaved(f) {
+  if (f.saved) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => (off(), reject(new Error(say("it was not saved within 10 s", "10 \u79D2\u5185\u6CA1\u80FD\u5B58\u597D")))), 1e4);
+    const off = f.onStatus(() => {
+      if (f.saved) clearTimeout(timer), off(), resolve();
+    });
   });
+}
+async function alone() {
+  const top = document.getElementById("with");
+  const start = document.getElementById("start");
+  const host = document.getElementById("page");
+  const who = top.querySelector("button");
+  const name = who.querySelector("span");
+  const note = top.querySelector("small");
+  const hint = start.querySelector("p");
+  const [write, pick] = start.querySelectorAll("button");
+  write.textContent = say("Start writing", "\u76F4\u63A5\u5F00\u59CB\u5199");
+  pick.textContent = say("Pick an agent to write with", "\u9009\u4E00\u4E2A agent \u966A\u4F60\u5199");
+  const HERE = "page.tam.json";
+  let here = null;
+  const empty = (why) => {
+    top.hidden = true;
+    host.hidden = true;
+    start.hidden = false;
+    hint.textContent = why ?? say("Write here. If you like, an agent of yours reads along and leaves notes in the margin.", "\u5728\u8FD9\u91CC\u5199\u5B57\u3002\u60F3\u8981\u7684\u8BDD\uFF0C\u53EF\u4EE5\u8BA9\u4F60\u7684\u4E00\u4E2A agent \u5728\u65C1\u8FB9\u8BFB\uFF0C\u628A\u5B83\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002");
+  };
+  const show = (label, title, aside = "") => {
+    start.hidden = true;
+    host.hidden = false;
+    top.hidden = false;
+    name.textContent = label;
+    note.textContent = aside;
+    who.title = title;
+    gugu.setTabTitle?.(aside ? "type and memory" : `type and memory \xB7 ${label.replace(/^和 | 一起写$|^Writing with /g, "")}`);
+  };
+  async function writeAlone() {
+    await current?.close();
+    current = null;
+    host.replaceChildren();
+    const store = dataStore({ read: (p) => gugu.readData(p), write: (p, c) => gugu.writeData(p, c) }, HERE);
+    const page = mount(host, { store, placeholder: say("Write something\u2026", "\u5199\u70B9\u4EC0\u4E48\u2026"), theme: ctx.themeMode === "dark" ? "dark" : "light", energyBar: false });
+    here = Object.assign(store, { page });
+    show(say("Find an agent to read along", "\u627E\u4E2A agent \u4E00\u8D77\u8BFB"), say("Pick an agent; what you wrote goes with you", "\u9009\u4E00\u4E2A agent\uFF0C\u5199\u597D\u7684\u5B57\u4F1A\u4E00\u8D77\u5E26\u8FC7\u53BB"), say("Only on this device", "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A"));
+    current = {
+      // Asking for a look with nobody to ask picks somebody first; the page goes along, then they look.
+      command: async (id) => void (id === "glance" && await choose(true)),
+      glance: () => {
+      },
+      async close() {
+        page.destroy();
+        here = null;
+      }
+    };
+    await page.ready;
+    remember({ alone: true });
+  }
+  async function writeWith(agent, hintChat) {
+    const found = await privateChatWith(agent, hintChat);
+    if (!found) {
+      if (here) {
+        gugu.reportError(say("You have no private chat with this agent yet. Say something to it in its chat, then pick it again; your page stays here.", "\u4F60\u548C\u8FD9\u4E2A agent \u8FD8\u6CA1\u6709\u79C1\u804A\u3002\u5148\u5728\u5B83\u7684\u79C1\u804A\u91CC\u548C\u5B83\u8BF4\u4E00\u53E5\u8BDD\uFF0C\u518D\u56DE\u6765\u9009\u5B83\uFF1B\u4F60\u5199\u7684\u5B57\u8FD8\u7559\u5728\u8FD9\u91CC\u3002"));
+        return false;
+      }
+      empty(say("You have no private chat with this agent yet. Say something to it in its chat, then pick it here again.", "\u4F60\u548C\u8FD9\u4E2A agent \u8FD8\u6CA1\u6709\u79C1\u804A\u3002\u5148\u5728\u5B83\u7684\u79C1\u804A\u91CC\u548C\u5B83\u8BF4\u4E00\u53E5\u8BDD\uFF0C\u518D\u56DE\u6765\u9009\u5B83\u3002"));
+      return false;
+    }
+    const entry = await pageIn(found.chat);
+    if (here) {
+      const local = here;
+      const f = await openFile(entry);
+      local.page.text.element.contentEditable = "false";
+      try {
+        await carry(local.page.text.read(), {
+          text: () => String(f.data.text ?? ""),
+          write: (text) => f.data.text = text,
+          saved: () => whenSaved(f),
+          reread: async () => String((await gugu.files.open(entry)).data.text ?? "")
+        }, async () => {
+          await local.retire();
+          await gugu.writeData(HERE, "");
+        });
+      } catch (error) {
+        local.page.text.element.contentEditable = "true";
+        gugu.reportError(say(`Could not take your page to ${found.agent.name}: ${error instanceof Error ? error.message : error}. It is still here, on this device.`, `\u6CA1\u80FD\u628A\u8FD9\u9875\u5E26\u5230\u548C ${found.agent.name} \u7684\u79C1\u804A\u91CC\uFF1A${error instanceof Error ? error.message : error}\u3002\u4F60\u5199\u7684\u5B57\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002`));
+        return false;
+      }
+    }
+    await current?.close();
+    current = null;
+    host.replaceChildren();
+    show(say(`Writing with ${found.agent.name}`, `\u548C ${found.agent.name} \u4E00\u8D77\u5199`), say("Write with another agent", "\u6362\u4E00\u4E2A agent \u966A\u4F60\u5199"));
+    current = await openPage(entry, host);
+    remember({ agent: found.agent.id, chat: found.chat });
+    return true;
+  }
+  async function choose(thenLook = false) {
+    const picked = await gugu.pickAgent({
+      title: say("Write with", "\u966A\u4F60\u5199\u7684 agent"),
+      subject: "type and memory",
+      body: here ? say("It reads your page and leaves notes in the margin. What you wrote here goes into your private chat with it.", "\u5B83\u4F1A\u8BFB\u4F60\u7684\u8FD9\u9875\u7EB8\uFF0C\u628A\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002\u4F60\u5728\u8FD9\u91CC\u5199\u597D\u7684\u5B57\u4F1A\u5E26\u8FDB\u4F60\u548C\u5B83\u7684\u79C1\u804A\u3002") : say("It reads your page as you write and leaves notes in the margin. The page lives in your private chat with it.", "\u4F60\u5199\u7684\u65F6\u5019\u5B83\u5728\u65C1\u8FB9\u8BFB\uFF0C\u628A\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002\u8FD9\u9875\u7EB8\u5B58\u5728\u4F60\u548C\u5B83\u7684\u79C1\u804A\u91CC\u3002"),
+      action: say("Write with it", "\u548C\u5B83\u4E00\u8D77\u5199"),
+      search: say("Search your agents", "\u641C\u7D22\u4F60\u7684 agent"),
+      empty: say("You have no agent yet.", "\u4F60\u8FD8\u6CA1\u6709 agent\u3002"),
+      ...lastAgent() ? { preselect: lastAgent() } : {}
+    });
+    if (picked.cancelled) return;
+    try {
+      if (await writeWith(picked.agent) && thenLook) current?.glance();
+    } catch (error) {
+      gugu.reportError(error instanceof Error ? error.message : String(error));
+    }
+  }
+  write.onclick = () => void writeAlone().catch((error) => gugu.reportError(error instanceof Error ? error.message : String(error)));
+  pick.onclick = () => choose();
+  who.onclick = () => choose();
+  unopened = () => choose();
+  const was = last();
+  const left = String(JSON.parse(await gugu.readData(HERE).catch(() => null) || "{}").text ?? "");
+  if (was && "agent" in was && !left.trim() && await writeWith(was.agent, was.chat).catch(() => false)) return;
+  if (was && "alone" in was || left.trim()) return void await writeAlone();
+  empty();
+}
+try {
+  if (ctx.file) current = await openPage(ctx.file);
+  else if (ctx.chat) current = await openPage(await pageIn(ctx.chat.id));
+  else await alone();
 } catch (error) {
   gugu.reportError(error instanceof Error ? error.message : String(error));
   throw error;
