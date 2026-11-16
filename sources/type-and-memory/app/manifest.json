@@ -4,8 +4,8 @@
   "defaultLocale": "zh-CN",
   "subtitle": "你写，聊天里的 agent 在页边批注",
   "author": "咕咕",
-  "version": "0.1.0",
-  "apiVersion": 27,
+  "version": "0.2.0",
+  "apiVersion": 31,
   "platforms": [
     "desktop",
     "phone"
