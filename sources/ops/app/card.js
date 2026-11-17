@@ -26,10 +26,10 @@ try {
       ticket = encodeTicket(record)
       $('copy').hidden = false
       $('body').replaceChildren(h('code', { title: record.subject.repo, text: `${record.subject.repo.split('/')[1]} ${record.subject.sha.slice(0, 7)}` }),
-        h('span', { class: 'state-done', text: `${record.done.length} 条完成 · ${record.dropped.length} 条不做 · 0 条未完成` }),
+        h('span', { class: 'state-done', text: `完成 ${record.done.length} · 不做 ${record.dropped.length} · 未做 0` }),
         h('small', { text: `发布后要做 ${record.after.length} 条 · 24 小时内` }),
         h('small', {}, '有效到 ', h('gugu-time', { datetime: record.expiresAt })),
-        h('small', { text: `取票：${record.requestedBy.name ?? record.requestedBy.id}` }))
+        h('small', { class: 'requester', title: record.requestedBy.name ?? record.requestedBy.id, text: `取票：${record.requestedBy.name ?? record.requestedBy.id}` }))
     }
   } finally { await f.close() }
 } catch (e) { say($('error'), e.message) }

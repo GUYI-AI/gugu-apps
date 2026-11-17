@@ -15,5 +15,6 @@ small { display: block; }
 .card-page { margin: 0; padding: 0; }
 .card-page .card { cursor: pointer; }
 .card-page code { overflow-wrap: anywhere; }
-.card-page .row { justify-content: space-between; }
+.card-page .row { justify-content: space-between; flex-wrap: nowrap; }
+.card-page .requester { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-page .blocker { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
