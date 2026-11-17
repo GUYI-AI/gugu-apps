@@ -1,0 +1,16 @@
+{
+  "id": "ops",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/ops/app",
+      "commit": "07f6c95d298ec80030848ad466f464065a700269",
+      "sha256": "c7a1a1b7e4dc2829d2c8d31cd90a1792167e1f822821b9d8bbe4e9015cea8de6",
+      "bytes": 18629,
+      "yanked": null
+    }
+  ]
+}
