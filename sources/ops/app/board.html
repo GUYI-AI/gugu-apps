@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>运维台账</title><link rel="stylesheet" href="board.css"></head>
+<body><main class="stack">
+  <header class="row"><div><h2>运维台账</h2><small id="place" class="muted">这个群的生产发布清单</small></div><button id="add"><gugu-icon name="plus"></gugu-icon> 新增条目</button></header>
+  <p id="error" role="alert" hidden></p><p id="status" role="status" hidden></p>
+  <div id="waiting" class="stack"></div>
+  <section class="card row" aria-label="发布状态"><div><h3 id="gate">正在读取</h3><small id="counts"></small></div><button id="request">取发布票</button></section>
+  <div role="tablist" aria-label="查看条目"><button role="tab" data-filter="open" aria-selected="true">生产发布</button><button role="tab" data-filter="closed">已完成</button></div>
+  <div id="sections" class="stack"></div><section><h3>最近改动</h3><ul id="log" class="list"></ul></section>
+</main>
+<dialog id="edit"><form id="form" class="stack"><h3 id="edit-title">新增条目</h3><input name="item" type="hidden">
+  <label>标题<input name="title" required maxlength="4000"></label>
+  <label>时机<select name="when"><option value="前">发布前</option><option value="后">发布后</option><option value="">不绑批次</option></select></label>
+  <label>怎么核对<textarea name="check" required></textarea></label>
+  <label>出处链接（每行一个）<textarea name="source" required></textarea></label>
+  <label>负责<select name="owner"><option value="">没人接</option></select></label>
+  <label>状态<select name="state"><option value="pending">未做</option><option value="done">完成（填写读数和链接）</option><option value="dropped">不做（填写理由）</option></select></label>
+  <label>实际读数<textarea name="evidence"></textarea></label><label>证据链接（每行一个）<textarea name="links"></textarea></label><label>不做的理由<textarea name="reason"></textarea></label>
+  <label>问题（留空撤回）<input name="question"></label><label>回答选项（每行一个）<textarea name="options"></textarea></label>
+  <p id="edit-error" role="alert" hidden></p><div class="row"><button type="button" id="cancel">取消</button><button class="primary" type="submit">保存</button></div>
+</form></dialog>
+<dialog id="ticket-dialog"><form id="ticket-form" class="stack"><h3>取发布票</h3><label>发布对象<input name="subject" placeholder="GUYI-AI/repository@40位sha" required></label><small>交给 agent 取票。它会先登记一条独立扫漏；完成前拒绝发票。</small><div class="row"><button type="button" id="ticket-cancel">取消</button><button class="primary">交给 agent</button></div><p id="ticket-error" role="alert" hidden></p></form></dialog>
+<script type="module" src="board.js"></script></body></html>
