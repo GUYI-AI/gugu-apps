@@ -7,6 +7,8 @@ body { margin: 0; }
 
 #bar { display: flex; align-items: center; gap: var(--em-spacing-md); margin-bottom: var(--em-spacing-md); }
 #bar .titles { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#bar .lead { align-self: flex-start; min-height: 0; height: auto; font-size: var(--em-font-size-sm); }
+#bar .lead.unset { color: var(--em-foreground-warning); }
 #bar h1 { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 button.icon { display: inline-flex; align-items: center; justify-content: center; min-width: var(--em-control-h-md); padding: 0; }
 

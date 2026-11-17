@@ -189,3 +189,67 @@ test('交给… refused for another reason: the page says the host\'s reason, wi
   assert.doesNotMatch(document.body.textContent, /0000000000ff/)
   assert.equal(logOf(data.cards[id]).length, 1)
 })
+
+const SUPER = { id: 'user:00000000-0000-0000-0000-00000000000b', name: 'supervisor', kind: 'agent' }
+const flush = () => new Promise((r) => setImmediate(r))
+const rightClick = (window, el) => {
+  const e = new window.Event('contextmenu', { bubbles: true, cancelable: true })
+  Object.defineProperties(e, { clientX: { value: 10 }, clientY: { value: 20 } })
+  el.dispatchEvent(e)
+}
+
+test('引用 from a card\'s menu (right-click) or its sheet: one line, id and title linking to the card, drafted into the board\'s chat', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'fix [2] scroll' })
+  const menus = []
+  const links = []
+  let pick = 'cite'
+  const { document, sent } = await openPage(b, { host: {
+    showContextMenu: async (m) => { menus.push(m); return pick },
+    linkTo: async (target) => { links.push(target); return 'gugu://ext/kanban/board?board=f1&card=x' },
+  } })
+  rightClick(globalThis.window, document.querySelector('.card .head'))
+  await flush()
+  assert.deepEqual(menus[0].items.map((i) => i.label), ['打开', '引用'])
+  assert.deepEqual(links[0], { kind: 'app', tab: 'board', chat: 'chat-1', query: { board: 'f1', card: id } })
+  assert.deepEqual(sent[0], { text: `[${id} · fix \\[2\\] scroll](gugu://ext/kanban/board?board=f1&card=x)`, opts: { draft: true, to: { chat: 'chat-1' } } })
+  pick = null
+  rightClick(globalThis.window, document.querySelector('.card .head'))
+  await flush()
+  assert.equal(sent.length, 1, 'closing the menu drafts nothing')
+  document.querySelector('.card .head').click()
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '引用').click()
+  await flush()
+  assert.equal(sent.length, 2)
+  assert.deepEqual(sent[1].opts, { draft: true, to: { chat: 'chat-1' } })
+})
+
+test('主管: unset says so; picked from the chat\'s agents it is logged on the board; a person\'s done and reopen tell it, with the open checks', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'ship it', check: { 'PR merged': true } })
+  const { document, sent, data } = await openPage(b, { members: [SUPER, { id: 'user:owner', name: 'Owner', kind: 'human' }], host: {
+    showContextMenu: async (m) => { assert.deepEqual(m.items[0], { id: SUPER.id, label: 'supervisor', person: SUPER.id, checked: false }); assert.equal(m.items.length, 3); return SUPER.id },
+  } })
+  assert.equal(document.querySelector('#lead').textContent, '未设主管')
+  // No lead: finishing tells no one.
+  document.querySelector('.card .head').click()
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '完成').click()
+  await flush()
+  assert.equal(sent.length, 0)
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '重开').click()
+  await flush()
+  document.querySelector('#lead').click()
+  await flush()
+  assert.deepEqual(data.lead, { agent: SUPER.id, name: 'supervisor' })
+  assert.deepEqual(logOf(data).map((l) => [l.what, l.text, l.by]), [['lead', 'supervisor', 'user:owner']])
+  assert.equal(document.querySelector('#lead').textContent, '主管：supervisor')
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '完成').click()
+  await flush()
+  assert.equal(sent.length, 1)
+  assert.deepEqual(sent[0].opts, { to: { agent: SUPER.id } })
+  assert.match(sent[0].text, new RegExp(`卡 ${id}「ship it」被 Owner 标为完成（清单 1/1）。你是这块看板的主管：用 kanban__board \\{ chat: "chat-1", card: "${id}" \\}`))
+  applyOp(data, { type: 'set', card: id, check: { 'P4 receipt': false } }, { by: LANE.agent, now: new Date().toISOString(), caller: LANE })
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '重开').click()
+  await flush()
+  assert.match(sent[1].text, /被 Owner 重新打开；还开着的检查项：P4 receipt。/)
+})

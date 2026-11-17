@@ -30,6 +30,17 @@ line saying what it needs to know).
   in the note or the checklist.
 - **Handed a card** (a message names it): read it with `board` and `card`, then `set` with `hold: true`.
 - A supervisor may keep its lanes' cards itself: any agent in the chat can write any card, and the log says who did.
+- **The board's lead** (主管): a chat's board may name one agent of the chat, set on the page or with
+  `kanban__set { chat, lead: "user:<uuid>" }` (`null` clears it; logged on the board; `board` shows it on its second
+  line). Whenever a **person** marks a card done or reopens it, the lead gets a message naming the card; agents' own
+  changes tell no one. **When you are the lead and such a message comes**: read the card (`board` with `card`), check
+  it against its checklist, log and what it closes (the PR merged, the slot or tickets cleared). Done and it holds: the
+  lane that held it may be archived once its work has landed, and you say so with a `log` line. Done but something is
+  missing: reopen it (`done: false`) with a `check` for what is missing and tell its holder. Reopened: find out
+  from the person or the log what is wrong, and give it back to a lane (`hold: "session:<id>"`) or take it.
+- **Citing a card**: on the page a card's menu (right-click, a long press on a phone) and its sheet have 引用. It
+  puts one line into the chat's composer — `[<id> · <title>](<link>)` — which opens the board on that card. A message
+  with such a line names the card by its id: read it with `board` and `card`.
 - **The board in a message**: `widget_send { chat_id, app: "kanban", view: "fleet", text }` (text: the counts line from
   `board`) sends a card showing the chat board's counts and first question, read live; a tap opens the board.
 

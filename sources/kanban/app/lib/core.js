@@ -92,6 +92,8 @@ export function holderName(holder, caller = {}) {
  *   set    { card, title?, next?, note?, hold?, wait?, ask?, check?, done?, log? }   the only change to a card
  *   answer { card, answer }      the owner's answer to the card's question; only the page makes it
  *   delete { card }
+ *   lead   { agent, name? }      the board's 主管 (user:<uuid>, null for none), told when a person marks a card done or
+ *                                reopens it; logged on the board
  */
 export function applyOp(board, op, { by, now, caller = {}, name = caller.name }) {
   const at = now
@@ -142,11 +144,22 @@ export function applyOp(board, op, { by, now, caller = {}, name = caller.name })
       delete board.cards[card.id]
       return { card: card.id }
     }
+    case 'lead': {
+      const agent = op.agent === null ? null : String(op.agent ?? '').trim()
+      if (agent !== null && !/^user:[0-9a-f-]{36}$/i.test(agent)) throw new Error('lead is an agent as user:<uuid>, or null for none')
+      const leadName = agent && op.name ? line(op.name, 'a name', 100) : ''
+      if ((board.lead?.agent ?? null) === agent) return { lead: agent }
+      const was = board.lead?.name ?? board.lead?.agent ?? ''
+      board.lead = agent ? { agent, ...(leadName ? { name: leadName } : {}) } : null
+      addLog(board, { at, by, name, what: agent ? 'lead' : 'no lead', text: agent ? leadName || agent : was })
+      return { lead: agent }
+    }
     default:
       throw new Error(`unknown operation ${JSON.stringify(op?.type)}`)
   }
 }
 
+/** A line in a card's log, or the board's own (its 主管). */
 function addLog(card, { at, by, name, what, text: words = '' }) {
   card.log ??= {}
   card.log[lineId()] = { at, by, ...(name ? { name } : {}), what, ...(words ? { text: words } : {}) }
@@ -435,7 +448,7 @@ const hhmm = (iso, now) => {
 
 /** How a log line reads in text: "took it", "waits on: P4 receipt", "ticked: PR merged". */
 export function logText(l) {
-  const words = { created: 'created', took: 'took it', released: 'released', 'held by': 'held by', waits: 'waits on', 'no longer waits': 'no longer waits on', asks: 'asks the owner', withdrew: 'withdrew the question', answered: 'owner answered', ticked: 'ticked', unticked: 'unticked', 'added check': 'added check', 'removed check': 'removed check', done: 'done', reopened: 'reopened', title: 'renamed to', next: 'next', note: 'edited the note', said: '', column: 'was in column', 'moved from 1.x': 'moved from 1.x' }[l.what] ?? l.what
+  const words = { lead: 'lead set to', 'no lead': 'lead cleared', created: 'created', took: 'took it', released: 'released', 'held by': 'held by', waits: 'waits on', 'no longer waits': 'no longer waits on', asks: 'asks the owner', withdrew: 'withdrew the question', answered: 'owner answered', ticked: 'ticked', unticked: 'unticked', 'added check': 'added check', 'removed check': 'removed check', done: 'done', reopened: 'reopened', title: 'renamed to', next: 'next', note: 'edited the note', said: '', column: 'was in column', 'moved from 1.x': 'moved from 1.x' }[l.what] ?? l.what
   return [words, l.text].filter(Boolean).join(words && l.text ? ': ' : '')
 }
 
@@ -446,7 +459,7 @@ export function logText(l) {
 export function boardText(board, { name = 'board', caller = {}, who = (l) => l.name ?? l.by, now = Date.now() } = {}) {
   const g = groups(board)
   const head = `${name} · ${g.owner.length} wait on owner · ${g.progress.length} in progress · ${g.waiting.length} waiting · ${g.unclaimed.length} unclaimed · ${g.done.length} done`
-  const out = [head]
+  const out = [head, board.lead ? `lead (told when a person marks a card done or reopens it): ${board.lead.name ? `${board.lead.name} (${board.lead.agent})` : board.lead.agent}` : 'lead: none']
   const row = (c, extra) => [`${c.id}  ${clip(c.title, 70)}`, holderName(c.holder, caller) ?? 'nobody', ...extra].join(' | ')
   const checks = (c) => { const all = checksOf(c); return all.length ? [`checks ${all.filter((x) => x.done).length}/${all.length}`] : [] }
   const next = (c) => (c.next ? [`next: ${clip(c.next, 70)}`] : [])
@@ -460,7 +473,7 @@ export function boardText(board, { name = 'board', caller = {}, who = (l) => l.n
     if (!cards.length) continue
     out.push(title, ...cards.map((c) => row(c, extra(c))))
   }
-  const lines = Object.values(board.cards).flatMap((c) => logOf(c).map((l) => ({ ...l, card: c.id }))).sort(byAt).slice(-10)
+  const lines = [...logOf(board).map((l) => ({ ...l, card: 'board' })), ...Object.values(board.cards).flatMap((c) => logOf(c).map((l) => ({ ...l, card: c.id })))].sort(byAt).slice(-10)
   if (lines.length) out.push('LOG', ...lines.map((l) => `${hhmm(l.at, now)} ${l.card} ${who(l)}: ${clip(logText(l), 100)}`))
   if (!Object.keys(board.cards).length) out.push('(no cards yet: kanban__set with a title adds one)')
   return out.join('\n')
