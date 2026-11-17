@@ -23,7 +23,8 @@ and sweep. Valid for 30 minutes. Evidence bodies never leave the chat in a ticke
 omissions; they do not authenticate against a malicious dispatcher. Group members can also edit the source file.
 
 Caller agent, session, model and name come from the host, never tool arguments. Human file presence comes from the
-host. Metadata the host does not provide is omitted; no owner or model is guessed. Document history and file writes
+host. Known boundary in v1: the host does not expose the calling agent's human owner in tool metadata.
+That owner is omitted rather than inferred; other missing metadata is also never guessed. Document history and file writes
 retain gugu's own attribution. Regular item changes do not send group messages.
 
 The human page uses native gugu styles and file APIs. A question's answer is recorded, then whispered to the asker;
