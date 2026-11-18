@@ -5,7 +5,7 @@
   "subtitle": "Native app control for agents",
   "version": "0.5.2",
   "icon": "icon.png",
-  "apiVersion": 57,
+  "apiVersion": 58,
   "platforms": [
     "desktop"
   ],
