@@ -4,4 +4,4 @@ The App runs the browser tools itself and reaches exactly one page: the one Gugu
 
 Uninstall or switch off this App and agents can no longer call its tools; browsing by hand works as before.
 
-The tools come from Playwright MCP, licensed under Apache-2.0. Needs Gugu App interface 36.
+The tools come from Playwright MCP, licensed under Apache-2.0. Requires Gugu App interface 58.
