@@ -2,9 +2,9 @@
   "id": "gugu-contribution",
   "name": "咕咕贡献",
   "defaultLocale": "zh-CN",
-  "subtitle": "一起开发咕咕：报问题、修 bug、写 App",
+  "subtitle": "一起开发咕咕：报问题、修 bug、写应用",
   "author": "咕咕",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "apiVersion": 32,
   "platforms": [
     "desktop",
@@ -40,7 +40,7 @@
   "examples": [
     "这像是咕咕的 bug，帮我报给咕咕",
     "我想给咕咕贡献代码，从哪开始？",
-    "我想要的这个功能咕咕没有，能做成一个 App 吗？"
+    "我想要的这个功能咕咕没有，能做成一个应用吗？"
   ],
   "license": "MIT",
   "localized": {
