@@ -95,6 +95,15 @@
       "yanked": {
         "reason": "This release was validated on App API58 only. Clients below API58 should use 0.4.0; the replacement 0.4.2 explicitly requires API58. Withdrawal does not automatically downgrade an installed copy."
       }
+    },
+    {
+      "version": "0.4.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "ce30484be5c674ec036ce6bc98539df39f68c1cb",
+      "sha256": "c49253e213a0e1e00fb39cdeb64b696e7a2e76d615f5a19d1da62c4669643ec7",
+      "bytes": 1467381,
+      "yanked": null
     }
   ]
 }
