@@ -1,0 +1,169 @@
+{
+  "beta": {
+    "version": "0.3.7-beta.44342843803.1",
+    "source": "e98f225326ce3554ce8a4477c86b6fe97f23c1cb"
+  },
+  "headlessPackaged": {
+    "passed": true,
+    "version": "0.3.7-beta.44342843803.1",
+    "source": "e98f225326ce3554ce8a4477c86b6fe97f23c1cb",
+    "scope": "actual packaged server browser + actual packaged lease + real Chrome151; original JPEG and live feedback are checked separately",
+    "clickResult": "1",
+    "frames": 5,
+    "first": {
+      "width": 756,
+      "height": 413,
+      "feedback": {
+        "target": {
+          "id": "browser:6892d76e-0ab6-4e0d-bd9e-241baff5c631",
+          "revision": 1
+        },
+        "cursor": {
+          "x": 101.3671875,
+          "y": 252.15625,
+          "click": "dispatch-3"
+        },
+        "action": {
+          "id": "call-1",
+          "label": "正在操作网页",
+          "phase": "running"
+        }
+      }
+    },
+    "callEnded": {
+      "target": {
+        "id": "browser:6892d76e-0ab6-4e0d-bd9e-241baff5c631",
+        "revision": 1
+      },
+      "cursor": {
+        "x": 101.3671875,
+        "y": 252.15625,
+        "click": "dispatch-3"
+      }
+    },
+    "cleared": {
+      "target": {
+        "id": "browser:6892d76e-0ab6-4e0d-bd9e-241baff5c631",
+        "revision": 3
+      },
+      "stamp": 12
+    },
+    "next": {
+      "width": 756,
+      "height": 413,
+      "feedback": {
+        "target": {
+          "id": "browser:6892d76e-0ab6-4e0d-bd9e-241baff5c631",
+          "revision": 3
+        },
+        "cursor": {
+          "x": 48,
+          "y": 72
+        },
+        "action": {
+          "id": "call-6",
+          "label": "正在操作网页",
+          "phase": "running"
+        }
+      }
+    },
+    "rejectedActualOldPicture": true,
+    "rejectedActualUndecoratedPicture": true,
+    "errors": []
+  },
+  "timingCases": [
+    {
+      "name": "immediate",
+      "enable": false,
+      "delay": 0,
+      "frames": 7,
+      "first": {
+        "width": 756,
+        "height": 413,
+        "ms": 62
+      },
+      "clickResult": "1",
+      "errors": []
+    },
+    {
+      "name": "enable-only",
+      "enable": true,
+      "delay": 0,
+      "frames": 7,
+      "first": {
+        "width": 756,
+        "height": 413,
+        "ms": 51
+      },
+      "clickResult": "1",
+      "errors": []
+    },
+    {
+      "name": "delay-only",
+      "enable": false,
+      "delay": 300,
+      "frames": 7,
+      "first": {
+        "width": 756,
+        "height": 413,
+        "ms": 13
+      },
+      "clickResult": "1",
+      "errors": []
+    }
+  ],
+  "realBrowserSourceRegression": {
+    "success": true,
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0,
+    "tests": [
+      {
+        "title": "announces Chrome, not HeadlessChrome, in the reduced user-agent form",
+        "status": "passed"
+      },
+      {
+        "title": "runs new headless over a pipe, in the account profile, never on a display or a debugging port",
+        "status": "passed"
+      },
+      {
+        "title": "without a browser binary, a lease says what the server is missing",
+        "status": "passed"
+      },
+      {
+        "title": "a task keeps one real page; the shared page protocol drives it and sees iframes",
+        "status": "passed"
+      },
+      {
+        "title": "real static-page capture feedback belongs to confirmed dispatch and the current target",
+        "status": "passed"
+      }
+    ]
+  },
+  "screenshots": {
+    "headless-feedback-original.jpg": {
+      "sha256": "3d06ab9713c53e68ed0e2cf2d3b86c7e85118d26ade11d08d972fcfc8c3867fc",
+      "bytes": 12582
+    },
+    "headless-next-original.jpg": {
+      "sha256": "022d2a8bbe65c5df585039ce5ea69ed6b2832cfbb84f314384b35df5ce9268e8",
+      "bytes": 13091
+    },
+    "cu-native-bar-original.png": {
+      "sha256": "65ab1ead834485d986d6c3e09e0b0e82110ffe7ec2d00917af3da39898ce9b5e",
+      "bytes": 3869
+    },
+    "cu-click-result-original.png": {
+      "sha256": "e5da0d53556eea71b13cbe851c48ed527c43d07c211c729bfc57cc9e9e5ff8e2",
+      "bytes": 86560
+    }
+  },
+  "limits": [
+    "Raw JPEG pixels and frame feedback are separate product outputs; the JPEG has no manually drawn cursor or labels.",
+    "The first exploratory capture attempt timed out after eight seconds. Its cause remains unconfirmed; all three subsequent timing cases and the packaged lease path passed.",
+    "This is an actual packaged headless-component exercise, not a complete server deployment or phone acceptance.",
+    "The native click used background PX-to-AX delivery; foreground OS pointer passthrough remains unverified."
+  ]
+}
