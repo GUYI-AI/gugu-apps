@@ -180426,6 +180426,146 @@ async function pageBrowserVersion(lease) {
   return { userAgent, product: `Chrome/${chrome}` };
 }
 
+// program-src/feedback-view.mjs
+import { AsyncResource } from "node:async_hooks";
+var measured = (value2) => value2?.space === "screen-dip" && value2.relativeTo && typeof value2.relativeTo.windowId === "string" && value2.relativeTo.windowId.length > 0 && Number.isFinite(value2.zoomFactor) && value2.zoomFactor > 0 && [value2.bounds, value2.clip].every((box) => box && [box.x, box.y, box.width, box.height].every(Number.isFinite) && box.width > 0 && box.height > 0);
+function createBrowserFeedbackViews({ surfaces, log: log3 = () => {
+} }) {
+  const background = new AsyncResource("BrowserUseFeedback");
+  const detached = (work) => background.runInAsyncScope(work);
+  const report = (error2) => {
+    try {
+      log3({ error: String(error2) }, "Browser feedback could not be displayed");
+    } catch {
+    }
+  };
+  const attempt = (work) => {
+    try {
+      void Promise.resolve(work()).catch(report);
+    } catch (error2) {
+      report(error2);
+    }
+  };
+  const views = /* @__PURE__ */ new Set();
+  return {
+    attach(lease) {
+      let disposed = false, handle, placement = null, cursor = null, action = null, serial = 0, revision = 0;
+      const activities = /* @__PURE__ */ new Map();
+      let gesture, off = () => {
+      }, placementVersion = 0;
+      const visible = () => !disposed && placement?.space === "screen-dip" && placement.clip.width > 0 && placement.clip.height > 0;
+      const update = () => {
+        if (!handle || disposed) return;
+        if (!visible()) {
+          attempt(() => handle.update({ visible: false }));
+          return;
+        }
+        const { bounds, clip, zoomFactor, relativeTo } = placement;
+        const point = cursor && {
+          x: bounds.x + cursor.x * zoomFactor - clip.x,
+          y: bounds.y + cursor.y * zoomFactor - clip.y,
+          ...cursor.click ? { click: cursor.click } : {}
+        };
+        const shown = point && point.x >= 0 && point.y >= 0 && point.x < clip.width && point.y < clip.height ? point : null;
+        attempt(() => handle.update({
+          bounds: clip,
+          relativeTo,
+          visible: !!shown || !!action,
+          data: { revision, cursor: shown, action }
+        }));
+      };
+      const current = (value2) => detached(() => {
+        if (disposed) return;
+        placementVersion++;
+        const next = measured(value2) ? value2 : null;
+        if (!next || placement && (next.zoomFactor !== placement.zoomFactor || next.bounds.width !== placement.bounds.width || next.bounds.height !== placement.bounds.height)) {
+          revision++;
+          serial++;
+          cursor = null;
+          gesture = void 0;
+        }
+        placement = next;
+        update();
+      });
+      const view = {
+        observe(method, params2, native, child = false) {
+          if (disposed || method !== "Input.dispatchMouseEvent") return;
+          const operation = ++serial, target = revision;
+          if (child || params2.type === "mousePressed") gesture = void 0;
+          cursor = null;
+          detached(update);
+          if (child) return;
+          void native.then(() => detached(() => {
+            if (disposed || target !== revision || operation !== serial) return;
+            if (![params2.x, params2.y].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0)) return;
+            if (params2.type === "mousePressed") gesture = `click-${operation}`;
+            else if (params2.type !== "mouseReleased") gesture = void 0;
+            cursor = { x: params2.x, y: params2.y, ...gesture ? { click: gesture } : {} };
+            update();
+          }), () => detached(() => {
+            if (!disposed && operation === serial) {
+              cursor = null;
+              update();
+            }
+          }));
+        },
+        activity(label, phase, call) {
+          if (disposed) return;
+          if (label) activities.set(call, { label, phase });
+          else activities.delete(call);
+          action = [...activities.values()].at(-1) ?? null;
+          detached(update);
+        },
+        clear() {
+          revision++;
+          serial++;
+          cursor = null;
+          gesture = void 0;
+          detached(update);
+        },
+        close() {
+          if (disposed) return;
+          disposed = true;
+          off();
+          views.delete(view);
+          activities.clear();
+          action = cursor = null;
+          if (handle) detached(() => attempt(() => handle.close()));
+        }
+      };
+      views.add(view);
+      if (!surfaces?.open || !lease.presentation || !lease.onPresentation) return view;
+      try {
+        off = lease.onPresentation(current);
+        const opening = surfaces.open({ entry: "feedback.html", decorative: true, bounds: { x: 0, y: 0, width: 1, height: 1 }, visible: false });
+        void Promise.resolve(opening).then((value2) => detached(() => {
+          if (disposed) {
+            attempt(() => value2.close());
+            return;
+          }
+          handle = value2;
+          handle.onEvent((event) => {
+            if (event.type === "closed") view.close();
+            if (event.type === "display" && event.reason) report(event.reason);
+          });
+          update();
+        })).catch(report);
+        const snapshot3 = placementVersion;
+        void Promise.resolve(lease.presentation()).then((value2) => {
+          if (placementVersion === snapshot3) current(value2);
+        }).catch(report);
+      } catch (error2) {
+        report(error2);
+      }
+      return view;
+    },
+    dispose() {
+      for (const view of [...views]) view.close();
+      background.emitDestroy();
+    }
+  };
+}
+
 // program-src/core.mjs
 var PLAYWRIGHT_CONFIG = Object.freeze({
   capabilities: ["core", "core-navigation", "core-input", "vision"],
@@ -180463,8 +180603,8 @@ async function checkFileArguments(args, roots) {
   if (typeof args?.filename === "string") await inside(args.filename);
 }
 var TaskBrowser = class {
-  constructor({ playwright: playwright3, pages, sessionId, workspace, outputDir: outputDir2, log: log3, onGone }) {
-    Object.assign(this, { playwright: playwright3, pages, sessionId, workspace, outputDir: outputDir2, log: log3, onGone });
+  constructor({ playwright: playwright3, pages, feedbackViews, sessionId, workspace, outputDir: outputDir2, log: log3, onGone }) {
+    Object.assign(this, { playwright: playwright3, pages, feedbackViews, sessionId, workspace, outputDir: outputDir2, log: log3, onGone });
     this.connecting = null;
     this.lease = null;
     this.server = null;
@@ -180484,12 +180624,25 @@ var TaskBrowser = class {
     await mkdir(this.outputDir, { recursive: true });
     const lease = await this.pages.acquire(initialUrl ? { url: initialUrl } : {});
     this.lease = lease;
+    this.feedback = this.feedbackViews.attach(lease);
+    const observedLease = { ...lease, send: (method, params2 = {}, sessionId) => {
+      const native = lease.send(method, params2, sessionId);
+      try {
+        this.feedback.observe(method, params2, native, !!sessionId);
+      } catch (error2) {
+        this.log({ error: String(error2) }, "Browser feedback could not observe an action");
+      }
+      return native;
+    } };
+    lease.onMessage((method, params2) => {
+      if (method === "Page.frameNavigated" && !params2.frame?.parentId) this.feedback.clear();
+    });
     lease.onClose((reason) => {
       this.log({ sessionId: this.sessionId, reason }, "task page lease ended");
       void this.close();
     });
     const browser = await pageBrowserVersion(lease);
-    const transport = createLeaseTransport(lease, browser, { log: (fields, message) => this.log({ sessionId: this.sessionId, ...fields }, message) });
+    const transport = createLeaseTransport(observedLease, browser, { log: (fields, message) => this.log({ sessionId: this.sessionId, ...fields }, message) });
     const { createConnection: createConnection3, chromium: chromium2 } = this.playwright;
     const server2 = await createConnection3({ ...PLAYWRIGHT_CONFIG, outputDir: this.outputDir }, async () => {
       const connected = await chromium2.connectOverCDP(transport);
@@ -180509,6 +180662,7 @@ var TaskBrowser = class {
   async close() {
     if (this.closed) return;
     this.closed = true;
+    this.feedback?.close();
     this.onGone();
     await this.client?.close().catch(() => void 0);
     await this.server?.close().catch(() => void 0);
@@ -180517,6 +180671,7 @@ var TaskBrowser = class {
 };
 function createBrowserUse({ playwright: playwright3, gugu, dataDir, settings, log: log3 }) {
   const browsers = /* @__PURE__ */ new Map();
+  const feedbackViews = createBrowserFeedbackViews({ surfaces: gugu.surfaces, log: log3 });
   let schemas2 = null;
   async function listTools() {
     schemas2 ??= (async () => {
@@ -180545,6 +180700,7 @@ function createBrowserUse({ playwright: playwright3, gugu, dataDir, settings, lo
       const created = new TaskBrowser({
         playwright: playwright3,
         pages: gugu.pages,
+        feedbackViews,
         sessionId,
         workspace,
         log: log3,
@@ -180574,7 +180730,13 @@ function createBrowserUse({ playwright: playwright3, gugu, dataDir, settings, lo
         const start3 = typeof settings.startUrl === "string" && settings.startUrl !== "about:blank" ? settings.startUrl : void 0;
         const client = await browser.connect(navigate2 ?? start3);
         signal?.throwIfAborted();
-        return await client.callTool({ name: params2.name, arguments: params2.arguments }, void 0, { signal, timeout: TOOL_TIMEOUT_MS });
+        const activity = Symbol(params2.name);
+        browser.feedback?.activity("\u6B63\u5728\u64CD\u4F5C\u7F51\u9875", "running", activity);
+        try {
+          return await client.callTool({ name: params2.name, arguments: params2.arguments }, void 0, { signal, timeout: TOOL_TIMEOUT_MS });
+        } finally {
+          browser.feedback?.activity(null, void 0, activity);
+        }
       } catch (error2) {
         log3({ sessionId, tool: params2.name, error: error2 instanceof Error ? error2.message : String(error2) }, "browser tool failed");
         return refused(`The browser tool could not run: ${error2 instanceof Error ? error2.message : String(error2)}`);
@@ -180583,6 +180745,7 @@ function createBrowserUse({ playwright: playwright3, gugu, dataDir, settings, lo
   }
   async function closeAll() {
     await Promise.allSettled([...browsers.values()].map((browser) => browser.close()));
+    feedbackViews.dispose();
   }
   return { listTools, callTool, closeAll, browsers };
 }
