@@ -14,7 +14,7 @@ These are original raw pixels. Cursor/action feedback is a separate frame payloa
 
 ## Actual native Computer Use
 
-One real task used the installed Computer Use tools to locate its isolated Chrome counter window, capture it, click its button, and read back AXButton 1 and the original screenshot. The actual native App surface displayed the same task and Stop. The originals below come from that surface and the real native tool result. The click used background PX-to-AX delivery; foreground OS pointer passthrough remains to be exercised.
+One real task used the installed Computer Use tools to locate its isolated Chrome counter window, capture it, click its button, and read back AXButton 1 and the original screenshot. The actual native App surface displayed the same task and Stop. Its observed bounds were (432,52,236,44), inside the observed target window (22,52,1200,1006). The originals below come from that surface and the real native tool result. The click used background PX-to-AX delivery; foreground OS pointer passthrough remains to be exercised.
 
 ![Original native Computer Use bar](cu-native-bar-original.png)
 

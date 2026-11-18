@@ -165,5 +165,21 @@
     "The first exploratory capture attempt timed out after eight seconds. Its cause remains unconfirmed; all three subsequent timing cases and the packaged lease path passed.",
     "This is an actual packaged headless-component exercise, not a complete server deployment or phone acceptance.",
     "The native click used background PX-to-AX delivery; foreground OS pointer passthrough remains unverified."
-  ]
+  ],
+  "nativePlacement": {
+    "observedVisibleBar": {
+      "x": 432,
+      "y": 52,
+      "width": 236,
+      "height": 44
+    },
+    "observedTargetWindow": {
+      "x": 22,
+      "y": 52,
+      "width": 1200,
+      "height": 1006
+    },
+    "barInsideObservedTargetBounds": true,
+    "source": "Actual Beta surface-window observation and real native tool structured result"
+  }
 }
