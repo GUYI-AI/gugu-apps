@@ -1,3 +1,3 @@
-Restores the virtual pointer, click feedback and operation caption over Browser Use's task page. The caption follows actual browser work and clears when it ends; the passive display leaves page input available.
+Requires Gugu App interface 58, matching the released Beta used to verify pointer, click and operation feedback. This replaces withdrawn 0.4.1; earlier clients continue to receive the compatible 0.4.0 release.
 
-Shared pictures and phone views show matching pointer and operation feedback with the new compatible Gugu Beta. Local page feedback continues to use App interface 36.
+The browser tools and feedback implementation are unchanged from 0.4.1.

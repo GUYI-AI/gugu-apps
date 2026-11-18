@@ -4,4 +4,4 @@
 
 卸载或停用此应用后，Agent 无法继续调用它的工具，手动浏览网页照常可用。
 
-工具来自 Apache-2.0 授权的 Playwright MCP。需要咕咕应用接口 36。
+工具来自 Apache-2.0 授权的 Playwright MCP。需要咕咕应用接口 58。
