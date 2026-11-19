@@ -1,0 +1,40 @@
+/* Only the host look's tokens (guide apps-ui): no fonts, sizes, colours or radii of our own. */
+body { margin: 0; }
+.pr { height: 100vh; margin: 0; display: flex; flex-direction: column; gap: var(--em-spacing-sm); padding: var(--em-spacing-md) var(--em-spacing-lg); }
+.pr > * { margin: 0; }
+.pr .head { display: flex; align-items: center; gap: var(--em-spacing-xs); color: var(--em-foreground-muted); min-width: 0; }
+.pr .head .repo { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr .title { font-size: var(--em-font-title); line-height: var(--em-lh-title); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pr .meta { color: var(--em-foreground-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add, .ok { color: var(--em-foreground-success); }
+.del, .bad { color: var(--em-foreground-destructive); }
+.wait { color: var(--em-foreground-warning); }
+.done { color: var(--em-foreground-info); }
+.pr .status { display: flex; align-items: center; gap: var(--em-spacing-xs); }
+.pr .status span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr .actions { margin-top: auto; display: flex; align-items: center; gap: var(--em-spacing-sm); }
+.pr .actions .reason { flex: 1; min-width: 0; text-align: right; color: var(--em-foreground-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr .actions .spacer { flex: 1; }
+.pr .state { white-space: nowrap; }
+.pr .state.open { color: var(--em-foreground-success); }
+.pr .state.merged { color: var(--em-foreground-info); }
+.pr .state.closed { color: var(--em-foreground-destructive); }
+.pr .state.draft { color: var(--em-foreground-muted); }
+/* the diff and confirm dialogs */
+.dlg { margin: 0; padding: var(--em-spacing-lg); }
+.dlg .bar { display: flex; align-items: center; gap: var(--em-spacing-sm); }
+.dlg .bar h3 { flex: 1; margin: 0; }
+.files { margin: var(--em-spacing-md) 0 0; }
+.files details { border-top: 1px solid var(--em-border); padding: var(--em-spacing-sm) 0; margin: 0; }
+.files summary { display: flex; align-items: center; gap: var(--em-spacing-sm); cursor: pointer; }
+.files summary .path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.files .patch { margin-top: var(--em-spacing-sm); }
+.diff { margin: 0; padding: var(--em-spacing-xs) 0; overflow-x: auto; }
+.diff span { display: block; padding: 0 var(--em-spacing-md); white-space: pre; }
+.diff .ins { background: var(--em-background-success); }
+.diff .rem { background: var(--em-background-destructive); }
+.diff .hunk { color: var(--em-foreground-muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: var(--em-spacing-xs) var(--em-spacing-md); margin: 0 0 var(--em-spacing-md); }
+.kv dt { color: var(--em-foreground-muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: var(--em-spacing-sm); margin-top: var(--em-spacing-md); }
