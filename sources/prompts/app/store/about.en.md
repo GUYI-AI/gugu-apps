@@ -4,6 +4,6 @@ This App works on the prompts you keep in gugu under Library → Prompts, the sa
 - "Which of my prompts overlap?": the agent reads all your prompts and helps you merge or rewrite them;
 - When an agent deletes a prompt, you are told at once and can undo it.
 
-You still create, edit and delete prompts yourself under Library → Prompts. You and your agents change the same list; it belongs to your account, so it is there on every computer.
+You still create, edit and delete prompts yourself under Library → Prompts; opening this App gives you a one-click "Open in Library · Prompts". You and your agents change the same list; it belongs to your account, so it is there on every computer.
 
 Prompts that other Apps bring are read-only for agents. Without this App, agents never see your prompts and carry nothing extra in their context.

@@ -4,8 +4,8 @@
   "defaultLocale": "en",
   "subtitle": "To-dos and notes by the hour",
   "author": "咕咕",
-  "version": "0.7.0",
-  "apiVersion": 25,
+  "version": "0.8.0",
+  "apiVersion": 58,
   "platforms": [
     "desktop"
   ],
@@ -32,7 +32,7 @@
         "tools": "tools.js"
       }
     ],
-    "instructions": "day-calendar__record(what, when) writes the person's to-do or memory on their calendar; set_done and remove only when they ask."
+    "instructions": "Query then record definite personal plans/events received here; update matching IDs for changes/completion. Ignore quotes/hypotheticals; never invent times."
   },
   "license": "MIT",
   "localized": {

@@ -16,15 +16,15 @@ function render(context) {
   const paused = view.state === 'paused';
   const action = paused ? 'resume' : 'stop';
   const button = zh ? paused ? '继续' : '停止' : paused ? 'Continue' : 'Stop';
-  const description = zh ? `${agent}${title ? ' · ' + title : ''}${paused ? ' 已暂停' : ' 正在操作'}`
-    : `${agent}${title ? ' · ' + title : ''}${paused ? ' is paused' : ' is operating'}`;
+  const description = zh ? `${agent}${title ? ' ' + title : ''}${paused ? ' 已暂停' : ' 正在操作'}`
+    : `${agent}${title ? ' ' + title : ''}${paused ? ' is paused' : ' is operating'}`;
   document.documentElement.lang = zh ? 'zh-CN' : 'en';
   document.body.dataset.attachment = view.attachment || 'above';
   ui.bar.hidden = false; ui.bar.dataset.state = view.state; ui.bar.setAttribute('aria-label', description);
   ui.identity.dataset.task = String(Boolean(title)); ui.identity.title = description;
   ui.agent.textContent = agent; ui.agent.title = agent;
   ui.task.hidden = !title; ui.task.textContent = title; ui.task.title = title;
-  ui.label.textContent = button; ui.button.setAttribute('aria-label', `${button} · ${agent}`);
+  ui.label.textContent = button; ui.button.setAttribute('aria-label', `${button} ${agent}`);
   ui.stop.hidden = paused; ui.resume.hidden = !paused;
   shown = { generation: view.generation, action };
 }

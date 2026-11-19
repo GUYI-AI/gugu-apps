@@ -3,9 +3,9 @@
   "name": "Computer Use",
   "defaultLocale": "en",
   "subtitle": "Native app control for agents",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "icon": "icon.png",
-  "apiVersion": 36,
+  "apiVersion": 58,
   "platforms": [
     "desktop"
   ],

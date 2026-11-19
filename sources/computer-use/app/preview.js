@@ -103,17 +103,17 @@ async function apply(state) {
   if (!state.session) { reset(); empty(text.outside); return; }
   const latest = state.actions.at(-1);
   if (local() && latest?.status === 'failed' && permit.status !== 'missing') void permit.check();
-  const said = [state.target?.app, latest && describe(latest), state.liveProblem ? `${text.stale}${state.liveProblem}` : state.waiting && text.waiting].filter(Boolean).join(' · ');
+  const said = [state.target?.app, latest && describe(latest), state.liveProblem ? `${text.stale}${state.liveProblem}` : state.waiting && text.waiting].filter(Boolean).join(' ');
   ui.what.textContent = said;
   await mount(state.projection);
   controlTask = state.target?.pid && state.projection ? sessionId() : null;
   controlRevision = state.targetRevision;
   paused = state.paused === true;
-  ui.place.textContent = `Computer Use · ${context?.workspace?.deviceId ? text.remote : text.local}`;
+  ui.place.textContent = `Computer Use ${context?.workspace?.deviceId ? text.remote : text.local}`;
   ui.target.textContent = state.target?.app ?? (state.target?.pid ? `PID ${state.target.pid}` : text.noTarget);
   ui.pause.textContent = paused ? text.resume : text.pause;
   ui.pause.disabled = !controlTask || controlling;
-  cursor.frames(state.frames);
+  cursor.frames(state.frames, { revision: state.targetRevision, target: state.target });
   const last = state.frames.at(-1);
   if (last) ui.when.setAttribute('datetime', last.at);
   if (!last) empty(!latest ? text.idle : latest.status === 'running' ? text.loading : text.unseen);

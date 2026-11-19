@@ -84,6 +84,26 @@
       "sha256": "38e2ecbfa8815fda47bab302ae4616925faad9b6e52e4b1572df95e009800745",
       "bytes": 1453538,
       "yanked": null
+    },
+    {
+      "version": "0.4.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "25f41de407e69c1d90f7df50adae16ab6255996a",
+      "sha256": "c19f7bd3d5139a5e171aaf86872faa038c530e454b08846bc1bdfbf164d46331",
+      "bytes": 1467379,
+      "yanked": {
+        "reason": "This release was validated on App API58 only. Clients below API58 should use 0.4.0; the replacement 0.4.2 explicitly requires API58. Withdrawal does not automatically downgrade an installed copy."
+      }
+    },
+    {
+      "version": "0.4.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/browser-use/app",
+      "commit": "ce30484be5c674ec036ce6bc98539df39f68c1cb",
+      "sha256": "c49253e213a0e1e00fb39cdeb64b696e7a2e76d615f5a19d1da62c4669643ec7",
+      "bytes": 1467381,
+      "yanked": null
     }
   ]
 }

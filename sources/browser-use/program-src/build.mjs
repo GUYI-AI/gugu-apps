@@ -67,3 +67,13 @@ for (const [name, bytes] of files) {
   }
 }
 if (!check) console.log(`Browser Use program: ${(files.get('lib/server.mjs').length / 1024 / 1024).toFixed(1)} MiB, ${packages.size} bundled packages`);
+
+// Reuse Computer Use's migrated MotionPlayer verbatim; this is one source, not a second cursor implementation.
+for (const [source, target] of [['app/cursor.js', 'cursor.js'], ['vendor/cua-cursor-motion/LICENSE', 'CURSOR-LICENSE']]) {
+  const bytes = await readFile(path.join(here, '..', '..', 'computer-use', source));
+  const asset = path.join(here, '..', 'app', target);
+  if (check) {
+    const current = await readFile(asset).catch(() => null);
+    if (!current || !current.equals(bytes)) throw new Error('Rebuild the Browser Use cursor asset and license.');
+  } else await writeFile(asset, bytes);
+}

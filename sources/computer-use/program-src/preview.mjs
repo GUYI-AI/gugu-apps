@@ -2,6 +2,7 @@ import { AsyncResource } from 'node:async_hooks';
 import { PNG } from 'pngjs';
 import { cursorOnWindow, resolveComputerWindow } from '../app/program/native-runtime.mjs';
 import { createPreviewInput, pictureCoordinateKey } from './preview-input.mjs';
+import { computerPresentation, presentationTarget } from './presentation.mjs';
 
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const positive = value => Number.isSafeInteger(value) && value > 0;
@@ -36,6 +37,8 @@ export function projectionPng(base64) {
 /** Task-private metadata and resources; pixels only enter the host's authorized projection transport. */
 export function createComputerPreview({ projection, native, tools, control, showTaskPages, notify = async () => {}, log = console, now = Date.now, platform = process.platform }) {
   const tasks = new Map();
+  const callActions = new WeakMap(), actionTargets = new WeakMap(), actionIds = new WeakMap();
+  let nextAction = 0;
   const shown = new Set(), showing = new Set(), failedAt = new Map();
   const background = new AsyncResource('ComputerUsePreview');
   const detached = work => background.runInAsyncScope(work);
@@ -44,7 +47,20 @@ export function createComputerPreview({ projection, native, tools, control, show
   const attempt = work => { try { void Promise.resolve(work()).catch(report); } catch (error) { report(error); } };
   const changed = () => attempt(() => notify({ method: 'notifications/computer-use/changed' }));
   const valid = state => !disposed && !state.abort.signal.aborted && tasks.get(state.session) === state;
+  const clearPresentation = state => {
+    if (state.source?.present) detached(() => attempt(() => state.source.present(null)));
+  };
+  const present = state => {
+    const frame = state.frames.at(-1);
+    if (!valid(state) || !state.source?.present || !frame || frame.epoch !== state.epoch) return;
+    const actions = state.actions.filter(value => actionTargets.get(value) === key(state.target));
+    const action = actions.findLast(value => value.status === 'running') ?? actions.at(-1);
+    const value = computerPresentation(frame.presentationFrame, state.target, frame.cursor, action,
+      action && actionIds.get(action), !!control?.stoppedFor(state.target?.pid));
+    detached(() => attempt(() => state.source.present(value)));
+  };
   const retire = state => {
+    clearPresentation(state);
     state.abort.abort();
     state.input?.close();
     state.frames.length = 0;
@@ -119,13 +135,15 @@ export function createComputerPreview({ projection, native, tools, control, show
         state.input.invalidate();
       }
       const coordinateRevision = state.coordinateRevision;
-      const sequence = await state.source.publish(frame);
+      const identity = presentationTarget(target, epoch);
+      const sequence = await state.source.publish({ ...frame, ...(identity ? { target: identity } : {}) });
       if (!valid(state) || state.epoch !== epoch) return;
       state.frames.push({ sequence, width: frame.width, height: frame.height, cursor, epoch, coordinateRevision, coordinateKey,
         inputReady: !!target?.window_id && raw?.screenshot_width === frame.width && raw?.screenshot_height === frame.height,
-        at, target });
+        at, target, presentationFrame: { sequence, width: frame.width, height: frame.height, target: identity } });
       state.frames = state.frames.slice(-32);
       state.problem = null; state.waiting = false; changed();
+      present(state);
     })).catch(error => { if (valid(state) && state.epoch === epoch) { state.problem = line(error); changed(); } });
   }
   async function capture(state) {
@@ -134,7 +152,7 @@ export function createComputerPreview({ projection, native, tools, control, show
     if (now() - state.lastAt < Math.max(500, state.took)) return;
     const target = { ...state.target }, epoch = state.epoch, caller = state.caller, owner = state.owner;
     const stopped = control?.stoppedFor(target.pid);
-    if (stopped) { state.problem = line(stopped); return; }
+    if (stopped) { state.problem = line(stopped); clearPresentation(state); return; }
     const started = now();
     state.capture = (async () => {
       const signal = state.abort.signal;
@@ -145,12 +163,12 @@ export function createComputerPreview({ projection, native, tools, control, show
       const after = await native.cursorState?.(owner, signal).catch(() => null) ?? null;
       if (!valid(state) || state.epoch !== epoch || key(state.target) !== key(target)) return;
       const stopped = control?.stoppedFor(target.pid);
-      if (stopped) { state.problem = line(stopped); return; }
+      if (stopped) { state.problem = line(stopped); clearPresentation(state); return; }
       if (result.isError || !imageOf(result)) throw new Error(result.content?.find(b => b.type === 'text')?.text ?? 'The window returned no picture.');
       const cursor = cursorOnWindow(before, after, result);
       publish(state, result, cursor, epoch);
       await state.publishing;
-    })().catch(error => { if (valid(state) && state.epoch === epoch) { state.problem = line(error); changed(); } })
+    })().catch(error => { if (valid(state) && state.epoch === epoch) { state.problem = line(error); clearPresentation(state); changed(); } })
       .finally(() => { state.lastAt = now(); state.took = now() - started; state.capture = null; });
     return state.capture;
   }
@@ -168,11 +186,16 @@ export function createComputerPreview({ projection, native, tools, control, show
       if (disposed) return () => {};
       const state = open(caller);
       const action = { tool: name, args: argsForDisplay(args), at: new Date(now()).toISOString(), status: 'running' };
+      callActions.set(caller, action); actionIds.set(action, `action-${++nextAction}`);
       state.actions.push(action); state.actions = state.actions.slice(-30);
+      if (args.pid === state.target?.pid && (args.window_id === undefined || args.window_id === state.target?.window_id)) {
+        actionTargets.set(action, key(state.target)); present(state);
+      } else clearPresentation(state);
       return result => {
         if (!valid(state)) return;
         if (result?.structuredContent?.code === 'needs_confirmation') state.actions = state.actions.filter(a => a !== action);
         else action.status = result?.isError === true ? 'failed' : 'done';
+        present(state);
         // Missing macOS permission: the page beside the task is where the person sees what is missing and turns it on.
         if (result?.structuredContent?.code === 'os_permission') reveal(caller.session);
         changed();
@@ -182,6 +205,7 @@ export function createComputerPreview({ projection, native, tools, control, show
       const state = tasks.get(caller.session);
       if (!state || result.isError || !valid(state)) return;
       const raw = record(result.structuredContent) ? result.structuredContent : {};
+      clearPresentation(state);
       // A new actual observation supersedes a live capture started earlier,
       // even when both pictures describe the same window.
       state.epoch++;
@@ -199,6 +223,8 @@ export function createComputerPreview({ projection, native, tools, control, show
         // A new window is not a failure: the page says, in its own language, that its picture is on the way.
         if (key(target) !== key(state.target)) { state.problem = null; state.waiting = true; }
         state.target = target;
+        const action = callActions.get(caller);
+        if (action) actionTargets.set(action, key(target));
       }
       state.owner = owner;
       reveal(caller.session);
@@ -224,6 +250,7 @@ export function createComputerPreview({ projection, native, tools, control, show
       if (!state || !valid(state) || !positive(state.target?.pid) || !control?.setTargetPaused) throw new Error('No observed application is available in this task.');
       if (expected?.projection !== state.source?.id || expected?.targetRevision !== state.epoch) throw new Error('The task picture or target changed. Refresh before controlling it.');
       state.input.invalidate();
+      clearPresentation(state);
       const { target, caller } = state;
       const reason = control.setTargetPaused({ pid: target.pid, windowId: target.window_id, appName: target.app,
         sessionId: session, callerName: caller.name, taskTitle: caller.taskTitle }, action === 'pause');
