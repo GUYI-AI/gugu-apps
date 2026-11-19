@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "你写，聊天里的 agent 在页边批注",
   "author": "咕咕",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "apiVersion": 31,
   "platforms": [
     "desktop",
@@ -63,7 +63,7 @@
       }
     ],
     "skills": "skills",
-    "instructions": "A whisper about a type and memory page (page.tam.json): read skill type-and-memory, then answer with its tools, not in chat."
+    "instructions": "A whisper about a type and memory page (a .tam.json file): read skill type-and-memory, then answer with its tools, not in chat."
   },
   "license": "MIT",
   "localized": {

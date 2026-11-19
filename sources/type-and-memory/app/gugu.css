@@ -1,6 +1,5 @@
 /* The paper takes gugu's own colours, so it follows the host's light and dark. */
 html, body { height: 100%; margin: 0; }
-body { display: flex; flex-direction: column; }
 #page { flex: 1; min-height: 0; }
 #page[hidden] { display: none; }
 #page .tm-root {
@@ -12,7 +11,38 @@ body { display: flex; flex-direction: column; }
   --tm-size: 17px;
 }
 
-/* On its own: who the page is written with, and the way to another. */
+/* Narrow (a chat panel, a phone): the list or the page. Wide (the dock, a wide panel): both, the list on the left. */
+#shell { height: 100%; display: flex; flex-direction: column; }
+#side { flex: none; display: flex; flex-direction: column; min-height: 0; }
+#main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#notes { display: none; }
+#shell.listing #side { flex: 1; }
+#shell.listing #notes { display: flex; }
+#shell.listing #main { display: none; }
+@media (min-width: 760px) {
+  #shell { flex-direction: row; }
+  #side { width: 300px; border-inline-end: 1px solid var(--em-border); }
+  #notes { display: flex; }
+  #shell.listing #main { display: flex; }
+  #toggle { pointer-events: none; }
+  #toggle gugu-icon[name='chevron-left'] { display: none; }
+  #where { display: none; }
+  #new span { display: none; }
+}
+
+#bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--em-border); }
+#bar button { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 4px 6px; }
+#where { flex: 1; min-width: 0; text-align: center; color: var(--em-foreground-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#notes { flex: 1; min-height: 0; overflow: auto; flex-direction: column; gap: 4px; padding: 8px 8px 16px; }
+#notes input[type='search'] { margin: 4px 4px 8px; width: auto; }
+#notes h5 { margin: 10px 8px 2px; }
+#notes .list { margin: 0; }
+#notes .list > li > gugu-icon { color: var(--em-foreground-muted); }
+#notes .list > li > button { opacity: 0; }
+#notes .list > li:is(:hover, :focus-within, [aria-current]) > button { opacity: 1; }
+@media (hover: none) { #notes .list > li > button { opacity: 1; } }
+
+/* A page on this device: the way to take it to an agent. */
 #with { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--em-border); }
 #with small { color: var(--em-foreground-muted); }
 #with[hidden] { display: none; }
@@ -21,3 +51,9 @@ body { display: flex; flex-direction: column; }
 #start[hidden] { display: none; }
 #start div { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 #start p { max-width: 28em; margin: 0; color: var(--em-foreground-muted); }
+
+#edit { width: min(360px, calc(100vw - 32px)); }
+#edit h3 { margin-top: 0; }
+#edit input { width: 100%; }
+#edit p { color: var(--em-foreground-destructive); }
+#edit .row { margin-top: 12px; justify-content: flex-end; }
