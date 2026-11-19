@@ -1,10 +1,8 @@
 // A time axis: one day in a narrow panel, a week (or one day) in a wide tab. Timed entries are blocks at their hour,
-// entries without a time sit in the all-day row. Everything lives in the App's data folder (journal.json); agents add to
-// it with the `record` tool, the page changes it through the same program.
+// entries without a time sit in the all-day row. The page and agents share the daily-file program.
 (function () {
   const api = window.gugu
   const $ = (id) => document.getElementById(id)
-  const FILE = 'journal.json'
 
   function el(tag, props, ...kids) {
     const n = document.createElement(tag)
@@ -69,7 +67,7 @@
       prevMonth: '上个月', nextMonth: '下个月', prevDay: '前一天', nextDay: '后一天', prevWeek: '上一周', nextWeek: '下一周',
       expandMonth: '展开整月', dayMode: '日', weekMode: '周',
       todo: '待办', memory: '记事', doneTodo: '勾掉的待办', agentLegend: 'agent 记的，点开回到那个任务', legend: '图例',
-      emptyDay: '这一天还没有记录', emptyWeek: '这一周还没有记录',
+      emptyDay: '这一天还没有记录', emptyWeek: '这一周还没有记录', loading: '正在读取日历…',
       emptyHint: '点时间轴上的空白处加一条，或者在任务里让 agent 帮你记',
       slot: (t) => `${t} 点一下加一条`,
       add: '加一条待办，回车', addHint: '不写时间的待办放在「全天」那一行',
@@ -95,7 +93,7 @@
       prevMonth: 'Previous month', nextMonth: 'Next month', prevDay: 'Previous day', nextDay: 'Next day', prevWeek: 'Previous week', nextWeek: 'Next week',
       expandMonth: 'Show the month', dayMode: 'Day', weekMode: 'Week',
       todo: 'To-do', memory: 'Memory', doneTodo: 'Checked to-do', agentLegend: 'Recorded by an agent; opens its task', legend: 'Legend',
-      emptyDay: 'Nothing recorded this day', emptyWeek: 'Nothing recorded this week',
+      emptyDay: 'Nothing recorded this day', emptyWeek: 'Nothing recorded this week', loading: 'Loading calendar…',
       emptyHint: 'Click an empty time to add one, or ask an agent in a task to record it',
       slot: (t) => `${t} click to add`,
       add: 'Add a to-do, press Enter', addHint: 'To-dos without a time go in the all-day row',
@@ -115,7 +113,8 @@
   let selected = keyOf(new Date())
   let days = {}
   let raw
-  let rawOk = true
+  let loadedMonths = ''
+  let loading = 0
   // Whether this page is on screen (gugu's layout.visible: a hidden App page still reads its document as visible).
   let shown = true
   // What the bar says: a read error goes once a read succeeds, a save error once a change does.
@@ -150,34 +149,41 @@
     }
   }
 
+  // The displayed week can cross December/January; the month picker may be browsing
+  // somewhere else. Read those months only, without reverting the main-line time axis.
+  function visibleMonths() {
+    const d = dateOf(selected)
+    const mv = monthView || { y: d.getFullYear(), m: d.getMonth() }
+    return [...new Set([...weekOf(selected).map((k) => k.slice(0, 7)), `${mv.y}-${pad(mv.m + 1)}`])].sort()
+  }
+
   async function load() {
-    let next
+    const request = ++loading, months = visibleMonths(), scope = months.join(',')
+    const stale = () => request !== loading || scope !== visibleMonths().join(',')
+    let next, found = {}
     try {
-      next = await api.readData(FILE)
+      const results = await Promise.all(months.map((month) => api.callProgram('month', { month })))
+      if (stale()) return false
+      for (const res of results) {
+        const text = (res.content || []).map((c) => c.text || '').join('')
+        if (res.isError) throw new Error(text || 'month failed')
+        const v = JSON.parse(text)
+        if (!v || v.version !== 2 || !v.days || typeof v.days !== 'object' || Array.isArray(v.days)) throw new Error('invalid calendar month')
+        Object.assign(found, v.days)
+      }
+      next = JSON.stringify(found)
     } catch (e) {
+      if (stale()) return false
       showErr(t().readFail((e && e.message) || String(e)), 'read')
-      return false
+      return true
     }
-    if (errKind === 'jump') showErr('')
-    if (next === raw) {
-      if (errKind === 'read' && rawOk) showErr('')
-      return false
-    }
-    raw = next
-    try {
-      const v = next ? JSON.parse(next) : null
-      days = (v && v.days) || {}
-    } catch (e) {
-      rawOk = false
-      showErr(t().readFail(`${FILE}: ${e.message}`), 'read')
-      return false
-    }
-    rawOk = true
-    if (errKind === 'read') showErr('')
+    if (errKind === 'jump' || errKind === 'read') showErr('')
+    if (next === raw && loadedMonths === scope) return false
+    raw = next; days = found; loadedMonths = scope
     return true
   }
 
-  // Every change goes through the App's own program, the one writer of journal.json, so an agent's
+  // Every change goes through the App's own program, the one writer of daily files, so an agent's
   // record landing at the same moment is never overwritten by this page's copy.
   async function change(tool, args) {
     try {
@@ -481,9 +487,10 @@
       const card = entryCard(keys)
       if (card) grid.append(card)
     }
-    if (!keys.some((k) => (days[k] || []).length) && !draft) {
+    const known = loadedMonths === visibleMonths().join(',')
+    if (!keys.some((k) => (days[k] || []).length) && !draft && (known || errKind !== 'read')) {
       grid.append(el('div', { class: 'empty-over', style: `top:${(Math.max(now / 60 - 3.5, 1) | 0) * H + H / 2}px;left:${gw + 12}px` },
-        el('gugu-empty', { icon: 'calendar-clock' }, el('strong', { text: keys.length > 1 ? t().emptyWeek : t().emptyDay }), el('small', { text: t().emptyHint }))))
+        el('gugu-empty', { icon: 'calendar-clock' }, el('strong', { text: known ? (keys.length > 1 ? t().emptyWeek : t().emptyDay) : t().loading }), known ? el('small', { text: t().emptyHint }) : null)))
     }
     const scroller = el('div', { class: 'scroller', id: 'scroller', onscroll: (ev) => { scrollTop = ev.target.scrollTop } }, grid)
     return { scroller, tpl, keys }
@@ -541,6 +548,7 @@
       const d = new Date(mv.y, mv.m + n, 1)
       monthView = { y: d.getFullYear(), m: d.getMonth() }
       render()
+      load().then((changed) => { if (changed && !draft) render() })
     }
     return el('div', { class: small ? 'mini' : 'month' },
       el('div', { class: 'mh' },
@@ -665,6 +673,7 @@
     draft = null
     shownEntry = null
     render()
+    load().then((changed) => { if (changed && !draft) render() })
   }
 
   // ---- wiring ---------------------------------------------------------------

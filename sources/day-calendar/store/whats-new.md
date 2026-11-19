@@ -1,1 +1,1 @@
-Runs on gugu with App interface 25.
+Definite personal plans and events shared with an enabled agent are recorded proactively. Completing or rescheduling updates the existing entry. The day/week time axis and end times are preserved; entries now use daily files with migration backup and recovery for interrupted moves. Requires gugu App interface 58.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+
+- Proactively record definite personal plans or events received by an enabled agent. Query first and update the same entry when the person completes or reschedules it.
+- Store entries by year, month and day; preserve `journal.json` as the migration backup and recover interrupted cross-day moves before reading.
+- Keep the time axis, day/week views, optional end times and source-task links from 0.7.0. Read the displayed months, including weeks crossing a year boundary.
+- Require App interface 58, the client interface used for this release's real-session acceptance. No market entry is added by this source change.
+
 ## 0.7.0
 
 App interface 25: nothing else changes.
