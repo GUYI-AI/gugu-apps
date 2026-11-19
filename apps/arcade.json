@@ -1,0 +1,34 @@
+{
+  "id": "arcade",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/arcade/app",
+      "commit": "bf56321af59a9dec0297de1e78382c2921344b3e",
+      "sha256": "bbb4e73974afd238df0b9504279bae948a9729f3fb5b8acecbdcb762ab98d4db",
+      "bytes": 14200,
+      "yanked": null
+    },
+    {
+      "version": "0.1.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/arcade/app",
+      "commit": "362757664944f897ed281ea40a8cb2ce718c0f8a",
+      "sha256": "d710cb4cacafe97debaf6d9d504d0b4c8eb136c2948d4c087be318cdb94bbe9c",
+      "bytes": 39066,
+      "yanked": null
+    },
+    {
+      "version": "0.1.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/arcade/app",
+      "commit": "eb4a3da0aaf7adcb70d7038aaa6c423371df9237",
+      "sha256": "40b7d68f15eb7b0e1efb9953284f8e558393796dfbe9cc266e877d4b6c310f18",
+      "bytes": 40009,
+      "yanked": null
+    }
+  ]
+}

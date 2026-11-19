@@ -1,0 +1,23 @@
+/* The paper takes gugu's own colours, so it follows the host's light and dark. */
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; }
+#page { flex: 1; min-height: 0; }
+#page[hidden] { display: none; }
+#page .tm-root {
+  --tm-paper: var(--em-background);
+  --tm-ink: var(--em-foreground);
+  --tm-faint: var(--em-foreground-muted);
+  --tm-rule: var(--em-border);
+  --tm-sans: inherit;
+  --tm-size: 17px;
+}
+
+/* On its own: who the page is written with, and the way to another. */
+#with { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--em-border); }
+#with small { color: var(--em-foreground-muted); }
+#with[hidden] { display: none; }
+#with button { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 4px 6px; }
+#start { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
+#start[hidden] { display: none; }
+#start div { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#start p { max-width: 28em; margin: 0; color: var(--em-foreground-muted); }

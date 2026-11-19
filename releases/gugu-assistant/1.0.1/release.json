@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "appId": "gugu-assistant",
+  "productId": "gugu-assistant",
+  "version": "1.0.1",
+  "keyId": "gugu-assistant-release-1",
+  "source": {
+    "repo": "GUYI-AI/gugu-assistant",
+    "commit": "2ab45a17d59224974c842947df84581b4c727381"
+  },
+  "build": {
+    "repo": "GUYI-AI/gugu-assistant",
+    "commit": "2ab45a17d59224974c842947df84581b4c727381",
+    "workflow": ".github/workflows/release-candidate.yml",
+    "runId": "43486093269",
+    "node": "v24.14.0",
+    "lockSha256": "3cc012186392ebbd83f15ec72e35f055020b5d412c5016be05cde50535712bff"
+  },
+  "review": {
+    "url": "https://github.com/GUYI-AI/gugu-assistant/pull/6#pullrequestreview-5896471508",
+    "author": "AGI886",
+    "reviewer": "f-2j",
+    "commit": "2ab45a17d59224974c842947df84581b4c727381"
+  },
+  "compatibility": {
+    "desktop": {
+      "min": "0.3.3",
+      "maxExclusive": "0.4.0"
+    },
+    "server": {
+      "min": "0.3.3",
+      "maxExclusive": "0.4.0"
+    },
+    "api": {
+      "min": 50,
+      "max": 50
+    },
+    "data": {
+      "read": {
+        "min": 1,
+        "max": 1
+      },
+      "write": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  },
+  "rulesVersion": "1.0.2",
+  "artifacts": [
+    {
+      "role": "app",
+      "path": "app.zip",
+      "bytes": 303470,
+      "sha256": "3a98e15c463f1b4be3386717aa8ad3424e85157804c99f8bb72fe0072d8eab4c"
+    }
+  ],
+  "files": [
+    {
+      "path": "app.zip",
+      "bytes": 303470,
+      "sha256": "3a98e15c463f1b4be3386717aa8ad3424e85157804c99f8bb72fe0072d8eab4c"
+    },
+    {
+      "path": "app/assets/agent-face-00.webp",
+      "bytes": 15024,
+      "sha256": "5ff3ef1b4fec1883066306534740fab2c1bf0ec15f0c8f0ca6a8de04856dd59e"
+    },
+    {
+      "path": "app/icon.png",
+      "bytes": 28096,
+      "sha256": "494b5000563ec4326c59180f547f4a8513c1928b7fb957c1caf2f062b7306d1b"
+    },
+    {
+      "path": "app/LICENSE",
+      "bytes": 383,
+      "sha256": "5e350620a61f408211d226e3d25e86882652307f592299d7c87198b8c98745dd"
+    },
+    {
+      "path": "app/licenses/gugu/emdash-LICENSE.md",
+      "bytes": 11395,
+      "sha256": "d44bd5fc9c7c8aa10a5a54d444e6473b0ad26b824c96c1742fa191873bfa274b"
+    },
+    {
+      "path": "app/licenses/gugu/LICENSE",
+      "bytes": 2598,
+      "sha256": "2abe12602622b8641b56bd7c3a609e58f12bd06d883a6ae0efc06eb4b7efbd6e"
+    },
+    {
+      "path": "app/licenses/gugu/LICENSE-APACHE-2.0",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "app/manifest.json",
+      "bytes": 2112,
+      "sha256": "8ef88a4717ad9ab2c5167043a5a39ecd6811e42853c6de1cf91a34c5836a436c"
+    },
+    {
+      "path": "app/rules/brief-cloud.md",
+      "bytes": 4540,
+      "sha256": "e444802111aae317e1ed33b79dcbeac43a88d7e5fb5b5c2845acf6b683fc0dc9"
+    },
+    {
+      "path": "app/rules/brief-computer.md",
+      "bytes": 4351,
+      "sha256": "71744a6e90d78ebe98b0f63a25793da7dc216d5700b655f1582781ad1792ab8b"
+    },
+    {
+      "path": "app/rules/executor-report.md",
+      "bytes": 612,
+      "sha256": "007e838de5d10deeb0b949f9d9c05b259a3b417b8a9e332b0d0a3d4617573e79"
+    },
+    {
+      "path": "app/rules/first-task.md",
+      "bytes": 1811,
+      "sha256": "add05e4ed55d762d19569e2f4625c4f87b8d1cc426b182c1a82c495492bcfeea"
+    },
+    {
+      "path": "app/rules/guide-cloud.md",
+      "bytes": 16015,
+      "sha256": "68f17ff24cf3038494523937cfc59ec33dd6729cfacc1082b4cfa2a9d1be3249"
+    },
+    {
+      "path": "app/rules/guide-computer.md",
+      "bytes": 15898,
+      "sha256": "93a5e5164dd33f8a7bc392263315d993f0912007816368e50c139a0b9ebaedd0"
+    },
+    {
+      "path": "app/rules/profile-review.md",
+      "bytes": 496,
+      "sha256": "75d2403bce69848900cc3e755ee364b3207f4e7fcfb7501e0c3ced3fbedea265"
+    },
+    {
+      "path": "app/rules/recovery.md",
+      "bytes": 686,
+      "sha256": "9bb3ce329b8d9f6ae072c7d1854185604d6461be616146cf92018772d594fb27"
+    },
+    {
+      "path": "app/rules/rules.json",
+      "bytes": 1261,
+      "sha256": "87fd54b93e5844d4c64f437d428d71a5c59cadd967c1302b46f1daae8e38bcff"
+    },
+    {
+      "path": "app/rules/task-agent-identity.md",
+      "bytes": 156,
+      "sha256": "378cbd1e820d745faf52eb7c26d2d2d1fa8c4ad24b5534febe175017a79842d9"
+    },
+    {
+      "path": "app/rules/task-execution.md",
+      "bytes": 495,
+      "sha256": "faefda8c8a074ddeba77a002305bee484b6f2768d8a9e47c72edd5a4191d3b18"
+    },
+    {
+      "path": "app/store/about.en.md",
+      "bytes": 625,
+      "sha256": "7631adbc4e221cdea9caa8550284fa99341b7068530a5b8d0364a7e8ddaf4b4e"
+    },
+    {
+      "path": "app/store/about.md",
+      "bytes": 586,
+      "sha256": "49460df72aa2d3e9e662b809b8b1fb1abe12a410f61ceb2169c690edfdf2af40"
+    },
+    {
+      "path": "app/store/screenshots/1-today-light.png",
+      "bytes": 239045,
+      "sha256": "a7b8d296fe0a197c09e93baa65dbe8dcc94d34e2e93ea36bd45925e53b63db7f"
+    },
+    {
+      "path": "app/store/screenshots/2-today-dark.png",
+      "bytes": 230189,
+      "sha256": "2e8d2b87500a744667f5f38b5cc89e7fdcdbcee14054bfdcdcbe0729faed1e41"
+    },
+    {
+      "path": "app/store/whats-new.md",
+      "bytes": 91,
+      "sha256": "5905985cccb447ab6e366a80c8384c63c418aa34b7653583534e722477d8730e"
+    },
+    {
+      "path": "app/THIRD_PARTY_NOTICES.md",
+      "bytes": 64248,
+      "sha256": "c5c5d66a335125d35098e9096b3f52e2a5f492072d7e5b74003bbf70709790ee"
+    },
+    {
+      "path": "app/today.css",
+      "bytes": 51190,
+      "sha256": "99e6f8a21457c9c9d1f684699097da1bd6ab87743ec3cd2cb4ae5b4715bf0423"
+    },
+    {
+      "path": "app/today.html",
+      "bytes": 304,
+      "sha256": "f4c7628f2706404f1dc8fa582df33bf0588e648b44689823b4b9dae617779684"
+    },
+    {
+      "path": "app/today.js",
+      "bytes": 714751,
+      "sha256": "b369317d2afafa2bd95a09a38ac3f494985d72d734e0c7877534aba0fdd61880"
+    }
+  ]
+}

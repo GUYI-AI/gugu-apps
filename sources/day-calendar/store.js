@@ -43,8 +43,17 @@ export function openStore() {
   function recover() {
     const tx = read(pending)
     if (tx === undefined) return
-    if (!tx || tx.version !== 1 || !Array.isArray(tx.days)) throw new Error('invalid pending-days.json')
-    for (const day of tx.days) { entries(day, day.date); atomic(file(day.date), day) }
+    if (!tx || tx.version !== 1 || !Array.isArray(tx.days)
+      || tx.migration !== undefined && typeof tx.migration !== 'boolean') throw new Error('invalid pending-days.json')
+    // Validate the entire transaction before replacing even its first file. A corrupt
+    // later day must not turn recovery into a partial destructive write.
+    const writes = tx.days.map((day) => {
+      if (!day || typeof day !== 'object') throw new Error('invalid pending-days.json')
+      entries(day, day.date)
+      return { path: file(day.date), day }
+    })
+    if (new Set(writes.map((write) => write.path)).size !== writes.length) throw new Error('duplicate day in pending-days.json')
+    for (const write of writes) atomic(write.path, write.day)
     if (tx.migration) atomic(marker, { version: 2 })
     unlinkSync(pending)
   }

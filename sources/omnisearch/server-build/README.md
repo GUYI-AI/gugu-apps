@@ -1,4 +1,4 @@
-# The search program of the preinstalled 全能搜索 App
+# The search program of the preinstalled 进阶搜索 App
 
 `app/server/server.mjs` is built, not written: one ES module bundling
 [spences10/mcp-omnisearch](https://github.com/spences10/mcp-omnisearch) (MIT, `server/LICENSE`) and its dependencies,

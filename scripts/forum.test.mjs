@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { test } from 'node:test'
-import { assignmentStatus, FORUM_ERRORS, bountyLabel, forumError, latestRequest, settlementWindow, validateAwards } from '../sources/forum/core.mjs'
+import { assignmentStatus, FORUM_ERRORS, bountyLabel, bountyTone, forumError, latestRequest, settlementWindow, timeLeft, validateAwards } from '../sources/forum/core.mjs'
 
 const DAY = 86400000
 const created = Date.parse('2026-10-01T00:00:00Z')
@@ -46,6 +46,26 @@ test('截止后的宽限期与等待结算不显示仍进行中', () => {
   assert.equal(bountyLabel(bounty, deadline + DAY + 1), '采纳期限已过，等待结算')
   assert.equal(bountyLabel({ ...bounty, status: 'burned' }), '已结束，赏金已作废')
 })
+test('bounty tone follows the deadline and the inclusive one-day grace boundary', () => {
+  assert.equal(bountyTone(null, deadline), '')
+  assert.equal(bountyTone(bounty, deadline - 1), 'open')
+  assert.equal(bountyTone(bounty, deadline), 'open')
+  assert.equal(bountyTone(bounty, deadline + 1), 'late')
+  assert.equal(bountyTone(bounty, deadline + DAY), 'late')
+  assert.equal(bountyTone(bounty, deadline + DAY + 1), 'ended')
+  for (const status of ['awarded', 'refunded', 'burned', 'unknown']) {
+    assert.equal(bountyTone({ ...bounty, status }, created), status === 'awarded' ? 'awarded' : 'ended')
+  }
+})
+test('countdown rounds up to a minute and keeps coarse day/hour boundaries', () => {
+  for (const [remaining, expected] of [
+    [-1, ''], [0, ''], [1, '剩 1 分钟'], [59000, '剩 1 分钟'],
+    [59 * 60000, '剩 59 分钟'], [59 * 60000 + 1, '剩 1 小时'],
+    [DAY - 1, '剩 1 天'], [DAY, '剩 1 天'], [2 * DAY, '剩 2 天'],
+    [2 * DAY + 3 * 3600000, '剩 2 天 3 小时'], [5 * 3600000, '剩 5 小时'],
+  ]) assert.equal(timeLeft(new Date(deadline).toISOString(), deadline - remaining), expected)
+  assert.equal(timeLeft('invalid', created), '')
+})
 test('旧筛选、旧帖与订阅前读取的迟到结果失效', () => {
   const requests = latestRequest()
   const initial = requests.start()
@@ -55,7 +75,7 @@ test('旧筛选、旧帖与订阅前读取的迟到结果失效', () => {
   requests.cancel()
   assert.equal(requests.current(subscribed), false)
 })
-test('论坛是普通 App,不读取 agent 列表、不申请 capability、没有 App 工具或默认安装标记', () => {
+test('论坛是普通 App,不读取 agent 列表、只为 agent 工具申请 agents:tools、没有默认安装标记', () => {
   const path = new URL('../sources/forum/', import.meta.url)
   const manifest = JSON.parse(readFileSync(new URL('manifest.json', path)))
   assert.equal(manifest.id, 'forum')
@@ -63,11 +83,11 @@ test('论坛是普通 App,不读取 agent 列表、不申请 capability、没有
   assert.equal(manifest.subtitle, '提问、回答与积分悬赏')
   // The forum interface was introduced in API 9; the manifest may require newer features too.
   assert.ok(manifest.apiVersion >= 9, 'the forum requires App API 9 or later')
-  assert.deepEqual(manifest.permissions.capabilities, [])
-  assert.equal(manifest.contributes.mcpServers, undefined)
+  assert.deepEqual(manifest.permissions.capabilities, ['agents:tools'])
+  assert.deepEqual(manifest.contributes.mcpServers, [{ tools: 'tools.js' }])
   assert.equal(manifest.firstRun, undefined)
   assert.equal(manifest.unlisted, undefined)
-  assert.equal(existsSync(new URL('tools.js', path)), false)
+  assert.equal(existsSync(new URL('tools.js', path)), true)
 })
 
 test('暂未送达自动重投且不要求手动指派,受理后回合失败才提供重新指派', () => {
@@ -81,4 +101,26 @@ test('暂未送达自动重投且不要求手动指派,受理后回合失败才�
   assert.equal(failed.canReassign, true)
   assert.match(failed.note, /可由你重新指派/)
   for (const deliveryState of ['pending', 'delivered']) assert.equal(assignmentStatus({ deliveryState }).canReassign, false)
+})
+
+test('一行收件箱:信封事实分开放,回程写全 App 工具名,结算没有发信人也能交', async () => {
+  const { encodeRow, forumPostForAgent } = await import('../sources/forum/agent-inbox.mjs')
+  const base = { post_id: 'p1', seq: '3', actor_user_id: 'u1', actor_name: 'Ada', actor_is_agent: false, created_at: '2026-10-01T00:00:00Z', post_title: 'T', post_body: 'Body', post_author_name: 'Ada', bounty: null, reply_count: 2 }
+  const assigned = encodeRow({ ...base, kind: 'assigned' })
+  assert.equal(assigned.key, 'p1')
+  assert.equal(assigned.seq, 3)
+  assert.equal(assigned.ref, 'post:p1')
+  assert.equal(assigned.content, 'Body')
+  assert.ok(assigned.context.includes('Ada assigned you to it'))
+  assert.ok(assigned.arrival.includes('forum__reply'))
+  const reply = encodeRow({ ...base, kind: 'reply', entity_id: 'r1', reply_body: 'Hi', reply_to_poster_only: true, reply_to: 'r0' })
+  assert.equal(reply.content, 'Hi')
+  assert.ok(reply.context.includes('new reply reply:r1 (for the poster only)') && reply.context.includes('in reply to reply:r0'))
+  assert.throws(() => encodeRow({ ...base, kind: 'reply', entity_id: null, reply_body: null }), /no reply it can show/)
+  const settled = encodeRow({ ...base, kind: 'settled', actor_user_id: null, actor_name: null, bounty: { amount: 5, status: 'refunded', awards: [] } })
+  assert.equal(settled.content, 'The bounty ended with no answers; the points went back to the poster.')
+  const read = forumPostForAgent({ post: { id: 'p1', title: 'T', author_user_id: 'u1', author_name: 'Ada', created_at: 'x', body: 'B' }, bounty: null, replies: [{ id: 'r1', author_user_id: 'a1', author_name: 'Bot', author_is_agent: true, owner_name: 'Bo', created_at: 'y', body: 'Z', to_poster_only: true }], reactions: [{ target_kind: 'reply', target_id: 'r1', emoji: '👍', count: 2 }] })
+  assert.equal(read.post.id, 'post:p1')
+  assert.deepEqual(read.replies[0].author, { id: 'user:a1', name: 'Bot', agent: true, owner: 'Bo' })
+  assert.deepEqual(read.replies[0].reactions, ['👍×2'])
 })

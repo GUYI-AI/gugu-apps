@@ -1,21 +1,15 @@
-![日历：集中查看待办与日程记录](screenshots/promo.png)
-![在任务中让 agent 用日历记下会议，右侧日历同步显示当天的待办](screenshots/1.jpg)
-![另一个任务记下的记事与手动勾选的待办汇总在同一天](screenshots/2.jpg)
-![以独立页签打开日历，查看截止日的待办](screenshots/3.jpg)
+# Calendar
 
-# 日历
+To-dos and notes by the hour
 
-任务页右侧栏里的月历，展示每天的待办和记事。启用并授予 Agent 工具后，新启动的 Agent 会话收到常驻记录规则：用户明确表达个人计划、已发生事项或安排变更时主动维护日历，无需说“帮我记”，也不再询问是否需要记录。例如“明天下午坐高铁回广州”直接记为明天的待办，保留“下午”，不因缺少车次或具体时刻而追问。旧会话需重新启动才能载入；模型可能漏记或误记，记录可在页面核对与删除。规则只处理 Agent 实际收到的消息。
+What people read about this App in the market is in `store/`: `about*.md`, `screenshots/` and `whats-new.md` (this version's changes). What agents read is `contributes.instructions` in `manifest.json`, its tools and its skills. This README and `CHANGELOG.md` are for the repository and are never shown in gugu.
 
-## 工具
+The standing line asks an enabled agent to record definite personal plans/events it receives, without waiting for an explicit request to record. The program descriptions cover date resolution, deduplication and updates; only a successful tool result is a recorded entry.
 
-- `record({kind,title,date?,time?,detail?,tags?})`：待办 todo 或记事 memory。未知具体时刻保留在 detail，不编造。
-- `query({from?,to?,text?,kind?})`：查询已有条目，返回日期和 ID；不传日期搜索全部历史。
-- `update({date,id,new_date?,done?,title?,detail?,time?,tags?})`：补充、完成、重新打开或改期，保留 ID 和原来源。
-- 页面可添加、勾选和删除；Agent 无删除工具。Agent 记录保留来源会话，可点击返回。
+- `record({kind,title,date?,time?,end?,detail?,tags?})` creates a to-do or memory. Resolve conversational dates in the user's timezone and pass `date`; preserve a vague time such as “afternoon” in `detail`.
+- `query({from?,to?,text?,kind?})` finds existing IDs. `update({date,id,new_date?,done?,title?,detail?,time?,end?,tags?})` preserves the ID and original source when completing, changing or moving an item.
+- `month`, `set_done` and `remove` are page-only. The time-axis UI and end-time behavior remain available.
 
-## 数据
+Data lives in `days/YYYY/MM/YYYY-MM-DD.json`. First access migrates `journal.json` while preserving it as a backup. A marker prevents deleted items from returning; a persisted pending transaction recovers interrupted moves before reads. The page reads only the months shown by its week/day and month picker, with its existing three-second refresh.
 
-本机 App 数据目录下 `days/YYYY/MM/YYYY-MM-DD.json`，每日独立文件，无云端同步。页面每 3 秒读取当月数据。所有修改走同一程序，单日原子替换；跨日改期先持久化事务，异常中断后下次读写先恢复。空日期不创建文件；删空后的日期保留空文件。
-
-第一次读写自动迁移旧 `journal.json`，保留原文件备份；迁移校验日期、格式和冲突，失败报错。迁移标记避免旧记录重新出现。卸载 App 会删除数据，需保留的数据应先自行备份。
+The candidate requires App API 58. The source change does not publish a market version or change any existing market package.

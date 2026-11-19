@@ -2,7 +2,7 @@
 // 咕咕办公 · 选区旁边浮出的那一条(app.js;选区交互设计 §2):
 // 「n 处 · 放进输入框 ⏎ · ✕」只在有选中的时候出现;桌面上跟着最后一处,在它右上方 10 px、右对齐,上方没地方放下方,
 // 那一处滚出视野就停在面板底部正中;手机上一直在底部正中。Enter 放进输入框,Esc 全部取消(桌面)。顶上那一排没有了。
-// 运行时是假的(getContext / files.open / list / onChanged / compose);稿子是真的 fixtures/two-slides.pptx。
+// 运行时是假的(getContext / files.open / list / onChanged / dispatch);稿子是真的 fixtures/two-slides.pptx。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -23,7 +23,7 @@ const gugu = {
     handTo = handler
     return () => {}
   }),
-  compose: vi.fn(async (_text: string, _where: unknown) => {}),
+  dispatch: vi.fn(async (_text: string, _where: unknown): Promise<{ cancelled?: true }> => ({})),
   files: {
     list: vi.fn(async () => [entry]),
     onChanged: vi.fn(() => () => {}),
@@ -72,7 +72,7 @@ beforeAll(async () => {
 beforeEach(() => {
   $('pick-clear').click()
   hand('mouse')
-  gugu.compose.mockClear()
+  gugu.dispatch.mockClear()
 })
 
 describe('咕咕办公 · 选区旁边的那一条', () => {
@@ -168,13 +168,13 @@ describe('咕咕办公 · 选区旁边的那一条', () => {
     document.body.append(input)
     expect(key(input, { key: 'Enter' }).defaultPrevented).toBe(false)
     input.remove()
-    expect(gugu.compose).not.toHaveBeenCalled()
+    expect(gugu.dispatch).not.toHaveBeenCalled()
     expect(key(document.body, { key: 'Enter' }).defaultPrevented).toBe(true)
-    await until(() => expect(gugu.compose).toHaveBeenCalledTimes(1))
-    expect(gugu.compose.mock.calls[0]![1]).toMatchObject({ refs: [{ at: { slide: 1, shape: '2', k: 1 } }] })
+    await until(() => expect(gugu.dispatch).toHaveBeenCalledTimes(1))
+    expect(gugu.dispatch.mock.calls[0]![1]).toMatchObject({ refs: [{ at: { slide: 1, shape: '2', k: 1 } }] })
     await until(() => expect(shown()).toBe(false))
     expect(key(document.body, { key: 'Enter' }).defaultPrevented).toBe(false)
-    expect(gugu.compose).toHaveBeenCalledTimes(1)
+    expect(gugu.dispatch).toHaveBeenCalledTimes(1)
   })
 
   test('Esc:鼠标在用时全部取消;手指在用时不取消(用浮条上的 ✕)', () => {
@@ -196,7 +196,7 @@ describe('咕咕办公 · 选区旁边的那一条', () => {
     for (const el of [$('pick-clear'), $('preview').querySelector<HTMLElement>('.pptx-badge')!, hits()[2]!]) {
       expect(key(el, { key: 'Enter' }).defaultPrevented).toBe(false)
     }
-    expect(gugu.compose).not.toHaveBeenCalled()
+    expect(gugu.dispatch).not.toHaveBeenCalled()
     expect($('pick-count').textContent).toBe('2 处')
   })
 
@@ -213,7 +213,19 @@ describe('咕咕办公 · 选区旁边的那一条', () => {
     expect(shown()).toBe(false)
     pick(hits()[2]!)
     $('pick-send').click()
-    await until(() => expect(gugu.compose).toHaveBeenCalledTimes(1))
-    expect(gugu.compose.mock.calls[0]![1]).toEqual({ refs: [expect.objectContaining({ file: expect.objectContaining({ id: 'deck', chat: 'group-1' }) })] })
+    await until(() => expect(gugu.dispatch).toHaveBeenCalledTimes(1))
+    expect(gugu.dispatch.mock.calls[0]![1]).toEqual({ draft: true, refs: [expect.objectContaining({ file: expect.objectContaining({ id: 'deck', chat: 'group-1' }) })] })
+  })
+
+  test('交给 agent 使用同一选区的文件与版本;取消保留选区,发送才清空', async () => {
+    pick(hits()[0]!)
+    gugu.dispatch.mockResolvedValueOnce({ cancelled: true })
+    $('pick-dispatch').click()
+    await until(() => expect(gugu.dispatch).toHaveBeenCalledTimes(1))
+    expect(gugu.dispatch.mock.calls[0]![1]).toEqual({ refs: [expect.objectContaining({ file: expect.objectContaining({ id: 'deck', chat: 'group-1' }), version: 1, at: { slide: 1, shape: '2', k: 1 } })] })
+    expect(shown()).toBe(true)
+    $('pick-dispatch').click()
+    await until(() => expect(gugu.dispatch).toHaveBeenCalledTimes(2))
+    await until(() => expect(shown()).toBe(false))
   })
 })

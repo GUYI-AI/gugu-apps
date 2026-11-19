@@ -7,18 +7,27 @@ function checkedTime(time) {
   if (time !== undefined && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('time must be HH:MM (00:00–23:59)')
   return time
 }
+function checkedEnd(end, time) {
+  if (end === undefined || end === null || end === '') return undefined
+  checkedTime(end)
+  if (time === undefined) throw new Error('end needs a time to start from')
+  if (end <= time) throw new Error(`end must be after time (${time}), got ${end}`)
+  return end
+}
 function titleOf(title) { const line = String(title || '').trim(); if (!line) throw new Error('title is empty'); return line }
 const fields = {
   title: { type: 'string', description: "One line, in the person's words." },
   detail: string, tags: { type: 'array', items: string },
   time: { type: 'string', description: 'HH:MM. Omit an unknown exact time; preserve “afternoon” in detail.' },
+  end: { type: 'string', description: 'HH:MM after time, for an event with a known end. Empty clears an existing end in update.' },
 }
 export const record = {
-  description: 'Proactively record a definite personal plan (todo) or something that happened (memory), from messages this agent receives. No explicit request to record is needed. Query first to avoid duplicates.',
-  inputSchema: schema({ kind: { type: 'string', enum: ['todo', 'memory'] }, ...fields, date: { type: 'string', description: 'YYYY-MM-DD; today if omitted.' } }, ['kind', 'title']),
-  async run({ kind, title, detail, tags, date, time }, { agent, session } = {}) {
+  description: 'Proactively record the user’s definite personal plan (todo) or past event (memory) received in this conversation, without asking whether to record. Query first; update a matching entry for changes. Ignore hypothetical examples, quotations and other people’s plans; respect requests not to record. Resolve dates from the message and user timezone and pass date explicitly. Missing optional times or travel details do not prevent recording: preserve “afternoon” in detail, never invent a clock time. Tell the user only after success.',
+  inputSchema: schema({ kind: { type: 'string', enum: ['todo', 'memory'] }, ...fields, date: { type: 'string', description: 'YYYY-MM-DD resolved in the user timezone; pass explicitly for conversational records. The page defaults to today.' } }, ['kind', 'title']),
+  async run({ kind, title, detail, tags, date, time, end }, { agent, session } = {}) {
     if (!['todo', 'memory'].includes(kind)) throw new Error('kind must be todo or memory')
     const line = titleOf(title), now = new Date(), day = checkDay(date || dayOf(now)), at = checkedTime(time)
+    const until = checkedEnd(end, at)
     const store = openStore(), list = store.get(day)
     const duplicate = list.find((e) => e.kind === kind && e.title === line)
     if (duplicate) return JSON.stringify({ date: day, entry: duplicate, alreadyRecorded: true })
@@ -26,9 +35,10 @@ export const record = {
     if (agent) { entry.by = agent; if (session) entry.session = session }
     if (kind === 'todo') entry.done = false
     if (at) entry.time = at
+    if (until) entry.end = until
     // Do not invent an occurrence time for an undated retrospective statement.
     if (detail) entry.detail = String(detail)
-    if (tags) entry.tags = tags.map(String)
+    if (Array.isArray(tags) && tags.length) entry.tags = tags.map(String).slice(0, 5)
     list.push(entry); store.commit({ [day]: list })
     return JSON.stringify({ date: day, entry })
   },
@@ -39,13 +49,14 @@ export const query = {
   async run({ from, to, text, kind } = {}) {
     if (from) checkDay(from); if (to) checkDay(to)
     if (from && to && from > to) throw new Error('from must not be after to')
+    if (kind !== undefined && !['todo', 'memory'].includes(kind)) throw new Error('kind must be todo or memory')
     const store = openStore(), found = [], needle = text?.toLocaleLowerCase()
     for (const date of store.dates()) {
       if ((from && date < from) || (to && date > to)) continue
       for (const entry of store.get(date)) {
         if (kind && entry.kind !== kind) continue
         if (needle && !`${entry.title}\n${entry.detail || ''}`.toLocaleLowerCase().includes(needle)) continue
-        found.push({ date, ...entry })
+        found.push({ ...entry, date })
       }
     }
     return JSON.stringify(found)
@@ -54,18 +65,25 @@ export const query = {
 export const update = {
   description: 'Update an existing calendar entry by date and ID returned by query. Complete/reopen a todo, change details, or move it to new_date keeping its ID and original source. Do not create another memory just to complete a todo.',
   inputSchema: schema({ date: string, id: string, new_date: string, done: { type: 'boolean' }, ...fields }, ['date', 'id']),
-  async run({ date, id, new_date, done, title, detail, tags, time }) {
-    const day = checkDay(date), target = checkDay(new_date || day), at = checkedTime(time), store = openStore(), list = store.get(day)
+  async run({ date, id, new_date, done, title, detail, tags, time, end }) {
+    const day = checkDay(date), target = checkDay(new_date || day), store = openStore(), list = store.get(day)
     const entry = list.find((e) => e.id === id)
     if (!entry) throw new Error(`no entry ${id} on ${day}`)
+    const at = time === undefined ? entry.time : checkedTime(time)
+    const until = checkedEnd(end === undefined ? entry.end : end, at)
     if (done !== undefined) {
       if (entry.kind !== 'todo') throw new Error('only a todo can be completed')
+      if (typeof done !== 'boolean') throw new Error('done must be a boolean')
       entry.done = done
     }
     if (title !== undefined) entry.title = titleOf(title)
     if (detail !== undefined) entry.detail = detail
-    if (tags !== undefined) entry.tags = tags
+    if (tags !== undefined) entry.tags = tags.map(String).slice(0, 5)
     if (time !== undefined) entry.time = at
+    if (end !== undefined) {
+      if (until === undefined) delete entry.end
+      else entry.end = until
+    }
     entry.updatedAt = Date.now()
     const changes = { [day]: list }
     if (target !== day) {
@@ -88,7 +106,10 @@ export const month = {
     return JSON.stringify({ version: 2, days })
   },
 }
-export const set_done = { ...update, description: 'Check or uncheck a todo on the page.', _meta: PAGE_ONLY }
+export const set_done = {
+  ...update, description: 'Check or uncheck a todo on the page.', _meta: PAGE_ONLY,
+  inputSchema: schema({ date: string, id: string, done: { type: 'boolean' } }, ['date', 'id', 'done']),
+}
 export const remove = {
   description: 'Delete an entry on the page.', _meta: PAGE_ONLY,
   inputSchema: schema({ date: string, id: string }, ['date', 'id']),

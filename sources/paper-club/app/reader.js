@@ -5,16 +5,17 @@
 // with the paper open is in the notes file's presence: who reads which page, and following one of them.
 //
 // Every mark is evidence an agent can be sent back to: the PDF's entry id, the page, the quote and its rects. "Ask an
-// agent" puts the passage in the chat's composer as a pill (gugu.compose refs, `at` = page and highlight); a pill clicked
+// agent" puts the passage in the chat's composer as a pill (gugu.dispatch draft refs, `at` = page and highlight); a pill clicked
 // opens the paper here at that place (onLink). Agents read the same notes with the App's tools (tools.js).
 //
 // How often each passage was discussed in the chat comes from the chat itself (chat:read): every message citing this PDF
 // (gugu.messages.search by file), kept per highlight by its pill's `at.h`. Nothing is pushed, so it is read again when
 // the page opens, shows again or gets the focus back (from the chat's composer), and when a thread or the side opens.
 import { openPdf, pdfjs } from './lib/pdf.js'
-import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry } from './lib/paper.js'
+import { COLORS, emptyNotes, folderOf, mergeRects, newId, notesNameOf, isNotes, placeOfEntry, projectOf } from './lib/paper.js'
 import { fmt, stringsFor } from './lib/strings.js'
 import { createReview } from './lib/review.js'
+import { discussionLabel, highlightView } from './lib/highlight-view.js'
 import { importFailure, importInto, uploadInto } from './lib/import-box.js'
 
 const $ = (id) => document.getElementById(id)
@@ -24,7 +25,7 @@ const state = {
   t: stringsFor(navigator.language),
   ctx: null,
   entry: null, // the PDF's entry
-  place: null, // { chat }, { project } or { session }
+  place: null, // { chat } or { workspace } (a session's working copy, a project's folder)
   doc: null,
   notes: null, // the notes file's live handle, once there is one
   notesBusy: null, // the create in flight
@@ -35,6 +36,7 @@ const state = {
   selection: null, // { page, rects, quote, box? }
   focus: null, // highlight id the side shows
   tab: 'highlights',
+  highlightFilter: 'all', // local view of the existing shared notes, never persisted
   follow: null, // userId being followed
   place_wait: null, // a link's place, until the pages exist
   discussed: new Map(), // highlight id → the chat's messages citing it, newest first
@@ -73,13 +75,10 @@ async function start() {
   }
 }
 
-/** The library page's link: `?file=<id>&chat=<id>` (or `&project=` / `&session=`) — the entry, found in its place's list. */
+/** The library page's link: `?file=<id>&chat=<id>` (or `&workspace=<id>`) — the file, named in its place. */
 async function fileFromAddress(asked) {
-  const key = ['chat', 'project', 'session'].find((k) => asked.get(k))
-  const place = { [key]: asked.get(key) }
-  const entry = (await gugu.files.list(place)).find((e) => e.id === asked.get('file'))
-  if (!entry) throw new Error(state.t.gone)
-  return entry
+  const key = ['chat', 'workspace'].find((k) => asked.get(k))
+  return { [key]: asked.get(key), id: asked.get('file') }
 }
 
 function labels() {
@@ -90,6 +89,8 @@ function labels() {
   $('import-go').textContent = t.import
   $('import-upload').textContent = t.upload
   $('side-toggle-label').textContent = t.notes
+  $('tabs').setAttribute('aria-label', t.notes)
+  $('highlight-filters').setAttribute('aria-label', t.filterHighlights)
   $('tab-highlights').textContent = t.highlights
   $('tab-cards').textContent = t.cards
   $('tab-about').textContent = t.about
@@ -115,14 +116,13 @@ async function openPaper(file) {
   if (isNotes(pdfHandle.entry)) {
     const notes = pdfHandle
     attachNotes(notes)
-    const entries = await gugu.files.list(placeOfEntry(notes.entry))
-    const pdf = entries.find((e) => e.id === notes.data.pdf)
-    if (!pdf) throw new Error(state.t.gone)
-    pdfHandle = await gugu.files.open(pdf)
+    pdfHandle = await gugu.files.open({ ...placeOfEntry(notes.entry), id: notes.data.pdf }).catch((error) => {
+      throw error?.code === 'not-found' ? new Error(state.t.gone) : error
+    })
   }
   state.entry = pdfHandle.entry
   state.place = placeOfEntry(state.entry)
-  $('sel-new-task').hidden = !state.place.project
+  $('sel-new-task').hidden = !projectOf(state.place)
   pdfHandle.onStatus?.(() => { if (pdfHandle.status === 'gone') say(state.t.gone, 'error') })
   const bytes = new Uint8Array(await (await pdfHandle.blob()).arrayBuffer())
   try {
@@ -134,9 +134,13 @@ async function openPaper(file) {
   if (!state.notes) await findNotes()
   // Nobody marked it yet: the notes file someone else makes (or an agent's tool) is picked up the moment it appears.
   if (!state.notes) {
-    const stop = gugu.files.onChanged(state.place, ({ entries }) => {
+    // A chat tells its entries; a working copy the paths that changed (below the PDF's folder).
+    const name = notesNameOf(state.entry.name)
+    const folder = folderOf(state.entry)
+    const place = state.place.workspace && folder ? { ...state.place, folder } : state.place
+    const stop = gugu.files.onChanged(place, ({ entries, changes }) => {
       if (state.notes) return stop?.()
-      if ((entries ?? []).some((e) => e.name === notesNameOf(state.entry.name))) findNotes()
+      if ((entries ?? []).some((e) => e.name === name) || (changes ?? []).some((c) => c.path.split('/').pop() === name)) findNotes()
     })
   }
   const title = state.notes?.data.meta?.title || (await state.doc.getMetadata().catch(() => null))?.info?.Title || state.entry.name.replace(/\.pdf$/i, '')
@@ -586,22 +590,23 @@ async function askAgent() {
  * the person picks in gugu's own sheet — one of their tasks or a chat — with its project and path (`askTask`).
  */
 function askAbout(id, h, text) {
-  if (state.place.chat) return gugu.compose(text, { refs: [refOf(id, h)] })
-  if (state.place.project) return askTask(h, text)
+  if (state.place.chat) return gugu.dispatch(text, { draft: true, refs: [refOf(id, h)] })
+  if (projectOf(state.place)) return askTask(h, text)
   say(state.t.sessionNoPill)
-  return gugu.compose(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { session: state.place.session })
+  const agent = state.ctx.workspace?.agentId
+  return gugu.dispatch(fmt(state.t.askSession, { text, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }), { draft: true, ...(agent ? { to: { agent } } : {}) })
 }
 
 /** A project's PDF: the passage's words, page, project and path, with the project's name. */
 async function projectWords(h, text) {
-  const project = state.place.project
+  const project = projectOf(state.place)
   const name = (await gugu.projects.list()).projects.find((p) => p.id === project)?.name ?? project
   return { name, words: fmt(state.t.askProject, { text, project: name, id: project, path: state.entry.path ?? state.entry.name, n: h.page, quote: h.quote }) }
 }
 
 /** Into the composer the person picks — one of their tasks or a chat (gugu lists the places, not this page). */
 async function askTask(h, text) {
-  const placed = await gugu.compose((await projectWords(h, text)).words)
+  const placed = await gugu.dispatch((await projectWords(h, text)).words, { draft: true })
   if (!placed.cancelled) say(state.t.askPlaced)
 }
 
@@ -615,7 +620,7 @@ async function askNewTask() {
   say(state.t.askStarting)
   try {
     const { name, words } = await projectWords(state.notes.data.highlights[id], fmt(state.t.askText, { n: picked.page }))
-    await gugu.spawnAgent(words, { project: state.place.project, title: $('title').textContent })
+    await gugu.dispatch(words, { to: { new: true }, spawn: { project: projectOf(state.place), title: $('title').textContent } })
     say(fmt(state.t.askStarted, { project: name }))
   } catch (error) {
     say(fmt(state.t.askFailed, { e: error.message }), 'error')
@@ -628,7 +633,7 @@ async function commentSelection() {
   const id = await markSelection({ color: 'yellow' })
   if (!id) return
   openThread(id)
-  setTimeout(() => document.querySelector('#side-body textarea')?.focus(), 50)
+  setTimeout(() => document.querySelector('#side-body .reply input')?.focus(), 50)
 }
 
 function onPageClick(event) {
@@ -647,6 +652,7 @@ function onPageClick(event) {
 function openThread(id) {
   readDiscussions()
   state.focus = id
+  state.highlightFilter = 'all' // a source link must reveal its passage even after filtering
   state.tab = 'highlights'
   showSide(true)
   drawAllMarks()
@@ -751,7 +757,7 @@ function drawReaders() {
       avatar.setAttribute('user', p.userId)
       avatar.setAttribute('size', 'xs')
       const where = document.createElement('small')
-      where.textContent = p.state?.page ? String(p.state.page) : ''
+      where.textContent = p.state?.page ? fmt(state.t.onPage, { n: p.state.page }) : ''
       b.append(avatar, where)
       b.onclick = () => {
         state.follow = state.follow === p.userId ? null : p.userId
@@ -783,71 +789,102 @@ function showSide(open) {
 
 function drawSide() {
   if ($('side').hidden) return
-  for (const tab of document.querySelectorAll('#tabs [role=tab]')) tab.setAttribute('aria-selected', String(tab.dataset.tab === state.tab))
+  const data = state.notes?.data
+  const view = highlightView(data, state.discussed, state.notes?.presence.self.userId, state.highlightFilter)
+  $('tab-highlights').textContent = fmt(state.t.highlightsCount, { n: view.counts.all })
+  $('tab-cards').textContent = fmt(state.t.cardsCount, { n: Object.keys(data?.cards ?? {}).length })
+  for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
+    tab.setAttribute('aria-selected', String(tab.dataset.tab === state.tab))
+    tab.setAttribute('aria-controls', 'side-body')
+  }
+  $('highlight-filters').hidden = state.tab !== 'highlights'
+  for (const button of document.querySelectorAll('[data-highlight-filter]')) {
+    const filter = button.dataset.highlightFilter
+    const count = document.createElement('small')
+    count.textContent = String(view.counts[filter])
+    button.replaceChildren(state.t[`${filter}Highlights`], count)
+    button.setAttribute('aria-pressed', String(filter === state.highlightFilter))
+  }
   const body = $('side-body')
+  body.setAttribute('aria-labelledby', `tab-${state.tab}`)
   if (state.tab === 'cards') return review.draw(body)
   if (state.tab === 'about') return drawAbout(body)
-  drawHighlights(body)
+  drawHighlights(body, view)
 }
 
-function drawHighlights(body) {
+function drawHighlights(body, view) {
   const t = state.t
-  const data = state.notes?.data
-  const list = Object.entries(data?.highlights ?? {}).sort(([, a], [, b]) => a.page - b.page || (a.rects?.[0]?.[1] ?? 0) - (b.rects?.[0]?.[1] ?? 0))
-  if (!list.length) {
+  if (!view.rows.length) {
     const empty = document.createElement('gugu-empty')
     empty.setAttribute('icon', 'pencil')
     const strong = document.createElement('strong')
-    strong.textContent = t.noHighlights
+    strong.textContent = view.counts.all ? t.noFilteredHighlights : t.noHighlights
     empty.append(strong)
-    if (!canWrite()) {
+    if (view.counts.all) {
+      const reset = document.createElement('button')
+      reset.type = 'button'
+      reset.textContent = t.showAllHighlights
+      reset.onclick = () => { state.highlightFilter = 'all'; drawSide() }
+      empty.append(reset)
+    } else if (!canWrite()) {
       const small = document.createElement('small')
       small.textContent = t.readOnly
       empty.append(small)
     }
     return body.replaceChildren(empty)
   }
-  const comments = Object.entries(data.comments ?? {})
   body.replaceChildren(
-    ...list.map(([id, h]) => {
+    ...view.rows.map(({ id, highlight: h, comments, messages }) => {
+      const selected = state.focus === id
       const card = document.createElement('article')
-      card.className = `thread card${state.focus === id ? ' focused' : ''}`
+      card.className = `thread${selected ? ' focused' : ''}`
       card.dataset.thread = id
       const head = document.createElement('button')
       head.type = 'button'
       head.className = 'quote'
+      head.id = `quote-${id}`
+      card.setAttribute('aria-labelledby', head.id)
+      head.setAttribute('aria-expanded', String(selected))
       const q = document.createElement('blockquote')
       q.className = `c-${h.color ?? 'yellow'}`
       q.textContent = h.quote
-      const meta = document.createElement('small')
-      meta.className = 'muted'
-      meta.textContent = `${fmt(t.page, { n: h.page })} · ${memberName(h.by, h.name)}`
-      head.append(q, meta)
+      head.append(q)
       head.onclick = () => {
-        state.focus = id
-        scrollToPage(h.page, h.rects?.[0]?.[1] ?? 0)
+        state.focus = selected ? null : id
+        if (!selected) scrollToPage(h.page, h.rects?.[0]?.[1] ?? 0)
         drawAllMarks()
         drawSide()
       }
-      card.append(head)
-      for (const [, c] of comments.filter(([, c]) => c.on === id).sort(([, a], [, b]) => String(a.at).localeCompare(String(b.at)))) {
-        const row = document.createElement('div')
-        row.className = 'comment'
-        const avatar = document.createElement('gugu-avatar')
-        avatar.setAttribute('user', c.by)
-        avatar.setAttribute('size', 'xs')
-        const text = document.createElement('p')
-        text.textContent = c.text
-        const when = document.createElement('gugu-time')
-        when.setAttribute('datetime', c.at)
-        row.append(avatar, text, when)
-        card.append(row)
+      // One quiet line under the quote: its page, who marked it, and (bottom right) the one count of its discussion.
+      const meta = document.createElement('div')
+      meta.className = 'thread-meta'
+      const page = document.createElement('small')
+      page.className = 'page-pill'
+      page.textContent = fmt(t.page, { n: h.page })
+      meta.append(page, h.by ? avatarNamed(h.by) : Object.assign(document.createElement('small'), { textContent: memberName(h.by, h.name) }))
+      const label = discussionLabel({ messages: messages.length, comments: comments.length, selected }, t, fmt)
+      if (label) meta.append(discussionCount(id, label, messages.length > 0))
+      card.append(head, meta)
+      if (selected && canWrite() && h.by === state.notes.presence.self.userId) card.append(moreMenu(id))
+      if (selected) {
+        for (const c of comments) {
+          const row = document.createElement('div')
+          row.className = 'comment'
+          const who = document.createElement('div')
+          who.className = 'comment-who'
+          const when = document.createElement('gugu-time')
+          when.setAttribute('datetime', c.at)
+          who.append(avatarNamed(c.by), when)
+          const text = document.createElement('p')
+          text.textContent = c.text
+          row.append(who, text)
+          card.append(row)
+        }
       }
-      const said = state.discussed.get(id) ?? []
-      if (said.length) card.append(discussionOf(id, said))
-      else if (state.focus === id && !state.place?.chat) card.append(note(t.noChatInSession))
-      else if (state.focus === id && !messagesReadable()) card.append(note(t.noMessagesHere))
-      if (state.focus === id && canWrite()) card.append(replyBox(id, h))
+      if (selected && state.openDiscussion === id && messages.length) card.append(discussionOf(messages))
+      else if (selected && !messages.length && !state.place?.chat) card.append(note(t.noChatInSession))
+      else if (selected && !messages.length && !messagesReadable()) card.append(note(t.noMessagesHere))
+      if (selected && canWrite()) card.append(replyBox(id, h))
       return card
     }),
   )
@@ -863,24 +900,38 @@ function note(text) {
 /** Whether this page can read the chat's messages: a gugu with gugu.messages, and chat:read granted. */
 const messagesReadable = () => typeof gugu.messages?.search === 'function' && (state.ctx?.capabilities ?? []).includes('chat:read')
 
-/** 「Discussed N times in the chat」, unfolding to those messages; one clicked is shown in the chat (gugu.showMessage). */
-function discussionOf(id, said) {
-  const t = state.t
-  const box = document.createElement('div')
-  box.className = 'discussion'
-  const toggle = document.createElement('button')
-  toggle.type = 'button'
-  toggle.className = 'discussion-toggle'
-  toggle.setAttribute('aria-expanded', String(state.openDiscussion === id))
-  toggle.textContent = fmt(t.discussed, { n: said.length })
-  toggle.onclick = () => {
-    state.openDiscussion = state.openDiscussion === id ? null : id
+/** A member's face and name (the host's element: an agent's carries ⚡). */
+function avatarNamed(userId) {
+  const avatar = document.createElement('gugu-avatar')
+  avatar.setAttribute('user', userId)
+  avatar.setAttribute('size', 'xs')
+  avatar.setAttribute('name', '')
+  return avatar
+}
+
+/** The card's discussion count; where the chat cited it, a click selects the card and unfolds those messages. */
+function discussionCount(id, label, cited) {
+  if (!cited) return Object.assign(document.createElement('small'), { className: 'discussion-count', textContent: label })
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'discussion-count'
+  const expanded = state.focus === id && state.openDiscussion === id
+  button.setAttribute('aria-expanded', String(expanded))
+  button.textContent = label
+  button.onclick = () => {
+    state.focus = id
+    state.openDiscussion = expanded ? null : id
+    drawAllMarks()
     drawSide()
   }
-  box.append(toggle)
-  if (state.openDiscussion !== id) return box
+  return button
+}
+
+/** The chat's messages citing a passage; one clicked is shown in the chat (gugu.showMessage). */
+function discussionOf(said) {
+  const t = state.t
   const list = document.createElement('ul')
-  list.className = 'list'
+  list.className = 'list discussion'
   for (const m of said) {
     const li = document.createElement('li')
     const row = document.createElement('button')
@@ -899,7 +950,46 @@ function discussionOf(id, said) {
     li.append(row)
     list.append(li)
   }
-  box.append(list)
+  return list
+}
+
+/** ⋯ on the marker's own selected card: deleting is there, not beside the reply. */
+function moreMenu(id) {
+  const t = state.t
+  const box = document.createElement('div')
+  box.className = 'more'
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.className = 'more-toggle'
+  toggle.setAttribute('aria-label', t.more)
+  toggle.title = t.more
+  toggle.innerHTML = '<gugu-icon name="more-horizontal"></gugu-icon>'
+  const menu = document.createElement('div')
+  menu.className = 'more-menu'
+  menu.popover = 'auto'
+  menu.id = `more-${id}`
+  toggle.setAttribute('popovertarget', menu.id)
+  const remove = document.createElement('button')
+  remove.type = 'button'
+  remove.className = 'danger'
+  remove.textContent = t.remove
+  remove.onclick = () => {
+    menu.hidePopover()
+    state.notes.transact(() => {
+      delete state.notes.data.highlights[id]
+      for (const [cid, c] of Object.entries(state.notes.data.comments)) if (c.on === id) delete state.notes.data.comments[cid]
+    })
+    state.focus = null
+  }
+  menu.append(remove)
+  // Placed under its button by hand: the popover sits in the top layer, outside the card's box.
+  menu.addEventListener('toggle', (event) => {
+    if (event.newState !== 'open') return
+    const r = toggle.getBoundingClientRect()
+    menu.style.top = `${r.bottom + 4}px`
+    menu.style.right = `${document.documentElement.clientWidth - r.right}px`
+  })
+  box.append(toggle, menu)
   return box
 }
 
@@ -907,43 +997,26 @@ function replyBox(id, h) {
   const t = state.t
   const form = document.createElement('form')
   form.className = 'reply'
-  const box = document.createElement('textarea')
-  box.rows = 2
+  const box = document.createElement('input')
+  box.type = 'text'
   box.placeholder = t.reply
+  box.enterKeyHint = 'send'
   box.setAttribute('aria-label', t.reply)
-  const row = document.createElement('div')
-  row.className = 'row'
-  const send = document.createElement('button')
-  send.type = 'submit'
-  send.className = 'primary'
-  send.textContent = t.send
   const ask = document.createElement('button')
   ask.type = 'button'
   ask.textContent = t.ask
   ask.onclick = () => askAbout(id, h, fmt(t.askText, { n: h.page })).catch((e) => say(fmt(t.failed, { e: e.message }), 'error'))
-  const remove = document.createElement('button')
-  remove.type = 'button'
-  remove.className = 'danger'
-  remove.textContent = t.remove
-  remove.hidden = h.by !== state.notes.presence.self.userId
-  remove.onclick = () => {
-    state.notes.transact(() => {
-      delete state.notes.data.highlights[id]
-      for (const [cid, c] of Object.entries(state.notes.data.comments)) if (c.on === id) delete state.notes.data.comments[cid]
-    })
-    state.focus = null
+  form.append(box, ask)
+  // Enter sends (a form with one text field submits on Enter); an IME's Enter only commits the composition.
+  box.onkeydown = (event) => {
+    if (event.key === 'Enter' && event.isComposing) event.preventDefault()
   }
-  row.append(send, ask, remove)
-  form.append(box, row)
   form.onsubmit = (event) => {
     event.preventDefault()
     const text = box.value.trim()
     if (!text) return
     state.notes.data.comments[newId()] = { on: id, by: state.notes.presence.self.userId, name: state.notes.presence.self.name, text, at: new Date().toISOString() }
     box.value = ''
-  }
-  box.onkeydown = (event) => {
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) form.requestSubmit()
   }
   return form
 }
@@ -1055,6 +1128,9 @@ window.addEventListener('focus', () => {
   refocused = Date.now()
   readDiscussions()
 })
+for (const button of document.querySelectorAll('[data-highlight-filter]')) {
+  button.onclick = () => { state.highlightFilter = button.dataset.highlightFilter; drawSide() }
+}
 for (const tab of document.querySelectorAll('#tabs [role=tab]')) {
   tab.onclick = () => {
     state.tab = tab.dataset.tab

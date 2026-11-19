@@ -2,7 +2,9 @@
   "name": "gugu-apps",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "add-version": "node scripts/add-version.mjs",
     "verify": "node scripts/verify.mjs",
@@ -12,6 +14,8 @@
   },
   "dependencies": {
     "ali-oss": "6.23.0",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "lib0": "0.2.117",
+    "zod": "4.4.3"
   }
 }

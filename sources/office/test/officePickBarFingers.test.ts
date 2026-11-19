@@ -18,7 +18,7 @@ const gugu = {
   getContext: vi.fn(async () => ctx),
   onLink: vi.fn(),
   onContextChanged: vi.fn(() => () => {}),
-  compose: vi.fn(async () => {}),
+  dispatch: vi.fn(async () => {}),
   files: {
     list: vi.fn(async () => [entry]),
     onChanged: vi.fn(() => () => {}),

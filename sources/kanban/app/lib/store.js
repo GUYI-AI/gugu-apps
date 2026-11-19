@@ -4,7 +4,7 @@
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { BOARD_VERSION, applyOp, emptyBoard, newId } from './core.js'
+import { BOARD_VERSION, applyOp, asCurrent, emptyBoard } from './core.js'
 
 const FILE = 'board.json'
 
@@ -23,8 +23,9 @@ export async function readBoard() {
     throw new Error(`协作看板 could not read ${FILE}: ${error.message}`)
   }
   const board = JSON.parse(raw)
-  if (board.version !== BOARD_VERSION) throw new Error(`${FILE} is version ${board.version}; this 协作看板 reads ${BOARD_VERSION}`)
-  return board
+  // A 1.x board reads as 2.0 and is converted on disk by the first write; a newer one is left alone.
+  if (board.version > BOARD_VERSION) throw new Error(`${FILE} is version ${board.version}; this 协作看板 reads up to ${BOARD_VERSION}: update the App`)
+  return asCurrent(board)
 }
 
 async function writeBoard(board) {
@@ -43,10 +44,10 @@ const oneAtATime = (fn) => {
 }
 
 /** Apply one operation and save; resolves { rev, board, result }. A refused operation saves nothing. */
-export function apply(op, by) {
+export function apply(op, by, caller) {
   return oneAtATime(async () => {
     const board = await readBoard()
-    const result = applyOp(board, op, { by, now: new Date().toISOString(), id: newId })
+    const result = applyOp(board, op, { by, now: new Date().toISOString(), caller })
     board.rev += 1
     await writeBoard(board)
     return { rev: board.rev, board, result }
@@ -55,13 +56,3 @@ export function apply(op, by) {
 
 /** The board as it is now, read in the same queue as the writes (never between a write's read and its save). */
 export const snapshot = () => oneAtATime(readBoard)
-
-/** The background page's list of this computer's tasks (agents.json), or null when it has not written one yet. */
-export async function readAgentsSnapshot() {
-  try {
-    return JSON.parse(await readFile(path.join(dir(), 'agents.json'), 'utf8'))
-  } catch (error) {
-    if (error?.code === 'ENOENT') return null
-    throw new Error(`协作看板 could not read agents.json: ${error.message}`)
-  }
-}

@@ -47,6 +47,78 @@
       "sha256": "93ad552d6f76c13d608b62803275a4bf64149511005617f3d777e1451d33e271",
       "bytes": 805090,
       "yanked": null
+    },
+    {
+      "version": "0.7.10",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "e87425c0fb34c5a31105cb29ed8e54d6239c785b",
+      "sha256": "e0434b2780e7c24e8d83c346d4c7e27c7227e9140df90286bb19eb716b576c81",
+      "bytes": 807086,
+      "yanked": null
+    },
+    {
+      "version": "0.7.12",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "a77b80f8abbda693a405a0c2f335634a62a9e109",
+      "sha256": "f1303df26fad98a27ece1d79ccc33c2313ee3f42f3299cfb4d6a6f1ca2d2cb3a",
+      "bytes": 811334,
+      "yanked": null
+    },
+    {
+      "version": "0.7.13",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "0614a9078a10cdca8bc451220622eb07d2e1ffd2",
+      "sha256": "4716acff8ec9a3e7685ff005d9d7d7f4ef682d44f535c6558df91828fc2a0d78",
+      "bytes": 811565,
+      "yanked": null
+    },
+    {
+      "version": "0.8.0",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "c503b9e35552d3c1048d8c60f5cd82e836e8de89",
+      "sha256": "1ea2f4721d9d6767c5bdf5c4b7c793fb4bcc1dfdca0f933c2ab5298d2e199209",
+      "bytes": 237354,
+      "yanked": null
+    },
+    {
+      "version": "0.9.0",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "e09a800346e01d2ae28376177f1610d02f167871",
+      "sha256": "4a6c2ed3370d55c92e529a65e919f0227201de725051d106dbc2ed91261e79d6",
+      "bytes": 237474,
+      "yanked": null
+    },
+    {
+      "version": "0.10.1",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "c87eb8ee5e450a7d8e27696e2943018bea07c399",
+      "sha256": "83f89f102882ef624ebec2676f71f47072ea39ffeaadf845ff8d366c661c7617",
+      "bytes": 245677,
+      "yanked": null
+    },
+    {
+      "version": "0.11.0",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "8d9b3b1b42706319dade1d95ff9474dceeaa45d8",
+      "sha256": "b53e44c863c97cc4fe32ba6d18d67b044a28ace5b95f1e251b65199c4c15ad8e",
+      "bytes": 258198,
+      "yanked": null
+    },
+    {
+      "version": "0.11.1",
+      "repo": "shuxueshuxue/promo-skills",
+      "path": ".",
+      "commit": "9b71450df8c9a5a8d7724299ee0f8b4c19bf4bda",
+      "sha256": "43de3033f7fbca44da295b2d9ab9ebf2f719f8fc5b75935528fe5a51c31a92ee",
+      "bytes": 258103,
+      "yanked": null
     }
   ]
 }

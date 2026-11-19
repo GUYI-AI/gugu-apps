@@ -1,87 +1,86 @@
-// 协作看板 — the board page. The same page wherever it opens (the dock, a task's tab, a chat's panel, a board file), on
-// one of two homes of a board: this computer's (from the background page; every change goes back through it to the
-// App's program, its only writer) or a chat's (its board file, opened here live; a change is applied to the file).
-// Everything below the home — cards, columns, the open card — is one page for both.
-import { columnsInOrder, cardsIn, taskState, cardFlags } from './lib/core.js'
-import { openChatBoard, applyToFile, filled, BOARD_SUFFIX, CHAT_BOARD_NAME } from './lib/chat-board.js'
+// 协作看板 — the board page: one list of cards grouped by what they need (等你, 进行中, 等别的, then 没人接 and 完成
+// folded), a card opened in a sheet, and the owner's answer sent to the card's holder. The same page on a phone and a
+// desktop, for a chat's board (its file, live) and this computer's (through the background page and the App's program).
+import { asCurrent, groups, stateOf, checksOf, openChecks, logOf, age, findCard } from './lib/core.js'
+import { CHAT_BOARD_NAME, openChatBoard, findBoard, applyToFile } from './lib/chat-board.js'
 
 const g = window.gugu
+const $ = (id) => document.getElementById(id)
 
 const WORDS = {
   zh: {
-    newCard: '新建卡片', cardTitle: '标题', title: '协作看板', local: '本机看板', addCard: '添加卡片', newPlaceholder: '卡片标题，按回车添加', attach: '关联当前任务',
-    roles: { todo: '待办', doing: '进行中', review: '待验收', done: '完成' },
-    states: { running: '运行中', parked: '后台运行', approval: '待批准', answer: '待回复', done: '本轮完成', stopped: '已停止', error: '出错', gone: '任务不可用', none: '无状态' },
-    all: '全部', attention: '需要处理', count: (n) => `${n} 张卡片`, waitingCount: (n) => `${n} 张等待`, where: '看板',
-    addColumn: '添加列', columnName: '列名', back: '返回', close: '关闭', more: '更多', del: '删除卡片', delAgain: '再次点击确认删除',
-    column: '状态', progress: '进度', waitingOn: '等待', next: '下一步', due: '截止日期', owner: '负责人', props: '属性', unset: '未填写',
-    addNote: '添加说明…', editNote: '编辑说明', addLink: '添加', noLinks: '暂无关联', messageLink: '群消息', waiting: (w) => `等待：${w}`, stale: '超过 45 分钟未更新',
-    updated: '更新时间', toggle: '展开或收起',
-    tasks: '任务', links: '文件与链接', noteH: '说明', comments: '评论', edit: '编辑', done: '完成',
-    noteEmpty: '暂无说明', open: '打开任务', handTo: '转给任务', remove: '移除',
-    attachCurrent: '关联当前任务', pickTask: '关联任务…', start: '新建任务', starting: '正在新建任务…',
-    pickFile: '关联任务文件…', pickChatFile: '关联群文件…', addUrl: '添加链接', urlPlaceholder: 'https://…', ok: '确定', cancel: '取消',
-    filter: '筛选', chooseTask: '选择任务', noTasks: '暂无任务', noFiles: '未找到文件。输入文件名可搜索全部对话。',
-    show: '查看', openBeside: '在旁边打开', pickProjectFile: '关联项目文件…', chooseProject: '选择项目', noProjects: '暂无项目', browser: '打开', message: '查看消息',
-    comment: '添加评论', send: '发表', byPerson: '我',
-    desktopOnly: '本机看板仅支持在电脑上使用。', phoneHint: '在群或私聊的右栏打开协作看板，可查看该对话的看板。',
-    noStatus: (e) => `无法读取任务状态：${e}`, noBoard: (e) => `无法读取看板：${e}`, gone: '看板文件已删除，或你已不在该对话中。',
-    taskUnavailable: '任务已不存在，或当前不可用。', taskFilesUnavailable: '这个任务的工作副本或文件不在这台电脑上，或已不存在。',
-    handText: (c, chat) => `请处理协作看板上的卡片（id ${c.id}）：${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
-      `${chat ? `这张卡片在对话「${chat.name}」的看板上，调用看板工具时传 chat: "${chat.id}"。` : ''}` +
-      '开始时用 claim 认领，进展用 update 更新，完成后用 move 移到「待验收」，并用 link 关联产出。',
+    title: '协作看板', local: '本机看板', add: '新建卡片', addOk: '添加', cancel: '取消', newTitle: '要做的事',
+    groups: { owner: '等你', progress: '进行中', waiting: '等别的', unclaimed: '没人接', done: '完成' },
+    summary: (n) => [n.owner && `${n.owner} 等你`, n.running !== null ? `${n.running} 在跑` : `${n.progress} 进行中`, n.stopped && `${n.stopped} 停了`, n.waiting && `${n.waiting} 等别的`].filter(Boolean).join(' · ') || '没有进行中的卡片',
+    states: { running: '在跑', stopped: '停了', error: '出错', asking: '等批准' },
+    stoppedFor: (a) => `停了 ${a}`, next: '下一步', nextPrefix: '下一步：', waitsOn: (w, a) => `等 ${w} · ${a}`,
+    reply: '回复…', send: '发送', undo: '撤销', answered: (a) => `已答「${a}」`, recorded: '答复已记下', notSent: (w) => `答复已记下，但没发到持有者：${w}`,
+    holder: '持有', nobody: '没人接', you: '你', wait: '等', question: '问你', checks: '清单', note: '说明', log: '记录', addCheck: '添加一项…',
+    editNote: '编辑说明', save: '保存', emptyNote: '还没有说明', earlier: (n) => `更早 ${n} 条`, handTo: '交给…', done: '完成', reopen: '重开',
+    more: '更多', del: '删除卡片', confirmDel: (t) => `删除「${t}」？卡片和它的记录都会删掉。`, close: '关闭', rename: '改标题',
+    openRefused: (open) => `还不能完成：${open}`, empty: '还没有卡片', emptyHint: '点「+」添加一张，或让 agent 用 kanban__set 添加。',
+    desktopOnly: '本机看板只在电脑上', phoneHint: '在群或私聊里打开协作看板，用的是那个对话的看板。', gone: '这块看板的文件已不可用。',
+    noBoard: (e) => `看板读不出来：${e}`, latest: (n) => `最近 ${n} 张`,
+    handText: (c, arg) => `请接手协作看板的卡 ${c.id}「${c.title}」：先用 kanban__board { ${arg}card: "${c.id}" } 读全卡，再用 kanban__set { ${arg}card: "${c.id}", hold: true } 认领，照清单推进。`,
+    answerText: (c, q, a, arg) => `Owner 在协作看板答复了卡 ${c.id}「${c.title}」：${q} → ${a}。照这个继续；全卡见 kanban__board { ${arg}card: "${c.id}" }。`,
+    handed: (who) => `交给 ${who}`, sep: '：', listSep: '、',
+    unreached: '没交出去：这个 agent 现在不在你任何一台在线的电脑上。先在那台电脑上打开咕咕，或换一个 agent。',
+    notHanded: (why) => `没交出去：${why}`,
+    thatAgent: '这个 agent',
+    pick: (c) => ({ title: '交给谁', subject: c.title, body: checksOf(c).length ? '它会接手这张卡，按清单做下去。' : '它会接手这张卡。', action: '交给', search: '搜索你的 agent', empty: '没有找到 agent' }),
+    verbs: {
+      created: '创建', took: '接手', released: '放下', 'held by': '持有者设为', waits: '等', 'no longer waits': '不再等', asks: '问 owner', withdrew: '撤回问题',
+      answered: '答复', ticked: '勾上', unticked: '取消勾选', 'added check': '加清单项', 'removed check': '删清单项', done: '完成', reopened: '重开', title: '改标题为',
+      next: '下一步', note: '改了说明', said: '', column: '原在列', 'moved from 1.x': '从 1.x 迁移',
+    },
   },
   en: {
-    newCard: 'New card', cardTitle: 'Title', title: 'Teamboard', local: 'This computer', addCard: 'Add card', newPlaceholder: 'Card title, press Enter to add', attach: 'Link current task',
-    roles: { todo: 'To do', doing: 'In progress', review: 'Review', done: 'Done' },
-    states: { running: 'Running', parked: 'Running in background', approval: 'Awaiting approval', answer: 'Awaiting reply', done: 'Turn complete', stopped: 'Stopped', error: 'Error', gone: 'Task unavailable', none: 'No status' },
-    all: 'All', attention: 'Needs attention', count: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`, waitingCount: (n) => `${n} waiting`, where: 'Board',
-    addColumn: 'Add column', columnName: 'Column name', back: 'Back', close: 'Close', more: 'More', del: 'Delete card', delAgain: 'Click again to confirm',
-    column: 'Column', progress: 'Progress', waitingOn: 'Waiting on', next: 'Next step', due: 'Due', owner: 'Assignee', props: 'Properties', unset: 'Not set',
-    addNote: 'Add a note…', editNote: 'Edit note', addLink: 'Add', noLinks: 'Nothing linked yet', messageLink: 'Chat message', waiting: (w) => `Waiting on ${w}`, stale: 'Not updated for over 45 minutes',
-    updated: 'Updated', toggle: 'Expand or collapse',
-    tasks: 'Tasks', links: 'Files and links', noteH: 'Note', comments: 'Comments', edit: 'Edit', done: 'Done',
-    noteEmpty: 'No note', open: 'Open task', handTo: 'Send to task', remove: 'Remove',
-    attachCurrent: 'Link current task', pickTask: 'Link task…', start: 'New task', starting: 'Creating task…',
-    pickFile: 'Link task file…', pickChatFile: 'Link chat file…', addUrl: 'Add link', urlPlaceholder: 'https://…', ok: 'OK', cancel: 'Cancel',
-    filter: 'Filter', chooseTask: 'Select task', noTasks: 'No tasks', noFiles: 'No files found. Enter a file name to search all chats.',
-    show: 'View', openBeside: 'Open beside', pickProjectFile: 'Link project file…', chooseProject: 'Select project', noProjects: 'No projects', browser: 'Open', message: 'View message',
-    comment: 'Add a comment', send: 'Post', byPerson: 'Me',
-    desktopOnly: "This computer's board is only available on a computer.", phoneHint: "Open Teamboard in a chat's side panel to see that chat's board.",
-    noStatus: (e) => `Unable to read task status: ${e}`, noBoard: (e) => `Unable to read the board: ${e}`, gone: 'The board file was deleted, or you are no longer in that chat.',
-    taskUnavailable: 'This task no longer exists or is currently unavailable.', taskFilesUnavailable: 'This task’s working copy or file is not on this computer, or no longer exists.',
-    handText: (c, chat) => `Please handle this card from Teamboard (id ${c.id}): ${c.title}${c.note ? `\n\n${c.note}` : ''}\n\n` +
-      `${chat ? `It is on the board of the chat "${chat.name}": pass chat: "${chat.id}" to the board's tools. ` : ''}` +
-      'Claim it with claim when you start, report progress with update; when finished, move it to Review and link the output with link.',
+    title: 'Teamboard', local: 'This computer', add: 'New card', addOk: 'Add', cancel: 'Cancel', newTitle: 'Something to do',
+    groups: { owner: 'Waiting on you', progress: 'In progress', waiting: 'Waiting', unclaimed: 'Unclaimed', done: 'Done' },
+    summary: (n) => [n.owner && `${n.owner} waiting on you`, n.running !== null ? `${n.running} running` : `${n.progress} in progress`, n.stopped && `${n.stopped} stopped`, n.waiting && `${n.waiting} waiting`].filter(Boolean).join(' · ') || 'Nothing in progress',
+    states: { running: 'Running', stopped: 'Stopped', error: 'Error', asking: 'Needs approval' },
+    stoppedFor: (a) => `stopped ${a}`, next: 'Next', nextPrefix: 'Next: ', waitsOn: (w, a) => `on ${w} · ${a}`,
+    reply: 'Reply…', send: 'Send', undo: 'Undo', answered: (a) => `Answered “${a}”`, recorded: 'Answer recorded', notSent: (w) => `Answer recorded, not delivered to the holder: ${w}`,
+    holder: 'Holder', nobody: 'Nobody', you: 'You', wait: 'Waiting on', question: 'Asks you', checks: 'Checklist', note: 'Note', log: 'Log', addCheck: 'Add an item…',
+    editNote: 'Edit note', save: 'Save', emptyNote: 'No note yet', earlier: (n) => `${n} earlier`, handTo: 'Hand to…', done: 'Done', reopen: 'Reopen',
+    more: 'More', del: 'Delete card', confirmDel: (t) => `Delete “${t}”? The card and its log go.`, close: 'Close', rename: 'Rename',
+    openRefused: (open) => `Not done yet: ${open}`, empty: 'No cards yet', emptyHint: 'Add one with “+”, or ask an agent to add one with kanban__set.',
+    desktopOnly: "This computer's board is on the computer", phoneHint: "Open Teamboard in a group or private chat for that chat's board.", gone: 'This board file is no longer available.',
+    noBoard: (e) => `Could not read the board: ${e}`, latest: (n) => `latest ${n}`,
+    handText: (c, arg) => `Please take Teamboard card ${c.id} “${c.title}”: read it with kanban__board { ${arg}card: "${c.id}" }, take it with kanban__set { ${arg}card: "${c.id}", hold: true }, and work through its checklist.`,
+    answerText: (c, q, a, arg) => `The owner answered on Teamboard card ${c.id} “${c.title}”: ${q} → ${a}. Carry on from it; the card: kanban__board { ${arg}card: "${c.id}" }.`,
+    handed: (who) => `handed to ${who}`, sep: ': ', listSep: ', ',
+    unreached: 'Not handed over: that agent is not on any of your computers that are online. Open gugu on its computer, or pick another agent.',
+    notHanded: (why) => `Not handed over: ${why}`,
+    thatAgent: 'that agent',
+    pick: (c) => ({ title: 'Hand to', subject: c.title, body: checksOf(c).length ? 'It takes this card and works through its checklist.' : 'It takes this card.', action: 'Hand over', search: 'Search your agents', empty: 'No agent found' }),
+    verbs: {
+      created: 'created', took: 'took it', released: 'released', 'held by': 'held by', waits: 'waits on', 'no longer waits': 'no longer waits on', asks: 'asks the owner',
+      withdrew: 'withdrew the question', answered: 'answered', ticked: 'ticked', unticked: 'unticked', 'added check': 'added', 'removed check': 'removed', done: 'done',
+      reopened: 'reopened', title: 'renamed to', next: 'next', note: 'edited the note', said: '', column: 'was in column', 'moved from 1.x': 'moved from 1.x',
+    },
   },
 }
 
-const $ = (id) => document.getElementById(id)
-// The page is moved between places (the dock, a chat's panel, a task's tab) and told by onContextChanged: where it
-// is now — its session or chat — is read again on every change, never kept from the first load.
 let ctx = await g.getContext()
-let t = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
-// The same App page in the host dialog, with its own document and the same board writer.
-const creating = ctx.modal?.data?.newCard
-if (creating) document.body.classList.add('creating-card')
-// This computer's board is read and written only through the background page and the App's program, and a phone has
-// neither (its `gugu` has no onBackgroundMessage — the host's way of saying so). A chat's board needs neither.
+const wordsFor = (locale) => WORDS[String(locale ?? '').startsWith('zh') ? 'zh' : 'en']
+let t = wordsFor(ctx.locale)
+// This computer's board lives behind the background page and the program, which a phone has neither of.
 const desktop = typeof g.onBackgroundMessage === 'function'
 
-/** Where the board shown is kept: this computer (`{ kind: 'local' }`) or a chat's board file (`{ kind: 'chat', f }`). */
+/** Where the board shown is kept: { kind: 'local' } or { kind: 'chat', f, name } (a live board file). */
 let home = null
 let board = null
-let localBoard = null
-let agents = []
-let agentsKnown = false // false on a phone, and until the background page has listed them: no status is drawn then
-let filter = 'all'
+let agents = null // the task list by session, or null when the host cannot give it: then no dots, nothing else changes
+let thisMachine = null
 let selected = null
+let noteEditing = false
+let logOpen = false
+let handFailed = null // { card, text }: the card whose last 交给… did not reach the agent, and why — said in its sheet, where the person is
+const pending = new Map() // card id -> { answer, timer }: an answer the owner can still take back
+const waiting = new Map() // a local change sent to the background page -> its promise
 let visible = ctx.layout?.visible ?? true
-const collapsed = new Map() // column id -> collapsed, in the narrow layout; todo and done start collapsed
-const waiting = new Map()
-let stateProblem = ''
 
-/** Element maker: text goes in as text (others wrote it), never as markup. */
 function h(tag, props = {}, ...kids) {
   const el = document.createElement(tag)
   for (const [key, value] of Object.entries(props)) {
@@ -93,51 +92,438 @@ function h(tag, props = {}, ...kids) {
   for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(kid)
   return el
 }
-
 const icon = (name) => h('gugu-icon', { name })
-const narrow = () => $('shell').clientWidth <= 640
+const ageWords = (iso) => {
+  const a = age(iso)
+  return t === WORDS.zh ? a.replace(/m$/, ' 分').replace(/h$/, ' 时').replace(/d$/, ' 天') : a
+}
 
 function showAlert(message) {
-  $('alert').replaceChildren(...(message ? [h('span', { text: message }), h('button', { class: 'plain', 'aria-label': t.close, onclick: () => showAlert(null) }, icon('x'))] : []))
+  $('alert').replaceChildren(...(message ? [h('span', { text: message }), h('button', { type: 'button', class: 'icon', 'aria-label': t.close, onclick: () => showAlert(null) }, icon('x'))] : []))
   $('alert').hidden = !message
 }
+const said = (error) => showAlert(error?.message ?? String(error))
 
-/** A missing task or working copy is a state of that link, rather than a failure of the board. */
-async function taskAction(run, status, message) {
+// ── writing ─────────────────────────────────────────────────────────────────
+
+const self = () => (home?.kind === 'chat' ? home.f.presence?.self ?? null : null)
+
+/** One change to the board shown; resolves its result, rejects with the reason (already said in #alert). */
+async function change(op) {
   try {
-    await run()
-  } catch (error) {
-    if (error?.code === 'not-found') status.textContent = message
-    else showAlert(error?.message ?? String(error))
-  }
-}
-
-/** Who a change on this board is by: the person on this computer's board; on a chat's, their own id (others see it). */
-const me = () => (home?.kind === 'chat' ? home.f.presence.self.userId : 'person')
-
-/** One change to the board shown; resolves the result, rejects with the reason (already said in #alert). */
-function change(op) {
-  let done
-  if (home?.kind === 'chat') {
-    done = new Promise((resolve) => resolve(applyToFile(home.f, op, me())))
-  } else {
+    // A chat with no board yet: the first change makes its file, and the page follows it from then on.
+    if (home?.kind === 'chat-unmade') await showChatBoard(() => openChatBoard(g.files, home.chat.id))
+    if (home?.kind === 'chat') return applyToFile(home.f, op, self()?.userId ?? 'person', {}, self()?.name)
+    if (home?.kind !== 'local') throw new Error(t.noBoard('—'))
     const id = crypto.randomUUID()
-    done = new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       waiting.set(id, { resolve, reject })
-      g.sendToBackground({ type: 'op', id, op }).catch((error) => {
-        waiting.delete(id)
-        reject(error)
-      })
+      g.sendToBackground({ type: 'op', id, op }).catch((error) => { waiting.delete(id); reject(error) })
     })
-  }
-  return done.catch((error) => {
-    showAlert(error?.message ?? String(error))
+  } catch (error) {
+    said(error)
     throw error
-  })
+  }
+}
+const quietly = (promise) => promise.catch(() => {}) // a refusal is already in #alert
+
+/** How the tools name this board in a message to an agent: `chat: "…", ` for a chat's, nothing for this computer's. */
+const chatArg = () => (home?.kind === 'chat' ? `chat: "${home.f.entry.chat}", ` : '')
+
+// ── the task list: dots, and who to send an answer to ───────────────────────
+
+function liveState(row) {
+  // Not in the list: someone else's agent, a machine not reached, or archived — the page cannot tell, so it says nothing.
+  if (!row) return null
+  if (row.failure || row.status === 'error') return 'error'
+  if (row.status === 'working') return 'running'
+  if (row.status === 'needs_user') return 'asking'
+  return 'stopped'
+}
+const rowOf = (card) => (agents && card.holder?.session ? agents.get(card.holder.session) ?? null : undefined)
+/** running | stopped | error | asking, or null when the page cannot know (no task list, a person holds it, or the
+ * holder's session is not in the viewer's list). */
+const dotOf = (card) => (agents && card.holder && card.holder !== 'person' ? liveState(rowOf(card)) : null)
+const isStopped = (card) => stateOf(card) === 'progress' && ['stopped', 'error'].includes(dotOf(card))
+
+let asking = null
+function readAgents() {
+  if (typeof g.listAgents !== 'function') return
+  if (asking) return asking
+  asking = g.listAgents({ report: true }).then((answer) => {
+    const report = Array.isArray(answer) ? { agents: answer, devices: [] } : answer
+    agents = new Map(report.agents.map((a) => [a.sessionId, a]))
+    thisMachine = report.devices?.find((d) => d.thisMachine)?.label ?? thisMachine
+    fillHolders()
+  }).catch((error) => {
+    agents = null
+    g.reportError(`协作看板 could not read the task list: ${error?.message ?? error}`)
+  }).finally(() => { asking = null; render() })
+  return asking
 }
 
-// A change refused is already said in #alert; the click that asked for it has nothing more to do.
-const quietly = (promise) => promise.catch(() => {})
+/** A tool records a holder by session (and name, when gugu knows it); the page adds its name and machine once. */
+function fillHolders() {
+  if (!board || !agents) return
+  for (const card of Object.values(board.cards)) {
+    const row = rowOf(card)
+    if (!row || card.doneAt) continue
+    // A row from another machine carries its label; this machine's rows carry none, and only they may take its name.
+    const machine = row.deviceLabel ?? (row.statusFrom === 'this_machine' ? thisMachine : null)
+    const name = row.title
+    if ((machine && card.holder.machine !== machine) || (name && !card.holder.name) || (row.agentId && !card.holder.agent)) {
+      quietly(change({ type: 'holder.fill', card: card.id, session: card.holder.session, ...(name ? { name } : {}), ...(machine ? { machine } : {}), ...(row.agentId ? { agent: row.agentId } : {}) }))
+    }
+  }
+}
+
+// ── answers ─────────────────────────────────────────────────────────────────
+
+/** One tap answers; for 5 seconds 撤销 takes it back and nothing is sent. Leaving the page sends it at once. */
+function answer(card, words) {
+  const text = String(words ?? '').trim()
+  if (!text || pending.has(card.id)) return
+  const timer = setTimeout(() => commit(card.id), 5000)
+  pending.set(card.id, { answer: text, timer })
+  showUndo()
+  render()
+}
+
+async function commit(id) {
+  const p = pending.get(id)
+  if (!p) return
+  clearTimeout(p.timer)
+  pending.delete(id)
+  showUndo()
+  const card = board?.cards[id]
+  let result
+  try {
+    result = await change({ type: 'answer', card: id, answer: p.answer })
+  } catch {
+    render()
+    return
+  }
+  // To whoever holds the card; else to whoever asked. Its agent id is on the card, or found by its session.
+  const to = (card?.holder !== 'person' && (card?.holder?.agent ?? rowOf(card)?.agentId)) || (/^user:/.test(result.asker ?? '') ? result.asker : null)
+  if (!to || typeof g.dispatch !== 'function') return render()
+  try {
+    await g.dispatch(t.answerText(card, result.question, result.answer, chatArg()), { to: { agent: to } })
+  } catch (error) {
+    showAlert(t.notSent(error?.message ?? String(error)))
+  }
+  render()
+}
+
+function showUndo() {
+  const last = [...pending.entries()].at(-1)
+  $('undo').hidden = !last
+  if (!last) return $('undo').replaceChildren()
+  const [id, p] = last
+  $('undo').replaceChildren(h('span', { text: t.answered(p.answer) }), h('button', { type: 'button', text: t.undo, onclick: () => {
+    clearTimeout(p.timer)
+    pending.delete(id)
+    showUndo()
+    render()
+  } }))
+}
+
+addEventListener('pagehide', () => { for (const id of pending.keys()) commit(id) })
+
+// ── the list ────────────────────────────────────────────────────────────────
+
+const holderLine = (card) => {
+  const holder = card.holder
+  if (!holder) return null
+  if (holder === 'person') return t.you
+  return [holder.name ?? `session:${holder.session.slice(0, 8)}`, holder.machine].filter(Boolean).join(' · ')
+}
+
+function dot(card) {
+  const d = dotOf(card)
+  return d ? h('i', { class: `dot ${d}`, title: t.states[d], 'aria-label': t.states[d], role: 'img' }) : null
+}
+
+function questionBlock(card) {
+  const { question, options = [] } = card.wait
+  // A question with no answers to pick is answered in words: the box is open from the start.
+  const reply = h('form', { class: 'reply', hidden: options.length > 0, onsubmit: (e) => { e.preventDefault(); answer(card, input.value) } })
+  const input = h('input', { 'aria-label': t.reply, placeholder: t.reply, maxlength: 2000 })
+  reply.append(input, h('button', { class: 'primary', text: t.send }))
+  return h('div', { class: 'ask' },
+    h('p', { class: 'q', text: question }),
+    options.length ? h('div', { class: 'answers' },
+      ...options.map((o) => h('button', { type: 'button', class: 'answer', text: o, onclick: () => answer(card, o) })),
+      h('button', { type: 'button', class: 'answer plain', text: t.reply, onclick: () => { reply.hidden = false; input.focus() } })) : null,
+    reply)
+}
+
+function row(card, state) {
+  const titleId = `t-${card.id}`
+  const open = () => openCard(card.id)
+  const sub = []
+  if (state === 'owner') sub.push(h('small', { class: 'muted', text: holderLine(card) ?? t.nobody }))
+  if (state === 'progress') {
+    const d = dotOf(card)
+    if (isStopped(card)) sub.push(h('small', { class: `stopped ${d}`, text: d === 'error' ? t.states.error : t.stoppedFor(ageWords(rowOf(card)?.updatedAt ?? logOf(card).at(-1)?.at ?? card.createdAt)) }))
+    if (card.next) sub.push(h('small', { class: 'muted', text: `${t.nextPrefix}${card.next}` }))
+    else if (!isStopped(card)) sub.push(h('small', { class: 'muted', text: holderLine(card) ?? '' }))
+  }
+  if (state === 'waiting') sub.push(h('small', { class: 'muted', text: t.waitsOn(card.wait.what, ageWords(card.wait.since)) }))
+  if (state === 'unclaimed' && card.next) sub.push(h('small', { class: 'muted', text: `${t.nextPrefix}${card.next}` }))
+  if (state === 'done') sub.push(h('gugu-time', { datetime: card.doneAt }))
+  const checks = checksOf(card)
+  return h('article', { class: `card ${state}${selected === card.id ? ' selected' : ''}`, 'aria-labelledby': titleId, 'data-key': card.id },
+    h('button', { type: 'button', class: 'head', onclick: open },
+      state === 'progress' ? dot(card) : null,
+      h('span', { class: 'what' }, h('strong', { id: titleId, text: card.title }), ...sub),
+      checks.length && state !== 'done' ? h('small', { class: 'count muted', text: `${checks.filter((c) => c.done).length}/${checks.length}` }) : null),
+    state === 'owner' ? questionBlock(card) : null)
+}
+
+function counts(gr) {
+  // 在跑 only when every card in progress has a known state; otherwise the line says how many are in progress.
+  const known = agents !== null && gr.progress.every((c) => dotOf(c) !== null)
+  const stopped = gr.progress.filter(isStopped).length
+  return { owner: gr.owner.length, progress: gr.progress.length, waiting: gr.waiting.length, running: known ? gr.progress.length - stopped : null, stopped }
+}
+
+function render() {
+  if (!board) return
+  const shown = { ...board, cards: Object.fromEntries(Object.entries(board.cards).map(([id, c]) => [id, pending.has(id) ? { ...c, wait: null } : c])) }
+  const gr = groups(shown, isStopped)
+  const n = counts(gr)
+  $('heading').textContent = home?.kind === 'chat' ? home.name : t.local
+  $('summary').textContent = t.summary(n)
+  g.setTabBadge?.(gr.owner.length || null)?.catch?.((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
+  const list = $('list')
+  const section = (state, cards) => h('section', { class: `group ${state}`, 'aria-labelledby': `g-${state}` },
+    h('h5', { id: `g-${state}` }, t.groups[state], h('small', { class: 'muted', text: ` ${cards.length}` })),
+    ...cards.map((c) => row(c, state)))
+  const folded = (state, cards, max) => {
+    const el = h('details', { class: `group folded ${state}`, 'data-state': state },
+      h('summary', {}, h('span', { text: t.groups[state] }), h('small', { class: 'muted', text: ` ${cards.length}${max && cards.length > max ? ` · ${t.latest(max)}` : ''}` })),
+      ...cards.slice(0, max ?? cards.length).map((c) => row(c, state)))
+    el.open = openFolds.has(state)
+    el.addEventListener('toggle', () => (el.open ? openFolds.add(state) : openFolds.delete(state)))
+    return el
+  }
+  const parts = []
+  if (gr.owner.length) parts.push(section('owner', gr.owner))
+  if (gr.progress.length) parts.push(section('progress', gr.progress))
+  if (gr.waiting.length) parts.push(section('waiting', gr.waiting))
+  if (!Object.keys(board.cards).length) parts.push(h('gugu-empty', { icon: 'layout-list' }, h('strong', { text: t.empty }), h('small', { text: t.emptyHint })))
+  else parts.push(h('div', { class: 'folds' }, folded('unclaimed', gr.unclaimed), folded('done', gr.done, 20)))
+  // Keep a reply being typed: the list is redrawn on every change anyone makes.
+  const typing = document.activeElement?.closest?.('#list .reply')
+  if (typing) return
+  list.replaceChildren(...parts)
+  if (selected) renderSheet()
+}
+const openFolds = new Set()
+
+// ── a card, opened ──────────────────────────────────────────────────────────
+
+function openCard(id) {
+  selected = id
+  noteEditing = false
+  logOpen = false
+  $('sheet').hidden = false
+  $('scrim').hidden = false
+  document.body.classList.add('sheet-open')
+  render()
+  $('sheet').querySelector('.close')?.focus()
+}
+
+function closeCard() {
+  selected = null
+  $('sheet').hidden = true
+  $('scrim').hidden = true
+  $('sheet').replaceChildren()
+  document.body.classList.remove('sheet-open')
+  render()
+}
+$('scrim').addEventListener('click', closeCard)
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && selected && !e.target.closest?.('input, textarea')) closeCard() })
+
+async function confirm(text, yes) {
+  $('confirm-text').textContent = text
+  $('confirm-yes').textContent = yes
+  $('confirm-no').textContent = t.cancel
+  $('confirm').showModal()
+  return new Promise((resolve) => $('confirm').addEventListener('close', () => resolve($('confirm').returnValue === 'yes'), { once: true }))
+}
+
+let md = null
+function renderSheet() {
+  const card = board.cards[selected]
+  if (!card) return closeCard()
+  // Leave a sheet being typed into alone; it is redrawn once the typing is done.
+  if ($('sheet').contains(document.activeElement) && document.activeElement.matches('input, textarea')) return
+  const set = (fields) => quietly(change({ type: 'set', card: card.id, ...fields }))
+  const state = stateOf(card)
+  const field = (label, ...body) => h('div', { class: 'field' }, h('h5', { text: label }), ...body)
+  const parts = []
+
+  const title = h('h2', { id: 's-title', tabindex: 0, title: t.rename, text: card.title, onclick: () => {
+    const input = h('input', { value: card.title, maxlength: 200, 'aria-label': t.rename })
+    const done = () => { const v = input.value.trim(); input.replaceWith(title); if (v && v !== card.title) set({ title: v }); else renderSheet() }
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = card.title; input.blur() } })
+    input.addEventListener('blur', done, { once: true })
+    title.replaceWith(input)
+    input.focus()
+  } })
+  parts.push(h('header', { class: 'sheet-head' }, title, h('button', { type: 'button', class: 'icon close', 'aria-label': t.close, onclick: closeCard }, icon('x'))))
+
+  const who = holderLine(card)
+  const d = dotOf(card)
+  parts.push(field(t.holder, h('p', { class: 'holder' }, d ? dot(card) : null, h('span', { text: who ?? t.nobody }), d ? h('small', { class: 'muted', text: ` · ${t.states[d]}` }) : null)))
+  if (card.wait?.on === 'owner' && !pending.has(card.id)) parts.push(field(t.question, questionBlock(card)))
+  if (card.wait?.on === 'other') parts.push(field(t.wait, h('p', { text: card.wait.what }, h('small', { class: 'muted', text: ` · ${ageWords(card.wait.since)}` }))))
+  if (card.next) parts.push(field(t.next, h('p', { text: card.next })))
+
+  const checks = checksOf(card)
+  const addCheck = h('input', { class: 'add-check', placeholder: t.addCheck, 'aria-label': t.addCheck, maxlength: 200 })
+  addCheck.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !addCheck.value.trim()) return
+    const label = addCheck.value.trim()
+    addCheck.value = ''
+    addCheck.blur()
+    set({ check: { [label]: false } })
+  })
+  parts.push(field(`${t.checks}${checks.length ? ` ${checks.filter((c) => c.done).length}/${checks.length}` : ''}`,
+    h('ul', { class: 'checks' }, ...checks.map((c) => h('li', {},
+      h('label', {}, h('input', { type: 'checkbox', checked: c.done, onchange: (e) => set({ check: { [c.label]: e.target.checked } }) }), h('span', { text: c.label })),
+      c.note ? h('small', { class: 'muted', text: c.note }) : null))),
+    addCheck))
+
+  const noteBox = h('div', { class: 'note' })
+  if (noteEditing) {
+    const area = h('textarea', { rows: 8, 'aria-label': t.note })
+    area.value = card.note
+    noteBox.append(area, h('div', { class: 'row end' },
+      h('button', { type: 'button', text: t.cancel, onclick: () => { noteEditing = false; area.blur(); renderSheet() } }),
+      h('button', { type: 'button', class: 'primary', text: t.save, onclick: () => { noteEditing = false; area.blur(); set({ note: area.value }); renderSheet() } })))
+  } else {
+    const view = h('div', { class: 'md' })
+    if (card.note) (md ? Promise.resolve(md) : g.markdown().then((m) => (md = m))).then((m) => m.render(view, card.note)).catch(said)
+    else view.append(h('p', { class: 'muted', text: t.emptyNote }))
+    noteBox.append(view, h('button', { type: 'button', class: 'plain', text: t.editNote, onclick: () => { noteEditing = true; renderSheet() } }))
+  }
+  parts.push(field(t.note, noteBox))
+
+  const log = logOf(card).reverse()
+  const shownLog = logOpen ? log : log.slice(0, 4)
+  parts.push(field(t.log, h('ol', { class: 'log' }, ...shownLog.map((l) => h('li', {},
+    h('gugu-time', { datetime: l.at }),
+    h('span', {}, h('b', { text: whoWrote(l) }), ' ', [t.verbs[l.what] ?? l.what, l.text].filter(Boolean).join(t.verbs[l.what] && l.text ? t.sep : ''))))),
+  log.length > shownLog.length ? h('button', { type: 'button', class: 'plain', text: `${t.earlier(log.length - shownLog.length)} ›`, onclick: () => { logOpen = true; renderSheet() } }) : null))
+
+  // What keeps the card from being done is said here, beside the button, not after a refusal.
+  const blocking = [...openChecks(card).map((c) => c.label), card.wait?.on === 'owner' ? card.wait.question : null].filter(Boolean)
+  const actions = h('footer', { class: 'sheet-foot' },
+    typeof g.dispatch === 'function' && state !== 'done' ? h('button', { type: 'button', text: t.handTo, onclick: () => handTo(card) }) : null,
+    state === 'done'
+      ? h('button', { type: 'button', text: t.reopen, onclick: () => set({ done: false }) })
+      : h('button', { type: 'button', class: 'primary', text: t.done, disabled: blocking.length > 0, onclick: () => set({ done: true }) }),
+    h('button', { type: 'button', class: 'icon', 'aria-label': t.del, title: t.del, onclick: async () => {
+      if (await confirm(t.confirmDel(card.title), t.del)) quietly(change({ type: 'delete', card: card.id }).then(closeCard))
+    } }, icon('trash-2')),
+    state !== 'done' && blocking.length ? h('p', { class: 'muted blocking', text: t.openRefused(blocking.join(t.listSep)) }) : null,
+    handFailed?.card === card.id ? h('p', { class: 'blocking failed', role: 'alert', text: handFailed.text }) : null)
+  parts.push(actions)
+  $('sheet').replaceChildren(...parts)
+}
+
+/** A log line's author: the name it was written with, else the chat member, else a short id (1.x lines carry no name). */
+function whoWrote(l) {
+  if (l.by === self()?.userId || l.by === 'person') return t.you
+  return l.name ?? ctx.chat?.members?.find((m) => m.id === l.by)?.name ?? l.by.replace(/^user:/, '').slice(0, 8)
+}
+
+/**
+ * 交给…: gugu's sheet, in the board's words (the card's title and one line), picks one of the person's agents; the page then
+ * tells it how to take the card — words for the agent, never shown in the sheet. A host without pickAgent shows its
+ * dispatch sheet with those words, as 2.0.0 did.
+ */
+// The host's refusal names the agent by id; the person picked a name. not-found: no online computer of theirs has it.
+function whyNotHanded(error, name) {
+  if (error?.code === 'not-found') return t.unreached
+  const why = String(error?.message ?? error ?? '').replace(/(user:)?[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/gi, name ?? t.thatAgent).trim()
+  return t.notHanded(why || '?')
+}
+
+const nameOf = (id, otherwise) => ctx.chat?.members?.find((m) => m.id === id)?.name ?? [...(agents?.values() ?? [])].find((a) => a.agentId === id)?.title ?? otherwise
+
+async function handTo(card) {
+  try {
+    let id
+    if (handFailed) { handFailed = null; renderSheet() }
+    if (typeof g.pickAgent === 'function') {
+      const picked = await g.pickAgent(t.pick(card))
+      if (!picked?.agent) return
+      id = picked.agent.startsWith('user:') ? picked.agent : `user:${picked.agent}`
+      const failed = await g.dispatch(t.handText(card, chatArg()), { to: { agent: id } }).then(() => null, (error) => error)
+      if (failed) { handFailed = { card: card.id, text: whyNotHanded(failed, nameOf(id, null)) }; return renderSheet() }
+    } else {
+      const sent = await g.dispatch(t.handText(card, chatArg()), { offer: ['agent-in-chat', 'my-agent'] })
+      if (sent?.cancelled) return
+      id = sent?.to?.agent ?? sent?.to?.member
+    }
+    quietly(change({ type: 'set', card: card.id, log: t.handed(nameOf(id, id ?? '?')) }))
+  } catch (error) {
+    said(error)
+  }
+}
+
+// ── a new card ──────────────────────────────────────────────────────────────
+
+function newCard() {
+  if (!home) return
+  $('new').hidden = false
+  $('new-title').focus()
+}
+$('add').addEventListener('click', newCard)
+$('new-cancel').addEventListener('click', () => { $('new').hidden = true; $('new-title').value = '' })
+$('new').addEventListener('submit', (e) => {
+  e.preventDefault()
+  const title = $('new-title').value.trim()
+  if (!title) return
+  quietly(change({ type: 'create', title }).then(() => { $('new-title').value = ''; $('new').hidden = true }))
+})
+
+// ── which board ─────────────────────────────────────────────────────────────
+
+function words() {
+  $('add').setAttribute('aria-label', t.add)
+  $('add').title = t.add
+  $('new-title').placeholder = t.newTitle
+  $('new-title').setAttribute('aria-label', t.newTitle)
+  $('new-ok').textContent = t.addOk
+  $('new-cancel').textContent = t.cancel
+}
+
+async function showChatBoard(open) {
+  if (home?.kind === 'chat') home.f.close()
+  home = null
+  try {
+    const f = await open()
+    const name = ctx.chat?.id === f.entry.chat ? ctx.chat.name : `${f.entry.chatName ?? ''}${f.entry.name === CHAT_BOARD_NAME ? '' : ` · ${f.entry.name.replace(/\.board\.json$/, '')}`}`.replace(/^ · /, '')
+    home = { kind: 'chat', f, name: name || t.title }
+    board = asCurrent(f.toJSON())
+    f.onChange(({ local } = {}) => {
+      board = asCurrent(f.toJSON())
+      render()
+      if (!local) readAgents()
+    })
+    f.onStatus?.((status) => { if (status === 'gone') showAlert(t.gone) })
+    showAlert(null)
+  } catch (error) {
+    board = null
+    showAlert(t.noBoard(error?.message ?? String(error)))
+  }
+  if (selected) closeCard()
+  render()
+}
 
 if (desktop) g.onBackgroundMessage((message) => {
   if (message?.type === 'refused') {
@@ -146,769 +532,62 @@ if (desktop) g.onBackgroundMessage((message) => {
     return
   }
   if (message?.type !== 'state') return
-  localBoard = message.board
-  agents = message.agents ?? []
-  agentsKnown = !message.failure?.agents
-  // Clears only what it said itself: another failure on the page (the switcher's) stays until it is fixed.
-  const problems = [home?.kind === 'local' && message.failure?.board && t.noBoard(message.failure.board), message.failure?.agents && t.noStatus(message.failure.agents)].filter(Boolean)
-  const problem = problems.join(' · ')
-  if (problem && problem !== stateProblem) showAlert(problem)
-  else if (!problem && stateProblem && !message.done) showAlert(null)
-  stateProblem = problem
   if (message.done) {
     waiting.get(message.done.id)?.resolve(message.done.result)
     waiting.delete(message.done.id)
   }
-  if (home?.kind === 'local') board = localBoard
+  if (home?.kind !== 'local') return
+  if (message.failure) showAlert(t.noBoard(message.failure))
+  if (message.board) board = message.board
   render()
 })
 
-const agentBySession = (session) => agents.find((a) => a.sessionId === session) ?? null
-const agentById = (id) => agents.find((a) => a.agentId === id) ?? null
-const stateOf = (session) => (agentsKnown ? taskState(agentBySession(session)) : null)
-const columnTitle = (column) => column.title ?? t.roles[column.role] ?? column.id
-const taskLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind === 'task')
-const otherLinks = (card) => Object.entries(card.links).filter(([, l]) => l.kind !== 'task')
-const flagsOf = (card) => cardFlags(board, card, stateOf, Date.now())
-const chatOfBoard = () => (home?.kind === 'chat' ? { id: home.f.entry.chat, name: home.name } : null)
-
-/** A task's status, as gugu states it; nothing where the statuses are not known (a phone). */
-function stateBadge(link) {
-  const state = stateOf(link.session)
-  return state ? h('span', { class: `state ${state.key}`, text: t.states[state.key] }) : null
-}
-
-function byLabel(by) {
-  if (by === 'person' || by === me()) return t.byPerson
-  return ctx.chat?.members?.find((m) => m.id === by)?.name ?? agentById(by)?.title ?? by.slice(5, 13)
-}
-
-// ── the board ────────────────────────────────────────────────────────────────
-
-function render() {
-  if (!board) return
-  if (creating) { renderNewCard(); return }
-  const columns = columnsInOrder(board)
-  const cards = Object.values(board.cards)
-  const flags = new Map(cards.map((c) => [c.id, flagsOf(c)]))
-  const attention = cards.filter((c) => flags.get(c.id).attention).length
-  g.setTabBadge(attention || null).catch((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
-
-  const waitingCount = cards.filter((c) => flags.get(c.id).waiting).length
-  $('summary').textContent = [t.count(cards.length), waitingCount ? t.waitingCount(waitingCount) : null].filter(Boolean).join(' · ')
-  $('filters').replaceChildren(
-    ...[['all', t.all], ['attention', attention ? `${t.attention} ${attention}` : t.attention]].map(([key, label]) =>
-      h('button', { role: 'tab', 'aria-selected': filter === key ? 'true' : 'false', onclick: () => { filter = key; render() } }, label)),
-  )
-
-  // Wide: one track per column and the add-column button at its own width (no 240 px track for it).
-  $('board').style.gridTemplateColumns = `repeat(${columns.length}, minmax(240px, 1fr)) max-content`
-  const focusedAdd = document.hasFocus() ? document.activeElement?.dataset.addCard : null
-  $('board').replaceChildren(
-    ...columns.map((c) => columnView(c, flags)),
-    h('div', { class: 'add-column' }, h('button', { onclick: addColumn, text: t.addColumn })),
-  )
-  if (focusedAdd) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === focusedAdd)?.focus()
-  if (selected && !board.cards[selected]) closeCard()
-  else if (selected) updateDrawer()
-}
-
-function columnView(column, flags) {
-  const all = cardsIn(board, column.id)
-  const cards = filter === 'attention' ? all.filter((c) => flags.get(c.id).attention) : all
-  if (!collapsed.has(column.id)) collapsed.set(column.id, column.role === 'todo' || column.role === 'done')
-  const list = h('ul', { class: 'cards', 'data-col': column.id })
-  list.append(...cards.map((card) => h('li', {}, cardView(card, flags.get(card.id)))))
-  list.addEventListener('dragover', (event) => {
-    event.preventDefault()
-    list.classList.add('over')
-  })
-  list.addEventListener('dragleave', () => list.classList.remove('over'))
-  list.addEventListener('drop', (event) => {
-    event.preventDefault()
-    list.classList.remove('over')
-    const id = event.dataTransfer.getData('text/plain')
-    if (!board.cards[id]) return
-    // Dropped above the first card whose middle is below the pointer; by its id, never by an index (others move too).
-    const below = [...list.querySelectorAll('.card')].find((el) => el.dataset.card !== id && el.getBoundingClientRect().top + el.offsetHeight / 2 > event.clientY)
-    quietly(change({ type: 'card.move', card: id, column: column.id, ...(below ? { before: below.dataset.card } : {}) }))
-  })
-  const title = h('span', { text: columnTitle(column), title: t.columnName, ondblclick: () => renameColumn(column, title) })
-  const toggle = h('button', { class: 'toggle', 'aria-label': `${columnTitle(column)} · ${t.toggle}`, 'aria-expanded': collapsed.get(column.id) ? 'false' : 'true', onclick: () => { collapsed.set(column.id, !collapsed.get(column.id)); render() } },
-    icon(collapsed.get(column.id) ? 'chevron-right' : 'chevron-down'))
-  return h('section', { class: `col${collapsed.get(column.id) ? ' collapsed' : ''}`, 'data-role': column.role ?? '', 'aria-label': columnTitle(column) },
-    h('h2', {}, toggle, title, h('small', { text: String(cards.length) })),
-    list,
-    h('button', { class: 'add', 'data-add-card': column.id, onclick: () => openAdd(column.id) }, icon('plus'), t.addCard),
-  )
-}
-
-function cardView(card, flags) {
-  const tasks = taskLinks(card)
-  const others = otherLinks(card).length
-  const machines = [...new Set(tasks.map(([, l]) => agentBySession(l.session)?.deviceLabel).filter(Boolean))]
-  const titleId = `c-${card.id}`
-  const el = h('button', { class: `card${flags.stale ? ' stale' : ''}`, draggable: 'true', 'data-card': card.id, 'aria-labelledby': titleId, 'aria-selected': card.id === selected ? 'true' : 'false', onclick: () => openCard(card.id) },
-    h('strong', { id: titleId, text: card.title }),
-    card.waitingOn ? h('span', { class: 'waiting' }, icon('clock'), h('span', { text: t.waiting(card.waitingOn) })) : null,
-    typeof card.progress === 'number' ? h('span', { class: 'bar', role: 'img', 'aria-label': `${t.progress} ${card.progress}%`, style: `--p:${card.progress}%` }) : null,
-    h('span', { class: 'meta' },
-      tasks.map(([, l]) => (l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null)),
-      tasks.map(([, l]) => stateBadge(l)),
-      machines.map((m) => h('span', { text: m })),
-      others ? h('span', {}, icon('paperclip'), ` ${others}`) : null,
-      h('span', { class: 'spacer' }),
-      card.updatedAt ? h('gugu-time', { datetime: card.updatedAt, title: flags.stale ? t.stale : undefined }) : null),
-  )
-  el.addEventListener('dragstart', (event) => {
-    event.dataTransfer.setData('text/plain', card.id)
-    el.classList.add('dragging')
-  })
-  el.addEventListener('dragend', () => el.classList.remove('dragging'))
-  return el
-}
-
-function renameColumn(column, span) {
-  const input = h('input', { type: 'text', value: columnTitle(column), 'aria-label': t.columnName })
-  const done = (save) => {
-    if (save && input.value.trim() !== columnTitle(column)) quietly(change({ type: 'column.update', column: column.id, title: input.value }))
-    else render()
-  }
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false) })
-  input.addEventListener('blur', () => done(true))
-  span.replaceWith(input)
-  input.focus()
-  input.select()
-}
-
-function addColumn(event) {
-  const button = event.currentTarget
-  const input = h('input', { type: 'text', placeholder: t.columnName, 'aria-label': t.columnName })
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && input.value.trim()) quietly(change({ type: 'column.create', title: input.value }))
-    if (e.key === 'Escape') render()
-  })
-  button.replaceWith(input)
-  input.focus()
-}
-
-// ── a new card: at the bottom of its column ─────────────────────────────────
-
-async function openAdd(column) {
-  const fromPage = document.hasFocus()
-  try {
-    await g.modal.open({ entry: 'board.html', title: t.newCard, data: { newCard: {
-      column, file: home?.kind === 'chat' ? { chat: home.f.entry.chat, id: home.f.entry.id } : null,
-    } } })
-  } catch (error) { showAlert(error?.message ?? String(error)) }
-  finally {
-    // Live board updates can replace the original control while the dialog is open.
-    if (fromPage) [...$('board').querySelectorAll('[data-add-card]')].find((button) => button.dataset.addCard === column)?.focus()
-  }
-}
-
-function renderNewCard() {
-  if ($('new-card-form')) return // Incoming board/status changes keep the person's draft and IME composition intact.
-  const title = h('input', { id: 'new-card-title', name: 'title', required: true, autofocus: true, placeholder: t.newPlaceholder, autocomplete: 'off' })
-  const column = h('select', { id: 'new-card-column', name: 'column' }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, text: columnTitle(c) })))
-  column.value = creating.column
-  const note = h('textarea', { id: 'new-card-note', name: 'note', rows: 4 })
-  const attach = ctx.session ? h('input', { type: 'checkbox', checked: true }) : null
-  const submit = h('button', { type: 'submit', text: t.addCard })
-  const root = h('form', { id: 'new-card-form', class: 'stack new-card' },
-    h('label', { class: 'stack' }, t.cardTitle, title), h('label', { class: 'stack' }, t.column, column),
-    h('label', { class: 'stack' }, t.noteH, note), attach ? h('label', {}, attach, ` ${t.attach}`) : null,
-    h('footer', {}, h('button', { type: 'button', text: t.cancel, onclick: () => g.modal.close().catch((error) => showAlert(error.message)) }), submit),
-  )
-  root.addEventListener('submit', async (event) => {
-    event.preventDefault()
-    if (!title.value.trim() || submit.disabled) return
-    submit.disabled = true
-    try {
-      const links = attach?.checked ? [{ kind: 'task', session: ctx.session.id, ...(ctx.session.agentId ? { agent: ctx.session.agentId } : {}) }] : []
-      const result = await change({ type: 'card.create', title: title.value.trim(), note: note.value, links, column: column.value })
-      await g.modal.close(result)
-    } catch (error) { showAlert(error?.message ?? String(error)) }
-    finally { submit.disabled = false }
-  })
-  $('board').append(root)
-  title.focus()
-}
-
-g.onCommand((id) => {
-  if (id !== 'new' || !board) return
-  const columns = columnsInOrder(board)
-  // Narrow, the first column that is open; wide, the first.
-  openAdd((narrow() && columns.find((c) => !collapsed.get(c.id))?.id) || columns[0].id)
+// Opened by a link: a message card names the board file; an old link may name a card to open.
+g.onLink?.(async ({ query } = {}) => {
+  if (!query) return
+  if (query.board && !(home?.kind === 'chat' && home.f.entry.id === query.board)) await showChatBoard(() => g.files.open({ id: query.board, ...(ctx.chat ? { chat: ctx.chat.id } : {}) }))
+  if (query.card && board) {
+    try { openCard(findCard(board, query.card).id) } catch { render() }
+  } else render()
 })
-
-// ── a card, opened ───────────────────────────────────────────────────────────
-
-let drawer = null // the open card's live parts: { card, title, fields, noteView, noteEdit, viewing, ... }
-
-function openCard(id) {
-  selected = id
-  closeView()
-  drawer = buildDrawer(id)
-  $('drawer').replaceChildren(drawer.root)
-  $('drawer').hidden = false
-  $('shell').classList.add('open')
-  render()
-}
-
-function closeCard() {
-  closeView()
-  selected = null
-  drawer = null
-  $('drawer').hidden = true
-  $('drawer').replaceChildren()
-  $('shell').classList.remove('open')
-  render()
-}
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && selected && !event.target.closest?.('input, textarea, .cm-editor')) closeCard()
-})
-
-/**
- * The open card reads as a page, and changes one thing at a time (owner 10-22, after Linear's issue view): the title and
- * the note are edited where they stand once clicked; each property is a value until clicked, then its own editor, saved
- * on Enter or leaving it, put back on Esc. Nothing is an input until it is asked to be one.
- */
-function inlineEditor(d, key, start, make, save) {
-  if (d.editing && d.editing !== key) d.finish?.()
-  d.editing = key
-  const editor = make()
-  const done = (keep) => {
-    if (d.editing !== key) return
-    d.editing = null
-    d.finish = null
-    if (keep) save(editor.value)
-    updateDrawer(true)
-  }
-  d.finish = () => done(true)
-  editor.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !(editor.tagName === 'TEXTAREA' && !(event.metaKey || event.ctrlKey))) { event.preventDefault(); done(true) }
-    if (event.key === 'Escape') { event.stopPropagation(); done(false) }
-  })
-  editor.addEventListener('blur', () => done(true))
-  if (editor.tagName === 'SELECT') editor.addEventListener('change', () => done(true))
-  start.replaceWith(editor)
-  editor.focus()
-  if (editor.select && editor.tagName === 'INPUT') editor.select()
-}
-
-const PROPS = ['column', 'progress', 'waitingOn', 'next', 'due']
-
-/** A property's value as text, or null when it has none. */
-function propText(card, key) {
-  if (key === 'column') return columnTitle(board.columns[card.column])
-  if (key === 'progress') return typeof card.progress === 'number' ? `${card.progress}%` : null
-  return card[key] || null
-}
-
-function buildDrawer(id) {
-  let armed = false
-  const del = h('button', { class: 'danger', text: t.del, onclick: () => {
-    if (!armed) { armed = true; del.textContent = t.delAgain; return }
-    quietly(change({ type: 'card.delete', card: id }))
-  } })
-  const more = h('details', { class: 'more' }, h('summary', { 'aria-label': t.more }, icon('ellipsis')), h('div', { class: 'menu' }, del))
-  const back = h('button', { class: 'plain', 'aria-label': narrow() ? t.back : t.close, onclick: closeCard }, icon(narrow() ? 'chevron-left' : 'x'))
-  const crumb = h('small', { class: 'muted crumb' })
-
-  const title = h('div', { class: 'title-slot' })
-  const props = h('dl', { class: 'props', 'aria-label': t.props })
-  const note = h('div', { class: 'note-slot' })
-  const links = h('ul', { class: 'links' })
-  const addMenu = h('details', { class: 'add-menu' }, h('summary', {}, icon('plus'), ` ${t.addLink}`), h('div', { class: 'menu' }))
-  const picker = h('div')
-  const view = h('div')
-  const comments = h('ul', { class: 'comments' })
-  const commentBox = h('textarea', { rows: '2', placeholder: t.comment, 'aria-label': t.comment })
-  const commentSend = h('button', { text: t.send, onclick: () => {
-    const text = commentBox.value.trim()
-    if (text) quietly(change({ type: 'comment.add', card: id, text }).then(() => { commentBox.value = '' }))
-  } })
-
-  const root = h('div', { class: 'detail' },
-    h('div', { class: 'head' }, back, crumb, h('span', { class: 'spacer' }), more),
-    title,
-    props,
-    h('section', {}, h('h5', { text: t.noteH }), note),
-    h('section', {}, h('div', { class: 'section-head' }, h('h5', { text: t.links }), addMenu), links, picker, view),
-    h('section', {}, h('h5', { text: t.comments }), comments, h('div', { class: 'comment-box' }, commentBox, h('div', {}, commentSend))),
-  )
-  return { id, root, crumb, title, props, note, links, addMenu, picker, view, comments, editing: null, finish: null, viewing: null, file: null, shownNote: null }
-}
-
-async function updateDrawer(force = false) {
-  const d = drawer
-  const card = d && board.cards[d.id]
-  if (!card) return
-  d.crumb.textContent = home?.kind === 'chat' ? home.name : t.local
-
-  // The title: a heading until clicked.
-  if (d.editing !== 'title') {
-    const heading = h('h2', { class: 'editable', tabindex: '0', role: 'button', 'aria-label': `${t.title}: ${card.title}`, text: card.title })
-    const edit = () => inlineEditor(d, 'title', heading, () => h('input', { type: 'text', class: 'title-input', value: card.title, 'aria-label': t.title }),
-      (value) => { if (value.trim() && value !== card.title) quietly(change({ type: 'card.update', card: card.id, title: value })) })
-    heading.addEventListener('click', edit)
-    heading.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit() })
-    d.title.replaceChildren(heading)
-  }
-
-  // The properties: values; one of them an editor while it is being changed.
-  const rows = []
-  const tasks = taskLinks(card)
-  const propRow = (key, valueNode, editable) => {
-    rows.push(h('div', { class: 'prop' }, h('dt', { text: t[key] }), h('dd', { 'data-prop': key }, valueNode)))
-    if (!editable || d.editing === key) return
-    valueNode.addEventListener('click', () => {
-      inlineEditor(d, key, valueNode, () => {
-        if (key === 'column') return h('select', { 'aria-label': t.column }, ...columnsInOrder(board).map((c) => h('option', { value: c.id, selected: c.id === card.column, text: columnTitle(c) })))
-        if (key === 'progress') return h('input', { type: 'number', min: '0', max: '100', step: '1', inputmode: 'numeric', value: card.progress ?? '', 'aria-label': t.progress })
-        return h('input', { type: 'text', value: card[key] ?? '', 'aria-label': t[key] })
-      }, (value) => {
-        if (key === 'column') { if (value !== card.column) quietly(change({ type: 'card.move', card: card.id, column: value })); return }
-        const next = key === 'progress' ? (value === '' ? null : Number(value)) : value
-        if ((card[key] ?? (key === 'progress' ? null : '')) !== next) quietly(change({ type: 'card.update', card: card.id, [key]: next }))
-      })
-    })
-  }
-  const valueButton = (key) => {
-    const text = propText(card, key)
-    return h('button', { class: `prop-value${text ? '' : ' empty'}${key === 'waitingOn' && text ? ' waiting' : ''}`, 'aria-label': `${t[key]}: ${text ?? t.unset}` },
-      key === 'progress' && text ? h('span', { class: 'bar', style: `--p:${card.progress}%` }) : null,
-      text ?? t.unset)
-  }
-  propRow('column', valueButton('column'), true)
-  propRow('owner', h('div', { class: 'owners' }, ...(tasks.length ? tasks.map(([, l]) => h('span', { class: 'owner' },
-    l.agent ? h('gugu-avatar', { user: l.agent, size: 'xs', label: agentBySession(l.session)?.title ?? undefined }) : null,
-    stateBadge(l),
-    h('span', { class: 'muted', text: agentBySession(l.session)?.deviceLabel ?? '' }))) : [h('span', { class: 'muted', text: t.unset })])), false)
-  for (const key of ['progress', 'waitingOn', 'next', 'due']) propRow(key, valueButton(key), true)
-  if (card.updatedAt) rows.push(h('div', { class: 'prop' }, h('dt', { text: t.updated }), h('dd', { class: 'muted' }, h('gugu-time', { datetime: card.updatedAt }), card.updatedBy ? ` · ${byLabel(card.updatedBy)}` : '', flagsOf(card).stale ? h('div', { class: 'stale-note', text: t.stale }) : null)))
-  // A property being edited keeps its editor (and its half-typed value): the properties are drawn again after it.
-  if (!PROPS.includes(d.editing)) d.props.replaceChildren(...rows)
-
-  // The note: rendered; clicked, a textarea that saves when left.
-  if (d.editing !== 'note' && (force || d.shownNote !== card.note || !d.note.firstChild)) {
-    d.shownNote = card.note
-    const shown = h('div', { class: `note-view editable${card.note ? '' : ' empty'}`, tabindex: '0', role: 'button', 'aria-label': t.editNote })
-    if (card.note) {
-      const md = await g.markdown()
-      if (drawer !== d) return
-      md.render(shown, card.note, { density: 'comfortable' })
-    } else shown.textContent = t.addNote
-    const edit = (event) => {
-      if (event.target.closest?.('a')) return // a link in the note opens; it does not start editing
-      inlineEditor(d, 'note', shown, () => h('textarea', { rows: '10', class: 'note-input', 'aria-label': t.noteH }, card.note ?? ''),
-        (value) => { if (value !== (card.note ?? '')) quietly(change({ type: 'card.update', card: card.id, note: value })) })
-    }
-    shown.addEventListener('click', edit)
-    shown.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit(e) })
-    d.note.replaceChildren(shown)
-  }
-
-  // Links: the card's tasks first, then its files and pages; what can be done to one shows on the row it is about.
-  d.links.replaceChildren(
-    ...tasks.map(([lid, link]) => {
-      const row = agentBySession(link.session)
-      const missing = agentsKnown && !row
-      const status = h('span', { class: 'muted', role: 'status', text: missing ? t.taskUnavailable : '' })
-      return h('li', {},
-        link.agent ? h('gugu-avatar', { user: link.agent, size: 'xs', label: row?.title ?? undefined }) : icon('bot'),
-        h('span', { class: 'what', text: [row?.title ?? link.title ?? link.session, row?.deviceLabel].filter(Boolean).join(' · ') }),
-        stateBadge(link),
-        status,
-        h('span', { class: 'acts' },
-          h('button', { class: 'plain', text: t.open, disabled: missing, onclick: () => taskAction(() => g.showSession(link.session, { peek: true }), status, t.taskUnavailable) }),
-          h('button', { class: 'plain', text: t.handTo, disabled: missing, onclick: () => taskAction(() => g.compose(t.handText(card, chatOfBoard()), { session: link.session }), status, t.taskUnavailable) }),
-          h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))),
-      )
-    }),
-    ...otherLinks(card).map(([lid, link]) => linkRow(card, lid, link)),
-  )
-  if (!d.links.childElementCount) d.links.append(h('li', { class: 'muted empty-row', text: t.noLinks }))
-
-  const appState = await g.getAppState().catch(() => null) // the current task is a convenience: without it the item is not offered
-  if (drawer !== d) return
-  const current = appState?.activeSessionId
-  const linked = new Set(tasks.map(([, l]) => l.session))
-  const item = (text, run) => h('button', { class: 'plain', text, onclick: (e) => { d.addMenu.open = false; run(e) } })
-  d.addMenu.querySelector('.menu').replaceChildren(...[
-    current && !linked.has(current)
-      ? item(t.attachCurrent, () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: current, ...(agentBySession(current)?.agentId ? { agent: agentBySession(current).agentId } : {}) } })))
-      : null,
-    desktop ? item(t.pickTask, () => pickTask(card)) : null,
-    desktop ? item(t.start, (e) => startTask(card, e.currentTarget, appState?.activeProjectId)) : null,
-    desktop ? item(t.pickFile, () => pickTaskFile(card)) : null,
-    item(t.pickChatFile, () => pickChatFile(card)),
-    // A gugu without project folders for Apps has no gugu.projects: the item is not offered there.
-    typeof g.projects?.list === 'function' ? item(t.pickProjectFile, () => pickProjectFile(card)) : null,
-    item(t.addUrl, () => addUrl(card)),
-  ].filter(Boolean))
-
-  const said = Object.values(board.comments).filter((c) => c.card === card.id).sort((a, b) => a.at.localeCompare(b.at))
-  d.comments.replaceChildren(...said.map((c) => h('li', { class: 'comment' },
-    h('div', { class: 'comment-head' }, h('strong', { text: byLabel(c.by) }), h('small', { class: 'muted' }, h('gugu-time', { datetime: c.at }))),
-    h('div', { text: c.text }))))
-}
-
-function linkRow(card, lid, link) {
-  const remove = h('button', { class: 'plain', 'aria-label': t.remove, onclick: () => quietly(change({ type: 'link.remove', card: card.id, link: lid })) }, icon('x'))
-  const current = drawer.viewing === lid ? 'true' : 'false'
-  switch (link.kind) {
-    case 'file':
-    case 'project':
-    case 'chatfile': {
-      const name = nameOf(link)
-      const status = h('span', { class: 'muted', role: 'status' })
-      // Drawn in the card when the App can (md, text, images, video); every file also opens beside the board, in the
-      // App that opens it or gugu's own preview.
-      return h('li', { 'aria-current': current }, icon('file-text'), h('span', { class: 'what', text: name, title: name }),
-        status,
-        h('span', { class: 'acts' },
-          drawable(name) ? h('button', { class: 'plain', text: t.show, onclick: () => showFile(lid, link) }) : null,
-          h('button', { class: 'plain', text: t.openBeside, onclick: () => taskAction(() => g.files.openWith(refOf(link), { peek: true }), status, link.kind === 'file' ? t.taskFilesUnavailable : t.noFiles) }),
-          remove))
-    }
-    case 'message':
-      return h('li', {}, icon('message-square'), h('span', { class: 'what', text: link.excerpt ?? t.messageLink }),
-        h('span', { class: 'acts' }, h('button', { class: 'plain', text: t.message, onclick: () => g.showMessage(link.message).catch((e) => showAlert(e.message)) }), remove))
-    default:
-      return h('li', {}, icon(link.kind === 'pr' ? 'git-pull-request' : 'link'), h('span', { class: 'what', text: `${link.title ?? link.url}${link.state ? ` · ${link.state}` : ''}`, title: link.url }),
-        h('span', { class: 'acts' }, h('button', { class: 'plain', text: t.browser, onclick: () => g.openBrowserTab(link.url).catch((e) => showAlert(e.message)) }), remove))
-  }
-}
-
-// ── a linked file, shown in the card ─────────────────────────────────────────
-
-const IMAGE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i
-const VIDEO = /\.(mp4|webm|mov|m4v)$/i
-const MARKDOWN = /\.(md|markdown|mdx)$/i
-const TEXT = /\.(txt|json|jsonc|ya?ml|toml|csv|tsv|log|ini|env|xml|js|mjs|cjs|ts|tsx|jsx|css|scss|py|rb|go|rs|java|kt|swift|c|h|cc|cpp|hpp|sh|zsh|bash|sql|vue|svelte)$/i
-
-const drawable = (name) => IMAGE.test(name) || VIDEO.test(name) || MARKDOWN.test(name) || TEXT.test(name)
-const nameOf = (link) => (link.kind === 'chatfile' ? (link.name ?? link.file) : link.path)
-function refOf(link) {
-  if (link.kind === 'file') return { session: link.session, id: link.path }
-  if (link.kind === 'project') return { project: link.project, id: link.path }
-  return { id: link.file }
-}
-
-function closeView() {
-  if (!drawer) return
-  drawer.unbind?.()
-  drawer.file?.close()
-  if (drawer.url) URL.revokeObjectURL(drawer.url)
-  Object.assign(drawer, { file: null, unbind: null, url: null, viewing: null })
-  drawer.view.replaceChildren()
-}
-
-async function showFile(lid, link) {
-  const d = drawer
-  if (d.viewing === lid) return closeView()
-  closeView()
-  d.viewing = lid
-  updateDrawer()
-  const ref = refOf(link)
-  const name = nameOf(link)
-  const box = h('div', { class: 'view' })
-  d.view.replaceChildren(box)
-  try {
-    const f = await g.files.open(ref)
-    if (drawer !== d || d.viewing !== lid) return f.close()
-    d.file = f
-    if (IMAGE.test(name) || VIDEO.test(name)) {
-      d.url = URL.createObjectURL(await f.blob())
-      box.replaceChildren(IMAGE.test(name) ? h('img', { src: d.url, alt: name }) : h('video', { src: d.url, controls: true }))
-      return
-    }
-    const cm = await g.codemirror()
-    const editor = (parent) => {
-      const view = new cm.EditorView({ parent, extensions: [cm.basicSetup, ...(MARKDOWN.test(name) ? [cm.markdown()] : [])] })
-      d.unbind = g.bind.codemirror(view, f)
-    }
-    if (!MARKDOWN.test(name)) return editor(box)
-    // Markdown reads rendered; 编辑 swaps in the editor, bound to the file (others' typing stays).
-    const md = await g.markdown()
-    const shown = h('div')
-    const draw = () => md.render(shown, f.text, { density: 'comfortable', file: f.entry })
-    draw()
-    const off = f.onChange(draw)
-    const edit = h('button', { text: t.edit, onclick: () => {
-      off()
-      edit.remove()
-      shown.remove()
-      editor(box)
-    } })
-    box.replaceChildren(h('div', { class: 'row' }, edit), shown)
-  } catch (error) {
-    box.replaceChildren(h('p', { role: error?.code === 'not-found' ? 'status' : 'alert', text: error?.code === 'not-found' && link.kind === 'file' ? t.taskFilesUnavailable : error?.message ?? String(error) }))
-  }
-}
-
-// ── pickers ──────────────────────────────────────────────────────────────────
-
-function openPicker(title, fill) {
-  const list = h('ul', { class: 'list' })
-  const filter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
-  const box = h('div', { class: 'picker' }, h('div', { class: 'row' }, h('strong', { text: title }), h('button', { text: t.cancel, onclick: () => box.remove() })), filter, list)
-  drawer.picker.replaceChildren(box)
-  filter.focus()
-  const done = () => box.remove()
-  fill({ list, filter, done }).catch((error) => list.replaceChildren(h('li', { role: 'alert', text: error?.message ?? String(error) })))
-}
-
-const recentFirst = (rows) => [...rows].sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))
-
-function taskRows(list, filter, onPick) {
-  const draw = () => {
-    const q = filter.value.trim().toLowerCase()
-    const rows = recentFirst(agents).filter((a) => !q || (a.title ?? '').toLowerCase().includes(q)).slice(0, 50)
-    list.replaceChildren(...(rows.length
-      ? rows.map((a) => h('li', {}, h('button', { class: 'card', onclick: () => onPick(a) }, h('strong', { text: a.title ?? a.sessionId }), h('span', { class: 'meta' }, stateBadge({ session: a.sessionId }), h('span', { text: a.providerId ?? '' })))))
-      : [h('li', { class: 'muted', text: t.noTasks })]))
-  }
-  filter.addEventListener('input', draw)
-  draw()
-}
-
-function pickTask(card) {
-  openPicker(t.pickTask, async ({ list, filter, done }) => {
-    taskRows(list, filter, (a) => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'task', session: a.sessionId, agent: a.agentId, ...(a.title ? { title: a.title } : {}) } }).then(done)))
-  })
-}
-
-function pickTaskFile(card) {
-  openPicker(t.chooseTask, async ({ list, filter, done }) => {
-    taskRows(list, filter, async (a) => {
-      const entries = await g.files.list({ session: a.sessionId }).catch((error) => {
-        if (error?.code === 'not-found') list.replaceChildren(h('li', { class: 'muted', role: 'status', text: t.taskFilesUnavailable }))
-        else showAlert(error?.message ?? String(error))
-        return null
-      })
-      if (!entries) return
-      const files = entries.filter((e) => e.type !== 'folder')
-      // The same box now filters this task's files (a fresh input: the task list's listener goes with the old one).
-      const fileFilter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
-      filter.replaceWith(fileFilter)
-      fileFilter.focus()
-      const draw = () => {
-        const q = fileFilter.value.trim().toLowerCase()
-        const rows = files.filter((e) => !q || e.path.toLowerCase().includes(q)).slice(0, 80)
-        list.replaceChildren(...(rows.length
-          ? rows.map((e) => h('li', {}, h('button', { class: 'card', onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'file', session: a.sessionId, path: e.path } }).then(done)) }, h('span', { text: e.path }))))
-          : [h('li', { class: 'muted', text: t.noFiles })]))
-      }
-      fileFilter.addEventListener('input', draw)
-      draw()
-    })
-  })
-}
-
-function pickProjectFile(card) {
-  openPicker(t.chooseProject, async ({ list, filter, done }) => {
-    const { projects } = await g.projects.list()
-    const drawProjects = () => {
-      const q = filter.value.trim().toLowerCase()
-      const rows = projects.filter((p) => !q || p.name.toLowerCase().includes(q))
-      list.replaceChildren(...(rows.length
-        ? rows.map((p) => h('li', {}, h('button', { class: 'card', onclick: () => pickIn(p) }, h('strong', { text: p.name }))))
-        : [h('li', { class: 'muted', text: t.noProjects })]))
-    }
-    filter.addEventListener('input', drawProjects)
-    drawProjects()
-    const pickIn = async (project) => {
-      const entries = await g.files.list({ project: project.id }).catch((error) => { showAlert(error.message); return null })
-      if (!entries) return
-      const files = entries.filter((e) => e.type !== 'folder')
-      // The same box now filters this project's files (a fresh input: the project list's listener goes with the old one).
-      const fileFilter = h('input', { type: 'search', placeholder: t.filter, 'aria-label': t.filter })
-      filter.replaceWith(fileFilter)
-      fileFilter.focus()
-      const draw = () => {
-        const q = fileFilter.value.trim().toLowerCase()
-        const rows = files.filter((e) => !q || e.path.toLowerCase().includes(q)).slice(0, 80)
-        list.replaceChildren(...(rows.length
-          ? rows.map((e) => h('li', {}, h('button', { class: 'card', onclick: () => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'project', project: project.id, path: e.path, title: project.name } }).then(done)) }, h('span', { text: `${project.name} / ${e.path}` }))))
-          : [h('li', { class: 'muted', text: t.noFiles })]))
-      }
-      fileFilter.addEventListener('input', draw)
-      draw()
-    }
-  })
-}
-
-function pickChatFile(card) {
-  openPicker(t.pickChatFile, async ({ list, filter, done }) => {
-    const pick = (e) => quietly(change({ type: 'link.add', card: card.id, link: { kind: 'chatfile', file: e.id, name: e.path ?? e.name, ...(e.chat ? { chat: e.chat } : {}) } }).then(done))
-    const draw = (entries) => list.replaceChildren(...(entries.length
-      ? entries.filter((e) => e.type !== 'folder').map((e) => h('li', {}, h('button', { class: 'card', onclick: () => pick(e) }, h('strong', { text: e.path ?? e.name }), h('span', { class: 'meta', text: e.chatName ?? '' }))))
-      : [h('li', { class: 'muted', text: t.noFiles })]))
-    // Before anything is typed: this chat's files when the board is open in one, then the ones opened lately; typing
-    // searches every chat the person is in.
-    const start = async () => {
-      const [here, recent] = await Promise.all([ctx.chat ? g.files.list({ chat: ctx.chat.id }) : [], g.files.recent({ limit: 30 })])
-      const seen = new Set()
-      return [...here, ...recent].filter((e) => !seen.has(e.id) && seen.add(e.id))
-    }
-    draw(await start())
-    let asked = 0
-    filter.addEventListener('input', async () => {
-      const q = filter.value.trim()
-      const mine = ++asked
-      const entries = q ? await g.files.search({ query: q, limit: 30 }) : await start()
-      if (mine === asked) draw(entries)
-    })
-  })
-}
-
-function addUrl(card) {
-  const input = h('input', { type: 'url', placeholder: t.urlPlaceholder, 'aria-label': t.addUrl })
-  const add = () => {
-    const url = input.value.trim()
-    if (!url) return
-    const kind = /^https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/.test(url) ? 'pr' : 'url'
-    quietly(change({ type: 'link.add', card: card.id, link: { kind, url } }).then(() => box.remove()))
-  }
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') add() })
-  const box = h('div', { class: 'row picker' }, input, h('button', { class: 'primary', text: t.ok, onclick: add }), h('button', { text: t.cancel, onclick: () => box.remove() }))
-  drawer.picker.replaceChildren(box)
-  input.focus()
-}
-
-/** 新建任务: a new task of the person's, on this card, started only by their click; it is linked and the card moves to doing. */
-async function startTask(card, button, project) {
-  button.disabled = true
-  button.textContent = t.starting
-  try {
-    const { agentId } = await g.spawnAgent(t.handText(card, chatOfBoard()), { title: card.title, ...(project ? { project } : {}) })
-    const row = (await g.listAgents()).find((a) => a.agentId === agentId)
-    if (!row) throw new Error(`the new task (${agentId}) is not in the task list`)
-    await change({ type: 'link.add', card: card.id, link: { kind: 'task', session: row.sessionId, agent: agentId, title: card.title } })
-    const doing = columnsInOrder(board).find((c) => c.role === 'doing')
-    if (doing && card.column !== doing.id) await change({ type: 'card.move', card: card.id, column: doing.id })
-  } catch (error) {
-    showAlert(error?.message ?? String(error))
-  } finally {
-    button.disabled = false
-    button.textContent = t.start
-  }
-}
-
-// ── which board: this computer's, or a chat's board file ─────────────────────
-
-/** A board file's name, shown next to its chat's name when it is not the chat's own board. */
-const fileLabel = (entry) => [entry.chatName ?? ctx.chat?.name, entry.name === CHAT_BOARD_NAME ? null : entry.name.slice(0, -BOARD_SUFFIX.length)].filter(Boolean).join(' · ')
-
-async function showChatBoard(open) {
-  leaveHome()
-  try {
-    const f = filled(await open())
-    const name = ctx.chat?.id === f.entry.chat ? ctx.chat.name : fileLabel(f.entry)
-    home = { kind: 'chat', f, name }
-    board = f.toJSON()
-    f.onChange(({ local }) => {
-      board = f.toJSON()
-      render()
-      // Someone else's change — an agent's on another computer, say — may come with that agent moving: ask for the
-      // statuses again (the background page hears only this computer's agents move).
-      if (!local && desktop) askAgents()
-    })
-    f.onStatus((status) => { if (status === 'gone') showAlert(t.gone) })
-    showAlert(null)
-  } catch (error) {
-    home = null
-    board = null
-    showAlert(t.noBoard(error?.message ?? String(error)))
-  }
-  if (selected) closeCard()
-  render()
-}
-
-function showLocalBoard() {
-  leaveHome()
-  home = { kind: 'local' }
-  board = localBoard
-  if (selected) closeCard()
-  render()
-}
-
-function leaveHome() {
-  if (home?.kind === 'chat') home.f.close()
-  home = null
-}
-
-let asking = null
-function askAgents() {
-  if (asking) return
-  asking = g.sendToBackground({ type: 'agents' }).catch((e) => showAlert(e.message)).finally(() => { asking = null })
-}
-
-/**
- * Opened in a chat (its panel, or one of its board files): that chat's board, nothing to pick. Anywhere else (the dock,
- * a task's tab): this computer's board, and the chats' boards the person can reach, to switch to.
- */
-async function fillSwitcher() {
-  const select = $('where')
-  // A suffix is one extension (.json): the board's double one is matched by the path instead.
-  const found = await g.files.search({ query: BOARD_SUFFIX, suffixes: ['.json'], limit: 50 }).catch((error) => {
-    showAlert(error?.message ?? String(error))
-    return []
-  })
-  const boards = found.filter((e) => e.type !== 'folder' && e.name.endsWith(BOARD_SUFFIX))
-  select.replaceChildren(
-    h('option', { value: '', text: t.local }),
-    ...boards.map((e) => h('option', { value: e.id, text: fileLabel(e) })),
-  )
-  select.value = home?.kind === 'chat' ? home.f.entry.id : ''
-  select.hidden = boards.length === 0
-  select.onchange = () => {
-    const entry = boards.find((e) => e.id === select.value)
-    if (entry) showChatBoard(() => g.files.open(entry))
-    else showLocalBoard()
-  }
-}
-
-function placed() {
-  $('heading').textContent = t.title
-  $('where').setAttribute('aria-label', t.where)
-}
 
 g.onContextChanged(async () => {
   ctx = await g.getContext()
-  const words = WORDS[String(ctx.locale ?? '').startsWith('zh') ? 'zh' : 'en']
-  // The language changed: the open card's fixed parts (headings, buttons) were worded once, when it was built.
-  if (words !== t && selected) {
-    t = words
-    openCard(selected)
-  }
-  t = words
-  placed()
+  t = wordsFor(ctx.locale)
+  words()
   const now = ctx.layout?.visible ?? visible
-  // Back on screen: read again what may have moved meanwhile (an agent's tool call, a task elsewhere, a chat's new board).
-  if (desktop && now && !visible) {
-    g.sendToBackground({ type: 'hello' }).catch((e) => showAlert(e.message))
-    if (!ctx.chat && !ctx.file) fillSwitcher()
+  if (now && !visible) {
+    readAgents()
+    if (desktop && home?.kind === 'local') g.sendToBackground({ type: 'hello' }).catch(said)
   }
   visible = now
   render()
 })
+if (typeof g.onAgentsChanged === 'function') g.onAgentsChanged(() => readAgents())
+// Other computers' tasks are not pushed: read them again while the page is seen.
+setInterval(() => { if (visible) readAgents() }, 60_000).unref?.()
 
-placed()
-if (desktop) g.sendToBackground({ type: 'hello' }).catch((error) => showAlert(error?.message ?? String(error)))
-if (creating?.file) await showChatBoard(() => g.files.open(creating.file))
-else if (creating && desktop) showLocalBoard()
-else if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
-else if (ctx.chat) await showChatBoard(() => openChatBoard(g.files, ctx.chat.id))
-else if (desktop) {
-  showLocalBoard()
-  fillSwitcher()
+/** The chat whose board this page shows: a chat's panel. A task's tab shows this computer's board. */
+const boardChat = () => (ctx.workspace ? null : ctx.chat)
+
+words()
+if (ctx.file) await showChatBoard(() => g.files.open(ctx.file))
+else if (boardChat()) {
+  // The chat's board when it has one; made only by the first write (opening the page is a read).
+  const found = await findBoard(g.files, boardChat().id).catch(() => null)
+  if (found) await showChatBoard(() => g.files.open(found))
+  else {
+    home = { kind: 'chat-unmade', chat: boardChat() }
+    board = asCurrent(null)
+    $('heading').textContent = boardChat().name
+    render()
+  }
+} else if (desktop) {
+  home = { kind: 'local' }
+  board = asCurrent(null)
+  g.sendToBackground({ type: 'hello' }).catch(said)
+  render()
 } else {
-  // style, not `hidden`: the page's own rules give #bar a display, and that wins over the attribute.
-  for (const el of $('main').children) el.style.display = 'none'
-  $('main').append(h('gugu-empty', { id: 'desktop-only', icon: 'layout-grid' }, h('strong', { text: t.desktopOnly }), h('small', { text: t.phoneHint })))
+  $('main').replaceChildren(h('gugu-empty', { icon: 'layout-list' }, h('strong', { text: t.desktopOnly }), h('small', { text: t.phoneHint })))
 }
+readAgents()

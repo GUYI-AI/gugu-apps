@@ -1,0 +1,25 @@
+{
+  "id": "type-and-memory",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/type-and-memory/app",
+      "commit": "79ab472a843a58d74345981c1489c7bc8376387c",
+      "sha256": "8d690b92b3ae50b567a59a6a185bfe61c906b9093d10bf70e7ca927e33b4d128",
+      "bytes": 23862,
+      "yanked": null
+    },
+    {
+      "version": "0.2.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/type-and-memory/app",
+      "commit": "f738492746c40d2d9e8e8d862cce0c06dd64b9f9",
+      "sha256": "8be5a3d9f611782dbd0d7c300f46438ca6fa203cbd737e2f19516f6a51f3d2e4",
+      "bytes": 27595,
+      "yanked": null
+    }
+  ]
+}

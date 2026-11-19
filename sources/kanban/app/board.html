@@ -8,18 +8,27 @@
 </head>
 <body>
   <div id="shell">
-    <section id="main" aria-labelledby="heading">
+    <main id="main" aria-labelledby="heading">
       <header id="bar">
-        <h1 id="heading"></h1>
-        <select id="where" hidden></select>
-        <small id="summary" class="muted"></small>
-        <div id="filters" role="tablist"></div>
+        <div class="titles">
+          <h1 id="heading"></h1>
+          <small id="summary" class="muted"></small>
+        </div>
+        <button id="add" type="button" class="icon"><gugu-icon name="plus"></gugu-icon></button>
       </header>
+      <form id="new" hidden>
+        <input id="new-title" maxlength="200" autocomplete="off">
+        <button type="submit" class="primary" id="new-ok"></button>
+        <button type="button" id="new-cancel"></button>
+      </form>
       <p id="alert" role="alert" hidden></p>
-      <div id="board"></div>
-    </section>
-    <aside id="drawer" hidden aria-labelledby="d-title"></aside>
+      <div id="list"></div>
+    </main>
+    <div id="scrim" hidden></div>
+    <aside id="sheet" hidden aria-labelledby="s-title"></aside>
   </div>
+  <div id="undo" role="status" hidden></div>
+  <dialog id="confirm"><form method="dialog"><p id="confirm-text"></p><div class="row end"><button value="no" id="confirm-no"></button><button value="yes" class="danger" id="confirm-yes"></button></div></form></dialog>
   <script type="module" src="board.js"></script>
 </body>
 </html>

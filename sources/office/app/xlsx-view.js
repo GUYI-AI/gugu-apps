@@ -42,7 +42,7 @@ export function refOf(pick) {
 const extentOf = (sheet) => ({ rows: Math.min(MAX_ROWS, Math.max(sheet.rowCount + 40, 60)), cols: Math.min(MAX_COLS, Math.max(sheet.colCount + 8, 16)) })
 
 /**
- * Draw `bytes` into `host`; `onPicks(picks)` hears the waiting picks change. Resolves to the view's handle: `picks()`,
+ * Draw `bytes` into `host`; `onPicks(picks)` hears the waiting picks change. Resolves to the view's handle: `picks()`, `pickAt(x, y)`,
  * `clear()`, `anchor()`, `dragging()`, `reveal(query)`, `keep()`, `destroy()`. Rejects if the file cannot be read. The bar that gathers the picks,
  * Esc and Enter are the page's (app.js).
  * `wanted()` is asked once more before the sheet replaces what `host` shows: no, and it resolves to null. `previous`:
@@ -429,6 +429,12 @@ export async function mountXlsx(host, bytes, { t, onPicks, wanted = () => true, 
     onPicks(picks.slice())
   }
   const sameAs = (p, q) => p.key === q.key
+  const pickAt = (clientX, clientY) => {
+    const hit = hitAt(clientX, clientY)
+    if (onSheet().some((p) => hit.r >= p.r0 && hit.r <= p.r1 && hit.c >= p.c0 && hit.c <= p.c1)) return
+    picks = [newPick(kindOf(hit.zone), hit)]
+    changed()
+  }
   const toggle = (p) => {
     const at = picks.findIndex((q) => sameAs(q, p))
     if (at >= 0) picks = picks.filter((_, i) => i !== at)
@@ -680,6 +686,8 @@ export async function mountXlsx(host, bytes, { t, onPicks, wanted = () => true, 
   return Object.assign(view, {
     sheets: shown.length,
     picks: () => picks.slice(),
+    /** A right click: what is under the pointer picked, unless a pick already covers it. */
+    pickAt,
     clear() {
       picks = []
       changed()

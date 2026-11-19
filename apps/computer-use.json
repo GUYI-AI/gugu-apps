@@ -91,6 +91,69 @@
       "sha256": "c131d33bc1e4fe996986752f55ead30423fe9b36ddf99eb6de927f3be2855ec6",
       "bytes": 542720,
       "yanked": null
+    },
+    {
+      "version": "0.2.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "3870dd8292ece197aaabb273578356f2741a2396",
+      "sha256": "318e110f4f6cd0b81665d6195bbc70f1eb31a321a79c0a3ee0003966eb42f026",
+      "bytes": 708930,
+      "yanked": null
+    },
+    {
+      "version": "0.3.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "9bcdf853c29c72f333899386239d760dfbdad966",
+      "sha256": "6ac7fba20dda4a48ce974e0f3713804cb5e8ec6e05a2536b17cc41a4824209ff",
+      "bytes": 273902,
+      "yanked": null
+    },
+    {
+      "version": "0.4.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "7c480639bb64f7a66c31d185a56df2ebbf0623ce",
+      "sha256": "2dcca13e90bf94088b85d7e3147ce8180f3b14fac4d6b0649ebd321d584fe5d2",
+      "bytes": 273958,
+      "yanked": null
+    },
+    {
+      "version": "0.4.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "490b42642c09f1f0c7cd564861834f673f0661f5",
+      "sha256": "c0765b5180efd5b6e9c856fe048d54e71d5f63b315b5ae69317fa3d89072f497",
+      "bytes": 274051,
+      "yanked": null
+    },
+    {
+      "version": "0.5.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "3b794668a48d20b0e8121282c6c67ac3d403ed79",
+      "sha256": "3cd892aef11150bc9cdcbd1a488ef475f2932e0ac055f8efff48f6026fc721f8",
+      "bytes": 294619,
+      "yanked": null
+    },
+    {
+      "version": "0.5.1",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "95295f22bb56f40df4b005a50c1a7819f0068642",
+      "sha256": "8e43d7dae2046c889fdb7cd7be7deb0717e568d75e9f8a9d8883305e1a14c4d5",
+      "bytes": 294610,
+      "yanked": null
+    },
+    {
+      "version": "0.5.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/computer-use/app",
+      "commit": "25f41de407e69c1d90f7df50adae16ab6255996a",
+      "sha256": "1b0cea8e9cabeebb0a06bab6ea38e27efb991e7b719f93e3797d3f682b34d29f",
+      "bytes": 298041,
+      "yanked": null
     }
   ]
 }

@@ -102,6 +102,60 @@
       "sha256": "d9d55bda7e57ec2bd88d52bbdf73256a293b77b7ff98c9218ec3b4a3e10078a9",
       "bytes": 3848704,
       "yanked": null
+    },
+    {
+      "version": "0.3.7",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "9e163157fe68de6966eb75321d300916efcd9181",
+      "sha256": "af5428f9209ddd151f3b37338cd1826ad755cf0b658b2d58d89f40f67db245ef",
+      "bytes": 3848813,
+      "yanked": null
+    },
+    {
+      "version": "0.3.8",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "fef5291b8421a4bf32b8d8f06776c43bd728ada4",
+      "sha256": "78d2552cc5d0e8b058fd4b01c7cebc52c395303ede9211eea1eb7e5e2e5cac41",
+      "bytes": 3852010,
+      "yanked": null
+    },
+    {
+      "version": "0.3.9",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "6743705493d1bc3dfbca08430982ea40aad71ec4",
+      "sha256": "618202781a3720ce816fb8343b31289ba2f24e7daee6d252323c0212c39e82d7",
+      "bytes": 3439451,
+      "yanked": null
+    },
+    {
+      "version": "0.4.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "9bcdf853c29c72f333899386239d760dfbdad966",
+      "sha256": "3817b765ad2a0ca621bb720b8d0f5ed4cd29d5d33367b98639d4781d6579b85c",
+      "bytes": 2273142,
+      "yanked": null
+    },
+    {
+      "version": "0.5.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "7c480639bb64f7a66c31d185a56df2ebbf0623ce",
+      "sha256": "920811f5d5c1463233bbc1df01d9cd5be06dc3cbc05ea57c3f5f6b14e2949523",
+      "bytes": 2274484,
+      "yanked": null
+    },
+    {
+      "version": "0.5.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/paper-club/app",
+      "commit": "f30cd7d9daf8e8bf15ed1b4fca8ae847042107a4",
+      "sha256": "b8ed1bafb880a300e2a7136a57a9f3197deed70899b9b6ed450d4c601ce90c1d",
+      "bytes": 2274484,
+      "yanked": null
     }
   ]
 }

@@ -1,14 +1,119 @@
-/* gugu's look is in the page already (guide apps-ui); only what a round needs on top of it. */
+/* gugu's look is in the page already (guide apps-ui); only what a round needs on top of it. Colours come from gugu's
+   tokens only; WebView 113 (phones) has no light-dark(), so the stage's two themes follow ui.css's own selectors. */
+
+/* The stage — the lobby's new round and a round's case — is dark in both themes, as a party game's table is. */
+:root, :root[data-gugu-theme="dark"] {
+  --ts-stage: color-mix(in srgb, var(--em-foreground-info) 12%, color-mix(in srgb, var(--em-background) 40%, black));
+  --ts-stage-fg: color-mix(in srgb, var(--em-foreground-warning) 6%, var(--em-foreground));
+  --ts-stage-edge: var(--em-border-1);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-gugu-theme]) {
+    --ts-stage: color-mix(in srgb, var(--em-foreground-info) 16%, var(--em-foreground));
+    --ts-stage-fg: color-mix(in srgb, var(--em-foreground-warning) 6%, var(--em-background));
+    --ts-stage-edge: transparent;
+  }
+}
+:root[data-gugu-theme="light"] {
+  --ts-stage: color-mix(in srgb, var(--em-foreground-info) 16%, var(--em-foreground));
+  --ts-stage-fg: color-mix(in srgb, var(--em-foreground-warning) 6%, var(--em-background));
+  --ts-stage-edge: transparent;
+}
+
 body { margin: 0; padding: var(--em-spacing-lg); }
 body[data-file="gone"] main { opacity: .45; filter: grayscale(1); }
+#lobby, #round { gap: var(--em-spacing-lg); }
+#round { min-height: calc(100vh - 2 * var(--em-spacing-lg)); }
+#board { gap: var(--em-spacing-lg); }
 .surface { white-space: pre-wrap; }
-.qa li { align-items: flex-start; }
-.verdict { white-space: nowrap; padding: 0 var(--em-spacing-sm); border-radius: var(--em-radius-control); background: var(--em-background-3); color: var(--em-foreground); }
-.v-yes, .v-solved { background: var(--em-background-success); color: var(--em-foreground-success); }
-.v-no, .v-wrong { background: var(--em-background-destructive); color: var(--em-foreground-destructive); }
-.v-partly, .v-close { background: var(--em-background-warning); color: var(--em-foreground-warning); }
-.v-unclear { background: var(--em-background-info); color: var(--em-foreground-info); }
-.v-irrelevant { color: var(--em-foreground-muted); }
-.v-pending { color: var(--em-foreground-passive); }
-.bottom { border: 1px solid var(--em-border-1); }
-textarea { width: 100%; }
+.grow { flex: 1; }
+
+.stage { margin: 0; padding: var(--em-spacing-xl) var(--em-spacing-2xl); border-radius: var(--em-radius-xl); border: 1px solid var(--ts-stage-edge);
+  background: var(--ts-stage); color: var(--ts-stage-fg); display: flex; flex-direction: column; gap: var(--em-spacing-md); }
+.stage h2 { margin: 0; color: inherit; }
+.stage .lead { margin: 0; opacity: .75; }
+.stage .kicker { letter-spacing: .2em; opacity: .6; }
+.stage small { color: inherit; }
+
+/* A case: the puzzle is the whole table's focus. */
+.case .surface { margin: 0; font-family: Georgia, "Songti SC", "Noto Serif CJK SC", serif; font-size: var(--em-font-title); line-height: 1.8; }
+.case .tags { display: flex; flex-wrap: wrap; gap: var(--em-spacing-sm); }
+.case .tags span { padding: 2px var(--em-spacing-md); border-radius: 999px; background: color-mix(in srgb, var(--ts-stage-fg) 12%, transparent); font-size: var(--em-font-caption); }
+
+/* Choices as pills: radios underneath. */
+.pills { margin: 0; display: flex; flex-wrap: wrap; gap: var(--em-spacing-sm); }
+.pills legend { width: 100%; color: inherit; opacity: .7; font-weight: 400; letter-spacing: 0; }
+.pills label, fieldset.pills > label + label { position: relative; display: inline-flex; align-items: center; margin: 0; padding: 6px 14px; border-radius: 999px;
+  background: color-mix(in srgb, var(--ts-stage-fg) 10%, transparent); color: inherit; cursor: pointer; }
+.pills input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.pills label:has(input:checked) { background: var(--ts-stage-fg); color: var(--ts-stage); font-weight: 600; }
+.pills label:has(input:focus-visible) { outline: 2px solid var(--ts-stage-fg); outline-offset: 2px; }
+.stage select { align-self: flex-start; max-width: 100%; }
+.go { display: flex; flex-wrap: wrap; align-items: center; gap: var(--em-spacing-md); margin-top: var(--em-spacing-xs); }
+.go small { flex: 1 1 200px; opacity: .7; }
+.start { height: 44px; padding: 0 28px; border: 0; border-radius: var(--em-radius-xl); background: var(--em-foreground-warning); color: var(--ts-stage);
+  font-size: var(--em-font-heading); font-weight: 800; }
+.start:disabled { opacity: .6; }
+
+/* The status line under the case. */
+/* One line at any width: the host's name gives way first, the players' faces never wrap (a few, then +N). */
+.statusbar { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--em-spacing-md); color: var(--em-foreground-muted); font-size: var(--em-font-caption); white-space: nowrap; }
+.statusbar > * { flex-shrink: 0; }
+.statusbar .host { display: inline-flex; align-items: center; gap: var(--em-spacing-sm); flex-shrink: 1; min-width: 0; color: var(--em-foreground); font-weight: 600; font-size: var(--em-font-body); }
+.statusbar .name { overflow: hidden; text-overflow: ellipsis; }
+.hints { display: inline-flex; align-items: center; gap: var(--em-spacing-sm); }
+.cells { display: inline-flex; gap: 4px; }
+.cells i { width: 22px; height: 6px; border-radius: 3px; background: var(--em-border-1); }
+.cells i.on { background: var(--em-foreground-warning); }
+.faces { display: inline-flex; align-items: center; }
+.faces gugu-avatar { border-radius: 50%; box-shadow: 0 0 0 2px var(--em-background); }
+.faces gugu-avatar + gugu-avatar { margin-inline-start: -8px; }
+.faces small { margin-inline-start: var(--em-spacing-xs); }
+/* A phone's width: the hint cells say it without the word (it stays their label), so the host's name keeps its room. */
+@media (max-width: 440px) {
+  .statusbar { gap: var(--em-spacing-sm); }
+  .hints .word { display: none; }
+  .cells i { width: 14px; }
+  .games .faces { display: none; } /* the row's who-and-when line keeps its room; the round shows its players */
+}
+
+/* Questions: each verdict is a stamp. */
+.qa { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--em-spacing-sm); }
+.qa li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--em-spacing-md); align-items: center; margin: 0;
+  padding: var(--em-spacing-sm) var(--em-spacing-md); border-radius: var(--em-radius-xl); background: var(--em-background-1); border: 1px solid var(--em-border); }
+.qa .q { overflow-wrap: anywhere; }
+.qa small { display: block; }
+.stamp { justify-self: end; min-width: 56px; padding: 2px var(--em-spacing-sm); text-align: center; white-space: nowrap; border: 2px solid currentColor;
+  border-radius: var(--em-radius-control); font-weight: 800; transform: rotate(-4deg); background: var(--em-background-3); color: var(--em-foreground-muted); }
+.s-yes, .s-solved { background: var(--em-background-success); color: var(--em-foreground-success); }
+.s-no, .s-wrong { background: var(--em-background-destructive); color: var(--em-foreground-destructive); }
+.s-partly, .s-close { background: var(--em-background-warning); color: var(--em-foreground-warning); }
+.s-unclear { background: var(--em-background-info); color: var(--em-foreground-info); }
+.s-pending { transform: none; border-style: dashed; border-color: var(--em-border-1); background: transparent; color: var(--em-foreground-passive);
+  font-weight: 600; font-size: var(--em-font-caption); }
+
+/* The solution, once the round is over: the reveal under the case. */
+.bottom { border: 2px solid var(--em-foreground-warning); }
+.bottom.st-solved { border-color: var(--em-foreground-success); }
+.bottom .surface { font-family: Georgia, "Songti SC", "Noto Serif CJK SC", serif; font-size: var(--em-font-title); line-height: 1.8; }
+
+/* The box: asking is the one main action; hints and giving up are words beside it. */
+#controls { margin-top: auto; }
+.ask { margin: 0; display: grid; gap: var(--em-spacing-sm); padding: var(--em-spacing-md); border: 1px solid var(--em-border-1); border-radius: var(--em-radius-xl); background: var(--em-background); }
+.ask textarea { width: 100%; min-height: 56px; border: 0; box-shadow: none; outline: none; resize: none; background: transparent; padding: 0; }
+/* 提问 keeps its place at the row's end at any width; the secondary words wrap among themselves on the left. */
+.ask .bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--em-spacing-sm); }
+.ask .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--em-spacing-xs); }
+button.link { border-color: transparent; background: transparent; color: var(--em-foreground-muted); padding-inline: 6px; }
+button.link.danger { color: var(--em-foreground-destructive); }
+button.link:disabled { background: transparent; }
+.back { align-self: flex-start; padding-inline-start: 0; }
+
+/* The lobby's rounds. */
+.games > li { display: grid; grid-template-columns: 1fr auto; gap: var(--em-spacing-md); align-items: center; padding: var(--em-spacing-md); border: 1px solid var(--em-border); border-radius: var(--em-radius-xl); }
+.games strong { display: block; }
+.games span { color: var(--em-foreground-muted); font-size: var(--em-font-caption); }
+.games .side { display: inline-flex; align-items: center; gap: var(--em-spacing-md); }
+.chip { padding: 2px var(--em-spacing-md); border-radius: 999px; font-size: var(--em-font-caption); font-weight: 600; white-space: nowrap; background: var(--em-background-3); color: var(--em-foreground-muted); }
+.chip.st-playing, .chip.st-waiting { background: var(--em-background-warning); color: var(--em-foreground-warning); }
+.chip.st-solved { background: var(--em-background-success); color: var(--em-foreground-success); }

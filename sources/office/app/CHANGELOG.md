@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.2
+
+The page around a file takes gugu's palette: a sheet's row and column headers, a picked header, a pick's tint, the pick bar's shadow and the 「新窗口打开」 button follow the theme (in dark the headers are dark beside the white paper). Cells and slides are still the file's own colours.
+
+## 0.4.1
+
+Right click on a slide or a sheet opens the host's menu (`gugu.showContextMenu`) with what the pick bar does: 放进输入框 / 交给 agent / 全部取消. What is under the pointer is picked first, unless a pick already covers it, as a spreadsheet does. A finger's long press stays the view's own.
+
+## 0.4.0
+
+App interface 25: a task's tab now has its private chat (`ctx.chat`), so the home page offers that chat's files there too.
+
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
+## 0.2.11
+
+- Its own page opens beside a chat at 480 px instead of half the window: the start page declares its width (`sideWidth`, App API 16). A deck or workbook opened in it is still the chat's peer, half and half.
+
+## 0.2.10
+
+- Hand selected places to an agent through the host dispatch sheet, or put them in the composer. Ask an agent for a file by making a blank file first and handing it over (App API 15).
+
+## 0.2.9
+
+- Gugu Office's own page is laid out as Office's start page: one bar at the top (the search, and 「新建」 with its menu of blank files), and the list below it, its head saying what it lists (本群 / 所有群, or which chat) and which kind it keeps. A chat with nothing yet, and a wide page, show the blank deck and workbook as cards to start from.
+
 ## 0.2.8
 
 - Opened in a chat, Gugu Office's own page makes a blank deck (one empty 16:9 slide) or workbook (one empty sheet) in the chat's folder with 「新建演示稿 / 新建表格」 and opens it; the name says when it was made and never takes one already in the folder. It asks for `files:write` to put the file there.

@@ -1,4 +1,32 @@
+## 0.4.0
+
+App interface 25: the agent it centres on is `ctx.workspace.agentId` (was `ctx.session.agentId`).
+
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
+## 0.2.1
+
+- 关注列表的「不再关注」悬停时盖在档位上，不再常驻占宽，任务名能多显示一截。
+- 市场截图换成 0.2 界面的客户端实拍。
+
+## 0.2.0
+
+- 提醒按天分组并支持筛选，集中显示关注列表、状态计数与后台心跳。
+
+## 0.1.10
+
+- 可关注同一账号别的电脑上的 agent；提醒带来源机器和读数时间。
+- 复用咕咕的跨设备清单和投递，机器暂时离线时保留关注。
+- 支持具备通用后台运行环境的无窗口 server。
+
 # Changelog
+
+## 0.1.9
+
+- Dispatch background reminders to the subscribing agent through App API 15.
+- Make watch discoverable as Radar/雷达 and explain how to subscribe to completion reminders.
 
 ## 0.1.8
 

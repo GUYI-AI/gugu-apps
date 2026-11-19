@@ -13,7 +13,7 @@
 //   replaces what is picked and Shift / ⌘ / Ctrl adds (a picked one clicked so takes it back); a click on nothing clears.
 //   With a finger a tap adds or takes back, one finger dragging scrolls, and holding still ~0.35 s then dragging draws.
 // - Picks wait here until the person puts them in the composer at once (the bar the page floats by the last of them,
-//   app.js): gugu.compose closes the panel on a phone, so a pick each would mean opening it again for each.
+//   app.js): draft dispatch closes the panel on a phone, so a pick each would mean opening it again for each.
 // - Each waiting pick stays visible on its slide, numbered in the order its pill goes; its number takes it back.
 // - A pill clicked opens the file here at its place (`reveal`, from the page's onLink): its slide scrolled to and the
 //   place framed until the next press.
@@ -188,6 +188,12 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
       if (!picks.some((p) => p.shape?.groups.includes(group))) return pick(pickOf(group), add)
     }
     pick(pickOf(shape), add)
+  }
+  const pickAt = (clientX, clientY) => {
+    const target = document.elementFromPoint(clientX, clientY)?.closest('.pptx-hit')
+    const shape = target && shapeOf.get(target)
+    if (!shape || picks.some((p) => p.shape === shape || p.shapes?.includes(shape))) return
+    pickShape(Number(target.closest('figure').dataset.n), shape, false)
   }
   const clear = () => {
     if (!picks.length) return
@@ -411,6 +417,8 @@ export async function mountPptx(host, bytes, { t, onPicks, wanted = () => true }
   return {
     slides: numbers.length,
     picks: () => picks.slice(),
+    /** A right click: what is under the pointer picked, unless a pick already covers it. */
+    pickAt,
     clear,
     /** The last waiting pick's mark (a picked shape's box, a box's frame): what the page floats its bar by. */
     anchor: () => lastMark,

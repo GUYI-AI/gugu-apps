@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.0
+
+App interface 25: a task's tab now has its private chat (`ctx.chat`), so a round can be hosted there.
+
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
+## 0.2.11
+
+- 市场封面和产品页截图重拍：在真实咕咕客户端的群里开局，人和 agent 一起提问、判定、还原（浅色、2× 像素）。App 本身没有改动。
+
+## 0.2.10
+
+- 市场封面和产品页截图换成新的大厅与牌局（浅色、实际尺寸）。App 本身没有改动。
+
+## 0.2.9
+
+- 大厅改成一块深色舞台：语言、难度、题目是一点就选的胶囊，「开汤」是大按钮；下面这个群的牌局写清进行中 / 已还原 / 看了汤底、已问几次和谁玩过。别人开了新局、一局结束或删掉，开着的大厅随群文件变化当场更新，不用刷新。
+- 牌局：汤面是一张案件卡；下面一行是主持人、已问几次、提示进度和玩家；每个问题右边一枚判定印章，等判定的是虚线。「提问」是唯一主按钮，「要提示」「放弃，看汤底」降成文字链接；结束后汤底单独一张揭晓卡。
+- 不在聊天里打开时，没有牌局就说明牌局要在群聊或私聊里开。
+
+## 0.2.8
+
+- Use the host dispatch sheet to choose the round's agent host; dispatch every host and player message through App API 15.
+
 ## 0.2.7
 
 - Declare desktop and phone support for the human interface (App API 12).

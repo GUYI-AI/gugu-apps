@@ -1,4 +1,27 @@
+## 0.5.0
+
+App interface 25: places are `{ chat }` or `{ workspace }` (a session's working copy, a project's folder); a task's shelf walks its working copy a folder at a time; the library reads a project's top and 论文/; a task's tab keeps its working copy's shelf although it now has a private chat too; tools take the same places.
+
+## 0.4.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 # 论文共读
+
+## 0.3.9
+
+- New market images: the promotional cover and three light screenshots show the reworked reader (quote-led highlight cards, the selection bar, the chat's discussion of a passage).
+
+## 0.3.8
+
+- Lead each highlight card with its quote (book face, full ink, the marker colour beside it) and one quiet line under it: a page capsule, who marked it, and one discussion count in the corner.
+- Highlight tabs show counts; small 全部 / 我的 / 有讨论 filters; only the selected card opens its thread, with names and the agent mark from gugu, a one-line reply beside 问 agent, and Delete under ⋯ for the marker.
+- 问 agent on the selection bar is a text button: gugu no longer has a generic agent glyph (`bot`).
+- Show where other readers are (「在第 N 页」); on narrow panels the title and the tools take a row each.
+
+## 0.3.7
+
+- Hand passages to a composer or a new task through the unified dispatch API (App API 15).
 
 ## 0.3.6
 

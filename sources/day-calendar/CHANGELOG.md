@@ -1,12 +1,51 @@
 # Changelog
 
+## 0.8.0
+
+- Proactively record definite personal plans or events received by an enabled agent. Query first and update the same entry when the person completes or reschedules it.
+- Store entries by year, month and day; preserve `journal.json` as the migration backup and recover interrupted cross-day moves before reading.
+- Keep the time axis, day/week views, optional end times and source-task links from 0.7.0. Read the displayed months, including weeks crossing a year boundary.
+- Require App interface 58, the client interface used for this release's real-session acceptance. No market entry is added by this source change.
+
+## 0.7.0
+
+App interface 25: nothing else changes.
+
+## 0.6.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
+## 0.5.6
+
+- Market: the four in-client images are retaken in an example account (the person shows as 林夏), so no test-account name appears; the promotional image is re-rendered with the new side panel. No code change.
+
+## 0.5.5
+
+- Market: in-client captures of 0.5.4 replace the 0.4 images: the side panel beside an agent's `record` turn (light and dark) and the week view (light and dark); the promotional image is re-rendered with the side panel. No code change.
+
+## 0.5.4
+
+- Where the time axis opens on a range with today: an hour before today's first timed entry (an hour before now when there is none), not earlier than 07:00, and the line of now always on screen when the two disagree. Before, it opened five and a half hours before now, which at 09:00 meant a screen of empty early morning.
+
+## 0.5.3
+
+- Market: the full-tab screenshot (old `3.jpg`, the month view) is replaced by a capture of the 0.5 week view (`screenshots/week.png`); `screenshots/SOURCE.md` says where the market images come from.
+
+## 0.5.2
+
+- The line of now keeps moving while a new entry's card is open: the minute moves only the line, its time tag and the hour label it covers, never the card, its text or the scroll.
+
+## 0.5.1
+
+- Week view: entries side by side in a narrow day column spread over the whole column on hover or keyboard focus, with the full title and the time; where a column has room, they keep their check and agent mark.
+
 ## 0.5.0
 
-- 通过常驻指令主动记录收到的会话中的明确个人事项；明确行程直接记录，不再确认记录意图，缺少可选细节也不阻止记录。
-- 新增查询与更新工具，支持完成、补充与改期。
-- 按年、月、日拆分文件，旧数据迁移保留备份。
-- 跨日改期支持中断恢复，月历只读取当月内容。
-- 需要支持 contributes.agentInstructions 的咕咕版本；已运行会话需重新启动。
+- A time axis instead of a month and two lists: hour scale, an ink line and tag for now, each entry a block at its hour (to-do, checked to-do, memory), overlapping entries side by side, to-dos without a time in an all-day row.
+- Side panel: one day with a week strip (the whole month folds out). Full tab: a week with a month rail and a legend; Day / Week switch.
+- Click or drag on an empty time to add a to-do or a memory with a start and an end; the quick add at the bottom still adds an all-day to-do.
+- Click an entry for its card: details, tags, when it was recorded, back to the task that recorded it, delete. An agent's entry carries the agent mark.
+- `record` takes an optional `end` (HH:MM after `time`). Entries without it are drawn as half an hour; nothing is migrated. `time` and `end` must be real clock times (00:00–23:59).
 
 ## 0.4.6
 

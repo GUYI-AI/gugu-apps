@@ -1,0 +1,431 @@
+{
+  "version": 1,
+  "rev": 0,
+  "columns": {
+    "todo": {
+      "id": "todo",
+      "role": "todo",
+      "title": "想法",
+      "order": "V"
+    },
+    "doing": {
+      "id": "doing",
+      "role": "doing",
+      "title": null,
+      "order": "l"
+    },
+    "review": {
+      "id": "review",
+      "role": "review",
+      "title": null,
+      "order": "t"
+    },
+    "done": {
+      "id": "done",
+      "role": "done",
+      "title": null,
+      "order": "x"
+    },
+    "id001": {
+      "id": "id001",
+      "role": null,
+      "title": "本周",
+      "order": "z"
+    }
+  },
+  "cards": {
+    "id002": {
+      "id": "id002",
+      "title": "sidebar push #2771",
+      "note": "Arms on mac1.",
+      "column": "doing",
+      "order": "V",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {
+        "id003": {
+          "kind": "message",
+          "message": "11111111-2222-3333-4444-555555555555",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:03:00.000Z"
+        },
+        "id004": {
+          "kind": "task",
+          "session": "sess-old-1",
+          "agent": "user:00000000-0000-0000-0000-0000000000b2",
+          "title": "push v1",
+          "by": "user:00000000-0000-0000-0000-0000000000b2",
+          "at": "2026-11-14T08:05:00.000Z"
+        },
+        "id005": {
+          "kind": "task",
+          "session": "sess-new-2",
+          "agent": "user:00000000-0000-0000-0000-0000000000a1",
+          "title": "push v2",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:06:00.000Z"
+        },
+        "id006": {
+          "kind": "pr",
+          "url": "https://github.com/GUYI-AI/gugu/pull/2771",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:07:00.000Z",
+          "ci": "green",
+          "review": "approved",
+          "head": "abcdef1234567",
+          "mergedBy": "owner",
+          "syncedAt": "2026-11-14T08:12:00.000Z"
+        },
+        "id007": {
+          "kind": "url",
+          "url": "https://example.com/spec",
+          "title": "Spec",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:08:00.000Z"
+        },
+        "id008": {
+          "kind": "file",
+          "session": "sess-new-2",
+          "path": "evidence/arms.md",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:09:00.000Z"
+        },
+        "id009": {
+          "kind": "project",
+          "project": "proj-1",
+          "path": "docs/plan.md",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:10:00.000Z"
+        },
+        "id010": {
+          "kind": "chatfile",
+          "file": "file-123",
+          "name": "report.html",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:11:00.000Z"
+        }
+      },
+      "createdAt": "2026-11-14T08:03:00.000Z",
+      "updatedAt": "2026-11-14T08:14:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "progress": 60,
+      "next": "4 arms on mac1",
+      "due": "16:30",
+      "dest": "→ 18:00 Beta",
+      "head": "abcdef1234567"
+    },
+    "id013": {
+      "id": "id013",
+      "title": "phone task-file open #2798",
+      "note": "",
+      "column": "review",
+      "order": "V",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {
+        "id014": {
+          "kind": "task",
+          "session": "sess-mf",
+          "agent": "user:00000000-0000-0000-0000-0000000000a1",
+          "title": "mfopen",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:16:00.000Z"
+        }
+      },
+      "createdAt": "2026-11-14T08:15:00.000Z",
+      "updatedAt": "2026-11-14T08:16:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1"
+    },
+    "id015": {
+      "id": "id015",
+      "title": "scroll pull #2714",
+      "note": "",
+      "column": "doing",
+      "order": "l",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {},
+      "createdAt": "2026-11-14T08:17:00.000Z",
+      "updatedAt": "2026-11-14T08:18:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "waitingOn": "P4 receipt",
+      "waitKind": "lane",
+      "waitWho": "session:p4",
+      "waitSince": "2026-11-14T08:18:00.000Z"
+    },
+    "id016": {
+      "id": "id016",
+      "title": "colour PR2 #2189",
+      "note": "",
+      "column": "id001",
+      "order": "V",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {},
+      "createdAt": "2026-11-14T08:19:00.000Z",
+      "updatedAt": "2026-11-14T08:23:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "waitingOn": "contrast decision",
+      "waitKind": "owner",
+      "waitSince": "2026-11-14T08:23:00.000Z"
+    },
+    "id019": {
+      "id": "id019",
+      "title": "prompt v2 #2187",
+      "note": "",
+      "column": "doing",
+      "order": "t",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {},
+      "createdAt": "2026-11-14T08:24:00.000Z",
+      "updatedAt": "2026-11-14T08:25:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "waitingOn": "要不要先合？",
+      "waitKind": "owner",
+      "waitSince": "2026-11-14T08:25:00.000Z"
+    },
+    "id020": {
+      "id": "id020",
+      "title": "release notes",
+      "note": "",
+      "column": "done",
+      "order": "V",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {
+        "id021": {
+          "kind": "task",
+          "session": "sess-rn",
+          "agent": "user:00000000-0000-0000-0000-0000000000b2",
+          "title": "notes",
+          "by": "user:00000000-0000-0000-0000-0000000000b2",
+          "at": "2026-11-14T08:27:00.000Z"
+        },
+        "id022": {
+          "kind": "task",
+          "session": "sess-rn2",
+          "agent": "user:00000000-0000-0000-0000-0000000000a1",
+          "title": "notes 2",
+          "by": "user:00000000-0000-0000-0000-0000000000a1",
+          "at": "2026-11-14T08:29:00.000Z"
+        }
+      },
+      "createdAt": "2026-11-14T08:26:00.000Z",
+      "updatedAt": "2026-11-14T08:29:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "handoff": {
+        "to": {
+          "session": "sess-rn2",
+          "agent": "user:00000000-0000-0000-0000-0000000000a1",
+          "title": "notes 2"
+        },
+        "by": "user:00000000-0000-0000-0000-0000000000b2",
+        "at": "2026-11-14T08:28:00.000Z",
+        "acceptedAt": "2026-11-14T08:29:00.000Z"
+      }
+    },
+    "id023": {
+      "id": "id023",
+      "title": "an idea",
+      "note": "",
+      "column": "todo",
+      "order": "V",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "links": {},
+      "createdAt": "2026-11-14T08:30:00.000Z",
+      "updatedAt": "2026-11-14T08:31:00.000Z",
+      "updatedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "handoff": {
+        "to": {
+          "session": "sess-x",
+          "agent": "user:00000000-0000-0000-0000-0000000000b2"
+        },
+        "by": "user:00000000-0000-0000-0000-0000000000a1",
+        "at": "2026-11-14T08:31:00.000Z",
+        "acceptedAt": null
+      }
+    }
+  },
+  "comments": {
+    "id011": {
+      "id": "id011",
+      "card": "id002",
+      "by": "user:00000000-0000-0000-0000-0000000000b2",
+      "text": "arm 3 flaky",
+      "at": "2026-11-14T08:13:00.000Z"
+    },
+    "id012": {
+      "id": "id012",
+      "card": "id002",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "text": "rerun ok",
+      "at": "2026-11-14T08:14:00.000Z"
+    },
+    "id032": {
+      "id": "id032",
+      "card": "id030",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "text": "comment on deleted card",
+      "at": "2026-11-14T08:42:00.000Z"
+    }
+  },
+  "decisions": {
+    "id017": {
+      "id": "id017",
+      "n": 1,
+      "question": "边框对比度定 3:1 吗？",
+      "options": [
+        "3:1",
+        "4.5:1"
+      ],
+      "scope": {
+        "kind": "lane",
+        "ref": "id016"
+      },
+      "card": "id016",
+      "status": "pending",
+      "answer": "",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "at": "2026-11-14T08:20:00.000Z"
+    },
+    "id018": {
+      "id": "id018",
+      "n": 2,
+      "question": "Ship in beta?",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "scope": {
+        "kind": "lane",
+        "ref": "id016"
+      },
+      "card": "id016",
+      "status": "decided",
+      "answer": "yes",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "at": "2026-11-14T08:21:00.000Z",
+      "decidedBy": "person",
+      "decidedAt": "2026-11-14T08:22:00.000Z"
+    },
+    "id024": {
+      "id": "id024",
+      "n": 3,
+      "question": "Lanes report only on done/blocked?",
+      "options": [],
+      "scope": {
+        "kind": "fleet"
+      },
+      "message": "22222222-3333-4444-5555-666666666666",
+      "status": "decided",
+      "answer": "yes",
+      "by": "person",
+      "at": "2026-11-14T08:32:00.000Z",
+      "decidedBy": "person",
+      "decidedAt": "2026-11-14T08:32:00.000Z"
+    },
+    "id025": {
+      "id": "id025",
+      "n": 4,
+      "question": "gpu: heavy builds only in cx slots?",
+      "options": [],
+      "scope": {
+        "kind": "machine",
+        "ref": "gpu"
+      },
+      "status": "decided",
+      "answer": "yes",
+      "by": "person",
+      "at": "2026-11-14T08:33:00.000Z",
+      "decidedBy": "person",
+      "decidedAt": "2026-11-14T08:33:00.000Z"
+    },
+    "id026": {
+      "id": "id026",
+      "n": 5,
+      "question": "Ship 18:00 beta with #2771?",
+      "options": [
+        "ship",
+        "hold"
+      ],
+      "scope": {
+        "kind": "release",
+        "ref": "18:00 Beta"
+      },
+      "status": "pending",
+      "answer": "",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "at": "2026-11-14T08:34:00.000Z"
+    },
+    "id027": {
+      "id": "id027",
+      "n": 6,
+      "question": "old rule",
+      "options": [],
+      "scope": {
+        "kind": "fleet"
+      },
+      "status": "superseded",
+      "answer": "v1",
+      "by": "person",
+      "at": "2026-11-14T08:35:00.000Z",
+      "decidedBy": "person",
+      "decidedAt": "2026-11-14T08:35:00.000Z",
+      "closedBy": "person",
+      "closedAt": "2026-11-14T08:36:00.000Z",
+      "supersededBy": "id028"
+    },
+    "id028": {
+      "id": "id028",
+      "n": 7,
+      "question": "new rule",
+      "options": [],
+      "scope": {
+        "kind": "fleet"
+      },
+      "status": "decided",
+      "answer": "v2",
+      "by": "person",
+      "at": "2026-11-14T08:36:00.000Z",
+      "decidedBy": "person",
+      "decidedAt": "2026-11-14T08:36:00.000Z"
+    },
+    "id029": {
+      "id": "id029",
+      "n": 8,
+      "question": "withdrawn q",
+      "options": [],
+      "scope": {
+        "kind": "lane",
+        "ref": "id015"
+      },
+      "card": "id015",
+      "status": "withdrawn",
+      "answer": "",
+      "by": "user:00000000-0000-0000-0000-0000000000a1",
+      "at": "2026-11-14T08:37:00.000Z",
+      "closedBy": "user:00000000-0000-0000-0000-0000000000a1",
+      "closedAt": "2026-11-14T08:38:00.000Z"
+    },
+    "id031": {
+      "id": "id031",
+      "n": 9,
+      "question": "about a deleted card",
+      "options": [],
+      "scope": {
+        "kind": "lane",
+        "ref": "id030"
+      },
+      "card": "id030",
+      "status": "decided",
+      "answer": "kept",
+      "by": "person",
+      "at": "2026-11-14T08:41:00.000Z",
+      "decidedBy": "person",
+      "decidedAt": "2026-11-14T08:41:00.000Z"
+    }
+  },
+  "fleet": {
+    "supervisors": {
+      "sess-sup": {
+        "by": "user:00000000-0000-0000-0000-0000000000a1",
+        "at": "2026-11-14T08:39:00.000Z"
+      }
+    }
+  }
+}

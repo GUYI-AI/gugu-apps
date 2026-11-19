@@ -1,0 +1,20 @@
+/* 上下文 — mock after Vercel usage / Linear project lists. Pixel identity kept in the sprites and the ten-cell bars;
+   frames are gugu's own: 1px borders, soft radius, no hard shadow. */
+:root {
+  --px-cyan: #27b4dd; --px-pink: #f0789f; --px-lav: #a596e0; --px-green: #8fc95e; --px-orange: #f39a63; --px-yellow: #f2c335;
+  --px-empty: color-mix(in oklab, var(--em-foreground) 9%, transparent);
+}
+[data-gugu-theme=dark] { --px-cyan: #3bb8d8; --px-pink: #e8789c; --px-lav: #a99ed6; --px-green: #94c266; --px-orange: #e3946a; --px-yellow: #e6c043; }
+.px-mono { font-family: var(--em-font-mono); }
+.px-sprite { flex: none; image-rendering: pixelated; border-radius: 6px; }
+.px-sprite-bg { fill: var(--px-strip); } .px-sprite-glyph { fill: rgba(0, 0, 0, .78); }
+.px-bar { display: inline-flex; gap: 2px; vertical-align: middle; }
+.px-bar i { display: block; width: 6px; height: 12px; border-radius: 1.5px; background: var(--px-empty); }
+.px-bar[data-big] i { width: 12px; height: 20px; border-radius: 2px; gap: 3px; }
+.px-bar[data-kind=hot] .px-filled { background: var(--px-cyan); }
+.px-bar[data-kind=health] .px-filled { background: var(--em-foreground-success); }
+.px-bar[data-kind=capacity] .px-filled { background: var(--px-lav); }
+.px-bar[data-tone=yellow] .px-filled { background: var(--em-foreground-warning); }
+.px-bar[data-tone=red] .px-filled { background: var(--em-foreground-destructive); }
+.px-bar[data-unknown] { opacity: .45; }
+.px-button { white-space: nowrap; }

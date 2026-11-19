@@ -2,54 +2,64 @@
 // through the tools, see each other's changes as they land. The same core.applyOp as this computer's board; only where
 // the board is kept differs. Used by the page (the browser) and by tools.js (Node) alike: `files` is that side's
 // gugu.files.
-import { applyOp, emptyBoard, newId } from './core.js'
+import { applyOp, asCurrent, emptyBoard } from './core.js'
 
 export const BOARD_SUFFIX = '.board.json'
 /** The default board of a source group/private chat. Gugu resolves topic addresses; other *.board.json stay separate. */
 export const CHAT_BOARD_NAME = `协作看板${BOARD_SUFFIX}`
 
-const findBoard = async (files, chat) =>
+export const findBoard = async (files, chat) =>
   (await files.list({ chat, folder: '' })).find((e) => e.type !== 'folder' && e.name === CHAT_BOARD_NAME) ?? null
 
-/**
- * The chat's own board, made the first time anyone opens it there. Found by listing the chat's top folder (an entry is
- * how both a page and an agent's call may name a chat's file). Two making it at once: the host either refuses the
- * second (the folder's names are unique) or names it `协作看板 (2).board.json` — either way the second removes what it
- * made, if anything, and opens the first.
- */
-export async function openChatBoard(files, chat) {
+/** The chat's board as it is, or an empty one when the chat has none: a read never makes or changes a file. */
+export async function readChatBoard(files, chat) {
   const found = await findBoard(files, chat)
-  if (found) return filled(await files.open(found))
+  if (!found) return emptyBoard()
+  const f = await files.open(found)
+  try {
+    return asCurrent(f.toJSON())
+  } finally {
+    f.close()
+  }
+}
+
+/**
+ * The chat's own board, to write to: made the first time anyone writes to it. Two making it at once: the host either
+ * refuses the second (the folder's names are unique) or names it `协作看板 (2).board.json` — either way the second
+ * removes what it made, if anything, and opens the first. `check` sees an empty board first and throws to refuse:
+ * a refused write leaves no file behind.
+ */
+export async function openChatBoard(files, chat, check) {
+  const found = await findBoard(files, chat)
+  if (found) return files.open(found)
+  check?.(emptyBoard())
   let made
   try {
     made = await files.create({ chat, name: CHAT_BOARD_NAME }, emptyBoard())
   } catch (error) {
     const theirs = await findBoard(files, chat)
     if (!theirs) throw error
-    return filled(await files.open(theirs))
+    return files.open(theirs)
   }
-  if (made.name === CHAT_BOARD_NAME) return filled(await files.open(made))
+  if (made.name === CHAT_BOARD_NAME) return files.open(made)
   await files.remove(made)
   const theirs = await findBoard(files, chat)
   if (!theirs) throw new Error(`${CHAT_BOARD_NAME} was made as ${made.name} and the board it gave way to is gone`)
-  return filled(await files.open(theirs))
+  return files.open(theirs)
 }
 
 /**
- * An open board file as a board. Opened in a chat, gugu makes the board this App names (`chatFile`, App API 14) before
- * the page runs, and makes it empty (`{}`): the first to open it writes the empty board, and two doing so at once write
- * the same one.
+ * One operation on a board file, as one change everyone receives whole. Refused: throws, nothing written. Gugu makes
+ * the file a chat's tab names (`chatFile`) empty (`{}`) before the page runs; the first write fills it, and a 1.x
+ * board is converted by the same write (core.upgrade).
  */
-export function filled(f) {
-  if (!f.data.columns) f.transact(() => Object.assign(f.data, emptyBoard()))
-  return f
-}
-
-/** One operation on a board file, as one change everyone receives whole. Refused: throws, nothing written. */
-export function applyToFile(f, op, by) {
+export function applyToFile(f, op, by, caller = {}, name = caller.name) {
   let result
+  // Checked on a copy first: a refusal must leave the live file as it was, and core writes only after its checks.
+  applyOp(asCurrent(f.toJSON()), op, { by, now: new Date().toISOString(), caller, name })
   f.transact(() => {
-    result = applyOp(f.data, op, { by, now: new Date().toISOString(), id: newId })
+    if (!f.data.cards) Object.assign(f.data, emptyBoard())
+    result = applyOp(f.data, op, { by, now: new Date().toISOString(), caller, name })
   })
   return result
 }

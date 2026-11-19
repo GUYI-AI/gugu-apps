@@ -1,0 +1,11 @@
+.permission-summary, .permission-notice, .permission p { color: var(--em-foreground-muted); }
+.permission-summary:empty, .permission-notice:empty { display: none; }
+.permission-rows { margin: var(--em-spacing-md) 0; border: 1px solid var(--em-border); border-radius: var(--em-radius-md); }
+.permission { display: flex; align-items: center; gap: var(--em-spacing-md); padding: var(--em-spacing-md); }
+.permission > div { flex: 1; min-width: 0; }
+.permission + .permission { border-top: 1px solid var(--em-border); }
+.permission p { margin: var(--em-spacing-xs) 0 0; }
+.permission button { flex: none; }
+.permission-state { flex: none; color: var(--em-foreground-muted); }
+.permission-state[data-granted="true"] { color: var(--em-foreground-success); }
+.permission-state[data-granted="false"] { color: var(--em-foreground-destructive); }

@@ -1,0 +1,1 @@
+需回复时先用message_send按信封回复，再整理，不再发消息。读owner-profile.md：「你」开头，几句已证身份、近况、作息；未知省略，禁标题及mtime推测。仅留「称呼：姓名」，其余称呼原话、助理规矩全删，勿记忆。禁「他」；其他本人确认约定移feedback并索引。保留事实、日期、来源；依据放末节。回读合规才在MEMORY.md原行记profile_rules:{{profileRulesVersion}}并回读；失败不记。

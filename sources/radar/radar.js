@@ -51,10 +51,12 @@ window.radarFrames = () => graph.stats()
 
 let saved = new Map() // agentId -> its title when it was watched (an archived one is no longer listed)
 const titleOf = (agentId) => agents.get(agentId)?.title ?? saved.get(agentId) ?? agentId
-const centerId = () => (mode === 'local' ? ctx?.session?.agentId ?? null : null)
+const centerId = () => (mode === 'local' ? ctx?.workspace?.agentId ?? null : null)
 
 async function load() {
-  const [rawState, files, rows] = await Promise.all([g.readData('state.json'), g.listData('subs'), g.listAgents()])
+  const [rawState, files, reading] = await Promise.all([g.readData('state.json'), g.listData('subs'), g.listAgents({ report: true })])
+  if (!Array.isArray(reading?.agents)) throw new Error('Radar needs a gugu host with listAgents({ report: true }) support')
+  const rows = reading.agents
   if (rawState !== null) state = JSON.parse(rawState)
   const next = {}
   for (const { path, kind } of files) {
@@ -67,6 +69,11 @@ async function load() {
   }
   subs = next
   agents = new Map(rows.map((row) => [row.agentId, row]))
+  for (const [id, old] of Object.entries(state.last ?? {})) {
+    if (!agents.has(id) && old.deviceId && reading.unreached.some((m) => m.deviceId === null || m.deviceId === old.deviceId)) {
+      agents.set(id, { ...old, agentId: id, status: null })
+    }
+  }
   saved = new Map()
   for (const sub of Object.values(subs)) for (const k of ['by', 'target', 'to']) if (sub.titles?.[k]) saved.set(sub[k], sub.titles[k])
 }
@@ -76,14 +83,15 @@ function nodeSentence(agentId) {
   const n = titleOf(agentId)
   const row = agents.get(agentId)
   if (!row) return W.gone(n)
-  if (row.status === 'working') return W.working(n, agoOf(row.lastActionAt))
-  if (row.status === 'idle') return W.idle(n)
-  if (row.status === 'needs_user') return W.waiting(n, W.waits[row.detail] ?? W.waitAny)
+  const source = row.deviceId ? ` ${W.observed(row.deviceLabel ?? row.deviceId, row.statusAt)}` : ''
+  if (row.status === 'working') return W.working(n, agoOf(row.lastActionAt)) + source
+  if (row.status === 'idle') return W.idle(n) + source
+  if (row.status === 'needs_user') return W.waiting(n, W.waits[row.detail] ?? W.waitAny) + source
   if (row.status === 'error') {
-    if (row.failure) return W.troubleWhy(n, row.failure.kind === 'start-failed' ? W.startFailed : W.engineQuit)
-    return W.trouble(n)
+    if (row.failure) return W.troubleWhy(n, row.failure.kind === 'start-failed' ? W.startFailed : W.engineQuit) + source
+    return W.trouble(n) + source
   }
-  return W.noStatus(n)
+  return W.noStatus(n) + source
 }
 
 /** Every path a reminder can travel (who it is about → who is told), with the subscriptions and the count behind it. */
@@ -170,6 +178,19 @@ async function unwatch(id) {
   }
 }
 
+
+const GLYPH = { failed: 'x-circle', gone: 'archive', stuck: 'clock', waiting: 'bell', done: 'check-circle-2' }
+const FILTERS = [['all', 'filterAll', () => true], ['trouble', 'filterTrouble', (e) => ['failed', 'gone', 'stuck'].includes(e.event)], ['waiting', 'filterWaiting', (e) => e.event === 'waiting'], ['done', 'filterDone', (e) => e.event === 'done']]
+let filter = 'all'
+
+function dayOf(iso) {
+  const d = new Date(iso), t = new Date()
+  const key = (x) => x.toDateString()
+  if (key(d) === key(t)) return W.today
+  t.setDate(t.getDate() - 1)
+  return key(d) === key(t) ? W.yesterday : W.dayLabel(d)
+}
+
 function subLine(sub) {
   const when = W.levels[sub.level]
   const sentence = sub.by === sub.to
@@ -178,42 +199,63 @@ function subLine(sub) {
   return h('li', {}, h('p', { class: 'sentence' }, sentence), h('button', { onclick: () => void unwatch(sub.id) }, W.stop))
 }
 
+function note(e) {
+  return h('div', { class: `note ev-${e.event}` },
+    h('span', { class: 'glyph' }, h('gugu-icon', { name: GLYPH[e.event] ?? 'bell' })),
+    h('div', {},
+      h('div', { class: 'what' }, h('strong', {}, e.targetTitle), h('em', {}, W.eventDone[e.event] ?? '')),
+      h('div', { class: 'to' }, W.toldWho(titleOf(e.to))),
+      e.ok ? null : h('div', { class: 'bad' }, h('gugu-icon', { name: 'alert-triangle', size: 'sm' }), W.notArrived(whyNot(e.error, e.code)))),
+    h('gugu-time', { datetime: e.at }))
+}
+
 function logList(entries) {
-  if (entries.length === 0) return h('gugu-empty', { icon: 'bell' }, h('strong', {}, W.noneYet))
-  return h('ul', { class: 'list' }, entries.map((e) =>
-    h('li', {},
-      h('div', {},
-        h('strong', {}, W.logLine(e.targetTitle, W.eventDone[e.event] ?? '', titleOf(e.to))),
-        e.ok ? null : h('small', { class: 'failed' }, W.notArrived(whyNot(e.error, e.code)))),
-      h('gugu-time', { datetime: e.at }))))
+  if (entries.length === 0) return h('p', { class: 'muted', style: 'margin:8px 4px' }, W.noneYet)
+  const out = []
+  let day = null
+  for (const e of entries) {
+    const d = dayOf(e.at)
+    if (d !== day) { out.push(h('div', { class: 'day' }, d)); day = d }
+    out.push(note(e))
+  }
+  return out
+}
+
+function watchRow(sub) {
+  const row = agents.get(sub.target)
+  const kept = state?.paths?.[`${sub.target}>${sub.to}`]
+  return h('div', { class: `watch status-${row ? row.status : 'gone'}` },
+    h('span', { class: 'dot' }),
+    h('span', { class: 'who' }, titleOf(sub.target), sub.by !== sub.to ? h('small', {}, `→ ${titleOf(sub.to)}`) : null),
+    h('span', { class: 'level' }, W.levelShort[sub.level]),
+    h('span', { class: 'sent' }, kept?.sent ? W.times(kept.sent) : '—'),
+    h('button', { class: 'stop', onclick: () => void unwatch(sub.id) }, W.stop))
 }
 
 function renderSide() {
   const detail = $('detail')
   let log = [...(state?.log ?? [])].reverse()
-  if (centerId()) {
-    const on = new Set(model().nodes.map((n) => n.id))
-    log = log.filter((e) => on.has(e.target) || on.has(e.to))
-  }
-  let shownLog = log
+  const on = new Set(model().nodes.map((n) => n.id))
+  if (centerId()) log = log.filter((e) => on.has(e.target) || on.has(e.to))
+  let watches = Object.values(subs).filter((s) => !centerId() || (on.has(s.target) && on.has(s.to)))
   detail.hidden = !selected
   if (selected?.kind === 'node') {
     const row = agents.get(selected.id)
     const related = Object.values(subs).filter((s) => s.by === selected.id || s.target === selected.id || s.to === selected.id)
-    detail.replaceChildren(...[
-      h('h5', {}, titleOf(selected.id)),
-      h('p', {}, nodeSentence(selected.id)),
-      // 打开这个任务:一条咕咕自己的链接(linkTo),人点它,咕咕打开那个任务、把雷达切到前台(gugu#7029)。
-      row?.sessionId ? h('a', { id: 'open-session', class: 'button', role: 'button', href: '#' }, W.open) : null,
-      related.length ? h('ul', { class: 'list' }, related.map(subLine)) : h('p', { class: 'muted' }, W.none),
-    ].filter(Boolean))
+    const status = row ? W.statusWord[row.status] ?? W.noStatus(titleOf(selected.id)) : W.statusWord.gone
+    detail.replaceChildren(
+      h('h4', { class: `status-${row ? row.status : 'gone'}` }, h('span', { class: 'dot', style: 'width:9px;height:9px;border-radius:50%;background:var(--node)' }), titleOf(selected.id)),
+      h('p', { class: 'say' }, nodeSentence(selected.id)),
+      h('dl', {}, h('dt', {}, W.propStatus), h('dd', {}, status), h('dt', {}, W.propWatchedBy), h('dd', {}, String(related.filter((s) => s.target === selected.id).length)), h('dt', {}, W.propWatches), h('dd', {}, String(related.filter((s) => s.to === selected.id).length))),
+      h('div', { class: 'acts' }, row?.sessionId ? h('a', { id: 'open-session', class: 'button', role: 'button', href: '#' }, W.open) : null))
     if (row?.sessionId) {
       g.linkTo({ tab: 'radar', session: row.sessionId }).then(
         (link) => { const a = $('open-session'); if (a) a.href = link },
         (error) => g.reportError(W.couldNot(W.open, error?.message ?? error)),
       )
     }
-    shownLog = log.filter((e) => e.target === selected.id || e.to === selected.id || subs[e.sub]?.by === selected.id)
+    log = log.filter((e) => e.target === selected.id || e.to === selected.id || subs[e.sub]?.by === selected.id)
+    watches = related
   } else if (selected?.kind === 'edge') {
     const path = allPaths().find((p) => p.id === selected.id)
     detail.replaceChildren(...(path
@@ -223,26 +265,40 @@ function renderSide() {
           h('ul', { class: 'list' }, path.subs.map((sub) => [subLine(sub), h('li', {}, h('p', { class: 'sentence muted' }, includesLine(sub)))]).flat()),
         ]
       : []))
-    shownLog = path ? log.filter((e) => e.target === path.source && e.to === path.target) : []
+    log = path ? log.filter((e) => e.target === path.source && e.to === path.target) : []
+    watches = path?.subs ?? []
   }
-  $('log').replaceChildren(logList(shownLog.slice(0, 50)))
+  const counts = Object.fromEntries(FILTERS.map(([k, , f]) => [k, log.filter(f).length]))
+  $('filters').replaceChildren(...FILTERS.map(([k, label]) => h('button', { role: 'tab', 'aria-selected': String(k === filter), onclick: () => { filter = k; renderSide() } }, W[label], h('span', {}, String(counts[k])))))
+  const pick = FILTERS.find(([k]) => k === filter)[2]
+  $('log').replaceChildren(...[logList(log.filter(pick))].flat())
+  $('watch-n').textContent = String(watches.length)
+  $('watch-list').replaceChildren(...watches.map(watchRow))
 }
 
 function renderBar() {
   const checked = $('checked')
   checked.replaceChildren()
-  if (state?.checkedAt) checked.append(`${W.checked} `, h('gugu-time', { datetime: state.checkedAt }))
+  if (state?.checkedAt) checked.append(h('gugu-time', { datetime: state.checkedAt }))
   else checked.append(W.notYet)
   const problems = []
   if (state?.error) problems.push(W.lastLookFailed(state.error.message))
   const age = state?.checkedAt ? Date.now() - Date.parse(state.checkedAt) : Infinity
   if (age > 2 * 60_000) problems.push(state?.checkedAt ? W.late(Math.floor(age / 60_000)) : W.notRunning)
+  $('pulse').classList.toggle('late', age > 2 * 60_000)
   $('alert').hidden = problems.length === 0
   $('alert').textContent = problems.join(' ')
-  $('bar').hidden = !ctx?.session?.agentId
+  $('modes').hidden = !ctx?.workspace?.agentId
   $('mode-local').setAttribute('aria-selected', String(mode === 'local'))
   $('mode-all').setAttribute('aria-selected', String(mode === 'all'))
-  $('depth-box').hidden = mode !== 'local'
+  $('depth-box').hidden = mode !== 'local' || !ctx?.workspace?.agentId
+  const nodes = model().nodes
+  $('counts').hidden = nodes.length === 0
+  const n = (st) => nodes.filter((x) => (agents.get(x.id)?.status ?? 'gone') === st).length
+  $('counts').replaceChildren(...[['error', W.legendTrouble, true], ['needs_user', W.countWaiting, true], ['working', W.legendWorking, false], ['idle', W.legendIdle, false]].map(([st, label, loud]) => {
+    const c = n(st)
+    return h('li', { class: `status-${st}${loud && c ? ' hot' : ''}` }, h('span', { class: 'dot' }), label, h('b', {}, String(c)))
+  }))
 }
 
 function renderWords() {
@@ -251,13 +307,15 @@ function renderWords() {
   $('mode-local').textContent = W.thisTask
   $('mode-all').textContent = W.all
   $('depth-label').textContent = W.depth
-  $('recent').textContent = W.recent
   $('empty').textContent = W.emptyLocal
   $('empty-all-title').textContent = W.emptyAll
   $('empty-all-how').textContent = W.emptyAllHow
-  for (const [id, key] of [['l-working', 'legendWorking'], ['l-waiting', 'legendWaiting'], ['l-idle', 'legendIdle'], ['l-trouble', 'legendTrouble'], ['l-path', 'legendPath']]) {
-    $(id).textContent = W[key]
-  }
+  $('l-path').textContent = W.pathHint
+  $('recent').textContent = W.inbox
+  $('watch-title').textContent = W.watching
+  $('refresh').setAttribute('aria-label', W.checkNow)
+  $('counts').setAttribute('aria-label', W.propStatus)
+  $('empty-example').textContent = W.emptyExample
 }
 
 function render() {
@@ -271,7 +329,7 @@ function render() {
   const center = centerId()
   // alone in its task: a line under its own dot; nobody at all: gugu's empty note, in the middle of the graph
   $('empty').hidden = !(center && m.edges.length === 0 && m.nodes.length <= 1)
-  $('empty-all').hidden = !(!center && m.nodes.length === 0)
+  $('empty-all').hidden = !(!center && m.nodes.length === 0); $('hint').hidden = m.edges.length === 0; $('side').hidden = m.nodes.length === 0
   renderSide()
 }
 
@@ -298,9 +356,9 @@ if (desktop) g.onBackgroundMessage((message) => {
 })
 if (desktop) g.onAgentsChanged(() => void refresh())
 if (desktop) g.onContextChanged((next) => {
-  const moved = next?.session?.agentId !== ctx?.session?.agentId
+  const moved = next?.workspace?.agentId !== ctx?.workspace?.agentId
   ctx = next
-  if (moved) { mode = ctx?.session?.agentId ? 'local' : 'all'; selected = null; graph.fit() }
+  if (moved) { mode = ctx?.workspace?.agentId ? 'local' : 'all'; selected = null; graph.fit() }
   W = wordsFor(ctx?.locale)
   renderWords()
   render()
@@ -316,7 +374,7 @@ if (desktop) g.onContextChanged((next) => {
     document.body.prepend(h('gugu-empty', { id: 'desktop-only' }, h('strong', {}, W.desktopOnly)))
     return
   }
-  mode = ctx?.session?.agentId ? 'local' : 'all'
+  mode = ctx?.workspace?.agentId ? 'local' : 'all'
   renderBar()
   await refresh()
   setInterval(renderBar, 30_000)

@@ -1,4 +1,30 @@
+## 0.6.0
+
+Agents read and reply through the App's own tools (`forum__read`, `forum__reply`), and gugu asks the App what to hand them. Needs `agents:tools`.
+
+## 0.5.0
+
+Runs on both the current gugu (`gugu.forum`) and the coming one (`gugu.cloud`, `gugu.pickAgent`), where the points confirmation is the page's own.
+
+## 0.4.0
+
+App interface 25: nothing else changes.
+
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 # 更新记录
+
+## 0.2.0
+
+- Refine bounty status, reply timelines and accepted-answer ordering, with inline selection and a sticky award bar.
+- Use compact filters, relative time and responsive composer layouts with the host theme.
+- Retake the market screenshots and promotional artwork in the client for the new layout.
+
+## 0.1.5
+
+- Require App API 15; agent assignment uses the host's unified target sheet.
 
 ## 0.1.4
 

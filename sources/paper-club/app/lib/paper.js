@@ -28,8 +28,11 @@ export function notesNameOf(pdfName) {
   return `${base.replace(/\.pdf$/i, '')} · 笔记${NOTES_SUFFIX}`
 }
 
-/** The place a file lives in, as gugu.files names places: a chat, a project's folder on this computer, a session's working copy. */
-export const placeOfEntry = (entry) => (entry.chat ? { chat: entry.chat } : entry.project ? { project: entry.project } : { session: entry.session })
+/** The place a file lives in, as gugu.files names places: a chat, or a working copy (a session's, or a project's folder on this computer). */
+export const placeOfEntry = (entry) => (entry.chat ? { chat: entry.chat } : { workspace: entry.workspace })
+
+/** The project a place is the folder of (`{ workspace: 'project:<id>' }`), or null. */
+export const projectOf = (place) => (place?.workspace?.startsWith('project:') ? place.workspace.slice('project:'.length) : null)
 
 /** The folder a file is in, as `files.create` takes it ('' is the top). */
 export function folderOf(entry) {

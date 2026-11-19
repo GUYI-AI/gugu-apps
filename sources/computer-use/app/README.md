@@ -1,17 +1,5 @@
-![Computer Use：操作电脑应用查看执行过程](screenshots/promo.png)
-
 # Computer Use
 
-![Computer Use 的系统授权与使用入口](screenshots/settings.jpg)
+Native app control for agents
 
-让 Agent 操作这台电脑上的应用，并看到它在做什么。
-
-**「电脑」页签**：每个任务一份。这个任务的 agent 第一次操作电脑时，它自动出现在任务对话旁边，不切走你正在看的页签。页签里是 agent 正在操作的那个窗口的真实画面、它的光标，以及它刚做的那一步。两个任务各看各的。
-
-这个 App 就是电脑控制的开关：装着、启用着，Agent（这台电脑上的，和你别的电脑上的）才能操作这台电脑上的应用；停用或卸载，这台电脑就没有这项能力，Agent 也看不到它。操作电脑的动作由咕咕自带的电脑控制提供，Agent 用到时才取，不常驻在每个会话里。
-
-按任务分开的是画面和 agent 的光标；这台电脑的桌面、应用和真实键鼠只有一份。两个 agent 操作同一个应用窗口时仍会互相影响。
-
-macOS 上要给咕咕「辅助功能」与「屏幕录制」两项系统授权：点开这个 App，在「系统授权」那里点「授权」，两项一起问；屏幕录制打开后要重启咕咕才生效。没有授权时操作会失败，原因写在那一步的工具结果里。
-
-需要支持 App API 5 的咕咕。源码在本仓 `sources/computer-use/`，安装包目录 `app/`；「电脑」页签用的光标动画来自 trycua 的 cursor-motion（MIT，见 `CURSOR-LICENSE.md`）。
+What people read about this App in the market is in `store/`: `about*.md`, `screenshots/` and `whats-new.md` (this version's changes). What agents read is `contributes.instructions` in `manifest.json`, its tools and its skills. This README and `CHANGELOG.md` are for the repository and are never shown in gugu.

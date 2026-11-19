@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.0 (unreleased)
+
+- Move native tools, permission checks, driver preparation and target-specific Stop into the ordinary App program (App interface 36).
+- Accept direct window-picture clicks, committed Chinese input and paste through the authorized projection channel. Stale frames and changed targets reject input; uncertain native results are never replayed.
+- Show on the settings page and the task page whether macOS really allows Gugu Accessibility and Screen Recording. Only a missing permission offers Allow (macOS then asks and lists Gugu), and the page updates by itself once it is on. A call refused for a missing permission opens the task page beside the task.
+- The task page says it is getting a new window's picture in its own language, instead of an English line.
+- Keep human input lanes separate from agent calls and other viewers. Disconnect cancels only that viewer's pending input, without leaving native keys or buttons held.
+
+## 0.4.1
+
+The task page's tab is titled Computer in English (it read 电脑 to everyone); Chinese keeps 电脑 through `localized.zh-CN`.
+
+## 0.4.0
+
+App interface 25: the preview follows `ctx.workspace.sessionId` (was `ctx.session.id`).
+
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
+## 0.2.5
+
+- The market images show the current settings page in Chinese: `screenshots/settings.jpg` is retaken in 0.2.4, and the promo frames it in place of the 0.2.1 English page.
+
 ## 0.2.4
 
 - Declare desktop support for the human interface (App API 12).

@@ -1,7 +1,6 @@
 {
   "id": "omnisearch",
   "unlisted": false,
-  "firstRun": true,
   "deprecated": null,
   "versions": [
     {
@@ -65,6 +64,33 @@
       "commit": "b4a05cf5cd518c4ae42b9af33c0ed67c2e38e23a",
       "sha256": "4206cc78c58d7fb05bf75722bc82ab56366d3c1391ec5189f445854ce7f87cdd",
       "bytes": 1338311,
+      "yanked": null
+    },
+    {
+      "version": "0.3.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "9bcdf853c29c72f333899386239d760dfbdad966",
+      "sha256": "3483dce54db5135f8d81348fa5b79859903afaafd459e5661a22e37e83b5af67",
+      "bytes": 210976,
+      "yanked": null
+    },
+    {
+      "version": "0.4.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "7c480639bb64f7a66c31d185a56df2ebbf0623ce",
+      "sha256": "e13cf63d7358e99967762615037856273b065f008c45aa442f70218c84c09344",
+      "bytes": 211017,
+      "yanked": null
+    },
+    {
+      "version": "0.4.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/omnisearch/app",
+      "commit": "7d483d56d3a0cfc3918c5dba321c3f6ca9d6bab4",
+      "sha256": "06225b899e48def212d1052fd6575ec522a12fb08975a16cc236467332038647",
+      "bytes": 211340,
       "yanked": null
     }
   ]

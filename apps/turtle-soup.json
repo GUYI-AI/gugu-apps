@@ -101,6 +101,60 @@
       "sha256": "caf594b6f97b10dbf9c19cd764347e5c0cc7b33f4bf9cd6fbcade17b1edb6631",
       "bytes": 1218860,
       "yanked": null
+    },
+    {
+      "version": "0.2.8",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "9e163157fe68de6966eb75321d300916efcd9181",
+      "sha256": "9be3e6c4ab491b318efc4c1f68d47ed3584e26fd03c2463c14e0d9f086b3091a",
+      "bytes": 1218853,
+      "yanked": null
+    },
+    {
+      "version": "0.2.9",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "e372fa8b471ef28589f15d2006bae5b8fe697bd2",
+      "sha256": "57aace706ef83a650864189af4e3734c5e16bf914f8905028f5bd5c3716ac0b3",
+      "bytes": 1224758,
+      "yanked": null
+    },
+    {
+      "version": "0.2.10",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "4b2b11b0c32528256a927c6447ff7e45ae3c60ff",
+      "sha256": "ad9af47e7037043c05c6410f8e02c27055422362a695456b00eb12125605c7b9",
+      "bytes": 831786,
+      "yanked": null
+    },
+    {
+      "version": "0.2.11",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "8b39626e6e710c1e2e5522e2e7cefc6d676deafe",
+      "sha256": "115cb7a34c66ec208649a8bbf64596d406b222a5d13c6da491f1cb2b9d009b96",
+      "bytes": 1465039,
+      "yanked": null
+    },
+    {
+      "version": "0.3.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "9bcdf853c29c72f333899386239d760dfbdad966",
+      "sha256": "a85446b6174b07e3e07910c3c43b12a7e3b92933cf97abdb4d91b967637eeb88",
+      "bytes": 177803,
+      "yanked": null
+    },
+    {
+      "version": "0.4.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/turtle-soup/app",
+      "commit": "7c480639bb64f7a66c31d185a56df2ebbf0623ce",
+      "sha256": "e8d412255166e1aea4bdc0437465caaa69a74814774291919f10816e56b09231",
+      "bytes": 177893,
+      "yanked": null
     }
   ]
 }

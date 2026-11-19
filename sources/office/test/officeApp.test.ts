@@ -28,7 +28,7 @@ const gugu = {
     handTo = handler
     return () => {}
   }),
-  compose: vi.fn(async () => {}),
+  dispatch: vi.fn(async () => {}),
   files: {
     list: vi.fn(async () => [files.deck]),
     onChanged: vi.fn((_place: unknown, _handler: () => void) => unwatch),
@@ -94,8 +94,8 @@ describe('咕咕办公 · 页面外壳', () => {
     expect($('pick-bar').classList.contains('on')).toBe(true)
     expect($('pick-count').textContent).toBe('1 处')
     $('pick-send').click()
-    await until(() => expect(gugu.compose).toHaveBeenCalledTimes(1))
-    const [text, where] = gugu.compose.mock.calls[0] as unknown as [string, { refs: { file: { id: string; chat: string } }[] }]
+    await until(() => expect(gugu.dispatch).toHaveBeenCalledTimes(1))
+    const [text, where] = gugu.dispatch.mock.calls[0] as unknown as [string, { refs: { file: { id: string; chat: string } }[] }]
     // The pick is the pill (App 引用 pill): no words of the App's own — the person says what to do.
     expect(text).toBe('')
     expect(where.refs).toEqual([expect.objectContaining({ file: expect.objectContaining({ id: 'deck', chat: 'group-2' }), at: { slide: 1, shape: '2', k: 1 }, label: '第 1 页 · 第 1 页 标题' })])

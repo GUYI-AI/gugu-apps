@@ -1,5 +1,149 @@
 # Changelog
 
+## 2.0.1
+
+- 交给…: the sheet is gugu's `pickAgent` in the board's words: the card's title and one line, no text box, no card id
+  or tool names. Once an agent is picked the page sends it the words for taking the card (`dispatch` to that agent);
+  the card's log says whom it was handed to; cancelling sends nothing. A host without `pickAgent` keeps 2.0.0's sheet.
+- A hand-over that fails: the card's sheet says why. When the host answers `not-found` (no online computer of the person's
+  has that agent), it says so in words; any other refusal shows the host's reason, with the agent's name in place of its id.
+
+## 2.0.0
+
+A redesign (owner 11-15: 「太杂太乱了」 … 「要做得越简洁清晰精致越好」). One object, the card; one list grouped by state;
+two agent tools. Design: gugu-base `evidence/kanban-redesign/DESIGN.md`.
+
+- A card is title, holder, wait (on the owner with a question and answers, or on something else), next, checks, note
+  and log. Its state is read from it, never set. Every write logs itself with its author; `done` is refused while a
+  check is open or a question pending, and says which.
+- The page is one list: 等你 (questions with their answers as buttons; one tap answers, 5 s to undo, then the holder
+  is told), 进行中 (live status from the task list, stopped first), 等别的, then 没人接 and 完成 folded. A card opens
+  as a bottom sheet on a phone and beside the list on a desktop.
+- Tools: `board` (read; a chat with no board makes no file) and `set` (the only write). The 15 1.x tools are gone.
+  A program cannot know the caller's chat or machine: `chat` is passed, the holder's name comes from gugu's task name,
+  and the page fills in the machine.
+- Cut: columns, drag, progress, due / dest / head, wait kinds, links and the file viewer, PR sync, the decision ledger,
+  the team view and agent panel, supervisor marks, the 45-minute stale flag, the board switcher.
+- 1.x boards convert on their first 2.0 write (a read converts a copy); nothing is lost — what has no field goes into
+  the note or the log, card-less decisions onto one done card. A 2.0 file keeps the four 1.x columns and an empty
+  `links` on each card, so a member still on 1.x sees an empty board and its `filled()` writes nothing over the cards.
+
+## 1.6.1
+
+On a phone: a column's Rename / Delete menu no longer lies open over the cards where the WebView has no `popover` (before
+Chrome 114); there the column menu is not offered. The page title and tabs fit one line without the card count, and a
+card's holder no longer runs off the screen with its device name.
+The fleet card's four numbers share the card's width, and clicking a card again opens the board's team view in the same
+tab rather than a new one each time; when the host refuses to open it, the card says why.
+
+## 1.6.0
+
+One page for the board and the fleet (owner 11-08): 看板, 团队 and 决策 are views of the same page, so the org chart can
+no longer strand the person in a tab with no way back.
+
+- The org chart was a second tab (`org`) the board opened with `openLink`; it had no toolbar and no link back, and in
+  the Dock and on a phone it replaced the board. The tab is gone: the views switch in the page, and the fleet message
+  card opens the board on its 团队 view (`?view=team`).
+- Who holds what: a card's holder (the newest task linked to it) shows with its face, name and state on the card; a
+  row of faces narrows every view to one holder or to the unclaimed cards, and holds across views. The 团队 view lists
+  each lane's cards beside it and the unclaimed cards in a column of their own.
+- One panel for a card or an agent, each leading to the other. An agent's panel keeps the chart's actions (message,
+  transcript, PR, move under, hand over, archive, supervisor mark). An unclaimed card can be given to an agent
+  (派给…), which is told to claim it with the tools.
+- What waits on the person shows above every view, in its card and under 决策, and is answered there; a plain wait on
+  the person (no question) is answered with a line that goes to the holder and clears the wait. Messages to agents name
+  the board and card so they can act on them with the tools.
+- Agents: `list` starts with `yours`, `waitingOnOwner` and `unclaimed`, and gives each card its `holder` and question;
+  the tool descriptions and the skill describe the one page and the answer coming back as a message.
+
+## 1.5.2
+
+- A question asked on a card no lane holds (a supervisor's own card, a card whose task ended) now waits on the person
+  like the others: counted in 等你拍板 on the message card, listed first on the chart, and the answer goes back to the
+  agent that asked. Before, the chart said nothing waited while the ledger held the question.
+- The message card no longer writes "null" after the machines when every machine answers.
+
+## 1.5.1
+
+- The agents' one-line instructions are back under 160 characters: gugu 0.3.1 refused the 1.5.0 manifest, which
+  hid Teamboard from its market. The fleet tools are described in the kanban skill.
+
+## 1.5.0
+
+舰队 (Fleet): the fleet's org chart on a chat's board (App interface 26).
+
+- A new tab draws the person, each machine's supervisor and the lanes under it, across every computer the person
+  uses (`listAgents({ report: true })`), joined with the cards the lanes claimed. In layers: first what waits on the
+  person (questions with their answers as buttons), then the others' waits by kind (review, merge, CI, another lane,
+  quota), then the chart; a lane opens to its wait, progress, destination and pull request, with message, transcript
+  and PR one click away, and everything else under More.
+- Lane fields on a card: `waitKind` (with `waitWho`, `waitSince`), `dest`, `head`; a pull request link carries CI,
+  review, merged and head from `sync_prs`. Old pages ignore them; the board's version stays 1.
+- A decision ledger in the same board file (`decisions`): `ask` (a lane's question), `decisions` (what is in force for
+  a lane, its machine, the fleet and its release). Only the person decides, on the chart: no tool answers or records
+  a decision, and whoever asked a question cannot answer it.
+- Handoffs (`handoff.offer` from the chart, `handoff_accept` by the new lane), supervisors (`supervisor`: agents only
+  add the mark, the person removes it), and archive / move-under requests that the page sends to the machine's
+  supervisor. The page pre-checks (not a supervisor or a root, the supervisor named, an accepted handoff or a synced
+  PR, nothing under it on any machine, the lane's name typed); the supervisor checks again itself and refuses what
+  does not hold (skill kanban).
+- A message card (`fleet` tab, `widget`): four numbers and the machines, read when shown; a click opens the chart.
+- `agents:control` becomes `agents:control:all-machines`: `agents:control` tells only agents this App started, and the
+  chart's messages, answers and requests go to lanes and supervisors the person started, on any computer. Every
+  such message is sent from a person's click (`dispatch` with a gesture); the App sends nothing on its own.
+
+
+## 1.4.0
+
+App interface 25: a task's or project's files are picked a folder at a time (`files.list({ workspace, folder })`); file links open as `{ workspace: 'session:<id>' | 'project:<id>', id }`; a task's tab (which now also has its private chat) keeps this computer's board; `ctx.workspace` replaces `ctx.session`. English tab and toolbar titles (`localized.en.tabs`): Teamboard, New card.
+
+## 1.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
+## 1.2.4
+
+- The market's first image shows the current board: the promo now frames the 1.2.0 board screenshot (`screenshots/1.jpg`) in place of the earlier English board with gray columns.
+
+## 1.2.3
+
+- A markdown file shown in a card reads its front matter as the host draws it for a file: a property list instead of a heading. A card's own note is not a file and is drawn as before.
+
+## 1.2.2
+
+- A press that carried a card never opens it on release, however long after Esc the mouse comes up: the press is marked when the carry starts and its click is ignored, in place of 1.2.1's 400 ms window. A drop uses the same mark.
+
+## 1.2.1
+
+- Cancelling a carried card with Esc no longer opens it when the mouse is released.
+
+## 1.2.0
+
+- A lighter, denser board after Linear's: each card is its title with the assignee beside it and one line of facts (task status, due date, attachments, a small progress bar, when it changed); each column has a status ring and its count, with add and more on hover.
+- Carrying a card: it lifts and follows the pointer, the column under it lights up and shows where it will land. Dropped into Done, it flashes once and a note offers Undo.
+- Empty columns and an empty board say so; the empty board offers New card.
+- Narrow panels and phones show the board as a list: sections with rows, in progress first.
+- A linked task without an agent is named in text (the host no longer has the `bot` icon).
+
+## 1.1.4
+
+- Explicitly declare shared board state as App data when created or opened, so folders can hide it by default. Linked documents remain ordinary files. Requires App API 18.
+
+## 1.1.3
+
+- Keep New card commands received while the board is loading and execute them once its first state arrives.
+
+## 1.1.2
+
+- Offer New task and Link task on phones whose host supports dispatch.
+- Read task lists and status changes directly from the host on both phone and desktop.
+
+## 1.1.1
+
+- Hand cards to linked agents and start new tasks through the unified dispatch API (App API 15).
+- Tasks started from a shared board join its chat so the new agent can claim and update the card.
+- Show the host's refusal reason when a linked file cannot be opened beside the board.
+
 ## 1.1.0
 
 - Opened in a chat, Teamboard is that chat's board file (App API 14 `chatFile`): opening it from the chat's Apps and opening `协作看板.board.json` from the folder show the same tab, the folder one with a way back to the folder.

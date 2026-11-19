@@ -47,6 +47,87 @@
       "sha256": "73155e80c23fe8ecb5c3fb5df19db7e4903c2cc1e6061c502a0c77928ee60777",
       "bytes": 860782,
       "yanked": null
+    },
+    {
+      "version": "0.5.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "a5ab4a86709ddaac142ad9fd856cc53df7df5158",
+      "sha256": "a9dfddd0bc46666b7d2894e9ed5de5a60d38736e35d937d8cb2db345383915fc",
+      "bytes": 869097,
+      "yanked": null
+    },
+    {
+      "version": "0.5.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "e7e7c3abccb9c5563bfa7cda0a86daa921710879",
+      "sha256": "16a40938a1db07b7fc5b69c3de4ae243001eb0a96c79db198d6600094145705e",
+      "bytes": 869473,
+      "yanked": null
+    },
+    {
+      "version": "0.5.2",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "16ebd0cc02d41b678da84e8edf8272e64a561e62",
+      "sha256": "8bc452a3bcfeef8b4e6949359c14e0be3c35baee4740541aa81a7cfbed0a5348",
+      "bytes": 869821,
+      "yanked": null
+    },
+    {
+      "version": "0.5.3",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "fac73d9b87c79b64deb8b1f7ba60915b0f1045e0",
+      "sha256": "585ae5d78d47676d0411383e85489e448c88fdf5e6d8138b35e4ffb671b0ba0f",
+      "bytes": 917967,
+      "yanked": null
+    },
+    {
+      "version": "0.5.4",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "464925963a76e2a07ec31490268b3e3c138c7be0",
+      "sha256": "07c74c907c7ab0ea4270ea6da6650809c31ce76d9140be2f396d8bd425e0621c",
+      "bytes": 918431,
+      "yanked": null
+    },
+    {
+      "version": "0.5.5",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "89482b19e3754c84eb124198c1a91520a1bc3069",
+      "sha256": "f2edfcaf9b16f83bf55132c87e1acc122294a6d28e5c70c7e9ada4f2c458cb8b",
+      "bytes": 944491,
+      "yanked": null
+    },
+    {
+      "version": "0.5.6",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "e0e8e4d06cc46b7887d36fef690be4414b2d17c4",
+      "sha256": "98748331c9b37737a2e3852fe8930d049df48ea38580499a3d45eb93dd484736",
+      "bytes": 929157,
+      "yanked": null
+    },
+    {
+      "version": "0.6.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "9bcdf853c29c72f333899386239d760dfbdad966",
+      "sha256": "c803d0249a63de473226bbfb4a4f34ab65c30559d1b7ce4420e544374d5be9bc",
+      "bytes": 52106,
+      "yanked": null
+    },
+    {
+      "version": "0.7.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "7c480639bb64f7a66c31d185a56df2ebbf0623ce",
+      "sha256": "90d306d9e70895e41af7214a4ba6b99aea866e4c86a787b6ad339782b639dec5",
+      "bytes": 52122,
+      "yanked": null
     }
   ]
 }

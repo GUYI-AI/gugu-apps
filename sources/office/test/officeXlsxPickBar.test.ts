@@ -2,7 +2,7 @@
 // 咕咕办公 · 表格接那条浮条(app.js;演示稿那份见 officePickBar):选中一处才出来、写着几处;表格的浮条桌面上也停在底部正中
 // —— 格子铺满面板，贴着选区摆就压住下一处要点的格(10-15 A/B:选了 B2 再 ⌘ 点 C3,点在浮条上),view.anchor() 恒为 null。
 // Esc 全部取消、Enter 放进输入框是页面的 —— 表格自己的键(方向键、Shift 扩选、⌘A)照旧。手指按下以后浮条也在底部正中。
-// 运行时是假的(getContext / files.open / list / onChanged / compose);表是真的 fixtures/xlsx-sales.xlsx。
+// 运行时是假的(getContext / files.open / list / onChanged / dispatch);表是真的 fixtures/xlsx-sales.xlsx。
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -19,7 +19,7 @@ const gugu = {
   setTabTitle: vi.fn(async () => {}),
   getContext: vi.fn(async () => ctx),
   onContextChanged: vi.fn(() => () => {}),
-  compose: vi.fn(async (_text: string, _where: unknown) => {}),
+  dispatch: vi.fn(async (_text: string, _where: unknown) => {}),
   onLink: vi.fn((handler: (link: { query: Record<string, string>; file: string | null }) => void) => { linked = handler }),
   files: {
     list: vi.fn(async () => [entry]),
@@ -77,7 +77,7 @@ beforeEach(() => {
   $('pick-clear').click()
   hand('mouse')
   scrolled(0)
-  gugu.compose.mockClear()
+  gugu.dispatch.mockClear()
 })
 
 describe('咕咕办公 · 表格接那条浮条', () => {
@@ -113,8 +113,8 @@ describe('咕咕办公 · 表格接那条浮条', () => {
     click(2, 2)
     click(4, 1, { metaKey: true })
     expect(key(sheet(), { key: 'Enter' }).defaultPrevented).toBe(true)
-    await until('the composer was handed the picks', () => gugu.compose.mock.calls.length === 1)
-    expect(gugu.compose.mock.calls[0]).toEqual(['', { refs: [
+    await until('the composer was handed the picks', () => gugu.dispatch.mock.calls.length === 1)
+    expect(gugu.dispatch.mock.calls[0]).toEqual(['', { draft: true, refs: [
       { file: entry, version: 1, at: { range: '销售!C3' }, label: '销售!C3' },
       { file: entry, version: 1, at: { range: '销售!B5' }, label: '销售!B5' },
     ] }])
@@ -146,7 +146,7 @@ describe('咕咕办公 · 表格接那条浮条', () => {
     await until(`the sheet shown is ${'2024 预算'}`, () => $('preview').querySelector('.xlsx-tab.current')!.textContent === '2024 预算')
     expect(document.activeElement).toBe(sheet())
     expect(key(document.activeElement!, { key: 'Enter' }).defaultPrevented).toBe(true)
-    await until('the composer was handed the picks', () => gugu.compose.mock.calls.length === 1)
+    await until('the composer was handed the picks', () => gugu.dispatch.mock.calls.length === 1)
     $('preview').querySelectorAll<HTMLButtonElement>('.xlsx-tab')[0]!.click()
     await until(`the sheet shown is ${'销售'}`, () => $('preview').querySelector('.xlsx-tab.current')!.textContent === '销售')
   })
@@ -156,7 +156,7 @@ describe('咕咕办公 · 表格接那条浮条', () => {
     expect(key(sheet(), { key: 'ArrowDown' }).defaultPrevented).toBe(true)
     expect(key(sheet(), { key: 'a', metaKey: true }).defaultPrevented).toBe(true)
     expect($('pick-count').textContent).toBe('1 处')
-    expect(gugu.compose).not.toHaveBeenCalled()
+    expect(gugu.dispatch).not.toHaveBeenCalled()
   })
 
   test('手指点一下(选一格):浮条在底部正中;Esc 不取消', () => {

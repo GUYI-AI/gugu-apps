@@ -70,7 +70,7 @@ const gugu = {
     rt.handTo = handler
     return () => {}
   }),
-  compose: vi.fn(async (_text: string) => {}),
+  dispatch: vi.fn(async (_text: string) => {}),
   files: {
     list: vi.fn(async () => [entryOf('deck', rt.listed), entryOf('deck2', 1)]),
     onChanged: vi.fn((_place: unknown, handler: (change: unknown) => void) => {

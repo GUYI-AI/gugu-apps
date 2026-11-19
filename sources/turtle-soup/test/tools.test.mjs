@@ -18,12 +18,14 @@ const live = (target) => new Proxy(target, {
   set: (t, k, v) => { t[k] = v !== null && typeof v === 'object' ? structuredClone(v) : v; return true },
 })
 const handle = (entry, data) => ({ entry, data: live(data), saved: true, status: 'online', transact: (fn) => fn(), onStatus: () => () => {} })
-// Whispers the tools send, and who cannot be told (send refuses them as gugu does: not-found).
+// Whispers the tools dispatch, and who cannot be told (gugu refuses them: not-found).
 const sent = []
 const everSent = [] // every whisper of the whole file: `sent` is emptied between steps
 const unreachable = new Set()
 globalThis.gugu = {
-  send: async (to, text, { refs }) => {
+  dispatch: async (text, { to: target, refs }) => {
+    const to = target.member
+    assert.equal(target.chat, refs[0].file.chat)
     if (unreachable.has(to)) throw Object.assign(new Error(`${to} cannot be told`), { code: 'not-found' })
     sent.push({ to, text, file: refs[0].file.id })
     everSent.push(text)
@@ -50,7 +52,7 @@ const ICED = bank.puzzles.find((p) => p.id === 'soupbase-iced-tea-zh')
 function roundOf(p = ICED) {
   const id = `item-${files.size + 1}`
   const data = newRound({ puzzle: publicOf(p), host: HOST.agent, at: 1 })
-  files.set(id, handle({ id, name: `t.turtle-soup.json` }, data))
+  files.set(id, handle({ id, chat: 'chat-1', name: `t.turtle-soup.json` }, data))
   return { id, data }
 }
 const ask = (data, id, kind, text, by = 'user:p1') => { data.questions[id] = { by, kind, text, at: Object.keys(data.questions).length + 2 } }

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.1
+
+The Chinese name is now 进阶搜索 (was 全能搜索), so people can tell it is an optional App rather than gugu's built-in search; the English name stays Omnisearch. English messages that named the App in Chinese now say Omnisearch.
+
+Agents read it as optional: the instructions say to use their own search first and that these tools exist only once the person sets a key, and the no-key message says the agent's own search is unaffected.
+
+## 0.4.0
+
+App interface 25: nothing else changes.
+
+## 0.3.0
+
+App model v2 (App interface 24): `description` gives way to `subtitle` and `contributes.instructions`; the market page reads `store/` (about, screenshots, whats-new); README.md and this file are for the repository only.
+
 ## 0.2.12
 
 - Declare desktop support for the human interface (App API 12).

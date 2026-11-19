@@ -1,5 +1,46 @@
 # gugu-apps —— 咕咕 App 市场的索引仓
 
+## Reviewed compiled releases (pending host integration)
+
+A private product may publish a compiled release directory in this public repository at
+`releases/<app-id>/<version>/`. This is a distribution copy, not access to the private source repository.
+It contains compiled `app/`, the original deterministic `app.zip`, and `release.json` / `release.sig` sidecars.
+Listing materials stay in `app/store/` and remain outside the install ZIP. Optional compiled product artifacts
+are outside `app.zip`, declared in the same signed inventory. Hosted service source/secrets never belong here.
+
+Register the directory with `node scripts/add-release.mjs <app-id> <version> <public-distribution-commit> <key-id>`.
+As with source-based Apps, the distribution commit must already be in the public repository's default-branch
+history. The registration command validates before writing; no release entry is added by the tooling change.
+The version keeps the existing `repo`, `path`, `commit`, `sha256`, `bytes`, `yanked` fields and adds
+`release: { keyId }`. `repo` is `GUYI-AI/gugu-apps`; `path` is the compiled directory above; the ZIP hash still
+means the exact bytes installed by the client. Old source entries and package bytes are unchanged.
+
+The public contract is `scripts/release-contract.mjs`. Verification rejects unknown schemas, untrusted/revoked or
+wrong-scope keys, self-review declarations, missing notices, changed/unsigned files, TS/TSX/JSX, source maps
+(including inline maps), key files, symlinks, incompatible manifest metadata and ZIP bytes different from the
+compiled directory. Existing pinned client listing/platform checks still apply. No private checkout or App code
+execution occurs. The signature authenticates the release maintainer's build/review declaration; it does not let
+community CI independently rebuild private source or establish legal ownership.
+
+Trust is configured only in `.github/release-keys.json`, initially empty. A non-author-reviewed maintainer change
+must scope an Ed25519 public key by `id`, `appId`, `sourceRepo`, `publicKey` and optional `revoked`. A key from a
+package is never trusted. Do not add a real listing until host trust/compatibility consumption and distribution
+terms are approved. No production private key is placed in this repository or workflow.
+An omitted `revoked` field or literal boolean `false` is active; boolean `true` and every non-boolean value are
+invalid for authorization. String or numeric lookalikes never restore trust.
+
+Sync writes the original ZIP plus all declared runtime artifacts, raw signed manifest and signature before meta
+and index. Proof URLs use immutable `market/releases/<id>/<version>-<app-zip-sha>/` paths, and artifact paths in
+the signed manifest resolve relative to that proof directory. Existing bundle URLs remain compatible. This does
+not introduce a second download service. A valid official compiled release can be marked `firstRun` once the
+client recognizes this official source; no such live entry is included here. Installations use ordinary market
+source, never `preinstalled`, preserving normal permissions and user choices.
+
+Withdraw by adding `yanked`; never mutate or reuse an existing version. Withdrawal is not remote disable or an
+automatic downgrade. Rollback explicitly selects a previously verified compatible product version, preserving
+current data and the existing per-App auto-update rules. Every change to release tooling and trust requires
+non-author review. Companion specifications and producer live in GUYI-AI/gugu-dev and GUYI-AI/gugu-assistant.
+
 市场的**唯一真相**。每个 App 一个 `apps/<id>.json`;合并到 `main` 后,CI 把它同步到下载站
 `https://download.gugu.nextmind.space/market/`,咕咕客户端只读那里(`market/index.json`)。
 
@@ -39,7 +80,7 @@
   名单就写在这里,客户端代码里不点名;已经有 App 的老用户不受影响,装过、卸了的也不会再装回来。
   **只能标在本仓自己的 App 上**(代码在 `sources/` 里,每一版的 `repo` 都是本仓):不问人就装的只能是 gugu 自己的。verify 拦,咕咕客户端也照这一条判。
 - 已经上线的版本行,除了加 `yanked`,一个字段都不许改、不许删。
-- json 里不写能从包里推出来的东西(manifest、更新说明、README、图标),CI 从包里取。
+- json 里不写能从源码推出来的东西(manifest、`store/` 的产品页内容、图标),CI 从源码取。
 
 **测试用的 App 测完一律 `unlisted`**:`main` 上 listed 的只能是准备给用户看的 App。
 
@@ -54,16 +95,21 @@
   - devDependencies 里有 `playwright` 的(有真浏览器用例),先装 Chromium。
   - 咕咕办公打包进去的库(`app/skills/office/vendor/`)由 `vendor/build.mjs` 照钉住的 lockfile 打出来,它的 `npm test` 先跑
     `node vendor/build.mjs --check`:重打一遍，逐字节和仓里的比。
-  - 全能搜索的 `app/server/server.mjs` 由 `server-build/build.mjs` 从上游打出来(要 git、pnpm、网络，手动跑)。
+  - 进阶搜索的 `app/server/server.mjs` 由 `server-build/build.mjs` 从上游打出来(要 git、pnpm、网络，手动跑)。
 
 ## CI
 
 - `verify`(PR):先跑 `npm test` 和每个自带测试的 App 的测试(见上一节);再照每个新版本的 `repo@commit` 把 `path` 重新打包,sha256 与字节数逐字节对上;
-  `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;`CHANGELOG.md` 有 `## <版本>` 这一节;图标是 PNG(≤ 32 KiB、≤ 512px);
-  `description` 的第一句在 agent 读到的 `<gugu_apps>` 里那一行(`- 名字 (id): 第一句`)不超过 120 字 —— 超过就被截成半句。
+  `manifest.json` 的 id / 版本对上、写了 `engines.gugu`;上架要的东西照**钉住的咕咕客户端提交**里的规矩判(`.github/gugu-app-contract.json`
+  钉的那一版 `app-listing.ts`、`app-platforms.ts`,本仓不抄一份):`subtitle`、`defaultLocale`、源码顶层 `store/`(`about.md` 与每种
+  `localized` 语言的 `about.<语言>.md`、`screenshots/` 1–8 张、`whats-new.md`)、图标。`store/` 不进包;README.md、CHANGELOG.md 只给仓库看。
+  钉的是**最新已发布的 Beta 客户端**的源码提交(不是正式版):新接口的 App 可以先上架给 Beta 用户。正式版用户不受影响 ——
+  市场只追加、旧版本一直在,客户端按自己的 `apiVersion` 和咕咕版本挑能装的最新一版(客户端 `market.ts` 的 `pickForHost`),
+  撤回版本、下架 App 都照常可以;只是要知道:撤掉的若是正式版能装的最后一版,而更新的版本要新咕咕,正式版用户就装不上了
+  (界面说「需要更新咕咕」)。
   源码仓要是公开仓,或者本仓自己;提交必须在源码仓默认分支的历史里(GitHub 按 sha 也给 fork 里的提交,不核就会把 fork 的代码记成「代码在 owner/repo」)。
 - `sync`(合并到 `main`,environment `mirror`):写 `market/bundles|meta|media/…`,每个文件只写一次
-  (同名同字节跳过,不同字节报红),最后覆盖 `market/index.json`。只写 `market/` 下面,由 `scripts/sync.mjs` 的 `putObject` 硬守。
+  (同名同字节跳过,不同字节报红),meta 带上这一版的 `about`(各语言)、截图地址和 `releaseNotes`(= `store/whats-new.md`);已发布的版本从不重判、meta 不改写。最后覆盖 `market/index.json`。只写 `market/` 下面,由 `scripts/sync.mjs` 的 `putObject` 硬守。
 
 打包器(`scripts/lib.mjs` 的 `packDir`)是市场字节的唯一来源:文件按路径排序、时间戳固定、不要目录条目、拒绝符号链接,
 `jszip` 锁在 `package-lock.json`。改它等于改所有已发布版本的 sha256 —— 别改。
