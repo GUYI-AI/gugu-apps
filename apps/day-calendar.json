@@ -128,6 +128,15 @@
       "sha256": "90d306d9e70895e41af7214a4ba6b99aea866e4c86a787b6ad339782b639dec5",
       "bytes": 52122,
       "yanked": null
+    },
+    {
+      "version": "0.8.0",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/day-calendar",
+      "commit": "124ae9ddf8805df2f5d50fa873f12f080fe87b80",
+      "sha256": "a822505e8a9ffa3b82be9d778482ad17ac396381a921f5f5e62a07fcd9d9548d",
+      "bytes": 58210,
+      "yanked": null
     }
   ]
 }
