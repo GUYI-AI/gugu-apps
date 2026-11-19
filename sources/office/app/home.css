@@ -17,7 +17,7 @@ body { margin: 0; display: flex; flex-direction: column; }
 }
 .menu[hidden] { display: none; }
 .menu button { display: flex; width: 100%; align-items: center; gap: var(--em-spacing-sm); border: 0; background: none; justify-content: flex-start; }
-.menu img { width: 20px; height: 20px; }
+.menu gugu-file-mark { width: 20px; height: 20px; }
 
 main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) var(--em-spacing-xl); }
 
@@ -31,7 +31,8 @@ main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) v
 .pick gugu-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--em-foreground-muted); pointer-events: none; }
 .pick select { width: auto; max-width: 160px; padding-left: 28px; min-height: 30px; border-color: transparent; background-color: transparent; }
 
-.list img.kind-icon { width: 20px; height: 20px; flex: none; }
+/* The Files App's list size: a row is told apart by its tile, as there. */
+.list gugu-file-mark { width: 36px; height: 36px; }
 .list .where { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Blank files as cards: a page of a deck, a grid of a workbook, the name under it. */
@@ -43,7 +44,7 @@ main { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--em-spacing-lg) v
   display: flex; align-items: center; justify-content: center;
 }
 .blank:hover .face { border-color: var(--em-accent-9); }
-.blank .face img { width: 28px; height: 28px; }
+.blank .face gugu-file-mark { width: 28px; height: 28px; }
 .blank[data-create='xlsx'] .face {
   background-color: var(--em-color-white);
   background-image: linear-gradient(#e3e3e3 1px, transparent 1px), linear-gradient(90deg, #e3e3e3 1px, transparent 1px);
