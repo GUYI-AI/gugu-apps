@@ -115,3 +115,17 @@ test('a refused set on a chat with no board makes no file', async () => {
   await assert.rejects(tools.set.run({ chat: CHAT, title: '' }, LANE), /needs a title/)
   assert.equal(chatFiles.size, 0)
 })
+
+test('lead is set on its own on a chat board, logged, shown by board; anything else with it is refused', async () => {
+  await tools.set.run({ chat: CHAT, title: 'x' }, LANE)
+  assert.match(await tools.board.run({ chat: CHAT }, SUP), /\nlead: none\n/)
+  assert.equal(await tools.set.run({ chat: CHAT, lead: SUP.agent }, LANE), `the board's lead is ${SUP.agent}`)
+  const text = await tools.board.run({ chat: CHAT }, SUP)
+  assert.match(text, new RegExp(`lead \\(told when a person marks a card done or reopens it\\): ${SUP.agent}`))
+  assert.match(text, /board scroll-pull: lead set to: user:/)
+  await assert.rejects(tools.set.run({ lead: SUP.agent }, LANE), /lead is set on its own, on a chat's board/)
+  await assert.rejects(tools.set.run({ chat: CHAT, lead: SUP.agent, title: 'y' }, LANE), /lead is set on its own/)
+  await assert.rejects(tools.set.run({ chat: CHAT, lead: 'supervisor' }, LANE), /user:<uuid>/)
+  assert.equal(await tools.set.run({ chat: CHAT, lead: null }, LANE), 'the board has no lead')
+  assert.match(await tools.board.run({ chat: CHAT }, SUP), /lead cleared: user:/)
+})

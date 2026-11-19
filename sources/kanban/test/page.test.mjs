@@ -11,7 +11,7 @@ const LANE = { agent: 'user:00000000-0000-0000-0000-00000000000a', session: 'ses
 let n = 0
 
 /** The board page in a chat, on a live board file, with gugu's verbs recorded. */
-async function openPage(data, { members = [], host = {}, agents = [{ agentId: LANE.agent, sessionId: LANE.session, status: 'idle', detail: 'done', deviceLabel: 'gpu', title: 'scroll-pull' }] } = {}) {
+async function openPage(data, { members = [], host = {}, opened = async (file) => file, agents = [{ agentId: LANE.agent, sessionId: LANE.session, status: 'idle', detail: 'done', deviceLabel: 'gpu', title: 'scroll-pull' }] } = {}) {
   const { window, document } = parseHTML(html)
   const sent = []
   const changes = new Set()
@@ -27,7 +27,7 @@ async function openPage(data, { members = [], host = {}, agents = [{ agentId: LA
   }
   window.gugu = {
     getContext: async () => ({ locale: 'zh-CN', chat: { id: 'chat-1', name: 'work', members }, file: file.entry, layout: { visible: true } }),
-    files: { open: async () => file, list: async () => [file.entry] },
+    files: { open: async () => opened(file), list: async () => [file.entry] },
     ...(agents ? { listAgents: async () => ({ agents, devices: [] }) } : {}),
     dispatch: async (text, opts) => { sent.push({ text, opts }); return { to: opts.to } },
     setTabBadge: async () => {},
@@ -188,4 +188,111 @@ test('交给… refused for another reason: the page says the host\'s reason, wi
   assert.doesNotMatch(alert, /现在不在你任何一台在线的电脑上/)
   assert.doesNotMatch(document.body.textContent, /0000000000ff/)
   assert.equal(logOf(data.cards[id]).length, 1)
+})
+
+const SUPER = { id: 'user:00000000-0000-0000-0000-00000000000b', name: 'supervisor', kind: 'agent' }
+const flush = () => new Promise((r) => setImmediate(r))
+const rightClick = (window, el) => {
+  const e = new window.Event('contextmenu', { bubbles: true, cancelable: true })
+  Object.defineProperties(e, { clientX: { value: 10 }, clientY: { value: 20 } })
+  el.dispatchEvent(e)
+}
+
+test('引用 from a card\'s menu (right-click) or its sheet: gugu\'s 引用 pill to the board file at that card, drafted into the board\'s chat', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'fix [2] scroll' })
+  const menus = []
+  let pick = 'cite'
+  const { document, sent } = await openPage(b, { host: { showContextMenu: async (m) => { menus.push(m); return pick } } })
+  rightClick(globalThis.window, document.querySelector('.card .head'))
+  await flush()
+  assert.deepEqual(menus[0].items.map((i) => i.label), ['打开', '引用'])
+  // A pill, not hand-written markdown: the title reads as written (an escaped `\\[2\\]` was math in gugu's chat).
+  assert.deepEqual(sent[0], { text: '', opts: { draft: true, refs: [{ file: { id: 'f1', chat: 'chat-1', name: '协作看板.board.json' }, at: { card: id }, label: `${id} · fix [2] scroll` }] } })
+  pick = null
+  rightClick(globalThis.window, document.querySelector('.card .head'))
+  await flush()
+  assert.equal(sent.length, 1, 'closing the menu drafts nothing')
+  document.querySelector('.card .head').click()
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '引用').click()
+  await flush()
+  assert.equal(sent.length, 2)
+  assert.deepEqual(sent[1].opts.refs[0].at, { card: id })
+})
+
+test('a cited card\'s pill opens the board on that card, also when it is what opened the page (the link comes before the board)', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'ship it' })
+  let link = null
+  let release
+  const loaded = new Promise((r) => { release = r })
+  // The page registers onLink, then waits for its board: the link is handed over in between.
+  const page = openPage(b, { host: { onLink: (fn) => { link = fn } }, opened: async (file) => { await loaded; return file } })
+  while (!link) await flush()
+  await link({ tab: 'file', path: '', query: { card: id }, file: 'f1' })
+  assert.equal(globalThis.document.getElementById('sheet').hidden, true, 'no board yet')
+  release()
+  const { document } = await page
+  await flush()
+  assert.equal(document.getElementById('sheet').hidden, false)
+  assert.match(document.getElementById('sheet').textContent, /ship it/)
+})
+
+test('主管: unset says so; picked from the chat\'s agents it is logged on the board; a person\'s done and reopen tell it, with the open checks', async () => {
+  const b = emptyBoard()
+  const id = card(b, { type: 'create', title: 'ship it', check: { 'PR merged': true } })
+  const { document, sent, data } = await openPage(b, { members: [SUPER, { id: 'user:owner', name: 'Owner', kind: 'human' }], host: {
+    showContextMenu: async (m) => { assert.deepEqual(m.items[0], { id: SUPER.id, label: 'supervisor', person: SUPER.id, checked: false }); assert.equal(m.items.length, 3); return SUPER.id },
+  } })
+  assert.equal(document.querySelector('#lead').textContent, '未设主管')
+  // No lead: finishing tells no one.
+  document.querySelector('.card .head').click()
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '完成').click()
+  await flush()
+  assert.equal(sent.length, 0)
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '重开').click()
+  await flush()
+  document.querySelector('#lead').click()
+  await flush()
+  assert.deepEqual(data.lead, { agent: SUPER.id, name: 'supervisor' })
+  assert.deepEqual(logOf(data).map((l) => [l.what, l.text, l.by]), [['lead', 'supervisor', 'user:owner']])
+  assert.equal(document.querySelector('#lead').textContent, '主管：supervisor')
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '完成').click()
+  await flush()
+  assert.equal(sent.length, 1)
+  // A chat message @ the lead, from whoever clicked: it reaches another person's agent too (`{ agent }` reached only the clicker's own).
+  assert.deepEqual(sent[0].opts, { to: { chat: 'chat-1', member: SUPER.id }, visible: true })
+  assert.match(sent[0].text, new RegExp(`卡 ${id}「ship it」被 Owner 标为完成（清单 1/1）。你是这块看板的主管：用 kanban__board \\{ chat: "chat-1", card: "${id}" \\}`))
+  applyOp(data, { type: 'set', card: id, check: { 'P4 receipt': false } }, { by: LANE.agent, now: new Date().toISOString(), caller: LANE })
+  ;[...document.querySelectorAll('#sheet footer button')].find((x) => x.textContent === '重开').click()
+  await flush()
+  assert.match(sent[1].text, /被 Owner 重新打开；还开着的检查项：P4 receipt。/)
+})
+
+
+test('a long press on a card (a phone) opens its menu once', async () => {
+  const b = emptyBoard()
+  card(b, { type: 'create', title: 'ship it' })
+  const menus = []
+  const { document } = await openPage(b, { host: { showContextMenu: async (m) => { menus.push(m); return null } } })
+  const head = document.querySelector('.card .head')
+  const pointer = (type) => {
+    const e = new globalThis.window.Event(type, { bubbles: true, cancelable: true })
+    Object.defineProperties(e, { pointerType: { value: 'touch' }, clientX: { value: 10 }, clientY: { value: 20 } })
+    head.dispatchEvent(e)
+  }
+  mock.timers.enable({ apis: ['setTimeout'] })
+  try {
+    pointer('pointerdown')
+    mock.timers.tick(500)
+  } finally {
+    mock.timers.reset()
+  }
+  // The platform may also fire contextmenu for the same press: still one menu.
+  rightClick(globalThis.window, head)
+  await flush()
+  assert.equal(menus.length, 1)
+  assert.deepEqual(menus[0].items.map((i) => i.label), ['打开', '引用'])
+  // That the tap ending the press opens no card rests on a capture-phase click listener, which linkedom does not run
+  // before the target's: checked in Chromium (the App's page on a desktop build), not here.
 })

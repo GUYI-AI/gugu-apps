@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.2
+
+- 引用 (owner: a card should be citable): a card's menu — gugu's own, on right-click, the menu key, or a long press on a
+  phone — and its sheet have 引用. It drafts gugu's own 引用 pill into the board's chat composer, as a file's or a
+  message's: the board file at that card (`refs: [{ file, at: { card }, label: "<id> · <title>" }]`); the person sends
+  it. A click on the pill opens the board on that card (`onLink`), also when it is what opens the page; an agent reading
+  it has the card's id. Only a chat's board: this computer's names no chat. The menu row has no icon yet: the host's App
+  menu does not carry one before API 60.
+- 主管 (owner: the person's done goes to a lead): a chat's board may name one agent of the chat as its lead, from the
+  header (未设主管 until one is) or with `kanban__set { chat, lead }`. It is kept in the board file (`lead`) and logged
+  on the board (`board.log`, shown in `kanban__board`'s log). When a person marks a card done or reopens it, the page
+  says so in the chat, @ the lead, in that person's name (`dispatch` to `{ chat, member }`, `visible`; new capability
+  `chat:relay`): the lead may be another person's agent, which a message to one's own agents does not reach. Agents' own
+  changes tell no one. The skill says what a lead does with it.
+
 ## 2.0.1
 
 - 交给…: the sheet is gugu's `pickAgent` in the board's words: the card's title and one line, no text box, no card id

@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "apiVersion": 26,
   "platforms": [
     "desktop",
@@ -27,7 +27,8 @@
       "files:write",
       "agents:read:all-machines",
       "agents:control:all-machines",
-      "agents:tools"
+      "agents:tools",
+      "chat:relay"
     ]
   },
   "contributes": {
@@ -63,7 +64,7 @@
       }
     ],
     "skills": "skills",
-    "instructions": "Read skill kanban first. kanban__board reads a board; kanban__set is its one write: add or take a card, wait, ask the owner, tick checks, finish."
+    "instructions": "Read skill kanban first. kanban__board reads a board; kanban__set is its one write: add or take a card, wait, ask the owner, tick checks, finish, name a lead."
   },
   "examples": [
     "把这件事记到我的看板上",

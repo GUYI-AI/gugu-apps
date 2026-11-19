@@ -17,6 +17,10 @@ const WORDS = {
     reply: '回复…', send: '发送', undo: '撤销', answered: (a) => `已答「${a}」`, recorded: '答复已记下', notSent: (w) => `答复已记下，但没发到持有者：${w}`,
     holder: '持有', nobody: '没人接', you: '你', wait: '等', question: '问你', checks: '清单', note: '说明', log: '记录', addCheck: '添加一项…',
     editNote: '编辑说明', save: '保存', emptyNote: '还没有说明', earlier: (n) => `更早 ${n} 条`, handTo: '交给…', done: '完成', reopen: '重开',
+    cite: '引用', open: '打开', lead: (n) => `主管：${n}`, noLead: '未设主管', leadNone: '不设主管', noAgents: '这个群里还没有 agent',
+    leadSetBy: (who, when) => `${who} 设定 · ${when}`,
+    leadText: (c, done, who, open, arg) => `协作看板的卡 ${c.id}「${c.title}」被 ${who} ${done ? '标为完成' : '重新打开'}${open.length ? `；还开着的检查项：${open.join('、')}` : `（清单 ${checksOf(c).length ? `${checksOf(c).filter((x) => x.done).length}/${checksOf(c).length}` : '无'}）`}。你是这块看板的主管：用 kanban__board { ${arg}card: "${c.id}" } 读全卡，核对后按 SKILL 里主管的做法处理。`,
+    leadNotSent: (w) => `已改，但没告诉主管：${w}`,
     more: '更多', del: '删除卡片', confirmDel: (t) => `删除「${t}」？卡片和它的记录都会删掉。`, close: '关闭', rename: '改标题',
     openRefused: (open) => `还不能完成：${open}`, empty: '还没有卡片', emptyHint: '点「+」添加一张，或让 agent 用 kanban__set 添加。',
     desktopOnly: '本机看板只在电脑上', phoneHint: '在群或私聊里打开协作看板，用的是那个对话的看板。', gone: '这块看板的文件已不可用。',
@@ -43,6 +47,10 @@ const WORDS = {
     reply: 'Reply…', send: 'Send', undo: 'Undo', answered: (a) => `Answered “${a}”`, recorded: 'Answer recorded', notSent: (w) => `Answer recorded, not delivered to the holder: ${w}`,
     holder: 'Holder', nobody: 'Nobody', you: 'You', wait: 'Waiting on', question: 'Asks you', checks: 'Checklist', note: 'Note', log: 'Log', addCheck: 'Add an item…',
     editNote: 'Edit note', save: 'Save', emptyNote: 'No note yet', earlier: (n) => `${n} earlier`, handTo: 'Hand to…', done: 'Done', reopen: 'Reopen',
+    cite: 'Cite', open: 'Open', lead: (n) => `Lead: ${n}`, noLead: 'No lead', leadNone: 'No lead', noAgents: 'No agent in this chat yet',
+    leadSetBy: (who, when) => `set by ${who} · ${when}`,
+    leadText: (c, done, who, open, arg) => `Teamboard card ${c.id} “${c.title}” was ${done ? 'marked done' : 'reopened'} by ${who}${open.length ? `; open checks: ${open.join(', ')}` : ` (checklist ${checksOf(c).length ? `${checksOf(c).filter((x) => x.done).length}/${checksOf(c).length}` : 'none'})`}. You are this board's lead: read the card with kanban__board { ${arg}card: "${c.id}" }, check it, and act as the skill says a lead does.`,
+    leadNotSent: (w) => `Changed, but the lead was not told: ${w}`,
     more: 'More', del: 'Delete card', confirmDel: (t) => `Delete “${t}”? The card and its log go.`, close: 'Close', rename: 'Rename',
     openRefused: (open) => `Not done yet: ${open}`, empty: 'No cards yet', emptyHint: 'Add one with “+”, or ask an agent to add one with kanban__set.',
     desktopOnly: "This computer's board is on the computer", phoneHint: "Open Teamboard in a group or private chat for that chat's board.", gone: 'This board file is no longer available.',
@@ -71,6 +79,7 @@ const desktop = typeof g.onBackgroundMessage === 'function'
 /** Where the board shown is kept: { kind: 'local' } or { kind: 'chat', f, name } (a live board file). */
 let home = null
 let board = null
+let wanted = null // the card a link asked for, until its board is here (openWanted)
 let agents = null // the task list by session, or null when the host cannot give it: then no dots, nothing else changes
 let thisMachine = null
 let selected = null
@@ -205,14 +214,64 @@ async function commit(id) {
   }
   // To whoever holds the card; else to whoever asked. Its agent id is on the card, or found by its session.
   const to = (card?.holder !== 'person' && (card?.holder?.agent ?? rowOf(card)?.agentId)) || (/^user:/.test(result.asker ?? '') ? result.asker : null)
-  if (!to || typeof g.dispatch !== 'function') return render()
-  try {
-    await g.dispatch(t.answerText(card, result.question, result.answer, chatArg()), { to: { agent: to } })
-  } catch (error) {
-    showAlert(t.notSent(error?.message ?? String(error)))
-  }
+  if (to) await tell(t.answerText(card, result.question, result.answer, chatArg()), { to: { agent: to } }, t.notSent)
   render()
 }
+
+/** Words for one agent, after a person's change: an answer to the card's holder, a done or reopen to the board's lead. */
+async function tell(text, opts, notSent) {
+  if (typeof g.dispatch !== 'function') return
+  try {
+    await g.dispatch(text, opts)
+  } catch (error) {
+    showAlert(notSent(error?.message ?? String(error)))
+  }
+}
+
+/** A person marks a card done or reopens it; the board's lead, when it has one, is told. Agents' own changes tell no one. */
+async function finish(card, done) {
+  try {
+    await change({ type: 'set', card: card.id, done })
+  } catch {
+    return
+  }
+  const now = board?.cards[card.id] ?? card
+  const lead = home?.kind === 'chat' ? board?.lead?.agent : null
+  if (!lead) return
+  // In the board's chat, @ the lead, from whoever clicked: the lead is an agent of the chat, maybe another person's, which
+  // only a chat message reaches (one of the clicker's own agents is all `{ agent }` reaches).
+  await tell(t.leadText(now, done, self()?.name ?? t.you, done ? [] : openChecks(now).map((c) => c.label), chatArg()), { to: { chat: home.f.entry.chat, member: lead }, visible: true }, t.leadNotSent)
+}
+
+// ── the board's lead (主管) ─────────────────────────────────────────────────
+
+const leadName = () => board?.lead && (ctx.chat?.members?.find((m) => m.id === board.lead.agent)?.name ?? board.lead.name ?? board.lead.agent.replace(/^user:/, '').slice(0, 8))
+
+function renderLead() {
+  const button = $('lead')
+  const shown = home?.kind === 'chat' || home?.kind === 'chat-unmade'
+  button.hidden = !shown
+  if (!shown) return
+  button.textContent = board?.lead ? t.lead(leadName()) : t.noLead
+  button.classList.toggle('unset', !board?.lead)
+  const last = board?.log ? logOf(board).at(-1) : null
+  button.title = last ? t.leadSetBy(whoWrote(last), new Date(last.at).toLocaleString()) : ''
+}
+
+$('lead').addEventListener('click', async (e) => {
+  const agentsHere = (ctx.chat?.members ?? []).filter((m) => m.kind === 'agent')
+  const r = e.currentTarget.getBoundingClientRect()
+  try {
+    const picked = await g.showContextMenu({ x: r.left, y: r.bottom, items: agentsHere.length
+      ? [...agentsHere.map((m) => ({ id: m.id, label: m.name, person: m.id, checked: board?.lead?.agent === m.id })), { type: 'separator' }, { id: 'none', label: t.leadNone, checked: !board?.lead }]
+      : [{ id: 'none', label: t.noAgents, enabled: false }] })
+    if (!picked || (picked === 'none' && !board?.lead) || picked === board?.lead?.agent) return
+    const m = agentsHere.find((a) => a.id === picked)
+    await change({ type: 'lead', agent: m ? m.id : null, ...(m ? { name: m.name } : {}) })
+  } catch (error) {
+    said(error)
+  }
+})
 
 function showUndo() {
   const last = [...pending.entries()].at(-1)
@@ -272,12 +331,12 @@ function row(card, state) {
   if (state === 'unclaimed' && card.next) sub.push(h('small', { class: 'muted', text: `${t.nextPrefix}${card.next}` }))
   if (state === 'done') sub.push(h('gugu-time', { datetime: card.doneAt }))
   const checks = checksOf(card)
-  return h('article', { class: `card ${state}${selected === card.id ? ' selected' : ''}`, 'aria-labelledby': titleId, 'data-key': card.id },
+  return withMenu(h('article', { class: `card ${state}${selected === card.id ? ' selected' : ''}`, 'aria-labelledby': titleId, 'data-key': card.id },
     h('button', { type: 'button', class: 'head', onclick: open },
       state === 'progress' ? dot(card) : null,
       h('span', { class: 'what' }, h('strong', { id: titleId, text: card.title }), ...sub),
       checks.length && state !== 'done' ? h('small', { class: 'count muted', text: `${checks.filter((c) => c.done).length}/${checks.length}` }) : null),
-    state === 'owner' ? questionBlock(card) : null)
+    state === 'owner' ? questionBlock(card) : null), card)
 }
 
 function counts(gr) {
@@ -294,6 +353,7 @@ function render() {
   const n = counts(gr)
   $('heading').textContent = home?.kind === 'chat' ? home.name : t.local
   $('summary').textContent = t.summary(n)
+  renderLead()
   g.setTabBadge?.(gr.owner.length || null)?.catch?.((error) => g.reportError(`setTabBadge: ${error?.message ?? error}`))
   const list = $('list')
   const section = (state, cards) => h('section', { class: `group ${state}`, 'aria-labelledby': `g-${state}` },
@@ -320,6 +380,70 @@ function render() {
   if (selected) renderSheet()
 }
 const openFolds = new Set()
+
+// ── citing a card ───────────────────────────────────────────────────────────
+
+/**
+ * 引用: the card as gugu's own 引用 pill in the board's chat composer — "协作看板.board.json · <id> · <title>", the board file
+ * at that card — which the person sends themselves, as a file's or a message's. A click on it opens the board on the card
+ * (`onLink`, `query.card`); an agent reading it has the id for kanban__board. Only a chat's board: this computer's names no chat.
+ */
+async function cite(card) {
+  try {
+    // The pill names its file, and so the chat whose composer it goes into: no `to` beside it (gugu refuses both).
+    await g.dispatch('', { draft: true, refs: [{ file: home.f.entry, at: { card: card.id }, label: `${card.id} · ${card.title}` }] })
+  } catch (error) {
+    said(error)
+  }
+}
+const citable = () => home?.kind === 'chat' && typeof g.dispatch === 'function'
+
+/** A card's menu, gugu's own: right-click, the menu key, or a long press on a phone (as the Files App's rows do). */
+function withMenu(el, card) {
+  const show = async (x, y) => {
+    try {
+      const picked = await g.showContextMenu({ x, y, items: [{ id: 'open', label: t.open }, ...(citable() ? [{ id: 'cite', label: t.cite }] : [])] })
+      if (picked === 'open') openCard(card.id)
+      if (picked === 'cite') await cite(card)
+    } catch (error) {
+      said(error)
+    }
+  }
+  if (typeof g.showContextMenu !== 'function') return el
+  let timer = null
+  let held = false
+  let from = null
+  const cancel = () => { clearTimeout(timer); timer = null }
+  const typing = (e) => e.target.closest?.('input, textarea')
+  el.addEventListener('contextmenu', (e) => {
+    if (typing(e)) return
+    e.preventDefault()
+    // A long press may fire this as well as run out its timer: the menu opens once, and the tap that ends it opens nothing.
+    const holding = timer !== null
+    cancel()
+    if (held) return
+    held = holding
+    show(e.clientX, e.clientY)
+  })
+  el.addEventListener('keydown', (e) => {
+    if (typing(e) || !(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) return
+    e.preventDefault()
+    const r = e.target.getBoundingClientRect()
+    show(r.left + 16, r.bottom)
+  })
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' || typing(e)) return
+    cancel()
+    held = false
+    from = { x: e.clientX, y: e.clientY }
+    timer = setTimeout(() => { timer = null; if (el.isConnected) { held = true; show(from.x, from.y) } }, 500)
+  })
+  el.addEventListener('pointermove', (e) => { if (from && timer !== null && (Math.abs(e.clientX - from.x) > 8 || Math.abs(e.clientY - from.y) > 8)) cancel() })
+  el.addEventListener('pointerup', cancel)
+  el.addEventListener('pointercancel', () => { cancel(); held = false })
+  el.addEventListener('click', (e) => { if (!held) return; held = false; e.stopImmediatePropagation(); e.preventDefault() }, true)
+  return el
+}
 
 // ── a card, opened ──────────────────────────────────────────────────────────
 
@@ -422,9 +546,10 @@ function renderSheet() {
   const blocking = [...openChecks(card).map((c) => c.label), card.wait?.on === 'owner' ? card.wait.question : null].filter(Boolean)
   const actions = h('footer', { class: 'sheet-foot' },
     typeof g.dispatch === 'function' && state !== 'done' ? h('button', { type: 'button', text: t.handTo, onclick: () => handTo(card) }) : null,
+    citable() ? h('button', { type: 'button', text: t.cite, onclick: () => cite(card) }) : null,
     state === 'done'
-      ? h('button', { type: 'button', text: t.reopen, onclick: () => set({ done: false }) })
-      : h('button', { type: 'button', class: 'primary', text: t.done, disabled: blocking.length > 0, onclick: () => set({ done: true }) }),
+      ? h('button', { type: 'button', text: t.reopen, onclick: () => finish(card, false) })
+      : h('button', { type: 'button', class: 'primary', text: t.done, disabled: blocking.length > 0, onclick: () => finish(card, true) }),
     h('button', { type: 'button', class: 'icon', 'aria-label': t.del, title: t.del, onclick: async () => {
       if (await confirm(t.confirmDel(card.title), t.del)) quietly(change({ type: 'delete', card: card.id }).then(closeCard))
     } }, icon('trash-2')),
@@ -523,6 +648,15 @@ async function showChatBoard(open) {
   }
   if (selected) closeCard()
   render()
+  openWanted()
+}
+
+/** A link (a cited card's pill) can come before its board has loaded — it opened the page: the card opens once it is here. */
+function openWanted() {
+  if (!wanted || !board) return
+  const id = wanted
+  wanted = null
+  try { openCard(findCard(board, id).id) } catch { render() }
 }
 
 if (desktop) g.onBackgroundMessage((message) => {
@@ -546,9 +680,9 @@ if (desktop) g.onBackgroundMessage((message) => {
 g.onLink?.(async ({ query } = {}) => {
   if (!query) return
   if (query.board && !(home?.kind === 'chat' && home.f.entry.id === query.board)) await showChatBoard(() => g.files.open({ id: query.board, ...(ctx.chat ? { chat: ctx.chat.id } : {}) }))
-  if (query.card && board) {
-    try { openCard(findCard(board, query.card).id) } catch { render() }
-  } else render()
+  wanted = query.card ?? null
+  if (board && wanted) openWanted()
+  else render()
 })
 
 g.onContextChanged(async () => {
@@ -581,6 +715,7 @@ else if (boardChat()) {
     board = asCurrent(null)
     $('heading').textContent = boardChat().name
     render()
+    renderLead()
   }
 } else if (desktop) {
   home = { kind: 'local' }
