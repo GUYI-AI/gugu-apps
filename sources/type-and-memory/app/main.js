@@ -390,23 +390,23 @@ function createMarks(surface, root) {
   let marks = [];
   let active = null;
   const paint = "highlights" in CSS;
-  const pin = (p, start, end) => {
+  const pin = (p, start2, end) => {
     const range = document.createRange();
-    range.setStart(...pointIn(p, start));
+    range.setStart(...pointIn(p, start2));
     range.setEnd(...pointIn(p, end));
-    return { p, start, end, range };
+    return { p, start: start2, end, range };
   };
   function relocate() {
     pins.clear();
     const spans = [...locate(surface.read(), marks)].sort((a, b) => a[1][0] - b[1][0]);
     let p = surface.element.firstChild;
     let base = 0;
-    for (const [id, [start, end]] of spans) {
-      while (p && start > base + (p.textContent?.length ?? 0)) {
+    for (const [id, [start2, end]] of spans) {
+      while (p && start2 > base + (p.textContent?.length ?? 0)) {
         base += (p.textContent?.length ?? 0) + 1;
         p = p.nextSibling;
       }
-      if (p) pins.set(id, pin(p, start - base, end - base));
+      if (p) pins.set(id, pin(p, start2 - base, end - base));
     }
     wash();
   }
@@ -541,7 +541,7 @@ function createNotes(opts) {
       else if (!card) tray.replaceChildren();
       return;
     }
-    const rows = [];
+    const rows2 = [];
     for (const [id, { el }] of cards) {
       if (el.parentNode !== margin) margin.append(el);
       const pin = marks.pinOf(id);
@@ -549,14 +549,14 @@ function createNotes(opts) {
       if (!pin) continue;
       const line = pin.range.getBoundingClientRect();
       const inLine = line.height ? line.top - pin.p.getBoundingClientRect().top : 0;
-      rows.push({ id, el, y: pin.p.offsetTop + inLine - margin.offsetTop });
+      rows2.push({ id, el, y: pin.p.offsetTop + inLine - margin.offsetTop });
     }
-    rows.sort((a, b) => a.y - b.y || order.get(a.id) - order.get(b.id));
+    rows2.sort((a, b) => a.y - b.y || order.get(a.id) - order.get(b.id));
     const lines = [];
-    for (const row of rows) {
-      const last2 = lines.at(-1);
-      if (last2 && row.y - last2[0].y < SAME_LINE) last2.push(row);
-      else lines.push([row]);
+    for (const row2 of rows2) {
+      const last = lines.at(-1);
+      if (last && row2.y - last[0].y < SAME_LINE) last.push(row2);
+      else lines.push([row2]);
     }
     const pitch = parseFloat(getComputedStyle(margin).lineHeight);
     const stacks = [];
@@ -566,16 +566,16 @@ function createNotes(opts) {
       const together = line.length * (pitch + PAD) <= room;
       const shown = together ? null : line.find((r) => r.id === active) ?? line.find((r) => r.id === chosen.get(key)) ?? line.reduce((a, b) => order.get(b.id) > order.get(a.id) ? b : a);
       const each = together ? room / line.length : room;
-      for (const row of line) {
-        row.el.classList.toggle("tm-behind", !together && row !== shown);
-        row.el.style.setProperty("--tm-lines", String(Math.min(LAST, Math.max(1, Math.floor((each - PAD) / pitch)))));
-        let more = row.el.querySelector(".tm-more");
+      for (const row2 of line) {
+        row2.el.classList.toggle("tm-behind", !together && row2 !== shown);
+        row2.el.style.setProperty("--tm-lines", String(Math.min(LAST, Math.max(1, Math.floor((each - PAD) / pitch)))));
+        let more = row2.el.querySelector(".tm-more");
         if (together || line.length === 1) {
           more?.remove();
           continue;
         }
-        if (!more) row.el.prepend(more = Object.assign(document.createElement("button"), { className: "tm-more" }));
-        const at = line.indexOf(row);
+        if (!more) row2.el.prepend(more = Object.assign(document.createElement("button"), { className: "tm-more" }));
+        const at = line.indexOf(row2);
         more.textContent = `${at + 1}/${line.length}`;
         more.onclick = () => {
           const next = line[(at + 1) % line.length].id;
@@ -587,15 +587,15 @@ function createNotes(opts) {
     });
     const heights = stacks.map(
       (stack) => stack.rows.map(
-        (row) => row.id === active || row.el.matches(":hover") ? Number(row.el.style.getPropertyValue("--tm-lines")) * pitch + PAD : row.el.offsetHeight
+        (row2) => row2.id === active || row2.el.matches(":hover") ? Number(row2.el.style.getPropertyValue("--tm-lines")) * pitch + PAD : row2.el.offsetHeight
       )
     );
     stacks.forEach((stack, i) => {
       let y = stack.y;
-      stack.rows.forEach((row, j) => {
-        row.el.style.transform = `translateY(${y}px)`;
+      stack.rows.forEach((row2, j) => {
+        row2.el.style.transform = `translateY(${y}px)`;
         y += heights[i][j] + 2;
-        if (!row.el.classList.contains("tm-placed")) requestAnimationFrame(() => row.el.classList.add("tm-placed"));
+        if (!row2.el.classList.contains("tm-placed")) requestAnimationFrame(() => row2.el.classList.add("tm-placed"));
       });
     });
   }
@@ -773,7 +773,7 @@ var styles = (
 var SAVE_AFTER = 500;
 var NARROW = 760;
 var LULL_MIN = 10;
-function mount(host, options) {
+function mount(host2, options) {
   const { store } = options;
   const pace = { batch: 1, lull: 2e3, ...options.pace };
   const energy = createEnergy(pace);
@@ -792,7 +792,7 @@ function mount(host, options) {
   const scroll = el("tm-scroll", el("tm-page", el("tm-main", surface.element, foot), margin));
   const bar = el("tm-energy", el("tm-energy-fill"));
   const root = el("tm-root", scroll, tray, ...options.energyBar === false ? [] : [bar]);
-  host.append(root);
+  host2.append(root);
   const dark = matchMedia("(prefers-color-scheme: dark)");
   const applyTheme = () => root.classList.toggle("tm-dark", options.theme === "dark" || options.theme !== "light" && dark.matches);
   applyTheme();
@@ -802,14 +802,14 @@ function mount(host, options) {
   const sized = new ResizeObserver(() => {
     narrow = root.clientWidth < NARROW;
     root.classList.toggle("tm-narrow", narrow);
-    notes.layout();
+    notes2.layout();
   });
   const marks = /* @__PURE__ */ new Map();
   const anchors = createMarks(surface, root);
   let loaded = false;
   let active = null;
   let heldUntil = 0;
-  const notes = createNotes({
+  const notes2 = createNotes({
     margin,
     tray,
     marks: anchors,
@@ -874,7 +874,7 @@ function mount(host, options) {
   function marksChanged() {
     const shown = sheet.marks().filter((m) => !held.has(m.id));
     anchors.set(shown);
-    notes.sync(shown);
+    notes2.sync(shown);
     drawFoot();
   }
   function announce(id) {
@@ -886,7 +886,7 @@ function mount(host, options) {
     if (active === id) return;
     active = id;
     anchors.activate(id);
-    notes.activate(id);
+    notes2.activate(id);
   }
   let asking = 0;
   let flash = "";
@@ -961,7 +961,7 @@ function mount(host, options) {
   addEventListener("pagehide", flush);
   let lullTimer = 0;
   surface.onChange(({ typed }) => {
-    if (marks.size) notes.layout();
+    if (marks.size) notes2.layout();
     if (!typed) return;
     save();
     if (marks.size && !surface.read().trim()) {
@@ -997,7 +997,7 @@ function mount(host, options) {
   }
   const onSelect = () => {
     const s = getSelection();
-    if (!s?.focusNode || notes.holds(s.focusNode)) return;
+    if (!s?.focusNode || notes2.holds(s.focusNode)) return;
     if (Date.now() < heldUntil) return;
     let p = s.focusNode;
     while (p && p.parentNode !== surface.element) p = p.parentNode;
@@ -1005,7 +1005,7 @@ function mount(host, options) {
   };
   document.addEventListener("selectionchange", onSelect);
   scroll.addEventListener("mousedown", (e) => {
-    if (surface.element.contains(e.target) || notes.holds(e.target) || surface.element.contentEditable !== "true") return;
+    if (surface.element.contains(e.target) || notes2.holds(e.target) || surface.element.contentEditable !== "true") return;
     e.preventDefault();
     surface.element.focus();
     getSelection()?.selectAllChildren(surface.element);
@@ -1082,7 +1082,7 @@ function dataStore(data, path) {
     },
     save(doc) {
       if (retired) return writing;
-      const content = JSON.stringify({ v: 1, text: doc.text, marks: Object.fromEntries(doc.marks.map((m) => [m.id, m])) });
+      const content = JSON.stringify({ v: 1, text: doc.text, marks: Object.fromEntries(doc.marks.map((m) => [m.id, m])), at: (/* @__PURE__ */ new Date()).toISOString() });
       writing = writing.then(() => data.write(path, content));
       return writing;
     },
@@ -1108,16 +1108,46 @@ async function carry(here, target, drop) {
   await drop();
 }
 
+// hosts/gugu/notes.ts
+var SUFFIX = ".tam.json";
+var LEGACY = "page.tam.json";
+var LOCAL_DIR = "pages";
+function ordered(notes2, here) {
+  const newest = [...notes2].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""));
+  return [...newest.filter((n) => n.chat === here), ...newest.filter((n) => n.chat !== here)];
+}
+function titleOf(name) {
+  return name.endsWith(SUFFIX) ? name.slice(0, -SUFFIX.length) : name;
+}
+function isDefaultName(name) {
+  return name === LEGACY || /^\d\d-\d\d \d\d\.\d\d( \d+)?\.tam\.json$/.test(name);
+}
+function uniqueName(title, taken) {
+  const clean = title.replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, 30).trim() || "page";
+  const used = new Set([...taken].map((n) => n.toLowerCase()));
+  for (let i = 1; ; i++) {
+    const name = `${clean}${i === 1 ? "" : ` ${i}`}${SUFFIX}`;
+    if (!used.has(name.toLowerCase())) return name;
+  }
+}
+function newName(at, taken) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return uniqueName(`${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}.${pad(at.getMinutes())}`, taken);
+}
+function firstLine(text) {
+  return text.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
+}
+
 // hosts/gugu/main.ts
 var ctx = await gugu.getContext();
 var zh = String(ctx.locale ?? "").startsWith("zh");
 var say = (en, cn) => zh ? cn : en;
-var PAGE = "page.tam.json";
 var bare = (id) => String(id).replace(/^user:/, "");
-var pageIn = async (chat) => (await gugu.files.list({ chat, folder: "" })).find((e) => e.name === PAGE) ?? await gugu.files.create({ chat, name: PAGE }, {}, { ifExists: "use" });
+var theme = ctx.themeMode === "dark" ? "dark" : "light";
+var message = (error) => error instanceof Error ? error.message : String(error);
+var HERE = ctx.file?.chat ?? ctx.chat?.id ?? null;
 var current = null;
-var unopened = null;
-gugu.onCommand((id) => current ? current.command(id) : unopened?.());
+gugu.onCommand((id) => current?.command(id));
 async function openFile(entry) {
   const f = await gugu.files.open(entry);
   if (f.data.v === void 0) {
@@ -1129,7 +1159,7 @@ async function openFile(entry) {
   }
   return f;
 }
-async function openPage(entry, host = document.getElementById("page")) {
+async function openPage(entry, host2 = document.getElementById("page")) {
   const f = await openFile(entry);
   const chat = f.entry.chat;
   const marksNow = () => Object.values(f.toJSON().marks ?? {});
@@ -1177,7 +1207,7 @@ async function openPage(entry, host = document.getElementById("page")) {
       await answered;
     }
   });
-  const page = mount(host, {
+  const page = mount(host2, {
     store,
     agent,
     // The same energy as everywhere: a note costs 50. But a look here is a whole turn of a real agent, so the page
@@ -1202,6 +1232,7 @@ async function openPage(entry, host = document.getElementById("page")) {
   }
   return {
     command,
+    text: () => page.text.read(),
     glance: (focus) => page.glance(focus),
     async close() {
       if (typeof unbind === "function") unbind();
@@ -1210,29 +1241,212 @@ async function openPage(entry, host = document.getElementById("page")) {
     }
   };
 }
-var LAST2 = "type-and-memory:with";
-var last = () => {
-  try {
-    const w = JSON.parse(localStorage.getItem(LAST2) ?? "null");
-    return w?.alone === true ? { alone: true } : w && typeof w.agent === "string" && typeof w.chat === "string" ? w : null;
-  } catch {
-    return null;
-  }
-};
-var remember = (w) => localStorage.setItem(LAST2, JSON.stringify(w));
-var lastAgent = () => {
-  const w = last();
-  return w && "agent" in w ? w.agent : void 0;
-};
-async function privateChatWith(agent, hint) {
-  const dms = (await gugu.chats.list()).chats.filter((c) => c.kind === "dm");
-  dms.sort((a, b) => Number(b.id === hint) - Number(a.id === hint));
-  for (const c of dms) {
-    const me = (await gugu.chats.members({ chat: c.id })).members.find((m) => m.kind === "agent" && bare(m.id) === bare(agent));
-    if (me) return { chat: c.id, agent: me };
-  }
-  return null;
+var entries = /* @__PURE__ */ new Map();
+var notes = [];
+async function load() {
+  const [searched, chats] = await Promise.all([gugu.files.search({ query: SUFFIX, suffixes: [".json"], limit: 200 }), gugu.chats.list()]);
+  const found = searched.filter((e) => e.chat && e.name.endsWith(SUFFIX));
+  const dms = new Set(chats.chats.filter((c) => c.kind === "dm").map((c) => c.id));
+  const whereOf = (e) => dms.has(e.chat) ? say(`Private chat with ${e.chatName ?? ""}`, `\u548C ${e.chatName ?? ""} \u7684\u79C1\u804A`) : e.chatName ?? "";
+  entries.clear();
+  for (const e of found) entries.set(e.id, e);
+  const chat = found.map((e) => ({ key: e.id, chat: e.chat, name: e.name, where: whereOf(e), at: e.updatedAt ?? null }));
+  return [...chat, ...await localNotes()];
 }
+async function localNotes() {
+  const listed = await gugu.listData(LOCAL_DIR).catch(() => []);
+  const paths = [LEGACY, ...listed.filter((e) => e.kind === "file").map((e) => e.path)];
+  const read = await Promise.all(paths.map(async (path) => [path, await gugu.readData(path).catch(() => null)]));
+  return read.flatMap(([path, raw]) => {
+    if (!raw) return [];
+    const page = JSON.parse(raw);
+    const text = String(page.text ?? "");
+    if (!text.trim()) return [];
+    return [{ key: path, chat: null, name: (firstLine(text).slice(0, 30) || say("Untitled", "\u672A\u547D\u540D")) + SUFFIX, where: "", at: typeof page.at === "string" ? page.at : null }];
+  });
+}
+var $ = (id) => document.getElementById(id);
+var shell = $("shell");
+var toggle = $("toggle");
+var whereLabel = $("where");
+var addButton = $("new");
+var search = $("search");
+var rows = $("rows");
+var host = $("page");
+var top = $("with");
+var start = $("start");
+var dialog = $("edit");
+search.placeholder = say("Search pages", "\u641C\u7D22\u7B14\u8BB0");
+addButton.querySelector("span").textContent = say("New page", "\u65B0\u7684\u4E00\u9875");
+addButton.setAttribute("aria-label", say("New page", "\u65B0\u7684\u4E00\u9875"));
+var placeLabel = (n) => n.chat === null ? say("Only on this device", "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A") : n.chat === HERE ? n.where || say("This chat", "\u8FD9\u4E2A\u804A\u5929") : n.where;
+function setListing(on) {
+  shell.classList.toggle("listing", on);
+  if (on) void (current ? settle(current.note, current.text()) : Promise.resolve()).catch(() => {
+  }).then(refresh);
+  drawBar();
+}
+toggle.onclick = () => setListing(!shell.classList.contains("listing"));
+function drawBar() {
+  const listing = shell.classList.contains("listing");
+  toggle.innerHTML = listing ? `<gugu-icon name="chevron-left"></gugu-icon><span>${say("Back to the page", "\u56DE\u5230\u8FD9\u4E00\u9875")}</span>` : `<gugu-icon name="files"></gugu-icon><span>${say("Pages", "\u7B14\u8BB0")} \xB7 ${notes.length}</span>`;
+  whereLabel.textContent = listing || !current ? "" : current.note.chat ? say(`In ${current.note.where}`, `\u5728${current.note.where}\u91CC`) : say("Only on this device", "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A");
+}
+function drawList() {
+  const q = search.value.trim().toLowerCase();
+  const shown = ordered(notes, HERE).filter((n) => !q || `${titleOf(n.name)} ${n.where}`.toLowerCase().includes(q));
+  const here = shown.filter((n) => n.chat === HERE);
+  const rest = shown.filter((n) => n.chat !== HERE);
+  const part = (label, list) => {
+    if (!list.length) return [];
+    const h = document.createElement("h5");
+    h.textContent = `${label} \xB7 ${list.length}`;
+    const ul = document.createElement("ul");
+    ul.className = "list";
+    for (const n of list) ul.append(row(n));
+    return [h, ul];
+  };
+  const hereLabel = HERE === null ? say("On this device", "\u8FD9\u53F0\u8BBE\u5907\u4E0A") : say(`Written in ${here[0]?.where ?? ""}`, `\u5728${here[0]?.where ?? ""}\u91CC\u5199\u7684`);
+  const nodes = [...part(hereLabel, here), ...part(say("Elsewhere", "\u5176\u5B83"), rest)];
+  if (!nodes.length) {
+    const empty = document.createElement("gugu-empty");
+    empty.innerHTML = `<strong>${q ? say("No page matches", "\u6CA1\u6709\u627E\u5230") : say("No pages yet", "\u8FD8\u6CA1\u6709\u7B14\u8BB0")}</strong>`;
+    nodes.push(empty);
+  }
+  rows.replaceChildren(...nodes);
+}
+search.oninput = drawList;
+function row(n) {
+  const li = document.createElement("li");
+  li.tabIndex = 0;
+  li.dataset.key = n.key;
+  if (current?.note.key === n.key) li.setAttribute("aria-current", "page");
+  li.innerHTML = '<gugu-icon name="file-text"></gugu-icon><div><strong></strong><span></span></div><gugu-time></gugu-time><button type="button"><gugu-icon name="ellipsis"></gugu-icon></button>';
+  li.querySelector("strong").textContent = titleOf(n.name);
+  li.querySelector("span").textContent = placeLabel(n);
+  const time = li.querySelector("gugu-time");
+  if (n.at) time.setAttribute("datetime", n.at);
+  else time.remove();
+  const more = li.querySelector("button");
+  more.setAttribute("aria-label", say("Rename or delete", "\u6539\u540D\u6216\u5220\u9664"));
+  more.onclick = (event) => (event.stopPropagation(), void edit(n));
+  li.onclick = () => void show(n).catch((error) => (gugu.reportError(message(error)), refresh()));
+  li.onkeydown = (event) => event.key === "Enter" && event.target === li && li.click();
+  return li;
+}
+var lastRead = 0;
+var reread = () => {
+  if (document.visibilityState !== "visible" || Date.now() - lastRead < 2e3) return;
+  lastRead = Date.now();
+  void refresh();
+};
+document.addEventListener("visibilitychange", reread);
+addEventListener("focus", reread);
+gugu.onContextChanged?.(reread);
+async function refresh() {
+  notes = await load().catch((error) => (gugu.reportError(message(error)), notes));
+  if (current && !notes.some((n) => n.key === current.note.key)) notes = [current.note, ...notes];
+  drawList();
+  drawBar();
+}
+var nameInput = dialog.querySelector("input");
+var [saveButton, deleteButton, cancelButton] = dialog.querySelectorAll("button");
+var askDelete = dialog.querySelector("p");
+dialog.querySelector("h3").textContent = say("Page", "\u8FD9\u9875\u7B14\u8BB0");
+saveButton.textContent = say("Rename", "\u6539\u540D");
+cancelButton.textContent = say("Cancel", "\u53D6\u6D88");
+async function edit(n) {
+  const local = n.chat === null;
+  nameInput.value = titleOf(n.name);
+  nameInput.disabled = local;
+  saveButton.hidden = local;
+  askDelete.hidden = true;
+  deleteButton.textContent = say("Delete", "\u5220\u9664");
+  const entry = entries.get(n.key);
+  deleteButton.hidden = !local && !await gugu.files.canDelete(entry).then((r) => r[0]).catch(() => false);
+  dialog.showModal();
+  const others = () => notes.filter((o) => o.chat === n.chat && o.key !== n.key).map((o) => o.name);
+  saveButton.onclick = async () => {
+    const title = nameInput.value.trim();
+    if (!title || title === titleOf(n.name)) return dialog.close();
+    try {
+      await gugu.files.rename(entry, uniqueName(title, others()));
+      dialog.close();
+      await refresh();
+      if (current?.note.key === n.key) current.note = notes.find((o) => o.key === n.key) ?? current.note;
+      drawBar();
+    } catch (error) {
+      gugu.reportError(message(error));
+    }
+  };
+  deleteButton.onclick = async () => {
+    if (askDelete.hidden) {
+      askDelete.hidden = false;
+      askDelete.textContent = say(`Delete \u201C${titleOf(n.name)}\u201D? This can't be undone.`, `\u5220\u9664\u300C${titleOf(n.name)}\u300D\uFF1F\u5220\u9664\u540E\u65E0\u6CD5\u6062\u590D\u3002`);
+      deleteButton.textContent = say("Delete", "\u786E\u5B9A\u5220\u9664");
+      return;
+    }
+    try {
+      if (current?.note.key === n.key) await leave();
+      if (local) await gugu.writeData(n.key, "");
+      else await gugu.files.remove(entry);
+      dialog.close();
+      await refresh();
+      if (!current) await openFirst();
+    } catch (error) {
+      gugu.reportError(message(error));
+    }
+  };
+  cancelButton.onclick = () => dialog.close();
+}
+async function settle(n, text) {
+  const entry = entries.get(n.key);
+  if (n.chat === null || !entry || !isDefaultName(n.name)) return;
+  const line = firstLine(text);
+  if (!line) return;
+  const name = uniqueName(line, notes.filter((o) => o.chat === n.chat && o.key !== n.key).map((o) => o.name));
+  await gugu.files.rename(entry, name).then(() => n.name = name, (error) => gugu.reportError(message(error)));
+}
+async function leave() {
+  const was = current;
+  current = null;
+  if (!was) return;
+  const text = was.text();
+  await was.close();
+  await settle(was.note, text).catch(() => {
+  });
+  host.replaceChildren();
+}
+var LAST2 = "type-and-memory:last";
+async function show(n) {
+  if (current?.note.key === n.key) return setListing(false);
+  await leave();
+  start.hidden = true;
+  host.hidden = false;
+  top.hidden = n.chat !== null;
+  if (n.chat) {
+    const page = await openPage(entries.get(n.key), host);
+    current = { note: n, ...page };
+  } else {
+    current = { note: n, ...await openLocal(n.key) };
+  }
+  if (HERE === null) localStorage.setItem(LAST2, n.key);
+  gugu.setTabTitle?.(`type and memory \xB7 ${titleOf(n.name)}`);
+  shell.classList.remove("listing");
+  await refresh();
+}
+addButton.onclick = () => void (async () => {
+  if (HERE !== null) {
+    const name = newName(/* @__PURE__ */ new Date(), notes.filter((n2) => n2.chat === HERE).map((n2) => n2.name));
+    const entry = await gugu.files.create({ chat: HERE, name }, {});
+    entries.set(entry.id, entry);
+    const n = { key: entry.id, chat: HERE, name: entry.name, where: notes.find((o) => o.chat === HERE)?.where ?? ctx.chat?.name ?? "", at: entry.updatedAt ?? (/* @__PURE__ */ new Date()).toISOString() };
+    notes = [n, ...notes];
+    await show(n);
+  } else {
+    await show({ key: `${LOCAL_DIR}/${crypto.randomUUID()}.json`, chat: null, name: say("Untitled", "\u672A\u547D\u540D") + SUFFIX, where: "", at: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+})().catch((error) => gugu.reportError(message(error)));
 function whenSaved(f) {
   if (f.saved) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -1242,126 +1456,119 @@ function whenSaved(f) {
     });
   });
 }
-async function alone() {
-  const top = document.getElementById("with");
-  const start = document.getElementById("start");
-  const host = document.getElementById("page");
-  const who = top.querySelector("button");
-  const name = who.querySelector("span");
-  const note = top.querySelector("small");
-  const hint = start.querySelector("p");
+async function privateChatWith(agent) {
+  const dms = (await gugu.chats.list()).chats.filter((c) => c.kind === "dm");
+  for (const c of dms) {
+    const me = (await gugu.chats.members({ chat: c.id })).members.find((m) => m.kind === "agent" && bare(m.id) === bare(agent));
+    if (me) return { chat: c.id, agent: me };
+  }
+  return null;
+}
+var whoButton = top.querySelector("button");
+whoButton.querySelector("span").textContent = say("Find an agent to read along", "\u627E\u4E2A agent \u4E00\u8D77\u8BFB");
+whoButton.title = say("Pick an agent; what you wrote goes with you", "\u9009\u4E00\u4E2A agent\uFF0C\u5199\u597D\u7684\u5B57\u4F1A\u4E00\u8D77\u5E26\u8FC7\u53BB");
+top.querySelector("small").textContent = say("Only on this device", "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A");
+async function openLocal(path) {
+  const store = dataStore({ read: (p) => gugu.readData(p), write: (p, c) => gugu.writeData(p, c) }, path);
+  const page = mount(host, { store, placeholder: say("Write something\u2026", "\u5199\u70B9\u4EC0\u4E48\u2026"), theme, energyBar: false });
+  await page.ready;
+  const local = Object.assign(store, { page });
+  const take = (thenLook) => void takeToAgent(path, local, thenLook).catch((error) => gugu.reportError(message(error)));
+  whoButton.onclick = () => take(false);
+  return {
+    command: (id) => void (id === "glance" && take(true)),
+    text: () => page.text.read(),
+    glance: () => {
+    },
+    async close() {
+      await store.retire();
+      page.destroy();
+    }
+  };
+}
+async function takeToAgent(path, local, thenLook) {
+  const picked = await gugu.pickAgent({
+    title: say("Write with", "\u966A\u4F60\u5199\u7684 agent"),
+    subject: "type and memory",
+    body: say("It reads your page and leaves notes in the margin. What you wrote here goes into your private chat with it.", "\u5B83\u4F1A\u8BFB\u4F60\u7684\u8FD9\u9875\u7EB8\uFF0C\u628A\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002\u4F60\u5728\u8FD9\u91CC\u5199\u597D\u7684\u5B57\u4F1A\u5E26\u8FDB\u4F60\u548C\u5B83\u7684\u79C1\u804A\u3002"),
+    action: say("Write with it", "\u548C\u5B83\u4E00\u8D77\u5199"),
+    search: say("Search your agents", "\u641C\u7D22\u4F60\u7684 agent"),
+    empty: say("You have no agent yet.", "\u4F60\u8FD8\u6CA1\u6709 agent\u3002")
+  });
+  if (picked.cancelled) return;
+  const found = await privateChatWith(picked.agent);
+  if (!found) {
+    gugu.reportError(say("You have no private chat with this agent yet. Say something to it in its chat, then pick it again; your page stays here.", "\u4F60\u548C\u8FD9\u4E2A agent \u8FD8\u6CA1\u6709\u79C1\u804A\u3002\u5148\u5728\u5B83\u7684\u79C1\u804A\u91CC\u548C\u5B83\u8BF4\u4E00\u53E5\u8BDD\uFF0C\u518D\u56DE\u6765\u9009\u5B83\uFF1B\u4F60\u5199\u7684\u5B57\u8FD8\u7559\u5728\u8FD9\u91CC\u3002"));
+    return;
+  }
+  const text = local.page.text.read();
+  await refresh();
+  const name = uniqueName(firstLine(text) || newName(/* @__PURE__ */ new Date(), []).slice(0, -SUFFIX.length), notes.filter((n2) => n2.chat === found.chat).map((n2) => n2.name));
+  const entry = await gugu.files.create({ chat: found.chat, name }, {});
+  const f = await openFile(entry);
+  local.page.text.element.contentEditable = "false";
+  try {
+    await carry(text, {
+      text: () => String(f.data.text ?? ""),
+      write: (next) => f.data.text = next,
+      saved: () => whenSaved(f),
+      reread: async () => String((await gugu.files.open(entry)).data.text ?? "")
+    }, async () => {
+      await local.retire();
+      await gugu.writeData(path, "");
+    });
+  } catch (error) {
+    local.page.text.element.contentEditable = "true";
+    await f.close();
+    gugu.reportError(say(`Could not take your page to ${found.agent.name}: ${message(error)}. It is still here, on this device.`, `\u6CA1\u80FD\u628A\u8FD9\u9875\u5E26\u5230\u548C ${found.agent.name} \u7684\u79C1\u804A\u91CC\uFF1A${message(error)}\u3002\u4F60\u5199\u7684\u5B57\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002`));
+    return;
+  }
+  await f.close();
+  await refresh();
+  const n = notes.find((o) => o.key === entry.id);
+  if (n) await show(n);
+  if (thenLook) current?.glance();
+}
+async function openFirst() {
+  const list = ordered(notes, HERE);
+  const last = HERE === null ? localStorage.getItem(LAST2) : null;
+  const n = list.find((o) => o.key === last) ?? list[0];
+  if (n && (HERE === null || n.chat === HERE)) return show(n);
+  if (HERE !== null) {
+    const entry = await gugu.files.create({ chat: HERE, name: LEGACY }, {}, { ifExists: "use" });
+    await refresh();
+    const made = notes.find((o) => o.key === entry.id);
+    if (made) return show(made);
+  }
+  host.hidden = true;
+  top.hidden = true;
+  start.hidden = false;
+  start.querySelector("p").textContent = say("Write here. If you like, an agent of yours reads along and leaves notes in the margin.", "\u5728\u8FD9\u91CC\u5199\u5B57\u3002\u60F3\u8981\u7684\u8BDD\uFF0C\u53EF\u4EE5\u8BA9\u4F60\u7684\u4E00\u4E2A agent \u5728\u65C1\u8FB9\u8BFB\uFF0C\u628A\u5B83\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002");
   const [write, pick] = start.querySelectorAll("button");
   write.textContent = say("Start writing", "\u76F4\u63A5\u5F00\u59CB\u5199");
   pick.textContent = say("Pick an agent to write with", "\u9009\u4E00\u4E2A agent \u966A\u4F60\u5199");
-  const HERE = "page.tam.json";
-  let here = null;
-  const empty = (why) => {
-    top.hidden = true;
-    host.hidden = true;
-    start.hidden = false;
-    hint.textContent = why ?? say("Write here. If you like, an agent of yours reads along and leaves notes in the margin.", "\u5728\u8FD9\u91CC\u5199\u5B57\u3002\u60F3\u8981\u7684\u8BDD\uFF0C\u53EF\u4EE5\u8BA9\u4F60\u7684\u4E00\u4E2A agent \u5728\u65C1\u8FB9\u8BFB\uFF0C\u628A\u5B83\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002");
-  };
-  const show = (label, title, aside = "") => {
-    start.hidden = true;
-    host.hidden = false;
-    top.hidden = false;
-    name.textContent = label;
-    note.textContent = aside;
-    who.title = title;
-    gugu.setTabTitle?.(aside ? "type and memory" : `type and memory \xB7 ${label.replace(/^和 | 一起写$|^Writing with /g, "")}`);
-  };
-  async function writeAlone() {
-    await current?.close();
-    current = null;
-    host.replaceChildren();
-    const store = dataStore({ read: (p) => gugu.readData(p), write: (p, c) => gugu.writeData(p, c) }, HERE);
-    const page = mount(host, { store, placeholder: say("Write something\u2026", "\u5199\u70B9\u4EC0\u4E48\u2026"), theme: ctx.themeMode === "dark" ? "dark" : "light", energyBar: false });
-    here = Object.assign(store, { page });
-    show(say("Find an agent to read along", "\u627E\u4E2A agent \u4E00\u8D77\u8BFB"), say("Pick an agent; what you wrote goes with you", "\u9009\u4E00\u4E2A agent\uFF0C\u5199\u597D\u7684\u5B57\u4F1A\u4E00\u8D77\u5E26\u8FC7\u53BB"), say("Only on this device", "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A"));
-    current = {
-      // Asking for a look with nobody to ask picks somebody first; the page goes along, then they look.
-      command: async (id) => void (id === "glance" && await choose(true)),
-      glance: () => {
-      },
-      async close() {
-        page.destroy();
-        here = null;
-      }
-    };
-    await page.ready;
-    remember({ alone: true });
-  }
-  async function writeWith(agent, hintChat) {
-    const found = await privateChatWith(agent, hintChat);
-    if (!found) {
-      if (here) {
-        gugu.reportError(say("You have no private chat with this agent yet. Say something to it in its chat, then pick it again; your page stays here.", "\u4F60\u548C\u8FD9\u4E2A agent \u8FD8\u6CA1\u6709\u79C1\u804A\u3002\u5148\u5728\u5B83\u7684\u79C1\u804A\u91CC\u548C\u5B83\u8BF4\u4E00\u53E5\u8BDD\uFF0C\u518D\u56DE\u6765\u9009\u5B83\uFF1B\u4F60\u5199\u7684\u5B57\u8FD8\u7559\u5728\u8FD9\u91CC\u3002"));
-        return false;
-      }
-      empty(say("You have no private chat with this agent yet. Say something to it in its chat, then pick it here again.", "\u4F60\u548C\u8FD9\u4E2A agent \u8FD8\u6CA1\u6709\u79C1\u804A\u3002\u5148\u5728\u5B83\u7684\u79C1\u804A\u91CC\u548C\u5B83\u8BF4\u4E00\u53E5\u8BDD\uFF0C\u518D\u56DE\u6765\u9009\u5B83\u3002"));
-      return false;
-    }
-    const entry = await pageIn(found.chat);
-    if (here) {
-      const local = here;
-      const f = await openFile(entry);
-      local.page.text.element.contentEditable = "false";
-      try {
-        await carry(local.page.text.read(), {
-          text: () => String(f.data.text ?? ""),
-          write: (text) => f.data.text = text,
-          saved: () => whenSaved(f),
-          reread: async () => String((await gugu.files.open(entry)).data.text ?? "")
-        }, async () => {
-          await local.retire();
-          await gugu.writeData(HERE, "");
-        });
-      } catch (error) {
-        local.page.text.element.contentEditable = "true";
-        gugu.reportError(say(`Could not take your page to ${found.agent.name}: ${error instanceof Error ? error.message : error}. It is still here, on this device.`, `\u6CA1\u80FD\u628A\u8FD9\u9875\u5E26\u5230\u548C ${found.agent.name} \u7684\u79C1\u804A\u91CC\uFF1A${error instanceof Error ? error.message : error}\u3002\u4F60\u5199\u7684\u5B57\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002`));
-        return false;
-      }
-    }
-    await current?.close();
-    current = null;
-    host.replaceChildren();
-    show(say(`Writing with ${found.agent.name}`, `\u548C ${found.agent.name} \u4E00\u8D77\u5199`), say("Write with another agent", "\u6362\u4E00\u4E2A agent \u966A\u4F60\u5199"));
-    current = await openPage(entry, host);
-    remember({ agent: found.agent.id, chat: found.chat });
-    return true;
-  }
-  async function choose(thenLook = false) {
-    const picked = await gugu.pickAgent({
-      title: say("Write with", "\u966A\u4F60\u5199\u7684 agent"),
-      subject: "type and memory",
-      body: here ? say("It reads your page and leaves notes in the margin. What you wrote here goes into your private chat with it.", "\u5B83\u4F1A\u8BFB\u4F60\u7684\u8FD9\u9875\u7EB8\uFF0C\u628A\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002\u4F60\u5728\u8FD9\u91CC\u5199\u597D\u7684\u5B57\u4F1A\u5E26\u8FDB\u4F60\u548C\u5B83\u7684\u79C1\u804A\u3002") : say("It reads your page as you write and leaves notes in the margin. The page lives in your private chat with it.", "\u4F60\u5199\u7684\u65F6\u5019\u5B83\u5728\u65C1\u8FB9\u8BFB\uFF0C\u628A\u6CE8\u610F\u5230\u7684\u6279\u5728\u9875\u8FB9\u3002\u8FD9\u9875\u7EB8\u5B58\u5728\u4F60\u548C\u5B83\u7684\u79C1\u804A\u91CC\u3002"),
-      action: say("Write with it", "\u548C\u5B83\u4E00\u8D77\u5199"),
-      search: say("Search your agents", "\u641C\u7D22\u4F60\u7684 agent"),
-      empty: say("You have no agent yet.", "\u4F60\u8FD8\u6CA1\u6709 agent\u3002"),
-      ...lastAgent() ? { preselect: lastAgent() } : {}
-    });
+  write.onclick = () => addButton.click();
+  pick.onclick = () => void (async () => {
+    const picked = await gugu.pickAgent({ title: say("Write with", "\u966A\u4F60\u5199\u7684 agent"), subject: "type and memory", action: say("Write with it", "\u548C\u5B83\u4E00\u8D77\u5199"), search: say("Search your agents", "\u641C\u7D22\u4F60\u7684 agent"), empty: say("You have no agent yet.", "\u4F60\u8FD8\u6CA1\u6709 agent\u3002") });
     if (picked.cancelled) return;
-    try {
-      if (await writeWith(picked.agent) && thenLook) current?.glance();
-    } catch (error) {
-      gugu.reportError(error instanceof Error ? error.message : String(error));
-    }
-  }
-  write.onclick = () => void writeAlone().catch((error) => gugu.reportError(error instanceof Error ? error.message : String(error)));
-  pick.onclick = () => choose();
-  who.onclick = () => choose();
-  unopened = () => choose();
-  const was = last();
-  const left = String(JSON.parse(await gugu.readData(HERE).catch(() => null) || "{}").text ?? "");
-  if (was && "agent" in was && !left.trim() && await writeWith(was.agent, was.chat).catch(() => false)) return;
-  if (was && "alone" in was || left.trim()) return void await writeAlone();
-  empty();
+    const found = await privateChatWith(picked.agent);
+    if (!found) return gugu.reportError(say("You have no private chat with this agent yet. Say something to it in its chat, then pick it again.", "\u4F60\u548C\u8FD9\u4E2A agent \u8FD8\u6CA1\u6709\u79C1\u804A\u3002\u5148\u5728\u5B83\u7684\u79C1\u804A\u91CC\u548C\u5B83\u8BF4\u4E00\u53E5\u8BDD\uFF0C\u518D\u56DE\u6765\u9009\u5B83\u3002"));
+    const entry = await gugu.files.create({ chat: found.chat, name: newName(/* @__PURE__ */ new Date(), notes.filter((n2) => n2.chat === found.chat).map((n2) => n2.name)) }, {});
+    await refresh();
+    const made = notes.find((o) => o.key === entry.id);
+    if (made) await show(made);
+  })().catch((error) => gugu.reportError(message(error)));
 }
 try {
-  if (ctx.file) current = await openPage(ctx.file);
-  else if (ctx.chat) current = await openPage(await pageIn(ctx.chat.id));
-  else await alone();
+  notes = await load();
+  drawBar();
+  if (ctx.file) {
+    entries.set(ctx.file.id, ctx.file);
+    const n = notes.find((o) => o.key === ctx.file.id) ?? { key: ctx.file.id, chat: ctx.file.chat, name: ctx.file.name, where: ctx.chat?.name ?? "", at: ctx.file.updatedAt ?? null };
+    await show(n);
+  } else await openFirst();
+  drawList();
 } catch (error) {
-  gugu.reportError(error instanceof Error ? error.message : String(error));
+  gugu.reportError(message(error));
   throw error;
 }

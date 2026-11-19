@@ -6,10 +6,20 @@
     <link rel="stylesheet" href="gugu.css" />
   </head>
   <body>
-    <!-- Only when the page is opened on its own, outside a chat (main.ts, alone). -->
-    <header id="with" hidden><button type="button"><span></span><gugu-icon name="chevron-down"></gugu-icon></button><small></small></header>
-    <section id="start" hidden><p></p><div><button type="button" class="primary"></button><button type="button"></button></div></section>
-    <div id="page"></div>
+    <!-- Narrow: the list or the page (.listing). Wide: both side by side. main.ts fills the words. -->
+    <div id="shell">
+      <aside id="side">
+        <header id="bar"><button type="button" id="toggle"></button><small id="where"></small><button type="button" id="new"><gugu-icon name="plus"></gugu-icon><span></span></button></header>
+        <div id="notes"><input type="search" id="search" /><div id="rows"></div></div>
+      </aside>
+      <main id="main">
+        <!-- Only for a page kept on this device: the way to take it to an agent. -->
+        <header id="with" hidden><button type="button"><span></span><gugu-icon name="chevron-down"></gugu-icon></button><small></small></header>
+        <section id="start" hidden><p></p><div><button type="button" class="primary"></button><button type="button"></button></div></section>
+        <div id="page"></div>
+      </main>
+    </div>
+    <dialog id="edit"><h3></h3><input type="text" /><p hidden></p><div class="row"><button type="button" class="primary"></button><button type="button" class="danger"></button><button type="button"></button></div></dialog>
     <script type="module" src="main.js"></script>
   </body>
 </html>
