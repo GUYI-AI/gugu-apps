@@ -79,6 +79,7 @@ const desktop = typeof g.onBackgroundMessage === 'function'
 /** Where the board shown is kept: { kind: 'local' } or { kind: 'chat', f, name } (a live board file). */
 let home = null
 let board = null
+let wanted = null // the card a link asked for, until its board is here (openWanted)
 let agents = null // the task list by session, or null when the host cannot give it: then no dots, nothing else changes
 let thisMachine = null
 let selected = null
@@ -213,15 +214,15 @@ async function commit(id) {
   }
   // To whoever holds the card; else to whoever asked. Its agent id is on the card, or found by its session.
   const to = (card?.holder !== 'person' && (card?.holder?.agent ?? rowOf(card)?.agentId)) || (/^user:/.test(result.asker ?? '') ? result.asker : null)
-  await tell(to, t.answerText(card, result.question, result.answer, chatArg()), t.notSent)
+  if (to) await tell(t.answerText(card, result.question, result.answer, chatArg()), { to: { agent: to } }, t.notSent)
   render()
 }
 
 /** Words for one agent, after a person's change: an answer to the card's holder, a done or reopen to the board's lead. */
-async function tell(agent, text, notSent) {
-  if (!agent || typeof g.dispatch !== 'function') return
+async function tell(text, opts, notSent) {
+  if (typeof g.dispatch !== 'function') return
   try {
-    await g.dispatch(text, { to: { agent } })
+    await g.dispatch(text, opts)
   } catch (error) {
     showAlert(notSent(error?.message ?? String(error)))
   }
@@ -235,7 +236,11 @@ async function finish(card, done) {
     return
   }
   const now = board?.cards[card.id] ?? card
-  await tell(board?.lead?.agent, t.leadText(now, done, self()?.name ?? t.you, done ? [] : openChecks(now).map((c) => c.label), chatArg()), t.leadNotSent)
+  const lead = home?.kind === 'chat' ? board?.lead?.agent : null
+  if (!lead) return
+  // In the board's chat, @ the lead, from whoever clicked: the lead is an agent of the chat, maybe another person's, which
+  // only a chat message reaches (one of the clicker's own agents is all `{ agent }` reaches).
+  await tell(t.leadText(now, done, self()?.name ?? t.you, done ? [] : openChecks(now).map((c) => c.label), chatArg()), { to: { chat: home.f.entry.chat, member: lead }, visible: true }, t.leadNotSent)
 }
 
 // ── the board's lead (主管) ─────────────────────────────────────────────────
@@ -379,26 +384,25 @@ const openFolds = new Set()
 // ── citing a card ───────────────────────────────────────────────────────────
 
 /**
- * 引用: the card as one line in the board's chat composer — its id and title, a link that opens the board on it — which the
- * person sends themselves. An agent reading it has the id for kanban__board. This computer's board names no chat: gugu asks
- * where the draft goes.
+ * 引用: the card as gugu's own 引用 pill in the board's chat composer — "协作看板.board.json · <id> · <title>", the board file
+ * at that card — which the person sends themselves, as a file's or a message's. A click on it opens the board on the card
+ * (`onLink`, `query.card`); an agent reading it has the id for kanban__board. Only a chat's board: this computer's names no chat.
  */
 async function cite(card) {
   try {
-    const chat = home?.kind === 'chat' ? home.f.entry.chat : null
-    const link = await g.linkTo({ kind: 'app', tab: 'board', ...(chat ? { chat } : {}), query: { ...(chat ? { board: home.f.entry.id } : {}), card: card.id } })
-    const label = `${card.id} · ${card.title}`.replace(/[\\[\]]/g, (c) => `\\${c}`)
-    await g.dispatch(`[${label}](${link})`, { draft: true, ...(chat ? { to: { chat } } : {}) })
+    // The pill names its file, and so the chat whose composer it goes into: no `to` beside it (gugu refuses both).
+    await g.dispatch('', { draft: true, refs: [{ file: home.f.entry, at: { card: card.id }, label: `${card.id} · ${card.title}` }] })
   } catch (error) {
     said(error)
   }
 }
+const citable = () => home?.kind === 'chat' && typeof g.dispatch === 'function'
 
 /** A card's menu, gugu's own: right-click, the menu key, or a long press on a phone (as the Files App's rows do). */
 function withMenu(el, card) {
   const show = async (x, y) => {
     try {
-      const picked = await g.showContextMenu({ x, y, items: [{ id: 'open', label: t.open }, { id: 'cite', label: t.cite }] })
+      const picked = await g.showContextMenu({ x, y, items: [{ id: 'open', label: t.open }, ...(citable() ? [{ id: 'cite', label: t.cite }] : [])] })
       if (picked === 'open') openCard(card.id)
       if (picked === 'cite') await cite(card)
     } catch (error) {
@@ -542,7 +546,7 @@ function renderSheet() {
   const blocking = [...openChecks(card).map((c) => c.label), card.wait?.on === 'owner' ? card.wait.question : null].filter(Boolean)
   const actions = h('footer', { class: 'sheet-foot' },
     typeof g.dispatch === 'function' && state !== 'done' ? h('button', { type: 'button', text: t.handTo, onclick: () => handTo(card) }) : null,
-    typeof g.dispatch === 'function' ? h('button', { type: 'button', text: t.cite, onclick: () => cite(card) }) : null,
+    citable() ? h('button', { type: 'button', text: t.cite, onclick: () => cite(card) }) : null,
     state === 'done'
       ? h('button', { type: 'button', text: t.reopen, onclick: () => finish(card, false) })
       : h('button', { type: 'button', class: 'primary', text: t.done, disabled: blocking.length > 0, onclick: () => finish(card, true) }),
@@ -644,6 +648,15 @@ async function showChatBoard(open) {
   }
   if (selected) closeCard()
   render()
+  openWanted()
+}
+
+/** A link (a cited card's pill) can come before its board has loaded — it opened the page: the card opens once it is here. */
+function openWanted() {
+  if (!wanted || !board) return
+  const id = wanted
+  wanted = null
+  try { openCard(findCard(board, id).id) } catch { render() }
 }
 
 if (desktop) g.onBackgroundMessage((message) => {
@@ -667,9 +680,9 @@ if (desktop) g.onBackgroundMessage((message) => {
 g.onLink?.(async ({ query } = {}) => {
   if (!query) return
   if (query.board && !(home?.kind === 'chat' && home.f.entry.id === query.board)) await showChatBoard(() => g.files.open({ id: query.board, ...(ctx.chat ? { chat: ctx.chat.id } : {}) }))
-  if (query.card && board) {
-    try { openCard(findCard(board, query.card).id) } catch { render() }
-  } else render()
+  wanted = query.card ?? null
+  if (board && wanted) openWanted()
+  else render()
 })
 
 g.onContextChanged(async () => {

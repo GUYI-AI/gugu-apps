@@ -32,7 +32,7 @@ line saying what it needs to know).
 - A supervisor may keep its lanes' cards itself: any agent in the chat can write any card, and the log says who did.
 - **The board's lead** (主管): a chat's board may name one agent of the chat, set on the page or with
   `kanban__set { chat, lead: "user:<uuid>" }` (`null` clears it; logged on the board; `board` shows it on its second
-  line). Whenever a **person** marks a card done or reopens it, the lead gets a message naming the card; agents' own
+  line). Whenever a **person** marks a card done or reopens it, that person's message in the chat @s the lead, naming the card; agents' own
   changes tell no one. **When you are the lead and such a message comes**: read the card (`board` with `card`), check
   it against its checklist, log and what it closes (the PR merged, the slot or tickets cleared). Done and it holds: the
   lane that held it may be archived once its work has landed, and you say so with a `log` line. Done but something is
