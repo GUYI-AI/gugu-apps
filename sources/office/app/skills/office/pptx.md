@@ -6,8 +6,8 @@ shape whose cNvPr id is 12 (`&k=2`: the slide gives that id twice and it is the 
 (`outline` gives each shape's box). The pill's words (`第 3 页 · 季度目标`) are the slide and the shape's first words.
 
 Run `gugu-node <this folder>/scripts/pptx.mjs <command> …`. It prints one JSON; a refusal is one sentence on stderr,
-exit code 1, and nothing written. `<deck>` below is the path the download gave (`saved_to`); its folder is yours alone,
-so keep every file of this change in it — never in the current directory, which other agents share.
+exit code 1, and nothing written. `<deck>` below is your own copy of the download (SKILL.md); keep every file of this change
+beside it — never in the current directory, which other agents share.
 
 1. `outline <deck> [slide]`: every slide's shapes (id, k when repeated, name, kind, box, first words, `was` — a
    fingerprint of the shape as it is). With a slide, whole texts.

@@ -22,6 +22,8 @@ const STRINGS = {
     noFile: '从群文件夹里点开一份演示稿（.pptx）或表格（.xlsx），就在这里打开。',
     notMine: '咕咕办公打不开这种文件：{name}',
     gone: '这份文件已经不在群文件夹里了。',
+    unavailable: '暂时无法读取，可以联系上传的人',
+    cloudDeleted: '云端已删除，可以让上传的人重新发',
     unfollowed: '读不了群文件夹（没有 files:read），这份文件有了新版本也看不到。',
     failed: '出错了：{e}',
     loading: '正在打开…',
@@ -56,6 +58,8 @@ const STRINGS = {
     noFile: 'Open a deck (.pptx) or a workbook (.xlsx) from a chat\'s folder and it opens here.',
     notMine: 'Gugu Office does not open this kind of file: {name}',
     gone: 'This file is no longer in the chat\'s folder.',
+    unavailable: 'Temporarily unreadable. Contact the uploader.',
+    cloudDeleted: 'The cloud copy was deleted. Ask the uploader to send it again.',
     unfollowed: 'The chat\'s folder cannot be read here (no files:read): a new version of this file will not show.',
     failed: 'Something went wrong: {e}',
     loading: 'Opening…',
@@ -145,6 +149,9 @@ const applyLayout = () => {
 }
 const isZh = (locale) => String(locale || '').toLowerCase().startsWith('zh')
 const can = (capability) => !!state.ctx?.capabilities?.includes(capability)
+/** A chat file the file service says cannot be read (as the Files App says it): why, or null. */
+const unreadable = (entry) => entry.availability === 'unavailable' ? state.t.unavailable
+  : ['expired', 'deleted'].includes(entry.availability) || entry.expiredAt ? state.t.cloudDeleted : null
 const suffixOf = (entry) => (entry.suffix ?? entry.name.match(/\.[^.]+$/)?.[0] ?? '').toLowerCase()
 
 // ─── context ────────────────────────────────────────────────────────────────
@@ -179,9 +186,16 @@ async function openHanded() {
   // A place is the file's its link names (#7257): another file opening drops it.
   if (state.place && state.place.file !== token.id) state.place = null
   closeCurrent()
-  showMessage(state.t.loading)
+  // The first file of the page: the host's loading mark says it (index.html `reading`); a later one says so here.
+  if (!document.body.classList.contains('reading')) showMessage(state.t.loading)
   // Heard from before it is read: a version saved while it is opened is not missed.
   follow(state.ctx.file.chat ?? state.ctx.chat?.id)
+  const why = unreadable(state.ctx.file)
+  if (why) {
+    state.opening = null
+    titleTab(state.ctx.file)
+    return showMessage(why)
+  }
   try {
     const file = await gugu.files.open(state.ctx.file)
     if (state.opening !== token) {
@@ -273,6 +287,7 @@ async function mountFile(file, kind, token) {
       current.view.destroy()
       return
     }
+    reveal()
     document.body.dataset.state = 'doc'
     renderPicks([])
     showPlace()
@@ -465,7 +480,13 @@ function showPlace() {
 
 // ─── messages ───────────────────────────────────────────────────────────────
 
+/** Draw the page (index.html starts it `reading`): what it shows is ready. */
+function reveal() {
+  document.body.classList.remove('reading')
+}
+
 function showMessage(text) {
+  reveal()
   document.body.dataset.state = 'message'
   $('doc-message').textContent = text
 }

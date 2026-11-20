@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1
+
+- The skill fetches a deck or workbook with `message_download_file` (its `gugu-file://` link) and saves the changed copy back with `message_send` `{ file, file_path }` as that file's next version — the host's one way in and out for a file's bytes. It no longer names `workspace__read`, which the Files App no longer has, nor `message_send_file`. Needs gugu 0.3.7.
+- A file opening for the first time draws nothing until it is shown: the host's loading mark stays, with no 「正在打开…」 line first, as the Files App does.
+- A file whose cloud copy is gone or cannot be read now says so, in the Files App's words, instead of a failed read.
+- The place a pill points at is tinted on a phone too (no `color-mix`, which WebView 113 does not draw).
+
 ## 0.5.0
 
 App interface 56: a deck and a workbook are drawn as the host's file tile (`<gugu-file-mark tile>`) wherever they show, the same as every other file: in the Files App (the manifest declares no `fileIcons` any more), and on Gugu Office's own page (its list, the 「新建」 menu, the blank deck card). Its own xlsx.png and pptx.png are gone. A client before interface 56 keeps 0.4.x.

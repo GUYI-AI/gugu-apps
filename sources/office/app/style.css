@@ -13,6 +13,7 @@ body {
   overflow: hidden;
 }
 button { font: inherit; color: inherit; }
+body.reading > * { visibility: hidden; }
 .banner { flex: none; padding: 6px 12px; font-size: 12px; border-bottom: 1px solid var(--em-border); }
 .banner[data-tone="error"] { color: var(--em-foreground-destructive); }
 .banner[data-tone="info"] { color: var(--em-foreground-muted); }
@@ -77,9 +78,9 @@ body.fingers .pick-clear { width: 36px; height: 36px; }
 .pptx-mark { pointer-events: none; }
 /* The place a pill pointed at (reveal): framed until the next press — solid and filled, not a pick's dashed frame. */
 .pptx-found {
-  position: absolute; pointer-events: none; border: 2px solid var(--em-accent-11);
-  background: color-mix(in oklab, var(--em-accent-11) 14%, transparent); box-shadow: 0 0 0 2px var(--em-background);
+  position: absolute; pointer-events: none; border: 2px solid var(--em-accent-11); box-shadow: 0 0 0 2px var(--em-background);
 }
+.pptx-found::before { content: ''; position: absolute; inset: 0; background: var(--em-accent-11); opacity: 0.14; }
 .pptx-found.whole { inset: 0; }
 .pptx-badge {
   position: absolute; z-index: 1; min-width: 22px; height: 22px; padding: 0 6px; transform: translate(-40%, -40%);

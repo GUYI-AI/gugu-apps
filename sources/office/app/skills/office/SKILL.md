@@ -23,13 +23,14 @@ Another tool (python-pptx, openpyxl, say) may do it too: pptx.md and xlsx.md say
 
 ## Download and save back
 
-- Download: `workspace__read({ item_id, save: true })` saves the whole file on this computer and gives `saved_to` (its
-  path) and `version` N. `item_id` is in the pill's link or in the attachment's `gugu-file://<item_id>?v=N` (its delivery, message_history,
-  message_download_file), or `workspace__list({ chat_id })` gives it. That folder
-  is yours alone (one per agent, file and version): change the file there, in place, and keep your other files of this
-  change beside it — the current directory is shared with other agents.
-- Save back: `workspace__edit({ item_id, path, expected_version: N })`: the file at `path` becomes its next version.
-  To show it in the chat as well, one call does both instead: `message_send_file({ chat_id, file: "gugu-file://<item_id>?v=N",
-  file_path: path })` — the card shows the new version. A version already saved is shown with `file` alone.
-- Refused because someone saved a newer one since: read it again and make your change on that (the same edits apply
+- Download: `message_download_file({ file: "gugu-file://<item_id>?v=N" })` (the pill's link without its `#…`; the
+  attachment's `gugu-file://` link; `workspace__list({ chat_id })` gives the link too) saves it on this computer and
+  answers `file_path` and `file` — that link with the version N you have. The saved file is a shared read-only copy:
+  copy it into a new folder of your own (`mktemp -d`) and change that copy; keep your other files of this change beside
+  it — the current directory is shared with other agents.
+- Save back: `message_send({ chat_id, file: "gugu-file://<item_id>?v=N", file_path: <your copy> })` — `file` is the
+  link the download answered (version N), `file_path` your changed copy. It becomes that file's next version (N+1),
+  never a new file beside it, and its card shows in the chat with your words as the caption. This is the only way to
+  save it back. A version already saved is shown again with `file` alone.
+- Refused because someone saved a newer one since: download it again and make your change on that (the same edits apply
   again; a shape they changed is refused, read it again).

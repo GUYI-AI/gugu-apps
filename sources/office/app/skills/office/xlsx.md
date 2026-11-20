@@ -7,8 +7,8 @@ hold come percent-encoded (`%20` a space, `%26` `&`, `%2B` `+`): decode them onc
 pill's words are the same address, but may be cut short: the link's `range` is the place.
 
 Run `gugu-node <this folder>/scripts/xlsx.mjs <command> …`. It prints one JSON; a refusal is one sentence on stderr,
-exit code 1, and nothing written. `<book>` below is the path the download gave (`saved_to`); its folder is yours alone,
-so keep every file of this change in it — never in the current directory, which other agents share.
+exit code 1, and nothing written. `<book>` below is your own copy of the download (SKILL.md); keep every file of this change
+beside it — never in the current directory, which other agents share.
 
 1. `read <book>`: each sheet — its used range, rows, columns, frozen panes, merged cells, tables, first row — and the
    workbook's names.
