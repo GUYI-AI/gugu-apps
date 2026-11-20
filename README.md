@@ -126,3 +126,5 @@ non-author review. Companion specifications and producer live in GUYI-AI/gugu-de
 2. 把钥匙换成只能对 `market/*` Put、不能 Delete 的 RAM 子账号钥匙。
 
 fork 来的 PR 只跑 `verify`，拿不到 secrets；只有 `main` 能用 `mirror` 环境。
+
+Pull requests here can also be reviewed and merged from a chat with the GitHub PR App.
