@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0
+
+- A card in a message (owner 11-20: a task card widget): a new widget view, `card`. Its data names only the board file
+  and the card (`{ board, card }`). The card's title, state, holder, checklist and next step or question are read from
+  the board file and redrawn on each change, so the card in the chat follows the board. A tap opens the board on that
+  card, as a cited card's pill does. A card no longer on the board, or a board no longer readable, says so.
+- `kanban__set` on a chat's board ends with the exact `widget_send` arguments for that card. The skill says when to
+  send it: taking a card handed over in the chat, asking the owner, finishing one people wait for.
+
 ## 2.0.2
 
 - 引用 (owner: a card should be citable): a card's menu — gugu's own, on right-click, the menu key, or a long press on a

@@ -129,3 +129,17 @@ test('lead is set on its own on a chat board, logged, shown by board; anything e
   assert.equal(await tools.set.run({ chat: CHAT, lead: null }, LANE), 'the board has no lead')
   assert.match(await tools.board.run({ chat: CHAT }, SUP), /lead cleared: user:/)
 })
+
+test("set on a chat's board answers the exact widget_send for that card; this computer's board has none", async () => {
+  const added = await tools.set.run({ chat: CHAT, title: 'ship the card widget' }, LANE)
+  const id = idOf(added)
+  const file = [...chatFiles.values()][0]
+  const args = JSON.parse(/widget_send (\{.*\})$/m.exec(added)[1])
+  assert.deepEqual(args, { chat_id: CHAT, app: 'kanban', view: 'card', text: `${id} · ship the card widget`, data: { board: file.entry.id, card: id } })
+  const changed = await tools.set.run({ chat: CHAT, card: id, hold: true }, LANE)
+  assert.match(changed, new RegExp(`^changed ${id}\\n.*"card":"${id}"`))
+  const manifest = JSON.parse(await readFile(new URL('../app/manifest.json', import.meta.url)))
+  assert.ok(manifest.contributes.tabs.find((tab) => tab.name === args.view)?.widget, 'the view is a declared widget')
+  assert.doesNotMatch(await tools.set.run({ title: 'local' }, LANE), /widget_send/)
+  assert.doesNotMatch(await tools.set.run({ chat: CHAT, lead: SUP.agent }, LANE), /widget_send/)
+})
