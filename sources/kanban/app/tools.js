@@ -20,6 +20,10 @@ const chatArg = {
 }
 const cardArg = { type: 'string', description: "The card's id as board shows it (its first characters are enough when only one card starts so)." }
 
+/** The exact widget_send arguments for one card of a chat's board: the message names the board file and the card only. */
+const cardWidget = (chat, board, card, title) =>
+  ({ chat_id: chat, app: 'kanban', view: 'card', text: `${card} · ${title}`.slice(0, 200), data: { board, card } })
+
 const callerOf = (call) => ({ agent: call.agent, session: call.session, name: call.agentName ?? call.taskTitle })
 const whoFor = (call) => (l) => (l.by === call.agent ? 'you' : l.by === 'person' ? 'the person' : l.name ?? l.by.replace(/^user:/, '').slice(0, 8))
 
@@ -76,7 +80,7 @@ export const set = {
     if (lead !== undefined && (chat === undefined || card !== undefined || Object.keys(rest).length)) throw new Error("lead is set on its own, on a chat's board: { chat, lead }")
     const op = lead !== undefined ? { type: 'lead', agent: lead } : card === undefined ? { type: 'create', ...fields } : { type: 'set', card, ...fields }
     const caller = callerOf(call)
-    let result
+    let result, shown = null
     if (chat === undefined) {
       result = (await applyLocal(op, call.agent, caller)).result
     } else {
@@ -84,12 +88,15 @@ export const set = {
       try {
         result = applyToFile(f, op, call.agent, caller)
         await whenSaved(f)
+        const title = f.data.cards?.[result.card]?.title
+        if (lead === undefined && title) shown = cardWidget(chat, f.entry.id, result.card, title)
       } finally {
         f.close()
       }
     }
     if (lead !== undefined) return lead ? `the board's lead is ${lead}` : 'the board has no lead'
-    return card === undefined ? `added card ${result.card}` : `changed ${result.card}`
+    const said = card === undefined ? `added card ${result.card}` : `changed ${result.card}`
+    return shown ? `${said}\nTo show this card in the chat, live: widget_send ${JSON.stringify(shown)}` : said
   },
 }
 

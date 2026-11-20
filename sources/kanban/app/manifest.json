@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "人和 agent 共用的看板",
   "author": "咕咕",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "apiVersion": 26,
   "platforms": [
     "desktop",
@@ -56,6 +56,14 @@
         "widget": {
           "height": 120
         }
+      },
+      {
+        "name": "card",
+        "title": "看板卡片",
+        "entry": "card.html",
+        "widget": {
+          "height": 148
+        }
       }
     ],
     "mcpServers": [
@@ -85,6 +93,9 @@
         },
         "fleet": {
           "title": "Board summary"
+        },
+        "card": {
+          "title": "Board card"
         }
       },
       "examples": [

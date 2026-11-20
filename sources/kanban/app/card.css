@@ -1,0 +1,34 @@
+/* One card of a chat's board in a message (the `card` widget): head, title, holder and checklist, then its next step. */
+body.card-widget { margin: 0; height: 100vh; overflow: hidden; font-family: var(--em-font-sans); }
+#card { box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px;
+  background: var(--em-background-1); color: var(--em-foreground); font-size: var(--em-font-body); line-height: var(--em-lh-body); cursor: pointer; outline: none; }
+#card > * { flex: none; }
+#card:focus-visible { box-shadow: inset 0 0 0 2px var(--em-focus-ring); }
+@media (hover: hover) { #card:hover { background: color-mix(in oklab, var(--em-background-1), var(--em-foreground) 3%); } }
+.row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.grow { flex: 1; min-width: 0; }
+.ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cap { font-size: var(--em-font-caption); line-height: var(--em-lh-caption); }
+.muted { color: var(--em-foreground-muted); }
+.icon { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.id { font-family: var(--em-font-mono); font-size: 11px; color: var(--em-foreground-passive); }
+.title { font-size: var(--em-font-title); line-height: var(--em-lh-title); font-weight: 600;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.chip { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border-radius: var(--em-radius-capsule);
+  font-size: var(--em-font-caption); white-space: nowrap; background: var(--em-hover); color: var(--em-foreground-muted); }
+.chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.s-owner .chip { background: var(--em-background-warning); color: var(--em-foreground-warning); }
+.s-progress .chip { background: var(--em-background-info); color: var(--em-foreground-info); }
+.s-done .chip { background: var(--em-background-success); color: var(--em-foreground-success); }
+.s-done .title { color: var(--em-foreground-muted); }
+.holder { gap: 6px; flex: 0 1 auto; max-width: 45%; }
+.holder > .ell { min-width: 0; }
+.av { flex: none; width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; font-weight: 600;
+  background: var(--em-background-3); color: var(--em-foreground-muted); }
+.bar { flex: 1; height: 4px; border-radius: 2px; background: var(--em-background-3); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--em-foreground-muted); border-radius: 2px; }
+.s-done .bar i { background: var(--em-foreground-success); }
+.spacer { flex: 1 1 0 !important; min-height: 0; }
+.gone { margin: auto 0; }
+/* A narrow chat column (the board open beside it, a phone): one title line, so the next step or question still shows. */
+@media (max-width: 360px) { .title { -webkit-line-clamp: 1; } }
