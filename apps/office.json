@@ -183,6 +183,15 @@
       "sha256": "0578d89eb8470b87fdc3ef8e4b7499c2c79833b9c2efe80d6420149bb2fe2fdc",
       "bytes": 1146076,
       "yanked": null
+    },
+    {
+      "version": "0.6.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/office/app",
+      "commit": "3868b673fae3c0985c15020feea9975e77b7e080",
+      "sha256": "d93a144d65ce3a64693781bec1310ca5040a48f5c077bcf7a485a7c5fb3d112c",
+      "bytes": 1143871,
+      "yanked": null
     }
   ]
 }

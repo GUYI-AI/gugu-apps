@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "与 agent 协作修改演示稿和表格",
   "author": "咕咕",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "apiVersion": 56,
   "platforms": [
     "desktop",

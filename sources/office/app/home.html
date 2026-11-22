@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="home.css" />
 </head>
 <body>
-  <!-- One bar, as Office's start page has: the search, and 「新建」 where a blank file can be made (a page drawn for a chat). -->
-  <header class="bar">
-    <label class="search"><gugu-icon name="search"></gugu-icon><input id="query" type="search" autocomplete="off" /></label>
+  <!-- One bar on a page drawn for a chat: that chat's files (the host's own folder), and 「新建」 where a blank file can be made. -->
+  <header class="bar" id="bar" hidden>
+    <button id="folder" type="button" class="plain"><gugu-icon name="folder"></gugu-icon><span id="folder-label"></span></button>
     <div class="new">
       <button id="new" type="button" class="primary" aria-haspopup="menu" aria-expanded="false" hidden><gugu-icon name="plus"></gugu-icon><span id="new-label"></span></button>
       <div id="create" class="menu" role="menu" hidden></div>
@@ -18,14 +18,9 @@
   <main id="main">
     <p id="note" role="status" class="muted" hidden></p>
     <p id="error" role="alert" hidden></p>
-    <!-- Blank files to start from, as cards (Office's 「新建」 row): on a wide page, and in a chat with nothing yet. -->
+    <!-- Blank files to start from, as cards (Office's 「新建」 row): on a wide page, and when nothing was opened yet. -->
     <section id="blanks" hidden></section>
-    <div class="list-head">
-      <div id="scope" role="tablist" hidden></div>
-      <h5 id="files-title"></h5>
-      <label id="group-pick" class="pick" hidden><gugu-icon name="users"></gugu-icon><select id="group"></select></label>
-      <label class="pick"><gugu-icon name="list-filter"></gugu-icon><select id="kind"></select></label>
-    </div>
+    <h5 id="files-title"></h5>
     <ul id="files" class="list"></ul>
     <div id="empty" hidden></div>
   </main>

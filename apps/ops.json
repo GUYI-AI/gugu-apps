@@ -1,6 +1,6 @@
 {
   "id": "ops",
-  "unlisted": false,
+  "unlisted": true,
   "deprecated": null,
   "versions": [
     {
