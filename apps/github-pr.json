@@ -1,0 +1,16 @@
+{
+  "id": "github-pr",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/github-pr/app",
+      "commit": "43031513d3481f70f2dc0f93424cf2ca4e58157a",
+      "sha256": "d7813b73a91d67491408ae526093759ce06bf163d6d0e3b53c72026ec118e4d2",
+      "bytes": 18929,
+      "yanked": null
+    }
+  ]
+}
