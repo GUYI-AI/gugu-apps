@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+Gugu Office's own page lists only the decks and workbooks opened lately (`gugu.files.recent`, one ask, the same on every device). It no longer reads a chat's whole folder: in a chat of a few thousand files that read and drawing every row took seconds. Gone with it: the search, 「本群 / 所有群」, the kind and chat pickers. A page drawn for a chat has 「群文件」, which opens that chat's folder in the Files App, and keeps 「新建」 (a name the folder has already gets the host's ` (2)`).
+
 ## 0.5.1
 
 - The skill fetches a deck or workbook with `message_download_file` (its `gugu-file://` link) and saves the changed copy back with `message_send` `{ file, file_path }` as that file's next version — the host's one way in and out for a file's bytes. It no longer names `workspace__read`, which the Files App no longer has, nor `message_send_file`. Needs gugu 0.3.7.
