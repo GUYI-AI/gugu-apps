@@ -11,7 +11,7 @@
     "phone"
   ],
   "engines": {
-    "gugu": ">=0.3.9"
+    "gugu": ">=0.3.8"
   },
   "entry": "card.html",
   "icon": "icon.png",

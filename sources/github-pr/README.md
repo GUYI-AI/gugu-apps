@@ -14,4 +14,4 @@ GUYI-AI's PRs only (the App checks the repository before it reads anything).
   the one behind the GitHub connector's default account (or the only one saved), changed in the App's permissions. The
   host puts it in the `Authorization` header of each request to api.github.com; the App never sees it.
 - Phone: no `gugu.credentials`; the card shows the repo, number and sent title, and opens GitHub.
-- Needs gugu with App API 61.
+- Needs gugu 0.3.8 or later (App API 61): `engines.gugu` is `>=0.3.8`, so the market does not offer it to older clients.
