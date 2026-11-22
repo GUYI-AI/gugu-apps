@@ -1,13 +1,16 @@
 // The PR card in a chat message (a widget, 202 px high). Reads GitHub once when it opens and once before a merge (and when
 // the person presses refresh); never on a timer.
-import { cardState, mergeMethods, parseTarget } from './lib/pr.js'
+import { cardState, mergeMethods, parseRef, parseTarget } from './lib/pr.js'
 import { hasGithub, read, readPr } from './lib/github.js'
 import { h } from './lib/dom.js'
 
 const g = window.gugu
 const ctx = await g.getContext()
 const root = document.getElementById('pr')
-const target = parseTarget(ctx.widget?.data)
+let target = parseTarget(ctx.widget?.data)
+const fromTab = !!target.none
+// A tab is a whole page, not a 202 px card: the card's rows stay together at the top (card.css `.pr.tab`).
+if (fromTab) root.classList.add('tab')
 const byAgent = ctx.operator?.kind === 'agent'
 let busy = false
 let notice = ''
@@ -43,7 +46,26 @@ function drawProblem(message, { signIn = false } = {}) {
     status(signIn ? 'wait' : 'bad', signIn ? 'github' : 'triangle-alert', message),
     h('div', { class: 'actions' },
       target.url ? button('在 GitHub 打开', { onclick: openOnGithub }, icon('external-link')) : null,
-      target.url ? button('', { 'aria-label': '刷新', onclick: () => load() }, icon('refresh')) : null))
+      target.url ? button('', { 'aria-label': '刷新', onclick: () => load() }, icon('refresh')) : null,
+      fromTab ? h('span', { class: 'spacer' }) : null,
+      fromTab ? button('换一个 PR', { onclick: () => drawAsk() }) : null))
+}
+
+/** Opened as a tab (no card behind it): ask for a PR instead of reading nothing. */
+function drawAsk(problem = '', value = '') {
+  const input = h('input', { type: 'text', 'aria-label': 'PR 链接', value, placeholder: 'https://github.com/owner/repo/pull/123 或 owner/repo#123' })
+  const open = () => {
+    const next = parseRef(input.value)
+    if (next.error) return drawAsk(next.error, input.value)
+    target = next
+    start()
+  }
+  input.addEventListener('keydown', (event) => { if (event.key === 'Enter') open() })
+  root.replaceChildren(h('div', { class: 'head' }, icon('git-pull-request'), h('small', { class: 'repo', text: 'GitHub PR' })),
+    h('strong', { class: 'title', id: 't', text: '打开一个 PR' }),
+    problem ? status('bad', 'triangle-alert', problem) : status('', 'info', '贴 PR 链接，或让 agent 把 PR 发成群里的卡片'),
+    h('div', { class: 'actions' }, input, button('打开', { class: 'primary', onclick: open })))
+  input.focus()
 }
 
 const TONE_ICON = { ok: 'circle-check', bad: 'x-circle', wait: 'loader-circle', done: 'git-merge' }
@@ -63,7 +85,8 @@ function draw({ pr }, state) {
       button('', { 'aria-label': '在 GitHub 打开', onclick: openOnGithub }, icon('external-link')),
       button('', { 'aria-label': '刷新', onclick: () => load() }, icon('refresh')),
       state.merge ? (reason ? h('small', { class: 'reason', text: reason }) : h('span', { class: 'spacer' })) : h('span', { class: 'spacer' }),
-      state.merge ? button('合并', { class: 'primary', ...(reason ? { disabled: '' } : {}), onclick: () => merge() }, icon('git-merge')) : null))
+      state.merge ? button('合并', { class: 'primary', ...(reason ? { disabled: '' } : {}), onclick: () => merge() }, icon('git-merge')) : null,
+      fromTab ? button('换一个 PR', { onclick: () => drawAsk() }) : null))
 }
 
 let shown = null
@@ -117,6 +140,10 @@ async function merge() {
   }
 }
 
-if (target.error) drawProblem(target.error)
-else if (!hasGithub()) drawPhone()
-else await load()
+async function start() {
+  if (target.none) drawAsk()
+  else if (target.error) drawProblem(target.error)
+  else if (!hasGithub()) drawPhone()
+  else await load()
+}
+await start()
