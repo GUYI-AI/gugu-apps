@@ -1,0 +1,65 @@
+{
+  "id": "github-pr",
+  "name": "GitHub PR",
+  "subtitle": "群里看 PR、看改动、点合并",
+  "defaultLocale": "zh-CN",
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 61,
+  "platforms": [
+    "desktop",
+    "phone"
+  ],
+  "engines": {
+    "gugu": ">=0.3.8"
+  },
+  "entry": "card.html",
+  "icon": "icon.png",
+  "categories": [
+    "developer"
+  ],
+  "license": "MIT",
+  "permissions": {
+    "network": [
+      "api.github.com"
+    ],
+    "credentials": [
+      {
+        "site": "github.com",
+        "header": "Authorization",
+        "format": "Bearer {value}"
+      }
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "pr",
+        "title": "PR 卡片",
+        "entry": "card.html",
+        "widget": {
+          "height": 202
+        }
+      }
+    ]
+  },
+  "examples": [
+    "把这个 PR 发成卡片：<PR 链接>",
+    "把 GUYI-AI/gugu 里等我合并的 PR 发到群里"
+  ],
+  "localized": {
+    "en": {
+      "name": "GitHub PR",
+      "subtitle": "See and merge PRs in a chat",
+      "tabs": {
+        "pr": {
+          "title": "PR card"
+        }
+      },
+      "examples": [
+        "Send this PR as a card: <PR link>",
+        "Post the GUYI-AI/gugu PRs waiting for my merge to the group"
+      ]
+    }
+  }
+}
