@@ -41,9 +41,11 @@ if (!data?.repo) root.replaceChildren(h('p', { role: 'alert', text: '从 PR 卡�
 else {
   root.replaceChildren(
     h('p', { text: data.title }),
+    // The full repository, PR and head: the card's data is whatever its sender wrote, so the person sees exactly what merges.
     h('dl', { class: 'kv' },
+      h('dt', { text: 'PR' }), h('dd', {}, h('code', { text: `${data.repo}#${data.number}` })),
       h('dt', { text: '合并到' }), h('dd', { text: data.base }),
-      h('dt', { text: 'head' }), h('dd', {}, h('code', { text: String(data.head).slice(0, 9) }), ' · 刚刚重新核对'),
+      h('dt', { text: 'head' }), h('dd', {}, h('code', { text: String(data.head) }), ' · 刚刚重新核对'),
       h('dt', { text: '检查' }), h('dd', { class: data.tone, text: data.line }),
       h('dt', { text: '身份' }), h('dd', { text: `你的 GitHub：${data.login}` })),
     h('label', {}, '方式', method),

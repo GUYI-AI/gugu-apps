@@ -1,20 +1,31 @@
 // What a PR card says, from what GitHub answered: pure, so it is tested without a host (test/pr.test.mjs).
 
-/** The App touches GUYI-AI's PRs only: the host's `github` reaches anything the account can, so the App draws the line. */
-export const ORG = 'GUYI-AI'
-const REPO = /^GUYI-AI\/[A-Za-z0-9._-]{1,100}$/
+// GitHub's own name rules: an owner is 1-39 letters, digits or single hyphens; a repository name is letters, digits, `.`, `_`, `-`.
+const REPO = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9._-]{1,100}$/
+const REF = /^(?:(?:https?:\/\/)?(?:www\.)?github\.com\/)?([^/\s#]+\/[^/\s#]+?)(?:\/pull\/|\/pulls\/|#)(\d+)(?:[/?#].*)?$/
 
 /**
  * The card's data, sent by whoever sent the card: untrusted. `repo` and `number` only locate the PR; `title` is shown only
- * where GitHub cannot be read (a phone), as plain text.
+ * where GitHub cannot be read (a phone), as plain text. Any repository: what the person's credential can read, the card
+ * shows; a merge still needs the person's own click on a dialog naming the repository, PR and head (confirm.js).
+ * No data at all (the App opened as a tab, not from a card) is not an error: `{ none: true }`, and the card asks for a PR.
  */
 export function parseTarget(data) {
-  const repo = typeof data?.repo === 'string' ? data.repo.trim() : ''
-  const number = Number(data?.number)
-  if (!REPO.test(repo) || repo.endsWith('/.') || repo.endsWith('/..')) return { error: `只支持 ${ORG} 组织下的 PR（卡片里写的是「${repo || '空'}」）` }
-  if (!Number.isInteger(number) || number < 1 || number > 99_999_999) return { error: 'PR 号不对' }
-  const title = typeof data?.title === 'string' ? data.title.slice(0, 300) : ''
+  if (data === undefined || data === null) return { none: true }
+  const repo = typeof data.repo === 'string' ? data.repo.trim() : ''
+  const number = Number(data.number)
+  if (!repo) return { error: '卡片里没有写是哪个仓库的 PR（data.repo 应写成 owner/repo）' }
+  if (!REPO.test(repo) || repo.endsWith('/.') || repo.endsWith('/..')) return { error: `「${repo.slice(0, 120)}」不是 GitHub 仓库名（应写成 owner/repo）` }
+  if (!Number.isInteger(number) || number < 1 || number > 99_999_999) return { error: `PR 号不对：「${String(data.number ?? '').slice(0, 20)}」` }
+  const title = typeof data.title === 'string' ? data.title.slice(0, 300) : ''
   return { repo, number, title, url: `https://github.com/${repo}/pull/${number}` }
+}
+
+/** What a person pastes: a PR link (`https://github.com/owner/repo/pull/12`) or `owner/repo#12`. */
+export function parseRef(text) {
+  const match = REF.exec(String(text ?? '').trim())
+  if (!match) return { error: '认不出这个 PR：贴 PR 链接，或写成 owner/repo#123' }
+  return parseTarget({ repo: match[1], number: match[2] })
 }
 
 const FAILED = new Set(['failure', 'timed_out', 'cancelled', 'action_required', 'startup_failure', 'stale'])

@@ -15,6 +15,8 @@ body { margin: 0; }
 .pr .actions { margin-top: auto; display: flex; align-items: center; gap: var(--em-spacing-sm); }
 .pr .actions .reason { flex: 1; min-width: 0; text-align: right; color: var(--em-foreground-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pr .actions .spacer { flex: 1; }
+.pr .actions input { flex: 1; min-width: 0; }
+.pr.tab { height: auto; max-width: 720px; }
 .pr .state { white-space: nowrap; }
 .pr .state.open { color: var(--em-foreground-success); }
 .pr .state.merged { color: var(--em-foreground-info); }

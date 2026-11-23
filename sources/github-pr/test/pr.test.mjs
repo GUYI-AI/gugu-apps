@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { cardState, githubProblem, mergeMethods, parseTarget } from '../app/lib/pr.js'
+import { cardState, githubProblem, mergeMethods, parseRef, parseTarget } from '../app/lib/pr.js'
 
 const pr = (over = {}) => ({ state: 'open', merged: false, draft: false, mergeable: true, mergeable_state: 'clean', user: { login: 'author' }, base: { ref: 'dev' }, head: { sha: 'abc' }, ...over })
 const run = (name, status, conclusion = null) => ({ name, status, conclusion })
@@ -8,11 +8,27 @@ const done = (name, conclusion = 'success') => run(name, 'completed', conclusion
 const checks = (...runs) => ({ check_runs: runs })
 const review = (login, state) => ({ user: { login }, state })
 
-test('only GUYI-AI PRs, located by repo and number; the rest of the data is text', () => {
-  assert.deepEqual(parseTarget({ repo: 'GUYI-AI/gugu', number: 7, title: 't' }), { repo: 'GUYI-AI/gugu', number: 7, title: 't', url: 'https://github.com/GUYI-AI/gugu/pull/7' })
-  assert.equal(parseTarget({ repo: 'GUYI-AI/gugu', number: '12' }).number, 12)
-  for (const repo of ['other/gugu', 'GUYI-AI/gugu/../x', 'GUYI-AI/', 'GUYI-AI/..', 'guyi-ai/gugu', ' ', undefined]) assert.ok(parseTarget({ repo, number: 1 }).error, String(repo))
-  for (const number of [0, -1, 1.5, 'x', null]) assert.ok(parseTarget({ repo: 'GUYI-AI/gugu', number }).error, String(number))
+test('any repository\'s PR, located by repo and number; the rest of the data is text', () => {
+  assert.deepEqual(parseTarget({ repo: 'nodejs/node', number: 7, title: 't' }), { repo: 'nodejs/node', number: 7, title: 't', url: 'https://github.com/nodejs/node/pull/7' })
+  for (const repo of ['GUYI-AI/gugu', 'guyi-ai/gugu', 'a/b', 'octo-cat/re.po_x-1', 'x'.repeat(39) + '/y']) assert.equal(parseTarget({ repo, number: 1 }).repo, repo)
+  assert.equal(parseTarget({ repo: ' cli/cli ', number: '12' }).number, 12)
+  for (const repo of ['other/gugu/../x', 'owner/', '/repo', 'owner/..', 'owner/.', '-owner/r', 'x'.repeat(40) + '/y', 'a b/c', 'https://github.com/a/b']) assert.match(parseTarget({ repo, number: 1 }).error, /不是 GitHub 仓库名/, repo)
+  for (const number of [0, -1, 1.5, 'x', null]) assert.match(parseTarget({ repo: 'cli/cli', number }).error, /PR 号不对/, String(number))
+})
+
+test('no data is a tab with nothing to show, not an error; a card without a repo says so instead of 「空」', () => {
+  assert.deepEqual(parseTarget(undefined), { none: true })
+  assert.deepEqual(parseTarget(null), { none: true })
+  for (const data of [{}, { number: 1 }, { repo: ' ', number: 1 }, { repo: 42, number: 1 }]) {
+    const { error } = parseTarget(data)
+    assert.match(error, /没有写是哪个仓库/); assert.doesNotMatch(error, /空|GUYI-AI/)
+  }
+})
+
+test('a pasted PR link or owner/repo#n', () => {
+  const want = { repo: 'cli/cli', number: 9001, title: '', url: 'https://github.com/cli/cli/pull/9001' }
+  for (const text of ['https://github.com/cli/cli/pull/9001', ' https://github.com/cli/cli/pull/9001/files ', 'http://www.github.com/cli/cli/pull/9001#issuecomment-1', 'github.com/cli/cli/pull/9001', 'cli/cli#9001', 'https://github.com/cli/cli/pull/9001?w=1']) assert.deepEqual(parseRef(text), want, text)
+  for (const text of ['', 'cli/cli', 'https://github.com/cli/cli/issues/9001', 'https://gitlab.com/cli/cli/pull/1', 'cli/cli#x', 'a/b/c#1']) assert.ok(parseRef(text).error, text)
 })
 
 test('the seven states the design shows, from what GitHub answers', () => {
