@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { cardState, githubProblem, mergeMethods, parseRef, parseTarget } from '../app/lib/pr.js'
+import { cardState, githubProblem, mergeMethods, parseRef, parseTarget, verdicts, viewerReview } from '../app/lib/pr.js'
 
 const pr = (over = {}) => ({ state: 'open', merged: false, draft: false, mergeable: true, mergeable_state: 'clean', user: { login: 'author' }, base: { ref: 'dev' }, head: { sha: 'abc' }, ...over })
 const run = (name, status, conclusion = null) => ({ name, status, conclusion })
@@ -67,4 +67,29 @@ test('GitHub\'s refusals in words, and the methods the repository allows', () =>
   assert.match(githubProblem(405, { message: 'Pull Request is not mergeable' }), /not mergeable/)
   assert.deepEqual(mergeMethods({ allow_merge_commit: true, allow_squash_merge: true, allow_rebase_merge: false }, 'squash').map((m) => m.value), ['squash', 'merge'])
   assert.deepEqual(mergeMethods({ allow_merge_commit: true, allow_squash_merge: true, allow_rebase_merge: true }, null).map((m) => m.value), ['merge', 'squash', 'rebase'])
+})
+
+test('reviews count as GitHub counts them: each reviewer\'s latest approval or change request, the author aside', () => {
+  const at = (login, state, commit_id = 'abc') => ({ user: { login }, state, commit_id })
+  const list = verdicts([at('a', 'APPROVED'), at('a', 'COMMENTED'), at('b', 'APPROVED', 'old'), at('c', 'CHANGES_REQUESTED'), at('d', 'APPROVED'), at('d', 'DISMISSED'), at('author', 'APPROVED')], 'author', 'abc')
+  assert.deepEqual(list, [{ login: 'a', state: 'APPROVED', stale: false }, { login: 'b', state: 'APPROVED', stale: true }, { login: 'c', state: 'CHANGES_REQUESTED', stale: false }])
+  const c = cardState({ pr: pr({ mergeable_state: 'blocked' }), checks: checks(done('x')), reviews: [at('a', 'APPROVED'), at('b', 'APPROVED', 'old'), at('c', 'CHANGES_REQUESTED')] })
+  assert.equal(c.reason, '有人请求修改'); assert.match(c.line, /c 请求修改 · 已获 2 个批准（1 个在旧提交上）/)
+  // A later approval by the same person clears their change request.
+  assert.equal(cardState({ pr: pr(), checks: checks(done('x')), reviews: [at('c', 'CHANGES_REQUESTED'), at('c', 'APPROVED')] }).line, '1 项检查通过 · 已获 1 个批准')
+})
+
+test('who may review: anyone but the author, while the PR is open; asked when GitHub requested them', () => {
+  const open = { pr: pr({ requested_reviewers: [{ login: 'me' }] }), reviews: [] }
+  assert.deepEqual(viewerReview(open, 'me'), { canReview: true, mine: null, asked: true })
+  assert.equal(viewerReview(open, 'author').canReview, false)
+  for (const over of [{ state: 'closed' }, { state: 'closed', merged: true }]) assert.equal(viewerReview({ pr: pr(over), reviews: [] }, 'me').canReview, false)
+  assert.equal(viewerReview({ pr: pr({ draft: true }), reviews: [] }, 'me').canReview, true)
+  const mine = viewerReview({ pr: pr(), reviews: [{ user: { login: 'me' }, state: 'APPROVED', commit_id: 'old' }] }, 'me').mine
+  assert.deepEqual(mine, { login: 'me', state: 'APPROVED', stale: true })
+  assert.equal(viewerReview({ pr: pr(), reviews: [] }, null).canReview, false)
+})
+
+test('a refused review says GitHub\'s reason', () => {
+  assert.equal(githubProblem(422, { message: 'Unprocessable Entity', errors: ['Can not approve your own pull request'] }), 'GitHub 没收下：Unprocessable Entity · Can not approve your own pull request')
 })
