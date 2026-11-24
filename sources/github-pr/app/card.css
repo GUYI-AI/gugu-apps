@@ -17,7 +17,7 @@ body { margin: 0; }
 .pr .actions .spacer { flex: 1; }
 .pr .actions input { flex: 1; min-width: 0; }
 .pr.tab { height: auto; max-width: 720px; }
-.pr .state { white-space: nowrap; }
+.pr .state, .pr .you { white-space: nowrap; }
 .pr .state.open { color: var(--em-foreground-success); }
 .pr .state.merged { color: var(--em-foreground-info); }
 .pr .state.closed { color: var(--em-foreground-destructive); }
@@ -40,3 +40,6 @@ body { margin: 0; }
 .kv dt { color: var(--em-foreground-muted); }
 .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: var(--em-spacing-sm); margin-top: var(--em-spacing-md); }
+.choices { display: flex; flex-direction: column; gap: var(--em-spacing-xs); margin-bottom: var(--em-spacing-sm); }
+.choice { display: flex; align-items: baseline; gap: var(--em-spacing-xs); }
+.dlg textarea { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; }

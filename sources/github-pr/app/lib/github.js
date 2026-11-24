@@ -15,14 +15,29 @@ export async function read(path) {
 }
 
 /**
- * Everything the card shows, read once: the PR, its head's check runs and its reviews (3 GETs). GitHub computes
- * `mergeable` lazily: a `null` there is shown as such, and the read before a merge asks again.
+ * Everything the card shows, in one round of 3 GETs at once: the PR, its reviews, and the check runs of its head, named by
+ * GitHub's own ref for it (`pull/N/head`) so they need not wait for the PR. A push between the reads gives runs of another
+ * head: those are dropped (the card shows no checks until it reads again). GitHub computes `mergeable` lazily: a `null`
+ * there is shown as such, and the read before a merge asks again.
  */
 export async function readPr({ repo, number }) {
-  const pr = await read(`/repos/${repo}/pulls/${number}`)
-  const [checks, reviews] = await Promise.all([
-    read(`/repos/${repo}/commits/${pr.head.sha}/check-runs?per_page=100`),
+  const [pr, checks, reviews] = await Promise.all([
+    read(`/repos/${repo}/pulls/${number}`),
+    read(`/repos/${repo}/commits/pull/${number}/head/check-runs?per_page=100`),
     read(`/repos/${repo}/pulls/${number}/reviews?per_page=100`),
   ])
-  return { pr, checks, reviews }
+  return { pr, checks: { ...checks, check_runs: (checks.check_runs ?? []).filter((run) => run.head_sha === pr.head.sha) }, reviews }
 }
+
+/**
+ * The person's GitHub login, read once and kept until they set another credential (`forgetViewer`): it decides only what
+ * the card offers, never what GitHub allows.
+ */
+export async function viewerLogin() {
+  const kept = JSON.parse(await window.gugu.readData('viewer.json') ?? 'null')
+  if (kept?.login) return kept.login
+  const { login } = await read('/user')
+  await window.gugu.writeData('viewer.json', JSON.stringify({ login }))
+  return login
+}
+export const forgetViewer = () => window.gugu.writeData('viewer.json', 'null')
