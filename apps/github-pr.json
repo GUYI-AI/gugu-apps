@@ -20,6 +20,15 @@
       "sha256": "2a5aa898f127323a0e9e3983b76e44070dfd9b34cfdf2d6a2abd5bc5626bbc19",
       "bytes": 19946,
       "yanked": null
+    },
+    {
+      "version": "0.2.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/github-pr/app",
+      "commit": "c4d5ca8c3bf1f78287d00914cdd2c56b6d7adcd2",
+      "sha256": "bf509b6b0aef3fada1935cbc9a9e666d4a77acd9c7e98f8e551a6b06cd837bc4",
+      "bytes": 24486,
+      "yanked": null
     }
   ]
 }

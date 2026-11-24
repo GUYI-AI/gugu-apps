@@ -1,7 +1,7 @@
 // The PR card in a chat message (a widget, 202 px high). Reads GitHub once when it opens and once before a merge (and when
 // the person presses refresh); never on a timer.
-import { cardState, mergeMethods, parseRef, parseTarget } from './lib/pr.js'
-import { hasGithub, read, readPr } from './lib/github.js'
+import { cardState, mergeMethods, parseRef, parseTarget, viewerReview } from './lib/pr.js'
+import { forgetViewer, hasGithub, read, readPr, viewerLogin } from './lib/github.js'
 import { h } from './lib/dom.js'
 
 const g = window.gugu
@@ -68,14 +68,51 @@ function drawAsk(problem = '', value = '') {
   input.focus()
 }
 
+// What to make on GitHub for this App: what it reads (PR, checks, reviews) and writes (merge, review). The host's dialog
+// (`gugu.credentials.choose`, API 64) shows the same words above its form.
+const TOKEN_HINT = 'GitHub 细粒度 token：仓库权限里 Pull requests 读写、Contents 只读'
+const TOKEN_PAGE = 'https://github.com/settings/personal-access-tokens/new'
+const canChoose = () => typeof g.credentials?.choose === 'function'
+
+/** No usable github.com credential: what to make and where, and one button to the host's dialog; a choice reloads the card. */
+function drawSetup(problem) {
+  if (!canChoose() || byAgent) {
+    return drawProblem(byAgent ? '这台电脑上还没有给这个 App 选 github.com 的凭据，需要人来选' : `${problem}。在 App 的权限里为 github.com 选一份凭据（密码库读不了时看「设置 › 密码」），然后点刷新`, { signIn: true })
+  }
+  const choose = async () => {
+    try {
+      const { chosen } = await g.credentials.choose('github.com', { hint: TOKEN_HINT, help: TOKEN_PAGE })
+      if (chosen) { await forgetViewer(); await load() }
+    } catch (error) { g.reportError(`没能打开凭据窗口：${error.message}`) }
+  }
+  root.replaceChildren(head(target.repo ?? '', target.number ?? '', null),
+    h('strong', { class: 'title', id: 't', text: target.title || 'GitHub PR' }),
+    status('wait', 'key-round', problem),
+    h('small', { class: 'meta' }, '需要一份 ', h('a', { href: TOKEN_PAGE, text: 'GitHub 细粒度 token', onclick: (event) => { event.preventDefault(); g.openBrowserTab(TOKEN_PAGE).catch(() => {}) } }),
+      '：选上这些仓库，Pull requests 读写，Contents 只读'),
+    h('div', { class: 'actions' },
+      target.url ? button('在 GitHub 打开', { onclick: openOnGithub }, icon('external-link')) : null,
+      h('span', { class: 'spacer' }),
+      fromTab ? button('换一个 PR', { onclick: () => drawAsk() }) : null,
+      button('设置凭据', { class: 'primary', onclick: choose }, icon('key-round'))))
+}
+
 const TONE_ICON = { ok: 'circle-check', bad: 'x-circle', wait: 'loader-circle', done: 'git-merge' }
 const KIND_ICON = { conflict: 'triangle-alert', blocked: 'circle-alert', behind: 'circle-alert', computing: 'loader-circle', closed: 'git-pull-request-closed', draft: 'git-pull-request-draft' }
 
-function draw({ pr }, state) {
+const VERDICT = { APPROVED: '你已批准', CHANGES_REQUESTED: '你请求了修改' }
+
+function draw({ pr }, state, you) {
   const prState = pr.merged ? 'merged' : pr.state === 'closed' ? 'closed' : pr.draft ? 'draft' : 'open'
   const reason = byAgent ? '只有人能合并' : busy ? '正在核对…' : state.reason
   const meta = `${pr.user?.login ?? ''} · ${pr.changed_files} 个文件 `
-  root.replaceChildren(head(target.repo, target.number, prState),
+  const top = head(target.repo, target.number, prState)
+  // Where the person stands, in the head row (the card is 202 px high): asked to review, or their verdict.
+  if (you?.asked || you?.mine) {
+    top.append(h('small', { class: `you ${you.mine?.state === 'CHANGES_REQUESTED' ? 'bad' : you.mine ? 'ok' : 'wait'}`,
+      text: you.mine ? VERDICT[you.mine.state] + (you.mine.stale ? '（旧提交）' : '') : '请你评审' }))
+  }
+  root.replaceChildren(top,
     h('strong', { class: 'title', id: 't', text: pr.title, title: pr.title }),
     h('small', { class: 'meta' }, meta, h('span', { class: 'add', text: `+${pr.additions}` }), ' ', h('span', { class: 'del', text: `−${pr.deletions}` }),
       ` · ${pr.head.sha.slice(0, 7)} → ${pr.base.ref}`),
@@ -85,23 +122,35 @@ function draw({ pr }, state) {
       button('', { 'aria-label': '在 GitHub 打开', onclick: openOnGithub }, icon('external-link')),
       button('', { 'aria-label': '刷新', onclick: () => load() }, icon('refresh')),
       state.merge ? (reason ? h('small', { class: 'reason', text: reason }) : h('span', { class: 'spacer' })) : h('span', { class: 'spacer' }),
+      you?.canReview && !byAgent ? button('评审', { ...(busy ? { disabled: '' } : {}), onclick: () => review() }, icon('circle-check')) : null,
       state.merge ? button('合并', { class: 'primary', ...(reason ? { disabled: '' } : {}), onclick: () => merge() }, icon('git-merge')) : null,
       fromTab ? button('换一个 PR', { onclick: () => drawAsk() }) : null))
 }
 
 let shown = null
+let viewer = null
+const redraw = () => shown && draw(shown, cardState(shown), viewerReview(shown, viewer))
+
+/** One round: the PR's three reads and, the first time, the person's login, all at once. */
+async function fresh() {
+  const [got, login] = await Promise.all([readPr(target), viewer ?? viewerLogin()])
+  shown = got
+  viewer = login
+  return got
+}
+
 async function load({ keepNotice = false } = {}) {
   if (!keepNotice) notice = ''
   try {
-    const got = await readPr(target)
-    shown = got
+    const got = await fresh()
     const state = cardState(got)
     // Once merged or closed, GitHub's own line says what happened; a note from before (「已合并 · sha」) only repeats it.
     if (!state.merge) notice = ''
-    draw(got, state)
+    draw(got, state, viewerReview(got, viewer))
   } catch (error) {
-    // No github.com credential for this App, or the vault can't be read on this computer: where the person fixes it.
-    if (error.code === 'unavailable') drawProblem('在 App 的权限里为 github.com 选一份凭据（密码库读不了时看「设置 › 密码」），然后点刷新', { signIn: true })
+    // No github.com credential for this App, the vault can't be read here, or GitHub refuses the one chosen: set one up.
+    if (error.code === 'unavailable') drawSetup('还没有给这个 App 选 GitHub 凭据')
+    else if (error.status === 401) drawSetup(error.message)
     else drawProblem(error.message)
   }
 }
@@ -118,24 +167,51 @@ async function merge() {
   if (busy || byAgent) return
   busy = true
   notice = ''
-  if (shown) draw(shown, cardState(shown))
+  redraw()
   try {
-    const fresh = await readPr(target)
-    shown = fresh
-    const state = cardState(fresh)
-    if (state.reason) { busy = false; notice = `状态变了：${state.line}`; return draw(fresh, state) }
-    const [repo, user, last] = await Promise.all([read(`/repos/${target.repo}`), read('/user'), g.readData('merge-method.json')])
+    const [now, repo, last] = await Promise.all([fresh(), read(`/repos/${target.repo}`), g.readData('merge-method.json')])
+    const state = cardState(now)
     busy = false
-    draw(fresh, state)
+    if (state.reason) { notice = `状态变了：${state.line}`; return redraw() }
+    redraw()
     const result = await g.modal.open({ entry: 'confirm.html', title: `合并 ${target.repo} #${target.number}？`, size: 'sm',
-      data: { repo: target.repo, number: target.number, title: fresh.pr.title, head: fresh.pr.head.sha, base: fresh.pr.base.ref,
-        line: state.line, tone: state.tone, login: user.login, methods: mergeMethods(repo, JSON.parse(last ?? 'null')?.method) } })
+      data: { repo: target.repo, number: target.number, title: now.pr.title, head: now.pr.head.sha, base: now.pr.base.ref,
+        line: state.line, tone: state.tone, login: viewer, methods: mergeMethods(repo, JSON.parse(last ?? 'null')?.method) } })
     if (result?.notice) notice = result.notice
     if (result) await load({ keepNotice: true })
   } catch (error) {
     busy = false
     notice = error.message
-    if (shown) draw(shown, cardState(shown))
+    if (shown) redraw()
+    else drawProblem(error.message)
+  }
+}
+
+/**
+ * GitHub's review: approve, request changes or comment, with a summary (required unless approving). Read again first, so
+ * the review names the head the person is shown (`commit_id`); a push since then is said, not reviewed blind.
+ */
+async function review() {
+  if (busy || byAgent) return
+  const seen = shown?.pr.head.sha
+  busy = true
+  notice = ''
+  redraw()
+  try {
+    const now = await fresh()
+    busy = false
+    const you = viewerReview(now, viewer)
+    if (!you.canReview) { notice = '这个 PR 现在不能评审'; return redraw() }
+    if (seen && now.pr.head.sha !== seen) { notice = `有新提交（${now.pr.head.sha.slice(0, 7)}），先看一眼改动再评审`; return redraw() }
+    redraw()
+    const result = await g.modal.open({ entry: 'review.html', title: `评审 ${target.repo} #${target.number}`, size: 'sm',
+      data: { repo: target.repo, number: target.number, title: now.pr.title, head: now.pr.head.sha, login: viewer, mine: you.mine?.state ?? null } })
+    if (result?.notice) notice = result.notice
+    if (result) await load({ keepNotice: true })
+  } catch (error) {
+    busy = false
+    notice = error.message
+    if (shown) redraw()
     else drawProblem(error.message)
   }
 }
