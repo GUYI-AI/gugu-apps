@@ -147,3 +147,5 @@ async function start() {
   else await load()
 }
 await start()
+// Drawn (the PR, a problem or the question): the host shows this page in place of the card it kept from last time.
+g.ready()

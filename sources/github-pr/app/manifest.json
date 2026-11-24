@@ -4,8 +4,8 @@
   "subtitle": "群里看 PR、看改动、点合并",
   "defaultLocale": "zh-CN",
   "author": "咕咕",
-  "version": "0.1.1",
-  "apiVersion": 61,
+  "version": "0.1.2",
+  "apiVersion": 64,
   "platforms": [
     "desktop",
     "phone"
