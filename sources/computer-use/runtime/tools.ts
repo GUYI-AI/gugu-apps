@@ -97,7 +97,7 @@ export function createComputerTools(input: {
       if (target.stopped) return failure('revoked', target.stopped)
       const { pid, windowId, targetPids } = target
       if ([pid, ...targetPids].some(pid => pid !== undefined && self.pids.has(pid))) return failure('invalid_args', 'The target belongs to the protected host.')
-      const identity = { sessionId: caller.session, ...(caller.name ? { callerName: caller.name } : {}), ...(caller.taskTitle ? { taskTitle: caller.taskTitle } : {}) }
+      const identity = { sessionId: caller.session, ...(caller.agent.startsWith('user:') ? { agentId: caller.agent } : {}), ...(caller.name ? { callerName: caller.name } : {}), ...(caller.taskTitle ? { taskTitle: caller.taskTitle } : {}) }
       let handle = tool.kind === 'act' ? input.control?.begin({
         ...identity,
         ...(launching ? { deferAttachment: true } : {}),

@@ -19720,6 +19720,7 @@ function createComputerPreview({ projection, native, tools, control, showTaskPag
         windowId: target.window_id,
         appName: target.app,
         sessionId: session,
+        ...caller.agent?.startsWith("user:") ? { agentId: caller.agent } : {},
         callerName: caller.name,
         taskTitle: caller.taskTitle
       }, action === "pause");

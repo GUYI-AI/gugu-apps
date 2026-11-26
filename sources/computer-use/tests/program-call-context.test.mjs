@@ -29,6 +29,7 @@ test('the stdio MCP handler enters the exact host call and only trusts display n
   assert.equal(views[0].callerName, 'Codex');
   assert.equal(views[0].taskTitle, 'Calculator task');
   assert.equal(views[0].sessionId, meta['gugu/sessionId']);
+  assert.equal(views[0].agentId, meta['gugu/agent'], 'the bar names the agent from its metadata: a click on the name opens its chat');
   const count = nativeContexts.length;
   await assert.rejects(client.callTool({ name: 'click', arguments: { pid: 44 }, _meta: { ...meta, 'gugu/call': 'invented' } }), /Unrecognized host call/);
   assert.equal(nativeContexts.length, count);
