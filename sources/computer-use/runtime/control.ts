@@ -18,7 +18,7 @@ import { programLogger } from './log'
 
 /** Advisory surface; tests record deliveries. An absent app means an untargeted operation; an absent name means an unnamed app. */
 export interface ComputerControlView {
-  show(view: { state: 'driving' | 'paused'; sessionId?: string; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): unknown
+  show(view: { state: 'driving' | 'paused'; sessionId?: string; agentId?: string; callerName?: string; taskTitle?: string; app?: { pid: number; name?: string; windowId?: number } }): unknown
   hide(): unknown
 }
 
@@ -27,6 +27,8 @@ export interface ComputerCall {
   /** Presentation is deferred for a cold launch; cancellation admission is not. */
   deferAttachment?: boolean
   sessionId?: string
+  /** The calling agent's `user:<uuid>` (`gugu/agent`): a click on its name opens its private chat when its session is not here. */
+  agentId?: string
   callerName?: string
   taskTitle?: string
   pid?: number
@@ -74,7 +76,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
   /** Retain the paused subject's observed name for later agent refusals. */
   const paused = new Map<Subject, { appName?: string; windowId?: number }>()
   const inFlight = new Map<Subject, Set<AbortController>>()
-  let shown: { subject: Subject; sessionId?: string; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
+  let shown: { subject: Subject; sessionId?: string; agentId?: string; appName?: string; windowId?: number; callerName?: string; taskTitle?: string; state: 'driving' | 'paused' } | null = null
   let hideTimer: ReturnType<typeof setTimeout> | null = null
 
   // Display delivery is advisory. Neither an exception, a rejection nor a
@@ -109,6 +111,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
     display(() => input.view.show({
       state: next.state,
       ...(next.sessionId ? { sessionId: next.sessionId } : {}),
+      ...(next.agentId ? { agentId: next.agentId } : {}),
       ...(next.callerName ? { callerName: next.callerName } : {}),
       ...(next.taskTitle ? { taskTitle: next.taskTitle } : {}),
       ...(next.subject === 'computer' ? {} : { app: { pid: next.subject, ...(next.appName ? { name: next.appName } : {}), ...(next.windowId !== undefined ? { windowId: next.windowId } : {}) } }),
@@ -119,7 +122,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
   return {
     begin(call) {
       if (disposed) return { refused: 'Computer Use App 已停止，不能接受新的操作。' }
-      const identity = { ...(call.sessionId ? { sessionId: call.sessionId } : {}), ...(call.callerName ? { callerName: call.callerName } : {}), ...(call.taskTitle ? { taskTitle: call.taskTitle } : {}) }
+      const identity = { ...(call.sessionId ? { sessionId: call.sessionId } : {}), ...(call.agentId ? { agentId: call.agentId } : {}), ...(call.callerName ? { callerName: call.callerName } : {}), ...(call.taskTitle ? { taskTitle: call.taskTitle } : {}) }
       const subject: Subject = call.pid ?? 'computer'
       const subjects = new Set<Subject>([subject, ...(call.targetPids ?? [])])
       const blockedBy = paused.has('computer') ? 'computer' : [...subjects].find(target => paused.has(target)) ?? null
@@ -174,7 +177,7 @@ export function createComputerControl(input: { view: ComputerControlView; linger
       paused.set(call.pid, { appName: call.appName, windowId: call.windowId })
       const reason = appStopped(call.appName)
       for (const controller of inFlight.get(call.pid) ?? []) controller.abort(reason)
-      show({ subject: call.pid, sessionId: call.sessionId, callerName: call.callerName, taskTitle: call.taskTitle,
+      show({ subject: call.pid, sessionId: call.sessionId, agentId: call.agentId, callerName: call.callerName, taskTitle: call.taskTitle,
         appName: call.appName, windowId: call.windowId, state: 'paused' })
       hideAfter(PAUSED_BAR_MS)
       return reason

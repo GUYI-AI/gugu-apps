@@ -253,7 +253,7 @@ export function createComputerPreview({ projection, native, tools, control, show
       clearPresentation(state);
       const { target, caller } = state;
       const reason = control.setTargetPaused({ pid: target.pid, windowId: target.window_id, appName: target.app,
-        sessionId: session, callerName: caller.name, taskTitle: caller.taskTitle }, action === 'pause');
+        sessionId: session, ...(caller.agent?.startsWith('user:') ? { agentId: caller.agent } : {}), callerName: caller.name, taskTitle: caller.taskTitle }, action === 'pause');
       state.problem = reason;
       changed();
       return { paused: !!reason, ...(reason ? { reason } : {}) };

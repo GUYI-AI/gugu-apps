@@ -946,6 +946,7 @@ function createComputerControl(input) {
     display(() => input.view.show({
       state: next.state,
       ...next.sessionId ? { sessionId: next.sessionId } : {},
+      ...next.agentId ? { agentId: next.agentId } : {},
       ...next.callerName ? { callerName: next.callerName } : {},
       ...next.taskTitle ? { taskTitle: next.taskTitle } : {},
       ...next.subject === "computer" ? {} : { app: { pid: next.subject, ...next.appName ? { name: next.appName } : {}, ...next.windowId !== void 0 ? { windowId: next.windowId } : {} } }
@@ -955,7 +956,7 @@ function createComputerControl(input) {
   return {
     begin(call) {
       if (disposed) return { refused: "Computer Use App \u5DF2\u505C\u6B62\uFF0C\u4E0D\u80FD\u63A5\u53D7\u65B0\u7684\u64CD\u4F5C\u3002" };
-      const identity = { ...call.sessionId ? { sessionId: call.sessionId } : {}, ...call.callerName ? { callerName: call.callerName } : {}, ...call.taskTitle ? { taskTitle: call.taskTitle } : {} };
+      const identity = { ...call.sessionId ? { sessionId: call.sessionId } : {}, ...call.agentId ? { agentId: call.agentId } : {}, ...call.callerName ? { callerName: call.callerName } : {}, ...call.taskTitle ? { taskTitle: call.taskTitle } : {} };
       const subject = call.pid ?? "computer";
       const subjects = /* @__PURE__ */ new Set([subject, ...call.targetPids ?? []]);
       const blockedBy = paused.has("computer") ? "computer" : [...subjects].find((target) => paused.has(target)) ?? null;
@@ -1013,6 +1014,7 @@ function createComputerControl(input) {
       show({
         subject: call.pid,
         sessionId: call.sessionId,
+        agentId: call.agentId,
         callerName: call.callerName,
         taskTitle: call.taskTitle,
         appName: call.appName,
@@ -1951,7 +1953,7 @@ function createComputerTools(input) {
       if (target.stopped) return failure("revoked", target.stopped);
       const { pid, windowId, targetPids } = target;
       if ([pid, ...targetPids].some((pid2) => pid2 !== void 0 && self.pids.has(pid2))) return failure("invalid_args", "The target belongs to the protected host.");
-      const identity = { sessionId: caller.session, ...caller.name ? { callerName: caller.name } : {}, ...caller.taskTitle ? { taskTitle: caller.taskTitle } : {} };
+      const identity = { sessionId: caller.session, ...caller.agent.startsWith("user:") ? { agentId: caller.agent } : {}, ...caller.name ? { callerName: caller.name } : {}, ...caller.taskTitle ? { taskTitle: caller.taskTitle } : {} };
       let handle = tool.kind === "act" ? input.control?.begin({
         ...identity,
         ...launching ? { deferAttachment: true } : {},

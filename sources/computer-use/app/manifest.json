@@ -3,7 +3,7 @@
   "name": "Computer Use",
   "defaultLocale": "en",
   "subtitle": "Native app control for agents",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "icon": "icon.png",
   "apiVersion": 58,
   "platforms": [

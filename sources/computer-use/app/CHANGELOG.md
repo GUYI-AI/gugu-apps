@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.3
+
+- The agent's name on the 「正在操作」 bar over an operated window is clickable (hand cursor, underline on hover; the bar looks the same): it brings Gugu forward and opens the session the agent works in, or its private chat when that session is not on this computer. The rest of the window stays usable as before.
+- Needs Gugu with App interface 66 to bring Gugu forward and to open the private chat. An older Gugu still opens the session in its window, without bringing it forward.
+
 ## 0.5.0 (unreleased)
 
 - Move native tools, permission checks, driver preparation and target-specific Stop into the ordinary App program (App interface 36).
