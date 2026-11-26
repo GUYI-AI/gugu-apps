@@ -1,0 +1,16 @@
+{
+  "id": "command-board",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.2.1",
+      "repo": "GUYI-AI/gugu-apps",
+      "path": "sources/command-board",
+      "commit": "216133d6f60e91573efeda4b032c6a144888be82",
+      "sha256": "a86a4c2ea6cdfa75aa4d28122fde636b40b66c3a68c54f1b463622a5bb8e9aa1",
+      "bytes": 28388,
+      "yanked": null
+    }
+  ]
+}
