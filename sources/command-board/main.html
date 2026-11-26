@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>指挥看板</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<!-- 看板与任务面板的布局参照 vibe-kanban（BloopAI，Apache-2.0），按 ID 读写卡、整板规矩与记忆参照 AgentKanban；未拷贝其代码。 -->
+<div id="note" role="status"></div>
+<main id="shared"></main>
+<aside id="detail" hidden>
+  <div class="dh row">
+    <button class="icon back" aria-label="返回" data-act="close"><gugu-icon name="chevron-left"></gugu-icon></button>
+    <code id="dId"></code><button class="icon" aria-label="复制 ID" data-act="copyid"><gugu-icon name="link"></gugu-icon></button>
+    <span class="sp"></span>
+    <button data-act="peek"><gugu-icon name="eye"></gugu-icon>Agent 看到的</button>
+    <button class="icon" aria-label="关闭" data-act="close"><gugu-icon name="x"></gugu-icon></button>
+  </div>
+  <div id="detailBody"></div>
+</aside>
+<dialog id="rejDlg"><form class="stack">
+  <h3>打回：<span id="rejFor"></span></h3>
+  <label>哪里不对，一句话<textarea id="rejText" rows="3"></textarea></label>
+  <div class="row"><button class="primary" id="rejSend">打回去改</button><button type="button" id="rejCancel">算了</button></div>
+</form></dialog>
+<dialog id="peekDlg"><div class="stack">
+  <h3>Agent 读这张卡时看到的</h3>
+  <small class="muted">负责的 agent 调 <code>command-board__task</code> 拿到下面这些。它做完一步用 <code>log</code> 记里程碑、用 <code>todo</code> 勾待办；要你拍板就用 <code>put</code> 把卡挪回「轮到你」。</small>
+  <pre id="peekText"></pre>
+  <div class="row"><button type="button" data-act="peekclose">关闭</button></div>
+</div></dialog>
+<dialog id="setDlg"><div class="stack">
+  <h3>看板设置</h3>
+  <div role="tablist" class="row tabs" id="setTabs">
+    <button role="tab" data-st="rules" aria-selected="true">规矩</button><button role="tab" data-st="memory" aria-selected="false">记忆</button><button role="tab" data-st="tools" aria-selected="false">Agent 用的工具</button>
+  </div>
+  <div id="setBody"></div>
+  <div class="row"><button type="button" data-act="setclose">关闭</button></div>
+</div></dialog>
+<script type="module" src="app.js"></script>
+</body>
+</html>

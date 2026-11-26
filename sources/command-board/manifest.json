@@ -1,0 +1,67 @@
+{
+  "id": "command-board",
+  "name": "指挥看板",
+  "defaultLocale": "zh-CN",
+  "subtitle": "派活、拍板、看进度的群看板",
+  "localized": {
+    "en": {
+      "name": "Command Board",
+      "subtitle": "Assign, decide, track progress",
+      "tabs": {
+        "main": {
+          "title": "Command Board"
+        }
+      }
+    }
+  },
+  "author": "咕咕",
+  "version": "0.2.1",
+  "apiVersion": 61,
+  "platforms": [
+    "desktop",
+    "phone"
+  ],
+  "engines": {
+    "gugu": ">=0.3.8"
+  },
+  "entry": "main.html",
+  "icon": "icon.png",
+  "categories": [
+    "productivity"
+  ],
+  "permissions": {
+    "capabilities": [
+      "chat:read",
+      "chat:relay",
+      "files:read",
+      "files:write",
+      "agents:tools"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "main",
+        "title": "指挥看板",
+        "entry": "main.html",
+        "opensFiles": {
+          "chat": [
+            ".command-board.json"
+          ]
+        },
+        "sideWidth": 960
+      }
+    ],
+    "mcpServers": [
+      {
+        "tools": "tools.js"
+      }
+    ],
+    "skills": "skills",
+    "instructions": "指挥看板：cards 看整板、put 建卡推进卡；task(id) 按 ID 读卡，log/todo/comment 写卡，memory 读写整板记忆"
+  },
+  "examples": [
+    "在指挥看板上给这件事建一张卡，要我定的写成选项",
+    "读一下看板上等我拍板的卡"
+  ]
+}
