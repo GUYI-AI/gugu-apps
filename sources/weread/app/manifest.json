@@ -1,0 +1,65 @@
+{
+  "id": "weread",
+  "name": "微信读书",
+  "subtitle": "读书时随时问 agent：划线、想法、在读的书",
+  "defaultLocale": "zh-CN",
+  "author": "咕咕",
+  "version": "0.1.0",
+  "apiVersion": 61,
+  "platforms": [
+    "desktop"
+  ],
+  "engines": {
+    "gugu": ">=0.3.8"
+  },
+  "entry": "index.html",
+  "icon": "icon.png",
+  "categories": [
+    "productivity"
+  ],
+  "license": "MIT",
+  "permissions": {
+    "capabilities": [
+      "agents:tools"
+    ]
+  },
+  "contributes": {
+    "tabs": [
+      {
+        "name": "home",
+        "title": "微信读书",
+        "entry": "index.html",
+        "icon": "icon.png"
+      }
+    ],
+    "mcpServers": [
+      {
+        "name": "weread",
+        "command": "node",
+        "args": [
+          "server.mjs"
+        ]
+      }
+    ],
+    "instructions": "The person's WeRead (微信读书) books, highlights and thoughts: weread_recent_notes for the line they just marked, weread_book_notes to organise a book."
+  },
+  "examples": [
+    "我刚在微信读书划的那句是什么意思？",
+    "把《思考，快与慢》的划线和想法整理成读书笔记"
+  ],
+  "localized": {
+    "en": {
+      "name": "WeRead",
+      "subtitle": "Ask about what you read",
+      "tabs": {
+        "home": {
+          "title": "WeRead"
+        }
+      },
+      "examples": [
+        "What does the line I just highlighted in WeRead mean?",
+        "Turn my highlights and thoughts in this book into reading notes"
+      ]
+    }
+  }
+}

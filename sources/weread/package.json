@@ -1,0 +1,10 @@
+{
+  "name": "gugu-app-weread",
+  "private": true,
+  "type": "module",
+  "description": "微信读书 (WeRead). app/ is the App, what the market packs; test/ runs its program against a fake of WeRead's official Agent API gateway.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
