@@ -1,0 +1,34 @@
+/* The host's look (ui.css): .card .list .row h5 gugu-empty gugu-time progress; here only placement and the book tiles. */
+body { margin: 0; }
+main { padding: var(--em-spacing-md) var(--em-spacing-lg); }
+.top { display: flex; align-items: center; gap: var(--em-spacing-sm); margin-bottom: var(--em-spacing-md); }
+.top > img { width: 20px; height: 20px; border-radius: 5px; }
+.top .sync { display: inline-flex; align-items: center; gap: 4px; }
+.top .sync gugu-icon { color: var(--em-foreground-success); }
+.spacer { flex: 1; }
+.cover { position: relative; flex: none; width: 44px; height: 62px; border-radius: 4px; overflow: hidden; display: flex; align-items: flex-end; padding: 4px; color: #fff; font-size: 10px; line-height: 1.2; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
+.cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cover.big { width: 72px; height: 100px; font-size: 12px; }
+.now { display: flex; gap: var(--em-spacing-md); }
+.now .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.now h5 { margin: 0; }
+.title { font-size: var(--em-font-title); line-height: var(--em-lh-title); }
+.prog { display: flex; align-items: center; gap: var(--em-spacing-sm); }
+.prog progress { flex: 1; margin: 0; }
+.now .row { margin-top: var(--em-spacing-xs); }
+.list { margin-inline: calc(var(--em-row-pad) * -1); }
+.hls > li { align-items: flex-start; cursor: pointer; }
+.hl { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.hl > * { margin: 0; }
+.hl .q { border-inline-start: 2px solid var(--em-foreground-info); padding-inline-start: 10px; white-space: normal; }
+.hl .mine { color: var(--em-foreground-muted); display: flex; gap: 6px; align-items: flex-start; white-space: normal; }
+.hl .mine gugu-icon { margin-top: 3px; flex: none; }
+.hls > li.open { background: var(--em-background-3); }
+.asks { display: flex; flex-wrap: wrap; gap: var(--em-spacing-xs); margin-top: var(--em-spacing-xs); }
+.bookhead { display: flex; gap: var(--em-spacing-md); align-items: center; margin-bottom: var(--em-spacing-md); }
+.bookhead > div { display: flex; flex-direction: column; gap: 2px; }
+.none { display: block; padding: var(--em-spacing-xs) 0; }
+gugu-empty { border: 1px dashed var(--em-border); border-radius: var(--em-radius-xl); }
+gugu-empty .steps { text-align: start; color: var(--em-foreground); max-width: 460px; margin: var(--em-spacing-xs) 0; }
+gugu-empty .key { width: min(420px, 100%); }
+gugu-empty .note { color: var(--em-foreground-passive); }
