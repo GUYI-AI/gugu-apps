@@ -4,7 +4,7 @@
   "subtitle": "读书时随时问 agent：划线、想法、在读的书",
   "defaultLocale": "zh-CN",
   "author": "咕咕",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "apiVersion": 61,
   "platforms": [
     "desktop"

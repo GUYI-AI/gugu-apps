@@ -35,10 +35,42 @@ async function readSettings() {
 
 function openLink(url) { g.openBrowserTab(url).catch(() => {}) }
 
-function draft(text) {
-  g.dispatch(text, { draft: true, ...(ctx.chat ? { to: { chat: ctx.chat.id } } : {}) })
-    .catch((error) => g.reportError(`没能放进对话框：${error.message}`))
+let drafting = false
+
+/**
+ * Into the conversation's composer, drafted (the person sends). In a chat that chat; elsewhere (the App's own page) the
+ * host asks where it goes first, and gathering the person's agents for that can take a moment: the button says so at
+ * once and a second click waits instead of asking twice. A refusal is said on the page.
+ */
+async function draft(text, button) {
+  if (drafting) return
+  drafting = true
+  const label = button?.lastChild?.textContent
+  if (button) { button.setAttribute('aria-busy', 'true'); button.disabled = true; button.lastChild.textContent = ctx.chat ? '正在放进输入框…' : '正在打开发送位置…' }
+  // Opened on its own (no chat), the host asks where it goes in a sheet; up to gugu 0.3.x that sheet opened under the
+  // App's own page window, so nothing seemed to happen. Say where it is and how to skip it.
+  const hint = ctx.chat ? null : setTimeout(() => notice('没看到「选择发送位置」的窗口？它可能被这个页面挡住了。在对话右侧点「+」打开微信读书，按钮就会直接放进那个对话的输入框。', 15000), 1500)
+  try {
+    await g.dispatch(text, { draft: true, ...(ctx.chat ? { to: { chat: ctx.chat.id } } : {}) })
+  } catch (error) {
+    notice(`没能放进输入框：${error.message}`)
+  } finally {
+    clearTimeout(hint)
+    document.querySelector('.notice.pending')?.remove()
+    drafting = false
+    if (button?.isConnected) { button.removeAttribute('aria-busy'); button.disabled = false; button.lastChild.textContent = label }
+  }
 }
+
+function notice(message, ms = 8000) {
+  document.querySelector('.notice')?.remove()
+  const line = h('p', { role: 'status', class: `notice${ms > 8000 ? ' pending' : ''}`, text: message })
+  root.prepend(line)
+  setTimeout(() => line.remove(), ms)
+}
+
+/** First line of every draft about a book: the agent reads the book itself before answering (owner, 11-27). */
+const context = (book) => `（先用 weread_book_context 了解这本书再回答，bookId ${book.bookId}）\n`
 
 const quote = (item) => [
   item.text ? `> ${item.text}` : null,
@@ -81,10 +113,10 @@ function nowReading(book) {
       h('h5', { text: '正在读' }),
       h('strong', { class: 'title', text: `《${book.title}》` }), h('small', { text: book.author }),
       book.progress != null ? h('div', { class: 'prog' }, h('progress', { value: book.progress, max: 100 }), h('small', { text: `${book.progress}%` })) : null,
-      h('small', {}, book.chapter?.title ?? '', book.chapter ? dot() : null, `累计读了 ${minutes(book.readingSeconds)}`),
+      h('small', {}, ...[book.chapter?.title, book.readingSeconds > 0 ? `累计读了 ${minutes(book.readingSeconds)}` : null].filter(Boolean).flatMap((part, i) => (i ? [dot(), part] : [part]))),
       h('div', { class: 'row' },
         h('button', { onclick: () => show({ name: 'book', bookId: book.bookId, title: book.title }) }, icon('book-open'), '按书看笔记'),
-        h('button', { class: 'primary', onclick: () => draft(`我正在读《${book.title}》${book.chapter ? `，读到${book.chapter.title}` : ''}。`) }, icon('message-circle'), '聊聊这本书'),
+        h('button', { class: 'primary', onclick: (e) => draft(`${context(book)}我正在读《${book.title}》${book.chapter ? `，读到${book.chapter.title}` : ''}。`, e.currentTarget) }, icon('message-circle'), h('span', { text: '聊聊这本书' })),
         book.readerLink ? h('button', { 'aria-label': '在微信读书打开', title: '在微信读书打开', onclick: () => openLink(book.readerLink) }, icon('external-link')) : null)))
 }
 
@@ -98,7 +130,7 @@ function noteRow(item, { withBook = true } = {}) {
       item.text ? h('p', { class: 'q', text: item.text }) : null,
       ...(item.thoughts ?? []).map((t) => h('p', { class: 'mine' }, icon('pencil'), t.text)),
       withBook ? h('small', {}, `《${item.book.title}》`, item.chapter ? dot() : null, item.chapter ?? '', item.at ? dot() : null, item.at ? h('gugu-time', { datetime: item.at }) : null) : null,
-      open ? h('div', { class: 'asks' }, ...ASKS.map(([label, name, ask]) => h('button', { onclick: () => draft(quote(item) + ask) }, icon(name), label))) : null))
+      open ? h('div', { class: 'asks' }, ...ASKS.map(([label, name, ask]) => h('button', { onclick: (e) => draft(context(item.book) + quote(item) + ask, e.currentTarget) }, icon(name), h('span', { text: label })))) : null))
 }
 
 function drawHome() {
@@ -117,12 +149,15 @@ function drawHome() {
 function drawBook(notes) {
   const book = { ...notes.book, title: notes.book.title || view.title }
   const count = notes.chapters.reduce((n, c) => n + c.items.length, 0)
-  const ask = `请用微信读书工具 weread_book_notes 读《${book.title}》（bookId ${book.bookId}）里我的全部划线和想法，按主题（不是按章节）整理成读书笔记：每个主题写要点、我的疑问、可以接着读什么。`
+  const ask = `请先用 weread_book_context 了解《${book.title}》（bookId ${book.bookId}），再用 weread_book_notes 读我在这本书里的全部划线和想法，按主题（不是按章节）整理成读书笔记：每个主题写要点、我的疑问、可以接着读什么。`
   root.replaceChildren(top([h('button', { onclick: () => show({ name: 'home' }) }, icon('arrow-left'), '返回')]),
-    h('div', { class: 'bookhead' }, cover(book), h('div', {}, h('strong', { class: 'title', text: `《${book.title}》` }), h('small', { text: `${book.author} · ${count} 条笔记` }))),
-    h('div', { class: 'row' },
-      h('button', { class: 'primary', onclick: () => draft(ask) }, icon('sparkles'), '让 agent 整理成读书笔记'),
-      ctx.chat && ctx.chat.kind !== 'dm' ? h('button', { onclick: () => draft(`${ask}整理好后存进群文件夹「读书笔记/${book.title}.md」。`) }, icon('folder'), '整理并存进群文件夹') : null),
+    h('div', { class: 'bookhead' }, cover(book), h('div', {}, h('strong', { class: 'title', text: `《${book.title}》` }), h('small', { text: count ? `${book.author} · ${count} 条笔记` : book.author }))),
+    count ? h('div', { class: 'row' },
+      h('button', { class: 'primary', onclick: (e) => draft(ask, e.currentTarget) }, icon('sparkles'), h('span', { text: '让 agent 整理成读书笔记' })),
+      ctx.chat && ctx.chat.kind !== 'dm' ? h('button', { onclick: (e) => draft(`${ask}整理好后存进群文件夹「读书笔记/${book.title}.md」。`, e.currentTarget) }, icon('folder'), h('span', { text: '整理并存进群文件夹' })) : null)
+      : h('gugu-empty', { icon: 'pencil' }, h('strong', { text: '这本书还没有划线和想法' }),
+        h('small', { text: '在微信读书里划一句或写个想法，点右上角的刷新，就会出现在这里。' }),
+        book.readerLink ? h('button', { onclick: () => openLink(book.readerLink) }, icon('external-link'), '去微信读书读这本') : null),
     ...notes.chapters.flatMap((c) => [h('h5', { text: c.title || '未分章' }),
       h('ul', { class: 'list hls' }, ...c.items.map((item) => noteRow({ ...item, book, chapter: c.title }, { withBook: false })))]),
     ...(notes.bookReviews.length ? [h('h5', { text: '书评' }), h('ul', { class: 'list hls' },

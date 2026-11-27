@@ -27,7 +27,7 @@ const READ_ONLY = { readOnlyHint: true, openWorldHint: true };
 const PAGE = { _meta: { ui: { visibility: ['app'] } } };
 
 const TOOLS = [
-  { name: 'weread_reading', description: 'What the person is reading in WeRead now: unfinished books, most recently read first, each with progress (%), the chapter they are in and time spent.',
+  { name: 'weread_reading', description: 'What the person is reading in WeRead now: unfinished books, most recently read first, each with progress (%), the chapter they are in and time spent reading it in seconds (readingSeconds; null when WeRead does not report it).',
     inputSchema: { type: 'object', properties: { count: { type: 'integer', minimum: 1, maximum: 10, description: 'How many books (default 4).' } } },
     run: (s, a) => weread.reading(s, { count: a.count ?? 4 }) },
   { name: 'weread_recent_notes', description: 'The newest highlights (划线) and thoughts (想法) across the books noted most recently — use it for "the line I just marked" / "what I was reading". Each item has the highlighted text, the book, the chapter and the person\'s own thoughts on it.',
@@ -39,7 +39,10 @@ const TOOLS = [
   { name: 'weread_book_notes', description: 'All highlights and thoughts in one book, grouped by chapter in reading order; a thought written on a highlight is under it; whole-book reviews separately. Use it to organise reading notes or discuss a book.',
     inputSchema: BOOK_ARGS,
     run: async (s, a) => weread.bookNotes(s, await weread.resolveBook(s, a)) },
-  { name: 'weread_progress', description: 'Reading progress in one book: percent (0–100; 1 means 1%), the current chapter, total reading time in seconds, last read.',
+  { name: 'weread_book_context', description: 'Everything WeRead can tell about one book, for understanding it before explaining a line or discussing it: intro, publisher, rating, table of contents (the current chapter marked), the person\'s own highlights and thoughts, the passages most readers highlighted, and a few public reviews. No book text.',
+    inputSchema: BOOK_ARGS,
+    run: async (s, a) => weread.bookContext(s, await weread.resolveBook(s, a)) },
+  { name: 'weread_progress', description: 'Reading progress in one book: percent (0–100; 1 means 1%), the current chapter, last read. readingSeconds here is only the read-aloud time (null when none); time spent reading is in weread_reading or weread_api /readdata/detail.',
     inputSchema: BOOK_ARGS,
     run: async (s, a) => weread.progress(s, await weread.resolveBook(s, a)) },
   { name: 'weread_shelf', description: 'The person\'s WeRead shelf (e-books), most recently read first, with finished or not.',
@@ -64,7 +67,7 @@ const TOOLS = [
     } },
 ];
 
-const INSTRUCTIONS = `The person's WeRead (微信读书) reading through WeRead's official API: weread_reading (what they read now), weread_recent_notes (the line they just marked), weread_book_notes (a book's highlights and thoughts), weread_notebooks, weread_progress, weread_shelf, weread_api (anything else). No book text: discuss from the highlight, chapter and their thought. The key is set in the 微信读书 App page; its settings file is ${SETTINGS_PATH} ("key").`;
+const INSTRUCTIONS = `The person's WeRead (微信读书) reading through WeRead's official API: weread_reading (what they read now), weread_recent_notes (the line they just marked), weread_book_notes (a book's highlights and thoughts), weread_book_context (the book itself: intro, contents, popular highlights, reviews — read it before explaining a line), weread_notebooks, weread_progress, weread_shelf, weread_api (anything else). No book text: discuss from the highlight, chapter and their thought. The key is set in the 微信读书 App page; its settings file is ${SETTINGS_PATH} ("key").`;
 
 const send = (message) => process.stdout.write(JSON.stringify(message) + '\n');
 const listed = TOOLS.map(({ run, ...tool }) => ({ annotations: READ_ONLY, ...tool }));

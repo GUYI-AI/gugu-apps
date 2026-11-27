@@ -149,7 +149,9 @@ export async function progress(settings, bookId) {
     bookId,
     progress: p.progress ?? 0,
     chapter: ch ? { idx: ch.chapterIdx, title: ch.title } : null,
-    readingSeconds: p.recordReadingTime ?? 0,
+    // `recordReadingTime` is the read-aloud / recorded time (readdata.md: 「朗读/记录类阅读时长」), 0 for someone who reads the
+    // text; the time actually spent reading comes from /readdata/detail (readingTime below). Unknown is null, never 0.
+    readingSeconds: p.recordReadingTime > 0 ? p.recordReadingTime : null,
     lastRead: iso(p.updateTime),
     finished: p.progress === 100 && Boolean(p.finishTime),
   };
@@ -171,12 +173,68 @@ export async function recentNotes(settings, { limit = 10, books = 3 } = {}) {
   return items.sort((x, y) => String(y.at ?? '').localeCompare(String(x.at ?? ''))).slice(0, limit);
 }
 
+/**
+ * Time spent reading each book, all time: /readdata/detail overall's readLongest (seconds; its top 10, at least 5 minutes
+ * each). A book not in it has no known time. A refused or failed read gives none rather than failing the page.
+ */
+export async function readingTimes(settings) {
+  try {
+    const answer = await call(settings, '/readdata/detail', { mode: 'overall' });
+    return new Map((answer.readLongest ?? []).filter((r) => r.book?.bookId && r.readTime > 0).map((r) => [String(r.book.bookId), r.readTime]));
+  } catch {
+    return new Map();
+  }
+}
+
 /** What is being read: unfinished books, most recently read first, each with its chapter and progress. */
 export async function reading(settings, { count = 4 } = {}) {
-  const books = (await shelf(settings)).filter((b) => !b.finished).slice(0, count);
+  const [all, times] = await Promise.all([shelf(settings), readingTimes(settings)])
+  const books = all.filter((b) => !b.finished).slice(0, count);
   return Promise.all(books.map((b) => progress(settings, b.bookId)
-    .then((p) => ({ ...b, ...p, lastRead: p.lastRead ?? b.lastRead }))
-    .catch(() => ({ ...b, progress: null, chapter: null }))));
+    .then((p) => ({ ...b, ...p, lastRead: p.lastRead ?? b.lastRead, readingSeconds: times.get(b.bookId) ?? p.readingSeconds }))
+    .catch(() => ({ ...b, progress: null, chapter: null, readingSeconds: times.get(b.bookId) ?? null }))));
+}
+
+const clip = (text, n) => { const t = String(text ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n)}…` : t; };
+
+/**
+ * What an agent should know about a book before explaining a line of it, in one round: what the book is (intro, table
+ * of contents with where the person is), all their own highlights and thoughts, the passages most readers highlighted,
+ * and a few public reviews. No book text: the API has none. Long fields are clipped so it stays readable in one go.
+ */
+export async function bookContext(settings, bookId) {
+  const soft = (promise) => promise.catch(() => null);
+  const [info, toc, where, notes, popular, reviews] = await Promise.all([
+    soft(call(settings, '/book/info', { bookId })),
+    soft(call(settings, '/book/chapterinfo', { bookId })),
+    soft(call(settings, '/book/getprogress', { bookId })),
+    bookNotes(settings, bookId),
+    soft(call(settings, '/book/bestbookmarks', { bookId })),
+    soft(call(settings, '/review/list', { bookId, reviewListType: 1, count: 5 })),
+  ]);
+  const current = where?.book?.chapterUid;
+  const chapterTitle = new Map((toc?.chapters ?? []).map((c) => [c.chapterUid, c.title]));
+  return {
+    book: {
+      ...bookOf({ ...(info ?? {}), bookId }),
+      translator: info?.translator ?? null,
+      category: info?.category ?? null,
+      publisher: info?.publisher ?? null,
+      intro: clip(info?.intro, 600) || null,
+      rating: info?.newRating != null ? info.newRating / 10 : null,
+    },
+    progress: where?.book ? { percent: where.book.progress ?? 0, chapter: chapterTitle.get(current) ?? null } : null,
+    contents: (toc?.chapters ?? []).filter((c) => (c.level ?? 1) <= 2).slice(0, 120)
+      .map((c) => ({ idx: c.chapterIdx, title: c.title, level: c.level ?? 1, ...(c.chapterUid === current ? { current: true } : {}) })),
+    myNotes: notes.chapters.map((c) => ({ chapter: c.title, items: c.items.map((i) => ({ text: i.text, thoughts: i.thoughts.map((t) => t.text) })) })),
+    myReviews: notes.bookReviews.map((r) => r.text),
+    popularHighlights: (popular?.items ?? []).slice(0, 10).map((i) => ({ text: clip(i.markText, 200), readers: i.totalCount ?? null, chapter: chapterTitle.get(i.chapterUid) ?? null })),
+    publicReviews: {
+      summary: [reviews?.deepVRecommendInfo?.title, reviews?.deepVRecommendInfo?.subtitle].filter(Boolean).join('，') || null,
+      top: (reviews?.reviews ?? []).slice(0, 5).map((r) => r.review?.review ?? r.review ?? {}).filter((r) => r.content)
+        .map((r) => ({ text: clip(r.content, 240), stars: r.star > 0 ? r.star / 20 : null })),
+    },
+  };
 }
 
 /** A book named by id or by (part of) its title, looked up among books with notes, then the shelf. */
