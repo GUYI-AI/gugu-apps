@@ -1,0 +1,16 @@
+{
+  "id": "weread",
+  "unlisted": false,
+  "deprecated": null,
+  "versions": [
+    {
+      "version": "0.1.0",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/weread/app",
+      "commit": "a0b01b8e8d71fbca8e74e20b4b015555c40fa74d",
+      "sha256": "b608528a9f1a4ec078964d968d5df30b02b37b869ca3448f96b78f2902f2c13f",
+      "bytes": 17763,
+      "yanked": null
+    }
+  ]
+}
