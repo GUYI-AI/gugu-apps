@@ -11,6 +11,15 @@
       "sha256": "b608528a9f1a4ec078964d968d5df30b02b37b869ca3448f96b78f2902f2c13f",
       "bytes": 17763,
       "yanked": null
+    },
+    {
+      "version": "0.1.1",
+      "repo": "shuxueshuxue/gugu-apps",
+      "path": "sources/weread/app",
+      "commit": "ac219e15f734e18ff56382f9c7a51e0a91311d27",
+      "sha256": "c5fd52e228f59d536416475e770af1c67dc3245c645b4e7ea7a363ef294b4aa4",
+      "bytes": 20142,
+      "yanked": null
     }
   ]
 }
