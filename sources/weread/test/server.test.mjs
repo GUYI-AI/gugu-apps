@@ -46,7 +46,7 @@ after(async () => {
 test('agents get the reading tools; the page tools are marked for the page only', async () => {
   const { tools } = (await rpc('tools/list', {})).result;
   const names = tools.map((t) => t.name);
-  for (const name of ['weread_reading', 'weread_recent_notes', 'weread_notebooks', 'weread_book_notes', 'weread_progress', 'weread_shelf', 'weread_api']) {
+  for (const name of ['weread_reading', 'weread_recent_notes', 'weread_notebooks', 'weread_book_notes', 'weread_book_context', 'weread_progress', 'weread_shelf', 'weread_api']) {
     assert.ok(names.includes(name), name);
   }
   for (const name of ['page_home', 'page_book', 'page_status']) {
@@ -95,10 +95,13 @@ test('a book by title: chapters in reading order, thoughts under their highlight
 
 test('reading: unfinished books, most recent first, with the chapter named from the table of contents', async () => {
   const { items } = (await tool('weread_reading')).structuredContent;
-  assert.deepEqual(items.map((b) => b.title), ['思考，快与慢', '深入理解计算机系统', '置身事内', '人类简史']);
+  assert.deepEqual(items.map((b) => b.title), ['思考，快与慢', '深入理解计算机系统', '国富论', '置身事内']);
   assert.equal(items[0].progress, 37);
   assert.equal(items[0].chapter.title, '第 11 章 锚定效应');
-  assert.ok(items[0].readingSeconds > 0);
+  // Time spent reading is readdata's readLongest, not getprogress' recordReadingTime (the read-aloud time, 0 here).
+  assert.equal(items[0].readingSeconds, 9 * 3600 + 25 * 60);
+  assert.equal(items.find((b) => b.title === '置身事内').readingSeconds, null);
+  assert.equal((await tool('weread_progress', { title: '思考' })).structuredContent.readingSeconds, null);
 });
 
 test('page_home is the page\'s one round; notebooks and progress answer too', async () => {
@@ -110,6 +113,25 @@ test('page_home is the page\'s one round; notebooks and progress answer too', as
   assert.equal(items.length, 4);
   assert.equal((await tool('weread_progress', { title: '三体' })).structuredContent.finished, true);
   assert.equal((await tool('weread_book_notes', { title: '不存在的书' })).isError, true);
+});
+
+test('a book on the shelf with no notes: an empty book, not an error', async () => {
+  const notes = (await tool('weread_book_notes', { title: '国富论' })).structuredContent;
+  assert.equal(notes.chapters.length, 0);
+  assert.equal(notes.bookReviews.length, 0);
+});
+
+test('book context: what the book is, where the person is, their notes, popular lines and reviews, clipped', async () => {
+  const c = (await tool('weread_book_context', { title: '思考，快与慢' })).structuredContent;
+  assert.equal(c.book.title, '思考，快与慢');
+  assert.ok(c.book.intro.length <= 601 && c.book.intro.endsWith('…'));
+  assert.equal(c.book.rating, 87.3);
+  assert.equal(c.contents.find((ch) => ch.current).title, '第 11 章 锚定效应');
+  assert.equal(c.progress.chapter, '第 11 章 锚定效应');
+  assert.equal(c.myNotes.at(-1).items[0].thoughts[0], '谈薪的时候是不是也这样？谁先报价谁占便宜？');
+  assert.equal(c.popularHighlights[0].readers, 12034);
+  assert.match(c.publicReviews.summary, /资深会员/);
+  assert.equal(c.publicReviews.top[0].stars, 5);
 });
 
 test('every gateway call carries skill_version with its parameters flat, as the official docs require', async () => {

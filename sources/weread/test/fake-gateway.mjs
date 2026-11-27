@@ -13,6 +13,7 @@ const BOOKS = [
   { bookId: '3300002', title: '深入理解计算机系统', author: 'Randal E. Bryant 等', category: '计算机', read: 30 * min, progress: 22, chapterUid: 92, seconds: 14 * 3600, finished: 0 },
   { bookId: '3300003', title: '置身事内', author: '兰小欢', category: '经济', read: 20 * 3600, progress: 64, chapterUid: 5, seconds: 6 * 3600 + 40 * min, finished: 0 },
   { bookId: '3300004', title: '人类简史', author: '尤瓦尔·赫拉利', category: '历史', read: 3 * 86400, progress: 12, chapterUid: 3, seconds: 2 * 3600, finished: 0 },
+  { bookId: '3300006', title: '国富论', author: '亚当·斯密', category: '经济', read: 2 * 3600, progress: 52, chapterUid: 9, seconds: 0, finished: 0 },
   { bookId: '3300005', title: '三体', author: '刘慈欣', category: '科幻', read: 40 * 86400, progress: 100, chapterUid: 36, seconds: 21 * 3600, finished: 1 },
 ];
 
@@ -22,6 +23,7 @@ const CHAPTERS = {
   3300003: [[4, 4, '第 4 章 招商引资'], [5, 5, '第 5 章 债务与风险']],
   3300004: [[3, 3, '第 3 章 亚当和夏娃的一天']],
   3300005: [[36, 36, '第 36 章']],
+  3300006: [[9, 9, '第九章 论政治经济学体系']],
 };
 
 // [bookId, chapterUid, range, text, age in seconds, thought or null]
@@ -84,10 +86,27 @@ function answer(api, body) {
     case '/book/getprogress':
       if (!book) return { errcode: -2003, errmsg: '书籍不存在' };
       return { bookId: book.bookId, book: { chapterUid: book.chapterUid, chapterOffset: 1200, progress: book.progress, updateTime: now() - book.read,
-        recordReadingTime: book.seconds, isStartReading: 1, ...(book.finished ? { finishTime: now() - book.read } : {}) }, timestamp: now() };
+        recordReadingTime: 0, isStartReading: 1, ...(book.finished ? { finishTime: now() - book.read } : {}) }, timestamp: now() };
     case '/book/chapterinfo':
       if (!book) return { errcode: -2003, errmsg: '书籍不存在' };
       return { bookId: book.bookId, chapters: CHAPTERS[book.bookId].map(([chapterUid, chapterIdx, title]) => ({ chapterUid, chapterIdx, title, level: 1 })) };
+    case '/book/info':
+      if (!book) return { errcode: -2003, errmsg: '书籍不存在' };
+      return { bookId: book.bookId, title: book.title, author: book.author, category: book.category, publisher: '示例出版社',
+        intro: `（示例简介）${book.title}讲的是${'很多事情，'.repeat(200)}`, newRating: 873, readerLink: `https://weread.qq.com/web/reader/${book.bookId}` };
+    case '/book/bestbookmarks':
+      if (!book) return { errcode: -2003, errmsg: '书籍不存在' };
+      return { synckey: 1, totalCount: 2, items: [
+        { bookId: book.bookId, chapterUid: CHAPTERS[book.bookId][0][0], range: '100-140', markText: '（示例热门划线）多数人都划了这一句。', totalCount: 12034 },
+        { bookId: book.bookId, chapterUid: CHAPTERS[book.bookId].at(-1)[0], range: '900-950', markText: '（示例热门划线）另一句。', totalCount: 8021 }] };
+    case '/review/list':
+      if (!book) return { errcode: -2003, errmsg: '书籍不存在' };
+      return { reviewsCnt: 2, deepVRecommendInfo: { title: '2337 个资深会员点评', subtitle: '其中 2015 人(86.2%)推荐本书' },
+        reviews: [{ idx: 1, review: { reviewId: 'p1', review: { content: '（示例书评）读完收获很大。', star: 100 } } }] };
+    case '/readdata/detail':
+      // Like the real one: books under 5 minutes are not in readLongest (人类简史 here has 2 hours, 置身事内 is left out).
+      return { baseTime: 0, totalReadTime: 40 * 3600, readLongest: BOOKS.filter((b) => b.bookId !== '3300003')
+        .map((b) => ({ book: { bookId: b.bookId, title: b.title, author: b.author }, readTime: b.seconds })).sort((a, b) => b.readTime - a.readTime) };
     case '/_list':
       return { apis: ['/shelf/sync', '/user/notebooks', '/book/bookmarklist', '/review/list/mine', '/book/getprogress', '/book/chapterinfo'] };
     default:
