@@ -3,7 +3,7 @@
 import { ACCOUNT_WORD, WRITE_APP_URL, allQuery, boardOf, itemsOf, mineOf, reviewUrl, searchApi, SEARCH_PAGES, textFor } from './core.js'
 
 const g = window.gugu
-const CACHE = 'gugu-contribution:v2'
+const CACHE = 'gugu-contribution:v3' // v2 held issues and unmerged pull requests
 const TAB = 'gugu-contribution:tab'
 const TABS = ['start', 'mine', 'board']
 const FRESH_MS = 10 * 60_000 // how long a read is shown without asking GitHub again
@@ -133,7 +133,7 @@ function itemRow(item) {
   return h('li', {},
     h('div', {},
       link(item.url, item.title, { class: 'title' }),
-      h('span', { class: 'muted', text: `${w.kind[item.kind]} · ${item.repo} #${item.number} · ${w.state[item.state]}` })),
+      h('span', { class: 'muted', text: `${item.repo} #${item.number}` })),
     tag(item))
 }
 

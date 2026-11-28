@@ -9,10 +9,10 @@ gugu is open source. With this App installed, when your agent runs into a proble
 ## The panel
 
 - **Get started**: not sure where to begin? Ask your agent. Or report a problem or build an App, handed to your agent in one click.
-- **My work**: issues and pull requests whose body carries your Gugu ID (`GuguAccount: <id>` on its own line; public and optional), waiting for a score or scored.
+- **My work**: merged pull requests whose body carries your Gugu ID (`GuguAccount: <id>` on its own line; public and optional), waiting for a score or scored.
 - **Leaderboard**: every contributor, by points.
 
-Maintainers score each 0–5, whether or not it was merged; 0 means reviewed, no points. The panel reads only public GitHub data, and gugu tells it your Gugu ID, so there is nothing to type in.
+Only merged pull requests count; maintainers score each 0–5, and 0 means reviewed, no points. The panel reads only public GitHub data, and gugu tells it your Gugu ID, so there is nothing to type in.
 
 ## Limits
 

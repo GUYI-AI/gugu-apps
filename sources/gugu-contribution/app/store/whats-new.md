@@ -1,1 +1,1 @@
-问题改为发到 GitHub Discussions 的 Q&A；「认领一个 issue」一栏去掉了。
+只计合并的 PR：issue 和未合并的 PR 不再计分，也不再显示在「我的贡献」和贡献榜里。
