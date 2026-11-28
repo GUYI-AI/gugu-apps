@@ -74,21 +74,11 @@ export function boardOf(items) {
   return rows
 }
 
-/** An open issue a newcomer can take, as the panel shows it. */
-export function starterOf(row) {
-  return { url: row.html_url, repo: repoOf(row), number: row.number, title: row.title, comments: row.comments ?? 0, updatedAt: row.updated_at }
-}
-
-/** GitHub search queries (`/search/issues?q=`): everyone's, what can be claimed, and the maintainers' list of what is not scored yet. */
+/** GitHub search queries (`/search/issues?q=`): everyone's, and the maintainers' list of what is not scored yet. */
 export const allQuery = () => `org:${ORG} "${ACCOUNT_WORD}" in:body`
-export const startersQuery = () => `org:${ORG} is:issue is:open no:assignee label:"good first issue" sort:updated-desc`
 export const reviewQuery = () => `${allQuery()} ${SCORES.map((n) => `-label:"score:${n}"`).join(' ')} sort:created-asc`
 export const searchApi = (query, page, perPage = 100) => `https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`
 export const reviewUrl = () => `https://github.com/search?type=issues&q=${encodeURIComponent(reviewQuery())}`
-export const STARTERS_LIMIT = 5
-export const ALL_ISSUES_URL = `https://github.com/${ORG}/gugu/issues`
-export const startersUrl = () => `https://github.com/${ORG}/gugu/issues?q=${encodeURIComponent('is:issue is:open label:"good first issue"')}`
-export const CONTRIBUTING_URL = `https://github.com/${ORG}/gugu/blob/dev/CONTRIBUTING.md`
 export const WRITE_APP_URL = `https://github.com/${ORG}/gugu/blob/dev/docs/guides/writing-a-tab-extension.md`
 
 /** Every word of the page, in the two languages it speaks. Anything but Chinese reads English. Prompts go to agents through
@@ -104,8 +94,6 @@ export const TEXT = {
     unsure: { action: '不知道从哪开始？问问 agent', prompt: '我想给咕咕做贡献，但不知道从哪开始。\n\n请读 skill gugu-contribution，问问我擅长什么、有多少时间，再推荐一件合适的事。' },
     report: { title: '报一个问题', body: '说说哪里不对，agent 查有没有人报过，去掉隐私信息，起草好给你看。', cost: '不用配开发环境。提交需要 GitHub 账号。', action: '交给 agent 起草', prompt: '我想给咕咕报一个问题。\n\n请读 skill gugu-contribution，先问我哪里不对，然后查重、脱敏，把草稿给我看，我同意后再提交。' },
     app: { title: '写一个 App', body: '想要的功能咕咕没有？不用改咕咕本身，做成 App，再提交上架给所有人用。', cost: '放在你自己的公开仓库里；上架要过一次审核。', action: '交给 agent 动手', guide: 'App 开发指南', prompt: '我想给咕咕写一个 App。\n\n请读 skill gugu-contribution 的「Building an App」一节，先问我它要做什么，然后带我做出来、在本机试用，再问我要不要提交上架。' },
-    claim: { title: '认领一个 issue', body: '维护者挑出来适合第一次贡献的。选一个，agent 帮你认领、写修复、开 PR。', cost: '要跑代码和测试；很多修复只跑单元测试就够，不用自己搭后端。', action: '交给 agent', actionFor: (title) => `交给 agent：${title}`, none: '现在没有待认领的入门 issue。', unread: '读不到列表。', all: '在 GitHub 上看全部 issue', more: '查看全部 {n} 个', comments: (n) => (n ? `${n} 条评论，可能已有人在做` : '还没有人回复'), prompt: (s) => `我想认领这个咕咕 issue：${s.url}\n\n请读 skill gugu-contribution 的「Your first pull request」一节，先看有没有人在做，在 issue 下认领，再带我写修复、开 PR；发言和提交前都先问我。` },
-    steps: { title: '第一个 PR 怎么走', items: ['在 issue 下留言认领（贡献指南要求先有 issue）', 'fork 仓库，从最新的 dev 开分支', '修好，跑相关测试', '向 dev 开 PR，写清改了什么、怎么验证的'], guide: '完整的贡献指南' },
     scoring: { title: '怎么计分', body: '维护者给每条 issue 和 PR 打 0–5 分，跟有没有合并无关。', identity: (line) => ['想记到自己名下，就在正文里单独写一行 ', line, '。这一行是公开的，写不写由你；不写也欢迎。'], line: (n) => `GuguAccount: ${n ?? '你的咕咕号'}` },
     loading: '正在读 GitHub…',
     readingNumber: '正在读取你的咕咕号…',
@@ -152,8 +140,6 @@ export const TEXT = {
     unsure: { action: 'Not sure where to start? Ask your agent', prompt: 'I want to contribute to gugu but do not know where to start.\n\nPlease read the skill gugu-contribution, ask what I am good at and how much time I have, then suggest something that fits.' },
     report: { title: 'Report a problem', body: 'Say what is wrong. The agent checks for an existing report, removes private details and shows you a draft.', cost: 'No dev setup. Submitting needs a GitHub account.', action: 'Have my agent draft it', prompt: 'I want to report a problem in gugu.\n\nPlease read the skill gugu-contribution, ask me what is wrong, search for duplicates, redact, and show me the draft. Submit only after I agree.' },
     app: { title: 'Build an App', body: 'Want something gugu lacks? No need to change gugu itself: build it as an App and submit it for listing, for everyone to use.', cost: 'Lives in your own public repository; listing is reviewed once.', action: 'Have my agent start', guide: 'App guide', prompt: 'I want to build an App for gugu.\n\nPlease read the "Building an App" section of the skill gugu-contribution, ask me what it should do, build it with me, try it locally, then ask whether to submit it for listing.' },
-    claim: { title: 'Claim an issue', body: 'Picked by maintainers for a first contribution. Choose one; the agent claims it, writes the fix and opens the pull request with you.', cost: 'Means running code and tests. Many fixes need only unit tests, with no backend of your own.', action: 'Hand to my agent', actionFor: (title) => `Hand to my agent: ${title}`, none: 'No starter issues are waiting right now.', unread: 'Could not load the list.', all: 'See all issues on GitHub', more: 'See all {n}', comments: (n) => (n ? `${n} ${n === 1 ? 'comment' : 'comments'}; someone may be on it` : 'No replies yet'), prompt: (s) => `I want to take this gugu issue: ${s.url}\n\nPlease read the "Your first pull request" section of the skill gugu-contribution, check whether anyone is on it, claim it on the issue, then write the fix and open the pull request with me. Ask me before anything is posted or submitted.` },
-    steps: { title: 'How a first pull request goes', items: ['Comment on the issue to claim it (the contributing guide asks for an issue first)', 'Fork the repository and branch from the latest dev', 'Fix it and run the related tests', 'Open a pull request to dev saying what changed and how you checked it'], guide: 'Full contributing guide' },
     scoring: { title: 'How points work', body: 'Maintainers score each issue and pull request 0–5, whether or not it was merged.', identity: (line) => ['To have one count for you, put ', line, ' on its own line in the body. That line is public and optional; contributions without it are just as welcome.'], line: (n) => `GuguAccount: ${n ?? '<your Gugu ID>'}` },
     loading: 'Reading GitHub…',
     readingNumber: 'Reading your Gugu ID…',
