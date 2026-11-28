@@ -4,8 +4,8 @@ import { TEXT, accountOf, scoreOf, itemOf, itemsOf, mineOf, boardOf, reviewQuery
 
 const row = (over = {}) => ({
   html_url: 'https://github.com/GUYI-AI/gugu/pull/1', repository_url: 'https://api.github.com/repos/GUYI-AI/gugu',
-  number: 1, title: 'Fix', state: 'open', user: { login: 'octo' }, labels: [], created_at: '2026-11-01T00:00:00Z',
-  body: 'Change.\n\nGuguAccount: 100023', pull_request: { merged_at: null }, ...over,
+  number: 1, title: 'Fix', state: 'closed', user: { login: 'octo' }, labels: [], created_at: '2026-11-01T00:00:00Z',
+  body: 'Change.\n\nGuguAccount: 100023', pull_request: { merged_at: '2026-11-02T00:00:00Z' }, ...over,
 })
 
 test('the identity line is one line of its own, naming one 咕咕号', () => {
@@ -27,14 +27,11 @@ test('one score label scores; several conflict; 0 counts as reviewed', () => {
   assert.deepEqual(scoreOf([{ name: 'score:6' }]), {})
 })
 
-test('status does not depend on merging', () => {
+test('a row waits until one score label scores it', () => {
   assert.equal(itemOf(row()).status, 'waiting')
-  assert.equal(itemOf(row({ state: 'closed', pull_request: { merged_at: '2026-11-02T00:00:00Z' } })).state, 'merged')
-  assert.equal(itemOf(row({ state: 'closed' })).status, 'waiting')
-  assert.equal(itemOf(row({ labels: [{ name: 'score:3' }] })).status, 'scored')
-  const issue = itemOf(row({ pull_request: undefined, labels: [{ name: 'score:5' }] }))
-  assert.equal(issue.kind, 'issue')
-  assert.equal(issue.score, 5)
+  const scored = itemOf(row({ labels: [{ name: 'score:5' }] }))
+  assert.equal(scored.status, 'scored')
+  assert.equal(scored.score, 5)
   assert.equal(itemOf(row({ body: 'no line' })), null)
 })
 
@@ -55,10 +52,10 @@ test('mine and the board add up scored contributions only', () => {
   assert.deepEqual(tied.map((r) => r.rank), [1, 1, 3], 'equal points share a rank')
 })
 
-test('the review list is everything with the line and no score label yet', () => {
-  assert.match(reviewQuery(), /^org:GUYI-AI "GuguAccount" in:body /)
+test('only merged pull requests count; the review list is those with no score label yet', () => {
+  assert.equal(allQuery(), 'org:GUYI-AI is:pr is:merged "GuguAccount" in:body')
+  assert.ok(reviewQuery().startsWith(`${allQuery()} `))
   for (let n = 0; n <= 5; n++) assert.ok(reviewQuery().includes(`-label:"score:${n}"`))
-  assert.equal(allQuery(), 'org:GUYI-AI "GuguAccount" in:body')
 })
 
 test('both languages say the same things, and anything but Chinese reads English', () => {

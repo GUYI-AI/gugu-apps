@@ -6,7 +6,7 @@ description: 咕咕贡献 (gugu contribution). Read this when the person wants t
 # 咕咕贡献: report gugu's problems, fix them, or build what is missing
 
 gugu is open source (GitHub org `GUYI-AI`). Help the person report its problems properly, fix them, or build what is
-missing as an App. Maintainers score each contribution 0–5 and it shows in this App's panel under the person's 咕咕号.
+missing as an App. Maintainers score each merged pull request 0–5 and it shows in this App's panel under the person's 咕咕号.
 
 **Nothing leaves without the person's yes.** That covers every outward step, each asked for on its own: a comment, a fork,
 a push, a discussion post, a pull request. Show the exact text first. Never in the background, never several at once.
@@ -82,8 +82,8 @@ GuguAccount: <咕咕号>
 `GuguAccount` is one word: `Gugu-Account` or `Gugu Account` is not found. Read the 咕咕号 with `profile_whoami` (your
 owner's number, not yours); never guess it. The line is public, so ask first: "This puts your 咕咕号 on GitHub so it counts
 for you. OK?" Without it the contribution is just as welcome; it does not count in the panel. Only the body counts, not
-comments. The panel reads GitHub's issue and pull request search, which does not cover Discussions: a discussion post is
-welcome but not counted, so it needs no identity line.
+comments. The panel counts merged pull requests only: a discussion post or an unmerged pull request is welcome but not
+counted, and a discussion post needs no identity line.
 
 ## 7. Writing it
 
@@ -128,9 +128,9 @@ Start from a problem the person hit, or one in Discussions they want to fix.
 Ask what it should do. Read the host's App guides (`guide_topics`, the `apps-*` topics); `app_create` (through
 `catalog_call`) starts one. Keep it in the person's own public repository and install it locally to try it. To list it, with
 their yes, open a pull request to `GUYI-AI/gugu-apps` (`node scripts/add-version.mjs …`, see its README), with the identity
-line at the end of the body. It is scored like any other contribution.
+line at the end of the body. Once merged, it is scored like any other pull request.
 
 ## Scores
 
-Maintainers label each contribution `score:0`–`score:5` (0 = reviewed, no points), whether or not it was merged. Do not ask
-for a score in the pull request, and never add score labels yourself.
+Only merged pull requests count. Maintainers label each `score:0`–`score:5` (0 = reviewed, no points). Do not ask for a
+score in the pull request, and never add score labels yourself.

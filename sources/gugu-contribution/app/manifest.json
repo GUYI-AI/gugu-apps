@@ -4,7 +4,7 @@
   "defaultLocale": "zh-CN",
   "subtitle": "一起开发咕咕：报问题、修 bug、写应用",
   "author": "咕咕",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "apiVersion": 32,
   "platforms": [
     "desktop",

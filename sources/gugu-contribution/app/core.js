@@ -1,9 +1,9 @@
-// gugu contribution, as data: which GitHub issues and pull requests count, whose they are, what they were scored, and the
+// gugu contribution, as data: which merged GitHub pull requests count, whose they are, what they were scored, and the
 // board. No DOM, no network: panel.js fetches, test/ checks this file in Node.
 
 export const ORG = 'GUYI-AI'
 /** The identity word. One word on purpose: GitHub's search splits `Gugu-Account` into "gugu account" and finds every
- *  issue about accounts, while `GuguAccount` stays one token, so the search and the review list hold only contributions. */
+ *  pull request about accounts, while `GuguAccount` stays one token, so the search and the review list hold only contributions. */
 export const ACCOUNT_WORD = 'GuguAccount'
 const ACCOUNT_LINE = new RegExp(`^${ACCOUNT_WORD}:[ \\t]*(\\d+)[ \\t]*$`, 'gm')
 export const SCORES = [0, 1, 2, 3, 4, 5]
@@ -28,8 +28,6 @@ const repoOf = (row) => String(row.repository_url ?? '').split('/').pop()
 export function itemOf(row) {
   const account = accountOf(row.body)
   if (account === null) return null
-  const isPr = Boolean(row.pull_request)
-  const state = isPr && row.pull_request.merged_at ? 'merged' : row.state === 'closed' ? 'closed' : 'open'
   const { score, conflict } = scoreOf(row.labels)
   const status = conflict ? 'conflict' : score !== undefined ? 'scored' : 'waiting'
   return {
@@ -37,8 +35,6 @@ export function itemOf(row) {
     repo: repoOf(row),
     number: row.number,
     title: row.title,
-    kind: isPr ? 'pr' : 'issue',
-    state,
     status,
     ...(score !== undefined ? { score } : {}),
     account,
@@ -74,11 +70,11 @@ export function boardOf(items) {
   return rows
 }
 
-/** GitHub search queries (`/search/issues?q=`): everyone's, and the maintainers' list of what is not scored yet. */
-export const allQuery = () => `org:${ORG} "${ACCOUNT_WORD}" in:body`
+/** GitHub search queries (`/search/issues?q=`): everyone's merged pull requests, and the maintainers' list of what is not scored yet. */
+export const allQuery = () => `org:${ORG} is:pr is:merged "${ACCOUNT_WORD}" in:body`
 export const reviewQuery = () => `${allQuery()} ${SCORES.map((n) => `-label:"score:${n}"`).join(' ')} sort:created-asc`
 export const searchApi = (query, page, perPage = 100) => `https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`
-export const reviewUrl = () => `https://github.com/search?type=issues&q=${encodeURIComponent(reviewQuery())}`
+export const reviewUrl = () => `https://github.com/search?type=pullrequests&q=${encodeURIComponent(reviewQuery())}`
 export const WRITE_APP_URL = `https://github.com/${ORG}/gugu/blob/dev/docs/guides/writing-a-tab-extension.md`
 
 /** Every word of the page, in the two languages it speaks. Anything but Chinese reads English. Prompts go to agents through
@@ -94,7 +90,7 @@ export const TEXT = {
     unsure: { action: '不知道从哪开始？问问 agent', prompt: '我想给咕咕做贡献，但不知道从哪开始。\n\n请读 skill gugu-contribution，问问我擅长什么、有多少时间，再推荐一件合适的事。' },
     report: { title: '报一个问题', body: '说说哪里不对，agent 查有没有人报过，去掉隐私信息，起草好给你看。', cost: '不用配开发环境。提交需要 GitHub 账号。', action: '交给 agent 起草', prompt: '我想给咕咕报一个问题。\n\n请读 skill gugu-contribution，先问我哪里不对，然后查重、脱敏，把草稿给我看，我同意后再提交。' },
     app: { title: '写一个 App', body: '想要的功能咕咕没有？不用改咕咕本身，做成 App，再提交上架给所有人用。', cost: '放在你自己的公开仓库里；上架要过一次审核。', action: '交给 agent 动手', guide: 'App 开发指南', prompt: '我想给咕咕写一个 App。\n\n请读 skill gugu-contribution 的「Building an App」一节，先问我它要做什么，然后带我做出来、在本机试用，再问我要不要提交上架。' },
-    scoring: { title: '怎么计分', body: '维护者给每条 issue 和 PR 打 0–5 分，跟有没有合并无关。', identity: (line) => ['想记到自己名下，就在正文里单独写一行 ', line, '。这一行是公开的，写不写由你；不写也欢迎。'], line: (n) => `GuguAccount: ${n ?? '你的咕咕号'}` },
+    scoring: { title: '怎么计分', body: '只计合并的 PR，维护者给每个打 0–5 分。', identity: (line) => ['想记到自己名下，就在正文里单独写一行 ', line, '。这一行是公开的，写不写由你；不写也欢迎。'], line: (n) => `GuguAccount: ${n ?? '你的咕咕号'}` },
     loading: '正在读 GitHub…',
     readingNumber: '正在读取你的咕咕号…',
     noNumber: '暂时读不到你的咕咕号，一分钟后自动再试。',
@@ -110,11 +106,9 @@ export const TEXT = {
     noCredit: '已审阅，不计分',
     waiting: '等打分',
     conflict: '打分待修正',
-    kind: { pr: 'PR', issue: 'issue' },
-    state: { open: '未关闭', closed: '已关闭', merged: '已合并' },
     mineEmptyTitle: '还没有记在你名下的贡献',
-    mineEmptyBody: '提交后，它会在这里等维护者打分。',
-    mineEmptyAlready: (line) => ['已经提过了？在它的正文里单独加一行 ', line, '，十分钟内会出现在这里。'],
+    mineEmptyBody: 'PR 合并后，会在这里等维护者打分。',
+    mineEmptyAlready: (line) => ['已经提过 PR 了？在它的正文里单独加一行 ', line, '，合并后十分钟内会出现在这里。'],
     startAction: '开始第一次贡献',
     boardNote: '已打分的分数相加，同分同名次。还没打分的不计入。',
     boardEmptyTitle: '榜上还没有人',
@@ -140,7 +134,7 @@ export const TEXT = {
     unsure: { action: 'Not sure where to start? Ask your agent', prompt: 'I want to contribute to gugu but do not know where to start.\n\nPlease read the skill gugu-contribution, ask what I am good at and how much time I have, then suggest something that fits.' },
     report: { title: 'Report a problem', body: 'Say what is wrong. The agent checks for an existing report, removes private details and shows you a draft.', cost: 'No dev setup. Submitting needs a GitHub account.', action: 'Have my agent draft it', prompt: 'I want to report a problem in gugu.\n\nPlease read the skill gugu-contribution, ask me what is wrong, search for duplicates, redact, and show me the draft. Submit only after I agree.' },
     app: { title: 'Build an App', body: 'Want something gugu lacks? No need to change gugu itself: build it as an App and submit it for listing, for everyone to use.', cost: 'Lives in your own public repository; listing is reviewed once.', action: 'Have my agent start', guide: 'App guide', prompt: 'I want to build an App for gugu.\n\nPlease read the "Building an App" section of the skill gugu-contribution, ask me what it should do, build it with me, try it locally, then ask whether to submit it for listing.' },
-    scoring: { title: 'How points work', body: 'Maintainers score each issue and pull request 0–5, whether or not it was merged.', identity: (line) => ['To have one count for you, put ', line, ' on its own line in the body. That line is public and optional; contributions without it are just as welcome.'], line: (n) => `GuguAccount: ${n ?? '<your Gugu ID>'}` },
+    scoring: { title: 'How points work', body: 'Only merged pull requests count; maintainers score each 0–5.', identity: (line) => ['To have one count for you, put ', line, ' on its own line in the body. That line is public and optional; contributions without it are just as welcome.'], line: (n) => `GuguAccount: ${n ?? '<your Gugu ID>'}` },
     loading: 'Reading GitHub…',
     readingNumber: 'Reading your Gugu ID…',
     noNumber: 'Cannot read your Gugu ID right now. Trying again in a minute.',
@@ -156,11 +150,9 @@ export const TEXT = {
     noCredit: 'Reviewed, no points',
     waiting: 'Waiting',
     conflict: 'Score being fixed',
-    kind: { pr: 'PR', issue: 'Issue' },
-    state: { open: 'Open', closed: 'Closed', merged: 'Merged' },
     mineEmptyTitle: 'Nothing under your name yet',
-    mineEmptyBody: 'Once you submit something, it waits here for a review.',
-    mineEmptyAlready: (line) => ['Already opened one? Add ', line, ' on its own line in the body. It shows up here within 10 minutes.'],
+    mineEmptyBody: 'Once a pull request of yours is merged, it waits here for a review.',
+    mineEmptyAlready: (line) => ['Already opened one? Add ', line, ' on its own line in the body. It shows up here within 10 minutes of being merged.'],
     startAction: 'Start a first contribution',
     boardNote: 'Total points from reviewed contributions; equal points share a rank. Anything not reviewed yet does not count.',
     boardEmptyTitle: 'Nobody on the board yet',
