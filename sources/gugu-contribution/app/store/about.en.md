@@ -1,6 +1,6 @@
 gugu is open source. With this App installed, when your agent runs into a problem in gugu itself, it helps you turn it into a proper contribution:
 
-- **Report a bug**: when gugu errs, contradicts its own docs, or what you complain about really is gugu's fault, the agent searches GitHub for an existing report, strips keys, paths and other people's words from the logs, and drafts an issue for you to read.
+- **Report a bug**: when gugu errs, contradicts its own docs, or what you complain about really is gugu's fault, the agent searches GitHub for an existing report, strips keys, paths and other people's words from the logs, and drafts a post in Discussions (Q&A) for you to read.
 - **Fix it**: when the cause is located in the source and the fix is small, the agent writes a pull request.
 - **Make it an App**: when you want something gugu lacks and it does not need gugu itself changed, the agent offers to build it as an App you can publish.
 
@@ -8,7 +8,7 @@ gugu is open source. With this App installed, when your agent runs into a proble
 
 ## The panel
 
-- **Get started**: not sure where to begin? Ask your agent. Or report a problem, build an App, or claim a starter issue picked by maintainers, handed to your agent in one click.
+- **Get started**: not sure where to begin? Ask your agent. Or report a problem or build an App, handed to your agent in one click.
 - **My work**: issues and pull requests whose body carries your Gugu ID (`GuguAccount: <id>` on its own line; public and optional), waiting for a score or scored.
 - **Leaderboard**: every contributor, by points.
 

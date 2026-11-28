@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- gugu's GitHub Issues are off: the skill reports problems in Discussions (Q&A, feature requests in Ideas), and the panel's "claim an issue" section is gone.
+
 ## 0.1.1
 
 - Align the Chinese marketplace subtitle, examples, and description with the current app terminology.

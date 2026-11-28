@@ -1,6 +1,6 @@
 // The panel: how to start contributing, the person's contributions and everyone's, read from GitHub's public search. Who
 // the person is comes from the host (`getContext().operator.guguNumber`, App API 32), never typed in.
-import { ACCOUNT_WORD, ALL_ISSUES_URL, CONTRIBUTING_URL, STARTERS_LIMIT, WRITE_APP_URL, allQuery, boardOf, itemsOf, mineOf, reviewUrl, searchApi, SEARCH_PAGES, starterOf, startersQuery, startersUrl, textFor } from './core.js'
+import { ACCOUNT_WORD, WRITE_APP_URL, allQuery, boardOf, itemsOf, mineOf, reviewUrl, searchApi, SEARCH_PAGES, textFor } from './core.js'
 
 const g = window.gugu
 const CACHE = 'gugu-contribution:v2'
@@ -54,10 +54,9 @@ async function search(url) {
 }
 
 async function readGitHub() {
-  const starters = await search(searchApi(startersQuery(), 1, STARTERS_LIMIT))
   const rows = []
   let total = 0
-  let incomplete = Boolean(starters.incomplete_results)
+  let incomplete = false
   for (let page = 1; page <= SEARCH_PAGES; page++) {
     const body = await search(searchApi(allQuery(), page))
     total = body.total_count
@@ -65,7 +64,7 @@ async function readGitHub() {
     rows.push(...body.items)
     if (body.items.length < 100 || rows.length >= total) break
   }
-  return { at: Date.now(), items: itemsOf(rows), starters: starters.items.map(starterOf), startersTotal: starters.total_count, partial: incomplete || rows.length < total }
+  return { at: Date.now(), items: itemsOf(rows), partial: incomplete || rows.length < total }
 }
 
 function cached() {
@@ -138,25 +137,6 @@ function itemRow(item) {
     tag(item))
 }
 
-function startersBlock() {
-  const w = t().claim
-  const d = state.data
-  if (!d) {
-    return state.loading
-      ? h('p', { role: 'status', class: 'muted', text: t().loading })
-      : h('p', { class: 'muted' }, `${w.unread} `, link(startersUrl(), w.all))
-  }
-  if (!d.starters?.length) return h('p', { class: 'muted' }, `${w.none} `, link(ALL_ISSUES_URL, w.all))
-  return [
-    h('ul', { class: 'list' }, d.starters.map((s) => h('li', {},
-      h('div', {},
-        link(s.url, s.title, { class: 'title' }),
-        h('span', { class: 'muted', text: `${s.repo} #${s.number} · ${w.comments(s.comments)}` })),
-      h('button', { 'data-key': s.url, disabled: state.handing, 'aria-label': w.actionFor(s.title), onclick: () => hand(w.prompt(s)), text: w.action })))),
-    d.startersTotal > d.starters.length ? h('p', {}, link(startersUrl(), w.more.replace('{n}', d.startersTotal))) : null,
-  ]
-}
-
 function way(words, ...rest) {
   return h('section', { class: 'card stack way' },
     h('h4', { text: words.title }),
@@ -176,11 +156,6 @@ function startView(who) {
     r?.error ? h('p', { role: 'alert', text: r.error }) : null,
     way(w.report, h('div', { class: 'row' }, h('button', { 'data-key': 'report', disabled: state.handing, onclick: () => hand(w.report.prompt), text: w.report.action }))),
     way(w.app, h('div', { class: 'row actions' }, h('button', { 'data-key': 'app', disabled: state.handing, onclick: () => hand(w.app.prompt), text: w.app.action }), link(WRITE_APP_URL, w.app.guide))),
-    way(w.claim, startersBlock(),
-      h('details', {},
-        h('summary', { text: w.steps.title }),
-        h('ol', {}, w.steps.items.map((item) => h('li', { text: item }))),
-        h('p', {}, link(CONTRIBUTING_URL, w.steps.guide)))),
     h('details', {},
       h('summary', { text: w.scoring.title }),
       h('p', { class: 'muted', text: w.scoring.body }),

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { TEXT, accountOf, scoreOf, itemOf, itemsOf, mineOf, boardOf, reviewQuery, allQuery, startersQuery, starterOf, textFor } from '../app/core.js'
+import { TEXT, accountOf, scoreOf, itemOf, itemsOf, mineOf, boardOf, reviewQuery, allQuery, textFor } from '../app/core.js'
 
 const row = (over = {}) => ({
   html_url: 'https://github.com/GUYI-AI/gugu/pull/1', repository_url: 'https://api.github.com/repos/GUYI-AI/gugu',
@@ -59,11 +59,6 @@ test('the review list is everything with the line and no score label yet', () =>
   assert.match(reviewQuery(), /^org:GUYI-AI "GuguAccount" in:body /)
   for (let n = 0; n <= 5; n++) assert.ok(reviewQuery().includes(`-label:"score:${n}"`))
   assert.equal(allQuery(), 'org:GUYI-AI "GuguAccount" in:body')
-})
-
-test('what can be claimed is open, unassigned and marked for newcomers', () => {
-  for (const part of ['is:issue', 'is:open', 'no:assignee', 'label:"good first issue"']) assert.ok(startersQuery().includes(part), part)
-  assert.deepEqual(starterOf({ html_url: 'u', repository_url: 'https://api.github.com/repos/GUYI-AI/gugu', number: 7, title: 't', comments: 2, updated_at: 'c' }), { url: 'u', repo: 'gugu', number: 7, title: 't', comments: 2, updatedAt: 'c' })
 })
 
 test('both languages say the same things, and anything but Chinese reads English', () => {
